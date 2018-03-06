@@ -4,6 +4,7 @@ import org.jetbrains.exposed.sql.Table
 
 object Comments : Table() {
     val id = varchar("id", 12).primaryKey()
+    val entryId = (varchar("entryId", 12) references Entries.id).index()
     val plainText = text("plainText")
     val markdownText = text("markdownText")
     val dateCreated = long("dateCreated")
