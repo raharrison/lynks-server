@@ -1,4 +1,5 @@
 import com.fasterxml.jackson.databind.SerializationFeature
+import db.DatabaseFactory
 import io.ktor.application.Application
 import io.ktor.application.call
 import io.ktor.application.install
@@ -20,6 +21,8 @@ fun Application.module() {
             configure(SerializationFeature.INDENT_OUTPUT, true)
         }
     }
+
+    DatabaseFactory()
 
     install(Routing) {
         get("/") {
