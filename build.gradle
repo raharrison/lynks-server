@@ -37,6 +37,7 @@ repositories {
     maven { url "https://dl.bintray.com/kotlin/kotlinx" }
     maven { url "https://dl.bintray.com/kotlin/ktor" }
     maven { url "https://dl.bintray.com/kotlin/exposed" }
+    maven { url "https://jitpack.io" }
 }
 
 dependencies {
@@ -55,6 +56,7 @@ dependencies {
     compile 'com.vladsch.flexmark:flexmark-ext-autolink:0.32.4'
     compile 'com.vladsch.flexmark:flexmark-ext-superscript:0.32.4'
 
+    compile 'com.github.chimbori:crux:2.0.1'
     compile "com.google.guava:guava:24.0-jre"
 
     compile "ch.qos.logback:logback-classic:1.2.1"
