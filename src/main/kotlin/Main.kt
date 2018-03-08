@@ -10,7 +10,9 @@ import io.ktor.routing.Routing
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import service.CommentService
+import service.TagService
 import web.comment
+import web.tag
 
 fun Application.module() {
     install(DefaultHeaders)
@@ -24,9 +26,11 @@ fun Application.module() {
     DatabaseFactory()
 
     val commentService = CommentService()
+    val tagService = TagService()
 
     install(Routing) {
         comment(commentService)
+        tag(tagService)
     }
 }
 
