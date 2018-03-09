@@ -2,6 +2,14 @@ package util
 
 import io.ktor.application.ApplicationCall
 import model.PageRequest
+import org.jetbrains.exposed.sql.Op
+import org.jetbrains.exposed.sql.Query
+import org.jetbrains.exposed.sql.SqlExpressionBuilder
+import org.jetbrains.exposed.sql.and
+
+fun Query.combine(block: SqlExpressionBuilder.() -> Op<Boolean>): Query {
+    return adjustWhere { this?.and(SqlExpressionBuilder.block()) ?: SqlExpressionBuilder.block() }
+}
 
 fun ApplicationCall.pageRequest(): PageRequest {
     val offset: Int = request.queryParameters["offset"]?.toInt() ?: 0
