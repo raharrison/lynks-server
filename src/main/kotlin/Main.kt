@@ -10,9 +10,11 @@ import io.ktor.routing.Routing
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import service.CommentService
+import service.EntryService
 import service.SuggestionService
 import service.TagService
 import web.comment
+import web.entry
 import web.suggest
 import web.tag
 
@@ -30,11 +32,13 @@ fun Application.module() {
     val commentService = CommentService()
     val tagService = TagService()
     val suggestionService = SuggestionService()
+    val entryService = EntryService(tagService)
 
     install(Routing) {
         comment(commentService)
         tag(tagService)
         suggest(suggestionService)
+        entry(entryService)
     }
 }
 
