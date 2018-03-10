@@ -26,11 +26,13 @@ fun Application.module() {
     val tagService = TagService()
     val entryService = EntryService(tagService)
     val linkService = LinkService(tagService)
+    val noteService = NoteService(tagService)
     val commentService = CommentService()
     val suggestionService = SuggestionService()
 
     install(Routing) {
         link(linkService)
+        note(noteService)
         entry(entryService)
         comment(commentService)
         tag(tagService)
