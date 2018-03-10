@@ -45,4 +45,10 @@ class TagCollection {
 
     fun all(): Collection<Tag> = tagLookup.values
 
+    fun delete(id: String) {
+        val tag = tagLookup[id]
+        tagTree.removeAll(id)
+        tagLookup.remove(id)
+        tag?.children?.forEach{ delete(it.id) }
+    }
 }

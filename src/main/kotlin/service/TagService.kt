@@ -66,6 +66,6 @@ class TagService {
         EntryTags.deleteWhere { EntryTags.tagId eq id }
         // delete children
         Tags.select { Tags.parentId eq id }.forEach { deleteTag(it[Tags.id]) }
-        Tags.deleteWhere { Tags.id eq id }.also { rebuild() } > 0
+        Tags.deleteWhere { Tags.id eq id }.also { tagCollection.delete(id) } > 0
     }
 }
