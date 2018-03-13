@@ -42,4 +42,18 @@ object RowMapper {
                 dateUpdated = row[Tags.dateUpdated]
         )
     }
+
+    fun toFile(row: ResultRow, pathBuilder: (String, String, String) -> String): File {
+        return File(
+                id = row[Files.id],
+                entryId = row[Files.entryId],
+                name = row[Files.fileName],
+                extension = row[Files.extension],
+                path = pathBuilder(row[Files.entryId], row[Files.id], row[Files.extension]),
+                type = row[Files.type],
+                size = row[Files.size],
+                dateCreated = row[Files.dateCreated],
+                dateUpdated = row[Files.dateUpdated]
+        )
+    }
 }

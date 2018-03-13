@@ -3,7 +3,8 @@ package model
 data class Suggestion(
         val url: String,
         val title: String? = null,
-        val image: String? = null
+        val thumbnail: String? = null,
+        val screenshot: String? = null
 // other
 )
 

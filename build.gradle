@@ -56,6 +56,7 @@ dependencies {
     compile 'com.vladsch.flexmark:flexmark-ext-autolink:0.32.4'
     compile 'com.vladsch.flexmark:flexmark-ext-superscript:0.32.4'
 
+    compile "io.webfolder:cdp4j:2.2.4"
     compile 'com.github.chimbori:crux:2.0.1'
     compile "com.google.guava:guava:24.0-jre"
 

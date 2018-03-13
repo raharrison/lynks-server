@@ -28,7 +28,7 @@ fun Application.module() {
     val linkService = LinkService(tagService)
     val noteService = NoteService(tagService)
     val commentService = CommentService()
-    val suggestionService = SuggestionService()
+    val suggestionService = SuggestionService(FileService())
 
     install(Routing) {
         link(linkService)
