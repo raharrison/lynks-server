@@ -62,7 +62,7 @@ class FileService {
 
     private fun constructPath(entryId: String, id: String, extension: String) = "$BASE_PATH/$entryId/$id.$extension"
 
-    private fun constructTempPath(name: String, extension: String) = "$TEMP_PATH/${FileUtils.createTempFileName(name)}/.$extension"
+    private fun constructTempPath(name: String, extension: String) = "$TEMP_PATH/${FileUtils.createTempFileName(name)}.$extension"
 
     private fun fileExtension(type: FileType) = if(type == FileType.SCREENSHOT) SCREENSHOT_FORMAT else THUMBNAIL_FORMAT
 

@@ -38,4 +38,13 @@ class LinkService(tagService: TagService) : EntryRepository<Link, NewLink>(tagSe
     override fun toModel(row: ResultRow): Link {
         return RowMapper.toLink(row, ::getTagsForEntry)
     }
+
+
+    override fun add(entry: NewLink): Link {
+        val link = super.add(entry)
+
+        // fileService move saved thumbnails/screenshot
+
+        return link
+    }
 }

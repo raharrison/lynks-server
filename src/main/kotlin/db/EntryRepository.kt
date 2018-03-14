@@ -28,7 +28,7 @@ abstract class EntryRepository<out T : Entry, in U : NewEntry>(private val tagSe
                 .map { toModel(it) }
     }
 
-    fun add(entry: U): T = transaction {
+    open fun add(entry: U): T = transaction {
         val newId = RandomUtils.generateUid()
         Entries.insert { toInsert(newId, entry) }
         addTagsForEntry(entry.tags(), newId)
