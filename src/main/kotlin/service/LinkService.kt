@@ -1,10 +1,10 @@
 package service
 
 import db.EntryRepository
-import model.Entries
-import model.EntryType
-import model.Link
-import model.NewLink
+import kotlinx.coroutines.experimental.Deferred
+import kotlinx.coroutines.experimental.async
+import link.WebpageExtractor
+import model.*
 import org.jetbrains.exposed.sql.ColumnSet
 import org.jetbrains.exposed.sql.Query
 import org.jetbrains.exposed.sql.ResultRow
@@ -13,7 +13,7 @@ import org.jetbrains.exposed.sql.statements.UpdateBuilder
 import util.RowMapper
 import util.URLUtils
 
-class LinkService(tagService: TagService) : EntryRepository<Link, NewLink>(tagService) {
+class LinkService(tagService: TagService, private val fileService: FileService) : EntryRepository<Link, NewLink>(tagService) {
 
     override fun getBaseQuery(base: ColumnSet): Query {
         return Entries.select { Entries.type eq EntryType.LINK }
@@ -39,12 +39,22 @@ class LinkService(tagService: TagService) : EntryRepository<Link, NewLink>(tagSe
         return RowMapper.toLink(row, ::getTagsForEntry)
     }
 
-
     override fun add(entry: NewLink): Link {
         val link = super.add(entry)
 
         // fileService move saved thumbnails/screenshot
 
         return link
+    }
+
+    fun generateScreenshotAsync(entryId: String): Deferred<File?> = async {
+        val link = get(entryId)
+        if (link == null) null
+        else {
+            WebpageExtractor(link.url).use {
+                val screenshot = it.generateScreenshot()
+                return@async fileService.saveGenerated(entryId, FileType.SCREENSHOT, screenshot)
+            }
+        }
     }
 }

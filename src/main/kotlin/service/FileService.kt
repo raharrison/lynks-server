@@ -1,10 +1,8 @@
 package service
 
-import kotlinx.coroutines.experimental.Deferred
-import kotlinx.coroutines.experimental.async
-import link.WebpageExtractor
-import model.*
-import org.jetbrains.exposed.sql.and
+import model.File
+import model.FileType
+import model.Files
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -26,17 +24,6 @@ class FileService {
         val path = constructTempPath(src, fileExtension(type))
         FileUtils.writeToFile(path, data)
         return path
-    }
-
-    fun generateScreenshotAsync(entryId: String): Deferred<File> = transaction {
-        Entries.select { Entries.id eq entryId and (Entries.type eq EntryType.LINK) }.single().let {
-            async {
-                WebpageExtractor(it[Entries.plainContent]!!).use {
-                    val screenshot = it.generateScreenshot()
-                    saveGenerated(entryId, FileType.SCREENSHOT, screenshot)
-                }
-            }
-        }
     }
 
     fun saveGenerated(entryId: String, type: FileType, image: ByteArray): File {

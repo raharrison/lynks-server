@@ -24,11 +24,12 @@ fun Application.module() {
     DatabaseFactory()
 
     val tagService = TagService()
+    val fileService = FileService()
     val entryService = EntryService(tagService)
-    val linkService = LinkService(tagService)
+    val linkService = LinkService(tagService, fileService)
     val noteService = NoteService(tagService)
     val commentService = CommentService()
-    val suggestionService = SuggestionService(FileService())
+    val suggestionService = SuggestionService(fileService)
 
     install(Routing) {
         link(linkService)
