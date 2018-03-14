@@ -6,6 +6,7 @@ import model.Files
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
+import util.EMPTY_STRING
 import util.FileUtils
 import util.RandomUtils
 import util.RowMapper.toFile
@@ -51,12 +52,18 @@ class FileService {
 
     private fun constructTempPath(name: String, extension: String) = "$TEMP_PATH/${FileUtils.createTempFileName(name)}.$extension"
 
-    private fun fileExtension(type: FileType) = if(type == FileType.SCREENSHOT) SCREENSHOT_FORMAT else THUMBNAIL_FORMAT
+    private fun fileExtension(type: FileType) = when (type) {
+        FileType.SCREENSHOT -> SCREENSHOT_FORMAT
+        FileType.THUMBNAIL -> THUMBNAIL_FORMAT
+        FileType.DOCUMENT -> DOCUMENT_FORMAT
+        else -> EMPTY_STRING
+    }
 
     companion object {
         const val BASE_PATH = "media"
         const val TEMP_PATH = "media/temp"
         const val SCREENSHOT_FORMAT = "png"
         const val THUMBNAIL_FORMAT = "jpg"
+        const val DOCUMENT_FORMAT = "html"
     }
 }

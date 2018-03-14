@@ -17,3 +17,5 @@ fun ApplicationCall.pageRequest(): PageRequest {
     val tag: String? = request.queryParameters["tag"]
     return PageRequest(offset, limit, tag)
 }
+
+const val EMPTY_STRING = ""

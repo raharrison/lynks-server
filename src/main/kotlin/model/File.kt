@@ -26,7 +26,7 @@ data class File(
 )
 
 enum class FileType {
-    UPLOAD, SCREENSHOT, THUMBNAIL
+    UPLOAD, SCREENSHOT, THUMBNAIL, DOCUMENT
 }
 
 // files/{entryId}/{id}
