@@ -3,12 +3,12 @@ package util
 import com.google.common.hash.Hashing
 import java.nio.charset.Charset
 import java.nio.file.Files
-import java.nio.file.Paths
+import java.nio.file.Path
 
 object FileUtils {
 
-    fun writeToFile(path: String, data: ByteArray) {
-        Files.write(Paths.get(path), data)
+    fun writeToFile(path: Path, data: ByteArray) {
+        Files.write(path, data)
     }
 
     fun createTempFileName(src: String): String {

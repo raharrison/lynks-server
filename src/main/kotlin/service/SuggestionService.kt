@@ -16,6 +16,7 @@ class SuggestionService(private val fileService: FileService) {
             val cleanUrl = it.resolvedUrl
             val thumbPath = fileService.saveTempFile(url, thumb, FileType.THUMBNAIL)
             val screenPath = fileService.saveTempFile(url, screen, FileType.SCREENSHOT)
+            fileService.saveTempFile(url, it.html.toByteArray(), FileType.DOCUMENT)
             Suggestion(cleanUrl, title, thumbPath, screenPath)
         }
     }

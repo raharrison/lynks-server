@@ -6,10 +6,12 @@ import model.Files
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
+import service.FileService.Companion.TEMP_PATH
 import util.EMPTY_STRING
 import util.FileUtils
 import util.RandomUtils
 import util.RowMapper.toFile
+import java.nio.file.Paths
 
 class FileService {
 
@@ -22,9 +24,9 @@ class FileService {
     }
 
     fun saveTempFile(src: String, data: ByteArray, type: FileType): String {
-        val path = constructTempPath(src, fileExtension(type))
+        val path = constructTempPath(src, type, fileExtension(type))
         FileUtils.writeToFile(path, data)
-        return path
+        return path.toString()
     }
 
     fun saveGenerated(entryId: String, type: FileType, image: ByteArray): File {
@@ -48,9 +50,10 @@ class FileService {
         }
     }
 
-    private fun constructPath(entryId: String, id: String, extension: String) = "$BASE_PATH/$entryId/$id.$extension"
+    private fun constructPath(entryId: String, id: String, extension: String) = Paths.get(BASE_PATH, entryId, "$id.$extension")
 
-    private fun constructTempPath(name: String, extension: String) = "$TEMP_PATH/${FileUtils.createTempFileName(name)}.$extension"
+    private fun constructTempPath(name: String, type: FileType, extension: String) =
+            Paths.get(TEMP_PATH, FileUtils.createTempFileName(name), "${type.toString().toLowerCase()}.$extension")
 
     private fun fileExtension(type: FileType) = when (type) {
         FileType.SCREENSHOT -> SCREENSHOT_FORMAT
@@ -66,4 +69,9 @@ class FileService {
         const val THUMBNAIL_FORMAT = "jpg"
         const val DOCUMENT_FORMAT = "html"
     }
+}
+
+fun main(args: Array<String>) {
+    println(Paths.get("${FileService.TEMP_PATH}/${FileUtils.createTempFileName("google.com")}/screenshot.png"))
+    println(Paths.get(TEMP_PATH, FileUtils.createTempFileName("google.com"), "screenshot.png").toAbsolutePath())
 }

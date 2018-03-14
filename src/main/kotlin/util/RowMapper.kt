@@ -2,6 +2,7 @@ package util
 
 import model.*
 import org.jetbrains.exposed.sql.ResultRow
+import java.nio.file.Path
 
 object RowMapper {
 
@@ -43,13 +44,13 @@ object RowMapper {
         )
     }
 
-    fun toFile(row: ResultRow, pathBuilder: (String, String, String) -> String): File {
+    fun toFile(row: ResultRow, pathBuilder: (String, String, String) -> Path): File {
         return File(
                 id = row[Files.id],
                 entryId = row[Files.entryId],
                 name = row[Files.fileName],
                 extension = row[Files.extension],
-                path = pathBuilder(row[Files.entryId], row[Files.id], row[Files.extension]),
+                path = pathBuilder(row[Files.entryId], row[Files.id], row[Files.extension]).toString(),
                 type = row[Files.type],
                 size = row[Files.size],
                 dateCreated = row[Files.dateCreated],
