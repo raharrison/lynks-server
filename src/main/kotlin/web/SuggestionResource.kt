@@ -11,7 +11,7 @@ fun Route.suggest(suggestionService: SuggestionService) {
     get("/suggest") {
         val url = call.parameters["url"]
         if (url == null) call.respond("url parameter required")
-        else call.respond(suggestionService.processLinkAsync(url))
+        else call.respond(suggestionService.processLinkAsync(url).await())
     }
 
 }

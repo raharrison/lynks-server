@@ -1,14 +1,14 @@
 package service
 
-import kotlinx.coroutines.experimental.CommonPool
-import kotlinx.coroutines.experimental.withContext
+import kotlinx.coroutines.experimental.Deferred
+import kotlinx.coroutines.experimental.async
 import link.WebpageExtractor
 import model.FileType
 import model.Suggestion
 
 class SuggestionService(private val fileService: FileService) {
 
-    suspend fun processLinkAsync(url: String): Suggestion = withContext(CommonPool) {
+    fun processLinkAsync(url: String): Deferred<Suggestion> = async {
         WebpageExtractor(url).use {
             val thumb = it.generateThumbnail()
             val screen = it.generateScreenshot()
