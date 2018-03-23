@@ -1,8 +1,6 @@
 package db
 
-import model.Comments
-import model.Entries
-import model.EntryType
+import model.*
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils.create
 import org.jetbrains.exposed.sql.insert
@@ -12,7 +10,7 @@ class DatabaseFactory {
     init {
         Database.connect("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", driver = "org.h2.Driver")
         transaction {
-            create(Entries, Comments)
+            create(Entries, Comments, Tags, EntryTags)
             Entries.insert {
                 it[id] = "3kf92nf304"
                 it[title] = "link title"
