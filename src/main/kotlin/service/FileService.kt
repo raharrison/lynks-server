@@ -3,11 +3,10 @@ package service
 import model.File
 import model.FileType
 import model.Files
+import org.apache.commons.lang3.StringUtils
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
-import service.FileService.Companion.TEMP_PATH
-import util.EMPTY_STRING
 import util.FileUtils
 import util.RandomUtils
 import util.RowMapper.toFile
@@ -59,7 +58,7 @@ class FileService {
         FileType.SCREENSHOT -> SCREENSHOT_FORMAT
         FileType.THUMBNAIL -> THUMBNAIL_FORMAT
         FileType.DOCUMENT -> DOCUMENT_FORMAT
-        else -> EMPTY_STRING
+        else -> StringUtils.EMPTY
     }
 
     companion object {
@@ -69,9 +68,4 @@ class FileService {
         const val THUMBNAIL_FORMAT = "jpg"
         const val DOCUMENT_FORMAT = "html"
     }
-}
-
-fun main(args: Array<String>) {
-    println(Paths.get("${FileService.TEMP_PATH}/${FileUtils.createTempFileName("google.com")}/screenshot.png"))
-    println(Paths.get(TEMP_PATH, FileUtils.createTempFileName("google.com"), "screenshot.png").toAbsolutePath())
 }
