@@ -15,8 +15,13 @@ class TagService {
         TagCollection().apply { build(queryAllTags()) }
     }
 
-    private fun getTagChildren(id: String): MutableList<Tag> = transaction {
-        Tags.select { Tags.parentId eq id }.map { toTag(it, ::getTagChildren) }.toMutableList()
+    private fun getTagChildren(id: String): MutableSet<Tag> = transaction {
+        Tags.select { Tags.parentId eq id }.map { toTag(it, ::getTagChildren) }.toMutableSet()
+    }
+
+    private fun queryTag(id: String): Tag? = transaction {
+        Tags.select { Tags.id eq id}
+                .map { toTag(it, ::getTagChildren) }.singleOrNull()
     }
 
     private fun queryAllTags(): List<Tag> = transaction {
@@ -24,8 +29,7 @@ class TagService {
                 .map { toTag(it, ::getTagChildren) }
     }
 
-    private fun rebuild() = tagCollection.build(queryAllTags())
-
+    // TODO: only return root nodes
     fun getAllTags(): Collection<Tag> = tagCollection.all()
 
     fun getTags(ids: List<String>): List<Tag> = tagCollection.tagsIn(ids)
@@ -40,13 +44,16 @@ class TagService {
             addTag(tag)
         } else {
             transaction {
+                val currentParentId: String? = Tags.slice(Tags.parentId).select{ Tags.id eq id}
+                        .single()[Tags.parentId]
                 Tags.update({ Tags.id eq id }) {
                     it[name] = tag.name
                     it[parentId] = tag.parentId
                     it[dateUpdated] = System.currentTimeMillis()
                 }
-                rebuild()
-                getTag(id)!!
+                tagCollection.update(currentParentId, tag.parentId, queryTag(id)!!)
+                //rebuild()
+                //getTag(id)!!
             }
         }
     }
@@ -59,7 +66,8 @@ class TagService {
             it[parentId] = tag.parentId
             it[dateUpdated] = System.currentTimeMillis()
         })
-        tagCollection.add(getTag(newId)!!, tag.parentId)
+            val created =  queryTag(newId)!!
+        tagCollection.add(created, tag.parentId)
     }
 
     fun deleteTag(id: String): Boolean = transaction {

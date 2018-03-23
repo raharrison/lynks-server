@@ -16,9 +16,9 @@ object EntryTags : Table() {
 
 data class Tag(
         val id: String,
-        val name: String,
-        val children: MutableList<Tag>,
-        val dateUpdated: Long
+        var name: String,
+        var children: MutableSet<Tag>,
+        var dateUpdated: Long
 ) {
     override fun hashCode(): Int = id.hashCode()
     override fun equals(other: Any?): Boolean = if (other is Tag) id == other.id else false

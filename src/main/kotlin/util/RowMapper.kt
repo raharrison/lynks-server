@@ -35,7 +35,7 @@ object RowMapper {
                     dateCreated = row[Comments.dateCreated]
             )
 
-    fun toTag(row: ResultRow, childrenResolver: (String) -> MutableList<Tag>): Tag {
+    fun toTag(row: ResultRow, childrenResolver: (String) -> MutableSet<Tag>): Tag {
         return Tag(
                 id = row[Tags.id],
                 name = row[Tags.name],

@@ -38,6 +38,30 @@ class TagCollection {
         return tag
     }
 
+    fun update(currentParentId: String?, newParentId: String?, tag: Tag): Tag {
+        if(currentParentId != newParentId) {
+            // had a parent before so remove from children
+            if(currentParentId != null) {
+                val currentParent = tag(currentParentId)!!
+                currentParent.children.remove(tag)
+            }
+
+            // add as child to new parent
+            if(newParentId != null) {
+                val newParent = tag(newParentId)!!
+                newParent.children.add(tag)
+            }
+
+            // recursive update of parents
+            build(all().toList())
+        }
+        val current = tag(tag.id)!!
+        current.name = tag.name
+        current.children = tag.children
+        current.dateUpdated = tag.dateUpdated
+        return current
+    }
+
     fun subtree(id: String): MutableCollection<Tag> {
         val tag = tag(id)
         return tagTree[tag].apply { add(tag) }
