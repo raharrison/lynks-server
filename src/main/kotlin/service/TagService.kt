@@ -44,14 +44,12 @@ class TagService {
             addTag(tag)
         } else {
             transaction {
-                val currentParentId: String? = Tags.slice(Tags.parentId).select{ Tags.id eq id}
-                        .single()[Tags.parentId]
                 Tags.update({ Tags.id eq id }) {
                     it[name] = tag.name
                     it[parentId] = tag.parentId
                     it[dateUpdated] = System.currentTimeMillis()
                 }
-                tagCollection.update(currentParentId, tag.parentId, queryTag(id)!!)
+                tagCollection.update(tag.parentId, queryTag(id)!!)
                 //rebuild()
                 //getTag(id)!!
             }

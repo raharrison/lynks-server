@@ -5,40 +5,64 @@ import com.google.common.collect.Multimap
 
 class TagCollection {
 
-    // tag : [parents]
+    // tag : [children]
 
-    // TODO: change to set??
     private val tagTree: Multimap<Tag, Tag> = HashMultimap.create()
     private val tagLookup: MutableMap<String, Tag> = mutableMapOf()
+    private val tagParents: MutableMap<String, Tag> = mutableMapOf()
 
+    // tags are root nodes
     fun build(tags: Collection<Tag>) {
         tagTree.clear()
         tagLookup.clear()
+        tagParents.clear()
         tags.forEach { processTag(it) }
     }
 
     private fun processTag(tag: Tag) {
         tagLookup[tag.id] = tag
+        tagTree.putAll(tag, traverseChildren(tag, mutableSetOf()))
         for (child in tag.children) {
-            tagTree.put(tag, child)
+            tagParents[child.id] = tag
             processTag(child)
+        }
+    }
+
+    private fun traverseChildren(tag: Tag, existing: MutableSet<Tag>): MutableSet<Tag> {
+        existing.addAll(tag.children)
+        for(child in tag.children) {
+            existing.addAll(traverseChildren(child, existing))
+        }
+        return existing
+    }
+
+    private fun traverseParents(id: String, block: (Tag) -> Unit) {
+        if(tagParents.containsKey(id)) {
+            tagParents[id]?.also{
+                block(tagParents[id]!!)
+                traverseParents(it.id, block)
+            }
         }
     }
 
     fun tag(id: String): Tag? = tagLookup[id]
 
-    fun tagsIn(ids: Collection<String>): List<Tag> = ids.map { tagLookup.getValue(it) }
+    fun tagsIn(ids: Collection<String>): List<Tag> = ids.map { tagLookup[it] }.filterNotNull()
 
     fun add(tag: Tag, parent: String?): Tag {
         tagLookup[tag.id] = tag
         parent?.also {
-            tagTree.put(tag, tag(parent))
-            tagLookup[it]?.children?.add(tag)
+            val ptag = tag(parent)!!
+            tagTree.put(tag, ptag)
+            ptag.children.add(tag)
+            tagParents[tag.id] = ptag
         }
+        traverseParents(tag.id, { tagTree.put(it, tag) })
         return tag
     }
 
-    fun update(currentParentId: String?, newParentId: String?, tag: Tag): Tag {
+    fun update(newParentId: String?, tag: Tag): Tag {
+        val currentParentId = tagParents[tag.id]?.id
         if(currentParentId != newParentId) {
             // had a parent before so remove from children
             if(currentParentId != null) {
@@ -64,7 +88,7 @@ class TagCollection {
 
     fun subtree(id: String): MutableCollection<Tag> {
         val tag = tag(id)
-        return tagTree[tag].apply { add(tag) }
+        return tagTree[tag].also { if(tag != null) it.add(tag) }
     }
 
     fun all(): Collection<Tag> = tagLookup.values
@@ -74,5 +98,10 @@ class TagCollection {
         tagTree.removeAll(id)
         tagLookup.remove(id)
         tag?.children?.forEach{ delete(it.id) }
+        traverseParents(id, { tagTree.remove(it, tag) })
+        tagParents[id]?.also {
+            it.children.remove(tag)
+            tagParents.remove(id)
+        }
     }
 }
