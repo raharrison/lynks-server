@@ -15,4 +15,18 @@ object URLUtils {
             return if (host.startsWith("www.")) host.substring(4) else host
         }
     }
+
+    fun extractQueryParams(uri: String): Map<String, String?> {
+        val query = URI(uri).query ?: return emptyMap()
+        val params = query.split("&")
+        val map = linkedMapOf<String, String?>()
+        for (param in params) {
+            val split = param.split("=")
+            when(split.size) {
+                1 -> map[param] = null
+                else -> map[split[0]] = split[1]
+            }
+        }
+        return map
+    }
 }
