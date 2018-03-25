@@ -1,6 +1,6 @@
 package util
 
-import org.junit.Assert.assertEquals
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 
 class RandomUtilsTest {
@@ -9,13 +9,13 @@ class RandomUtilsTest {
     fun testRandomUidLength() {
         val iterations = 1000
         val set = (0 until iterations).map { RandomUtils.generateUid() }.toSet()
-        set.forEach( {assertEquals(12, it.length) })
+        set.forEach( {assertThat(12).isEqualTo(it.length) })
     }
 
     @Test
     fun testRandomUidCollision() {
         val iterations = 1000
         val set = (0 until iterations).map { RandomUtils.generateUid() }.toSet()
-        assertEquals(iterations, set.size)
+        assertThat(iterations).isEqualTo(set.size)
     }
 }

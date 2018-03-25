@@ -1,6 +1,6 @@
 package util
 
-import org.junit.Assert.assertEquals
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 
 class MarkdownUtilsTest {
@@ -17,7 +17,7 @@ class MarkdownUtilsTest {
 
     private fun assertConvertEqual(input: String, output: String) {
         val out = MarkdownUtils.convertToMarkdown(input)
-        assertEquals(output, out)
+        assertThat(output).isEqualTo(out)
     }
 
 }
