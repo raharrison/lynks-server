@@ -1,5 +1,6 @@
 package model
 
+import db.json
 import org.jetbrains.exposed.sql.Table
 
 object Entries : Table() {
@@ -11,7 +12,7 @@ object Entries : Table() {
     val src = varchar("source", 255)
     val type = enumeration("type", EntryType::class.java)
     val dateUpdated = long("dateUpdated")
-
+    val props = json("props", Map::class.java).nullable()
 }
 
 interface Entry
