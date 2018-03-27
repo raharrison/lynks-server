@@ -8,6 +8,9 @@ import java.nio.file.Path
 object FileUtils {
 
     fun writeToFile(path: Path, data: ByteArray) {
+        val parentPath = path.parent
+        if(!Files.exists(parentPath))
+            Files.createDirectories(parentPath)
         Files.write(path, data)
     }
 
