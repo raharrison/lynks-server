@@ -1,19 +1,18 @@
-package web
+package resource
 
-import entry.FileService
 import io.ktor.application.call
 import io.ktor.response.respond
 import io.ktor.routing.Route
 import io.ktor.routing.get
 import io.ktor.routing.route
 
-fun Route.files(fileService: FileService) {
+fun Route.files(resourceManager: ResourceManager) {
 
     route("/entry/{entryId}/files") {
 
         get("/") {
             val id = call.parameters["entryId"]!!
-            call.respond(fileService.getFilesFor(id))
+            call.respond(resourceManager.getFilesFor(id))
         }
 //
 //        get("/{id}") {

@@ -1,10 +1,7 @@
 import comment.CommentService
 import comment.comment
 import db.DatabaseFactory
-import entry.EntryService
-import entry.FileService
-import entry.LinkService
-import entry.NoteService
+import entry.*
 import io.ktor.application.Application
 import io.ktor.application.install
 import io.ktor.features.CallLogging
@@ -15,14 +12,12 @@ import io.ktor.jackson.JacksonConverter
 import io.ktor.routing.Routing
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
+import resource.ResourceManager
 import suggest.SuggestionService
 import suggest.suggest
 import tag.TagService
 import tag.tag
 import util.JsonMapper.defaultMapper
-import web.entry
-import web.link
-import web.note
 
 fun Application.module() {
     install(DefaultHeaders)
@@ -34,7 +29,7 @@ fun Application.module() {
     DatabaseFactory()
 
     val tagService = TagService()
-    val fileService = FileService()
+    val fileService = ResourceManager()
     val entryService = EntryService(tagService)
     val linkService = LinkService(tagService, fileService)
     val noteService = NoteService(tagService)

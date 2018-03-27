@@ -1,7 +1,6 @@
-package web
+package entry
 
 import common.NewNote
-import entry.NoteService
 import io.ktor.application.call
 import io.ktor.http.HttpStatusCode
 import io.ktor.request.receive

@@ -1,12 +1,12 @@
 package suggest
 
-import common.FileType
-import entry.FileService
 import kotlinx.coroutines.experimental.Deferred
 import kotlinx.coroutines.experimental.async
 import link.WebpageExtractor
+import resource.ResourceManager
+import resource.ResourceType
 
-class SuggestionService(private val fileService: FileService) {
+class SuggestionService(private val resourceManager: ResourceManager) {
 
     fun processLinkAsync(url: String): Deferred<Suggestion> = async {
         WebpageExtractor(url).use {
@@ -14,9 +14,9 @@ class SuggestionService(private val fileService: FileService) {
             val screen = it.generateScreenshot()
             val title = it.title
             val cleanUrl = it.resolvedUrl
-            val thumbPath = fileService.saveTempFile(url, thumb, FileType.THUMBNAIL)
-            val screenPath = fileService.saveTempFile(url, screen, FileType.SCREENSHOT)
-            fileService.saveTempFile(url, it.html.toByteArray(), FileType.DOCUMENT)
+            val thumbPath = resourceManager.saveTempFile(url, thumb, ResourceType.THUMBNAIL)
+            val screenPath = resourceManager.saveTempFile(url, screen, ResourceType.SCREENSHOT)
+            resourceManager.saveTempFile(url, it.html.toByteArray(), ResourceType.DOCUMENT)
             Suggestion(cleanUrl, title, thumbPath, screenPath)
         }
     }
