@@ -1,6 +1,10 @@
 import comment.CommentService
 import comment.comment
 import db.DatabaseFactory
+import entry.EntryService
+import entry.FileService
+import entry.LinkService
+import entry.NoteService
 import io.ktor.application.Application
 import io.ktor.application.install
 import io.ktor.features.CallLogging
@@ -11,10 +15,6 @@ import io.ktor.jackson.JacksonConverter
 import io.ktor.routing.Routing
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
-import service.EntryService
-import service.FileService
-import service.LinkService
-import service.NoteService
 import suggest.SuggestionService
 import suggest.suggest
 import tag.TagService

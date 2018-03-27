@@ -1,4 +1,4 @@
-package model
+package common
 
 import db.json
 import org.jetbrains.exposed.sql.Table

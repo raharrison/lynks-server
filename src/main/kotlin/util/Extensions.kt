@@ -1,7 +1,7 @@
 package util
 
+import common.PageRequest
 import io.ktor.application.ApplicationCall
-import model.PageRequest
 import org.jetbrains.exposed.sql.Op
 import org.jetbrains.exposed.sql.Query
 import org.jetbrains.exposed.sql.SqlExpressionBuilder

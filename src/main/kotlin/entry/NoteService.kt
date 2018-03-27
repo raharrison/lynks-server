@@ -1,10 +1,10 @@
-package service
+package entry
 
+import common.Entries
+import common.EntryType
+import common.NewNote
+import common.Note
 import db.EntryRepository
-import model.Entries
-import model.EntryType
-import model.NewNote
-import model.Note
 import org.jetbrains.exposed.sql.ColumnSet
 import org.jetbrains.exposed.sql.Query
 import org.jetbrains.exposed.sql.ResultRow

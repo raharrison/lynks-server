@@ -1,6 +1,6 @@
 package comment
 
-import model.PageRequest
+import common.PageRequest
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.select

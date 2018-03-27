@@ -1,9 +1,9 @@
 package db
 
-import model.Entries
-import model.Entry
-import model.NewEntry
-import model.PageRequest
+import common.Entries
+import common.Entry
+import common.NewEntry
+import common.PageRequest
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.statements.UpdateBuilder
 import org.jetbrains.exposed.sql.transactions.transaction

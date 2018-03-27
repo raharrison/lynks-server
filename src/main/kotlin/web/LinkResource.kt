@@ -1,12 +1,12 @@
 package web
 
+import common.NewLink
+import entry.LinkService
 import io.ktor.application.call
 import io.ktor.http.HttpStatusCode
 import io.ktor.request.receive
 import io.ktor.response.respond
 import io.ktor.routing.*
-import model.NewLink
-import service.LinkService
 import util.pageRequest
 
 fun Route.link(linkService: LinkService) {

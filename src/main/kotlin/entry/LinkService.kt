@@ -1,10 +1,10 @@
-package service
+package entry
 
+import common.*
 import db.EntryRepository
 import kotlinx.coroutines.experimental.Deferred
 import kotlinx.coroutines.experimental.async
 import link.WebpageExtractor
-import model.*
 import org.jetbrains.exposed.sql.ColumnSet
 import org.jetbrains.exposed.sql.Query
 import org.jetbrains.exposed.sql.ResultRow

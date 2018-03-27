@@ -1,6 +1,6 @@
 package tag
 
-import model.Entries
+import common.Entries
 import org.jetbrains.exposed.sql.Table
 
 object Tags : Table() {

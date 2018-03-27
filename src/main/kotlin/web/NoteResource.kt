@@ -1,12 +1,12 @@
 package web
 
+import common.NewNote
+import entry.NoteService
 import io.ktor.application.call
 import io.ktor.http.HttpStatusCode
 import io.ktor.request.receive
 import io.ktor.response.respond
 import io.ktor.routing.*
-import model.NewNote
-import service.NoteService
 import util.pageRequest
 
 fun Route.note(noteService: NoteService) {

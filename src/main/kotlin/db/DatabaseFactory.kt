@@ -1,8 +1,8 @@
 package db
 
 import comment.Comments
-import model.Entries
-import model.EntryType
+import common.Entries
+import common.EntryType
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils.create
 import org.jetbrains.exposed.sql.insert

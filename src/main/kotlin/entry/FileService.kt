@@ -1,8 +1,8 @@
-package service
+package entry
 
-import model.File
-import model.FileType
-import model.Files
+import common.File
+import common.FileType
+import common.Files
 import org.apache.commons.lang3.StringUtils
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.select

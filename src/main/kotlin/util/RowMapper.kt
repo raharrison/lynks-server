@@ -2,7 +2,7 @@ package util
 
 import comment.Comment
 import comment.Comments
-import model.*
+import common.*
 import org.jetbrains.exposed.sql.ResultRow
 import tag.Tag
 import tag.Tags

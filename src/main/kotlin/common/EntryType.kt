@@ -1,4 +1,4 @@
-package model
+package common
 
 enum class EntryType {
     LINK, NOTE
