@@ -1,6 +1,5 @@
-package service
+package tag
 
-import model.*
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.select

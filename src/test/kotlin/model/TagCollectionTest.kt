@@ -3,6 +3,8 @@ package model
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
+import tag.Tag
+import tag.TagCollection
 
 class TagCollectionTest {
 

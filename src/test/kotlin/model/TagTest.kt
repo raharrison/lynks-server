@@ -2,6 +2,7 @@ package model
 
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
+import tag.Tag
 
 class TagTest {
 

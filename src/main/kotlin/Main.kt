@@ -1,3 +1,5 @@
+import comment.CommentService
+import comment.comment
 import db.DatabaseFactory
 import io.ktor.application.Application
 import io.ktor.application.install
@@ -10,8 +12,13 @@ import io.ktor.routing.Routing
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import service.*
+import tag.TagService
+import tag.tag
 import util.JsonMapper.defaultMapper
-import web.*
+import web.entry
+import web.link
+import web.note
+import web.suggest
 
 fun Application.module() {
     install(DefaultHeaders)

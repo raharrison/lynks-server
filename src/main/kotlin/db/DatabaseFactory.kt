@@ -1,10 +1,14 @@
 package db
 
-import model.*
+import comment.Comments
+import model.Entries
+import model.EntryType
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils.create
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.transactions.transaction
+import tag.EntryTags
+import tag.Tags
 
 class DatabaseFactory {
     init {

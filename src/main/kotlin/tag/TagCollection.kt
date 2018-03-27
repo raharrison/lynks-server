@@ -1,4 +1,4 @@
-package model
+package tag
 
 import com.google.common.collect.HashMultimap
 import com.google.common.collect.Multimap

@@ -1,8 +1,5 @@
-package service
+package comment
 
-import model.Comment
-import model.Comments
-import model.NewComment
 import model.PageRequest
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insert

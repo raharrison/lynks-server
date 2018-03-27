@@ -1,5 +1,6 @@
-package model
+package comment
 
+import model.Entries
 import org.jetbrains.exposed.sql.Table
 
 object Comments : Table() {

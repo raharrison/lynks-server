@@ -1,5 +1,7 @@
 package model
 
+import tag.Tag
+
 data class Link(
         val id: String,
         val title: String,

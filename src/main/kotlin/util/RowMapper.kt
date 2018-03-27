@@ -1,7 +1,11 @@
 package util
 
+import comment.Comment
+import comment.Comments
 import model.*
 import org.jetbrains.exposed.sql.ResultRow
+import tag.Tag
+import tag.Tags
 import java.nio.file.Path
 
 object RowMapper {

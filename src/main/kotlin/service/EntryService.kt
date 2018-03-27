@@ -10,6 +10,7 @@ import org.jetbrains.exposed.sql.Query
 import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.statements.UpdateBuilder
+import tag.TagService
 import util.RowMapper
 
 class EntryService(tagService: TagService) : EntryRepository<Entry, NewEntry>(tagService) {

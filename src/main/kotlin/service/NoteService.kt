@@ -10,6 +10,7 @@ import org.jetbrains.exposed.sql.Query
 import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.statements.UpdateBuilder
+import tag.TagService
 import util.MarkdownUtils
 import util.RowMapper
 

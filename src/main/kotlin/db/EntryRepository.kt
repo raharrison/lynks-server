@@ -1,10 +1,15 @@
 package db
 
-import model.*
+import model.Entries
+import model.Entry
+import model.NewEntry
+import model.PageRequest
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.statements.UpdateBuilder
 import org.jetbrains.exposed.sql.transactions.transaction
-import service.TagService
+import tag.EntryTags
+import tag.Tag
+import tag.TagService
 import util.RandomUtils
 import util.combine
 

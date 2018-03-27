@@ -1,12 +1,10 @@
-package web
+package tag
 
 import io.ktor.application.call
 import io.ktor.http.HttpStatusCode
 import io.ktor.request.receive
 import io.ktor.response.respond
 import io.ktor.routing.*
-import model.NewTag
-import service.TagService
 
 fun Route.tag(tagService: TagService) {
 
