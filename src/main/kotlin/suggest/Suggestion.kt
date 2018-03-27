@@ -1,4 +1,4 @@
-package model
+package suggest
 
 data class Suggestion(
         val url: String,

@@ -11,14 +11,18 @@ import io.ktor.jackson.JacksonConverter
 import io.ktor.routing.Routing
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
-import service.*
+import service.EntryService
+import service.FileService
+import service.LinkService
+import service.NoteService
+import suggest.SuggestionService
+import suggest.suggest
 import tag.TagService
 import tag.tag
 import util.JsonMapper.defaultMapper
 import web.entry
 import web.link
 import web.note
-import web.suggest
 
 fun Application.module() {
     install(DefaultHeaders)

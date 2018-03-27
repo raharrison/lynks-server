@@ -1,10 +1,10 @@
-package service
+package suggest
 
 import kotlinx.coroutines.experimental.Deferred
 import kotlinx.coroutines.experimental.async
 import link.WebpageExtractor
 import model.FileType
-import model.Suggestion
+import service.FileService
 
 class SuggestionService(private val fileService: FileService) {
 

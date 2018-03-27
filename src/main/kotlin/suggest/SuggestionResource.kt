@@ -1,10 +1,9 @@
-package web
+package suggest
 
 import io.ktor.application.call
 import io.ktor.response.respond
 import io.ktor.routing.Route
 import io.ktor.routing.get
-import service.SuggestionService
 
 fun Route.suggest(suggestionService: SuggestionService) {
 
