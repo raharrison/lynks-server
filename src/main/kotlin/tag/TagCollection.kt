@@ -91,6 +91,8 @@ class TagCollection {
         return tagTree[tag].also { if(tag != null) it.add(tag) }
     }
 
+    fun rootTags(): Collection<Tag> = tagLookup.values.filter { !tagParents.containsKey(it.id) }
+
     fun all(): Collection<Tag> = tagLookup.values
 
     fun delete(id: String) {

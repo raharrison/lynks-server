@@ -28,8 +28,7 @@ class TagService {
                 .map { toTag(it, ::getTagChildren) }
     }
 
-    // TODO: only return root nodes
-    fun getAllTags(): Collection<Tag> = tagCollection.all()
+    fun getAllTags(): Collection<Tag> = tagCollection.rootTags()
 
     fun getTags(ids: List<String>): List<Tag> = tagCollection.tagsIn(ids)
 
@@ -49,8 +48,6 @@ class TagService {
                     it[dateUpdated] = System.currentTimeMillis()
                 }
                 tagCollection.update(tag.parentId, queryTag(id)!!)
-                //rebuild()
-                //getTag(id)!!
             }
         }
     }
