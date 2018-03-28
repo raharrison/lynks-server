@@ -37,11 +37,5 @@ fun Route.link(linkService: LinkService) {
             if (removed) call.respond(HttpStatusCode.OK)
             else call.respond(HttpStatusCode.NotFound)
         }
-
-        get("/{id}/screenshot") {
-            val screenshot = linkService.generateScreenshotAsync(call.parameters["id"]!!).await()
-            if (screenshot == null) call.respond(HttpStatusCode.BadRequest)
-            else call.respond(screenshot)
-        }
     }
 }

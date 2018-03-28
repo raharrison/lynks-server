@@ -2,14 +2,15 @@ package suggest
 
 import kotlinx.coroutines.experimental.Deferred
 import kotlinx.coroutines.experimental.async
-import link.WebpageExtractor
+import link.DefaultLinkProcessor
 import resource.ResourceManager
 import resource.ResourceType
 
 class SuggestionService(private val resourceManager: ResourceManager) {
 
+    //TODO: Handle invalid url and navigation issues
     fun processLinkAsync(url: String): Deferred<Suggestion> = async {
-        WebpageExtractor(url).use {
+        DefaultLinkProcessor(url).use {
             val thumb = it.generateThumbnail()
             val screen = it.generateScreenshot()
             val title = it.title
