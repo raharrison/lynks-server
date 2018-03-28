@@ -5,6 +5,7 @@ import common.Entry
 import common.NewEntry
 import common.PageRequest
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.statements.InsertStatement
 import org.jetbrains.exposed.sql.statements.UpdateBuilder
 import org.jetbrains.exposed.sql.transactions.transaction
 import tag.EntryTags
@@ -35,7 +36,7 @@ abstract class EntryRepository<out T : Entry, in U : NewEntry>(private val tagSe
 
     open fun add(entry: U): T = transaction {
         val newId = RandomUtils.generateUid()
-        Entries.insert { toInsert(newId, entry) }
+        Entries.insert(toInsert(newId, entry))
         addTagsForEntry(entry.tags(), newId)
         get(newId)!!
     }
@@ -97,7 +98,7 @@ abstract class EntryRepository<out T : Entry, in U : NewEntry>(private val tagSe
 
     abstract fun getBaseQuery(base: ColumnSet = Entries): Query
 
-    abstract fun toInsert(eId: String, entry: U): Entries.(UpdateBuilder<*>) -> Unit
+    abstract fun toInsert(eId: String, entry: U): Entries.(InsertStatement<*>) -> Unit
 
     abstract fun toUpdate(entry: U): Entries.(UpdateBuilder<*>) -> Unit
 
