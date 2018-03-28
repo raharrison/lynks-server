@@ -15,7 +15,7 @@ object FileUtils {
     }
 
     fun createTempFileName(src: String): String {
-        return Hashing.goodFastHash(128).hashString(src, Charset.defaultCharset()).toString()
+        return Hashing.murmur3_128().hashString(src, Charset.defaultCharset()).toString()
     }
 
     // get temp files older than 2 days
