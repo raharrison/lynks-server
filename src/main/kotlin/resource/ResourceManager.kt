@@ -1,5 +1,6 @@
 package resource
 
+import io.ktor.util.extension
 import org.apache.commons.lang3.StringUtils
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.select
@@ -27,27 +28,28 @@ class ResourceManager {
     }
 
     fun moveTempFiles(entryId: String, src: String) {
-        val id = FileUtils.createTempFileName(src)
-        val tempPath = Paths.get(TEMP_PATH, id)
+        val tempPath = Paths.get(TEMP_PATH, FileUtils.createTempFileName(src))
         if(Files.exists(tempPath)) {
-            val target = Paths.get(BASE_PATH, id)
+            val target = Paths.get(BASE_PATH, entryId)
             Files.move(tempPath, target)
             Files.list(target).forEach {
+                val id = RandomUtils.generateUid()
+                val size = Files.size(it)
+                Files.move(it, constructPath(entryId, id, it.extension))
                 val filename = FileUtils.removeExtension(it.fileName.toString())
-                saveResource(entryId, id, ResourceType.valueOf(filename.toUpperCase()), Files.size(it))
+                saveGeneratedResource(id, entryId, ResourceType.valueOf(filename.toUpperCase()), size)
             }
         }
     }
 
-    fun saveResource(entryId: String, name: String, type: ResourceType, size: Long): Resource {
-        val id = RandomUtils.generateUid()
+    fun saveGeneratedResource(id: String, entryId: String, type: ResourceType, size: Long): Resource {
         val time = System.currentTimeMillis()
         val format = fileExtension(type)
         return transaction {
             Resources.insert {
                 it[Resources.id] = id
                 it[Resources.entryId] = entryId
-                it[Resources.fileName] = name
+                it[Resources.fileName] = id
                 it[Resources.extension] = format
                 it[Resources.type] = type
                 it[Resources.size] = size
