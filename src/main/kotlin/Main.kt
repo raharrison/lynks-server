@@ -13,6 +13,7 @@ import io.ktor.routing.Routing
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import resource.ResourceManager
+import resource.files
 import suggest.SuggestionService
 import suggest.suggest
 import tag.TagService
@@ -43,6 +44,7 @@ fun Application.module() {
         comment(commentService)
         tag(tagService)
         suggest(suggestionService)
+        files(fileService)
     }
 }
 
