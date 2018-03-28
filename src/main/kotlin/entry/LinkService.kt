@@ -5,17 +5,13 @@ import common.EntryType
 import common.Link
 import common.NewLink
 import db.EntryRepository
-import kotlinx.coroutines.experimental.Deferred
-import kotlinx.coroutines.experimental.async
-import link.WebpageExtractor
 import org.jetbrains.exposed.sql.ColumnSet
 import org.jetbrains.exposed.sql.Query
 import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.statements.InsertStatement
 import org.jetbrains.exposed.sql.statements.UpdateBuilder
-import resource.Resource
 import resource.ResourceManager
-import resource.ResourceType
 import tag.TagService
 import util.RowMapper
 import util.URLUtils
@@ -26,7 +22,7 @@ class LinkService(tagService: TagService, private val resourceManager: ResourceM
         return Entries.select { Entries.type eq EntryType.LINK }
     }
 
-    override fun toInsert(eId: String, entry: NewLink): Entries.(UpdateBuilder<*>) -> Unit = {
+    override fun toInsert(eId: String, entry: NewLink): Entries.(InsertStatement<*>) -> Unit = {
         it[Entries.id] = eId
         it[Entries.title] = entry.title
         it[Entries.plainContent] = entry.url
@@ -48,20 +44,7 @@ class LinkService(tagService: TagService, private val resourceManager: ResourceM
 
     override fun add(entry: NewLink): Link {
         val link = super.add(entry)
-
-        // resourceManager move saved thumbnails/screenshot
-
+        resourceManager.moveTempFiles(link.id, link.url)
         return link
-    }
-
-    fun generateScreenshotAsync(entryId: String): Deferred<Resource?> = async {
-        val link = get(entryId)
-        if (link == null) null
-        else {
-            WebpageExtractor(link.url).use {
-                val screenshot = it.generateScreenshot()
-                return@async resourceManager.saveGenerated(entryId, ResourceType.SCREENSHOT, screenshot)
-            }
-        }
     }
 }

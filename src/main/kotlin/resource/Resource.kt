@@ -9,7 +9,7 @@ object Resources : Table() {
     val fileName = varchar("filename", 255)
     val extension = varchar("extension", 4)
     val type = enumeration("type", ResourceType::class.java)
-    val size = integer("size")
+    val size = long("size")
     val dateCreated = long("dateCreated")
     val dateUpdated = long("dateUpdated")
 }
@@ -21,7 +21,7 @@ data class Resource(
         val extension: String,
         val path: String,
         val type: ResourceType,
-        val size: Int,
+        val size: Long,
         val dateCreated: Long,
         val dateUpdated: Long
 )

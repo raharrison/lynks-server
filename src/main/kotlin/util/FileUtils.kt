@@ -18,6 +18,10 @@ object FileUtils {
         return Hashing.murmur3_128().hashString(src, Charset.defaultCharset()).toString()
     }
 
+    fun removeExtension(name: String): String {
+        return com.google.common.io.Files.getNameWithoutExtension(name)
+    }
+
     // get temp files older than 2 days
     // delete files
     // move files
