@@ -8,7 +8,8 @@ data class Link(
         val url: String,
         val source: String,
         val dateUpdated: Long,
-        val tags: List<Tag>
+        val tags: List<Tag>,
+        val props: BaseProperties
 ) : Entry {
     @JvmField
     val type = EntryType.LINK
