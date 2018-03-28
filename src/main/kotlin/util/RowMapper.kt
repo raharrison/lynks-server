@@ -2,6 +2,7 @@ package util
 
 import comment.Comment
 import comment.Comments
+import common.BaseProperties
 import common.Entries
 import common.Link
 import common.Note
@@ -21,7 +22,8 @@ object RowMapper {
                     url = row[Entries.plainContent]!!,
                     source = row[Entries.src],
                     dateUpdated = row[Entries.dateUpdated],
-                    tags = tagResolver(row[Entries.id])
+                    tags = tagResolver(row[Entries.id]),
+                    props = row[Entries.props] ?: BaseProperties()
             )
 
     fun toNote(row: ResultRow, tagResolver: (String) -> List<Tag>): Note =
@@ -31,7 +33,8 @@ object RowMapper {
                     plainText = row[Entries.plainContent]!!,
                     markdownText = row[Entries.content]!!,
                     dateUpdated = row[Entries.dateUpdated],
-                    tags = tagResolver(row[Entries.id])
+                    tags = tagResolver(row[Entries.id]),
+                    props = row[Entries.props] ?: BaseProperties()
             )
 
     fun toComment(row: ResultRow): Comment =
@@ -52,7 +55,7 @@ object RowMapper {
         )
     }
 
-    fun toFile(row: ResultRow, pathBuilder: (String, String, String) -> Path): Resource {
+    fun toResource(row: ResultRow, pathBuilder: (String, String, String) -> Path): Resource {
         return Resource(
                 id = row[Resources.id],
                 entryId = row[Resources.entryId],
