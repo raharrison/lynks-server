@@ -61,7 +61,7 @@ object RowMapper {
                 entryId = row[Resources.entryId],
                 name = row[Resources.fileName],
                 extension = row[Resources.extension],
-                path = pathBuilder(row[Resources.entryId], row[Resources.id], row[Resources.extension]).toString(),
+                path = pathBuilder(row[Resources.entryId], row[Resources.id], row[Resources.extension]).toUrlString(),
                 type = row[Resources.type],
                 size = row[Resources.size],
                 dateCreated = row[Resources.dateCreated],
