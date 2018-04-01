@@ -34,3 +34,6 @@ build/
 /build
 /captures
 /media
+/gradle
+gradlew
+gradlew.bat
