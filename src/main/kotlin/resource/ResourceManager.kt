@@ -27,7 +27,7 @@ class ResourceManager {
         return path.toString()
     }
 
-    fun moveTempFiles(entryId: String, src: String) {
+    fun moveTempFiles(entryId: String, src: String): Boolean {
         val tempPath = Paths.get(TEMP_PATH, FileUtils.createTempFileName(src))
         if(Files.exists(tempPath)) {
             val target = Paths.get(BASE_PATH, entryId)
@@ -39,10 +39,12 @@ class ResourceManager {
                 val filename = FileUtils.removeExtension(it.fileName.toString())
                 saveGeneratedResource(id, entryId, ResourceType.valueOf(filename.toUpperCase()), size)
             }
+            return true
         }
+        return false
     }
 
-    fun saveGeneratedResource(id: String, entryId: String, type: ResourceType, size: Long): Resource {
+    private fun saveGeneratedResource(id: String, entryId: String, type: ResourceType, size: Long): Resource {
         val time = System.currentTimeMillis()
         val format = fileExtension(type)
         return transaction {
@@ -58,6 +60,13 @@ class ResourceManager {
             }
             getFile(id)!!
         }
+    }
+
+    fun saveGeneratedResource(entryId: String, type: ResourceType, file: ByteArray) {
+        val id = RandomUtils.generateUid()
+        saveGeneratedResource(id, entryId, type, file.size.toLong())
+        val path = constructPath(entryId, id, fileExtension(type))
+        FileUtils.writeToFile(path, file)
     }
 
     private fun constructPath(entryId: String, id: String, extension: String) = Paths.get(BASE_PATH, entryId, "$id.$extension")
