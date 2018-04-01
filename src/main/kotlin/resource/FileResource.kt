@@ -6,9 +6,9 @@ import io.ktor.routing.Route
 import io.ktor.routing.get
 import io.ktor.routing.route
 
-fun Route.files(resourceManager: ResourceManager) {
+fun Route.resources(resourceManager: ResourceManager) {
 
-    route("/entry/{entryId}/files") {
+    route("/entry/{entryId}/resources") {
 
         get("/") {
             val id = call.parameters["entryId"]!!

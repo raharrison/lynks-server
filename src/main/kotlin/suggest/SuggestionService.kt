@@ -1,25 +1,15 @@
 package suggest
 
-import kotlinx.coroutines.experimental.Deferred
-import kotlinx.coroutines.experimental.async
-import link.DefaultLinkProcessor
-import resource.ResourceManager
-import resource.ResourceType
+import kotlinx.coroutines.experimental.CompletableDeferred
+import link.SuggestLinkProcessingRequest
+import worker.WorkerRegistry
 
-class SuggestionService(private val resourceManager: ResourceManager) {
+class SuggestionService(private val workerRegistry: WorkerRegistry) {
 
     //TODO: Handle invalid url and navigation issues
-    fun processLinkAsync(url: String): Deferred<Suggestion> = async {
-        DefaultLinkProcessor(url).use {
-            val thumb = it.generateThumbnail()
-            val screen = it.generateScreenshot()
-            val title = it.title
-            val cleanUrl = it.resolvedUrl
-            val thumbPath = resourceManager.saveTempFile(url, thumb, ResourceType.THUMBNAIL)
-            val screenPath = resourceManager.saveTempFile(url, screen, ResourceType.SCREENSHOT)
-            resourceManager.saveTempFile(url, it.html.toByteArray(), ResourceType.DOCUMENT)
-            Suggestion(cleanUrl, title, thumbPath, screenPath)
-        }
+    suspend fun processLink(url: String): Suggestion {
+        val suggestion = CompletableDeferred<Suggestion>()
+        workerRegistry.acceptLinkWork(SuggestLinkProcessingRequest(url, suggestion))
+        return suggestion.await()
     }
-
 }

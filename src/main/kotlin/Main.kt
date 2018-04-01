@@ -13,12 +13,13 @@ import io.ktor.routing.Routing
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import resource.ResourceManager
-import resource.files
+import resource.resources
 import suggest.SuggestionService
 import suggest.suggest
 import tag.TagService
 import tag.tag
 import util.JsonMapper.defaultMapper
+import worker.WorkerRegistry
 
 fun Application.module() {
     install(DefaultHeaders)
@@ -29,13 +30,16 @@ fun Application.module() {
 
     DatabaseFactory()
 
+    val resourceManager = ResourceManager()
+    val workerRegistry = WorkerRegistry(resourceManager)
+
     val tagService = TagService()
-    val fileService = ResourceManager()
     val entryService = EntryService(tagService)
-    val linkService = LinkService(tagService, fileService)
+    val linkService = LinkService(tagService, resourceManager)
     val noteService = NoteService(tagService)
     val commentService = CommentService()
-    val suggestionService = SuggestionService(fileService)
+    val suggestionService = SuggestionService(workerRegistry)
+
 
     install(Routing) {
         link(linkService)
@@ -44,7 +48,7 @@ fun Application.module() {
         comment(commentService)
         tag(tagService)
         suggest(suggestionService)
-        files(fileService)
+        resources(resourceManager)
     }
 }
 
