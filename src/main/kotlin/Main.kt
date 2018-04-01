@@ -35,7 +35,7 @@ fun Application.module() {
 
     val tagService = TagService()
     val entryService = EntryService(tagService)
-    val linkService = LinkService(tagService, resourceManager)
+    val linkService = LinkService(tagService, resourceManager, workerRegistry)
     val noteService = NoteService(tagService)
     val commentService = CommentService()
     val suggestionService = SuggestionService(workerRegistry)

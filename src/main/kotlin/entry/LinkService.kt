@@ -15,8 +15,11 @@ import resource.ResourceManager
 import tag.TagService
 import util.RowMapper
 import util.URLUtils
+import link.PersistLinkProcessingRequest
+import worker.WorkerRegistry
 
-class LinkService(tagService: TagService, private val resourceManager: ResourceManager) : EntryRepository<Link, NewLink>(tagService) {
+class LinkService(tagService: TagService, private val resourceManager: ResourceManager,
+                  private val workerRegistry: WorkerRegistry) : EntryRepository<Link, NewLink>(tagService) {
 
     override fun getBaseQuery(base: ColumnSet): Query {
         return Entries.select { Entries.type eq EntryType.LINK }
@@ -44,7 +47,9 @@ class LinkService(tagService: TagService, private val resourceManager: ResourceM
 
     override fun add(entry: NewLink): Link {
         val link = super.add(entry)
-        resourceManager.moveTempFiles(link.id, link.url)
+        if(!resourceManager.moveTempFiles(link.id, link.url)) {
+            workerRegistry.acceptLinkWork(PersistLinkProcessingRequest(link.url, link.id))
+        }
         return link
     }
 }
