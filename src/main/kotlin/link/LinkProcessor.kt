@@ -12,10 +12,6 @@ import java.io.ByteArrayOutputStream
 import javax.imageio.ImageIO
 
 
-// as actor via queue of actions
-
-class LinkProcessorWorker
-
 interface LinkProcessor {
 
     fun matches(): Boolean
