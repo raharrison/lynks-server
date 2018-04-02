@@ -12,4 +12,7 @@ class WorkerRegistry(resourceManager: ResourceManager) {
         linkWorker.offer(request)
     }
 
+    private fun startScheduledWorkers() {
+        TempFileCleanupWorker().run()
+    }
 }

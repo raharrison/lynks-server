@@ -4,6 +4,9 @@ import com.google.common.hash.Hashing
 import java.nio.charset.Charset
 import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.attribute.BasicFileAttributes
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 
 object FileUtils {
 
@@ -22,8 +25,18 @@ object FileUtils {
         return com.google.common.io.Files.getNameWithoutExtension(name)
     }
 
-    // get temp files older than 2 days
-    // delete files
-    // move files
+    fun directoriesOlderThan(path: Path, days: Long): List<Path> {
+        val now = Instant.now().minus(days, ChronoUnit.DAYS)
+        return Files.newDirectoryStream(path, {
+            Files.readAttributes(path, BasicFileAttributes::class.java)
+                    .creationTime().toInstant().isBefore(now)
+        }).toList()
+    }
+
+    fun deleteDirectories(dirs: List<Path>) {
+        dirs.forEach {
+            it.toFile().deleteRecursively()
+        }
+    }
 
 }
