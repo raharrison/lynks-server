@@ -1,5 +1,6 @@
 package link
 
+import common.Link
 import kotlinx.coroutines.experimental.CompletableDeferred
 import kotlinx.coroutines.experimental.channels.actor
 import resource.ResourceManager
@@ -7,39 +8,47 @@ import resource.ResourceType
 import suggest.Suggestion
 import worker.Worker
 
-sealed class LinkProcessingRequest(val url: String)
-class PersistLinkProcessingRequest(url: String, val entryId: String) : LinkProcessingRequest(url)
-class SuggestLinkProcessingRequest(url: String, val response: CompletableDeferred<Suggestion>): LinkProcessingRequest(url)
+sealed class LinkProcessingRequest
+class PersistLinkProcessingRequest(val link: Link): LinkProcessingRequest()
+class SuggestLinkProcessingRequest(val url: String, val response: CompletableDeferred<Suggestion>): LinkProcessingRequest()
 
 class LinkProcessorWorker(private val resourceManager: ResourceManager): Worker {
+
+    private val processors = listOf<() -> LinkProcessor>( { YoutubeLinkProcessor()} )
 
     override fun worker() = actor<LinkProcessingRequest> {
         for(request in channel) {
             when(request) {
-                is PersistLinkProcessingRequest -> processLinkPersist(request.url, request.entryId)
+                is PersistLinkProcessingRequest -> processLinkPersist(request.link)
                 is SuggestLinkProcessingRequest -> request.response.complete(processLinkSuggest(request.url))
             }
         }
     }
 
-    private fun processLinkPersist(url: String, entryId: String) {
-        DefaultLinkProcessor(url).use {
-            resourceManager.saveGeneratedResource(entryId, ResourceType.THUMBNAIL, it.generateThumbnail())
-            resourceManager.saveGeneratedResource(entryId, ResourceType.SCREENSHOT, it.generateScreenshot())
-            resourceManager.saveGeneratedResource(url, ResourceType.DOCUMENT, it.html.toByteArray())
+    private fun findProcessor(url: String): LinkProcessor {
+        for(proc in processors) {
+            val processor = proc()
+            if(processor.matches(url))
+                return processor.apply { init(url) }
+        }
+        return DefaultLinkProcessor().apply { init(url) }
+    }
+
+    private fun processLinkPersist(link: Link) {
+        findProcessor(link.url).use {
+            it.generateThumbnail()?.let { resourceManager.saveGeneratedResource(link.id, ResourceType.THUMBNAIL, it) }
+            it.generateScreenshot()?.let { resourceManager.saveGeneratedResource(link.id, ResourceType.SCREENSHOT, it) }
+            it.html?.let { resourceManager.saveGeneratedResource(link.id, ResourceType.DOCUMENT, it.toByteArray()) }
+            it.enrich(link.props)
         }
     }
 
     private fun processLinkSuggest(url: String): Suggestion {
-        DefaultLinkProcessor(url).use {
-            val thumb = it.generateThumbnail()
-            val screen = it.generateScreenshot()
-            val title = it.title
-            val cleanUrl = it.resolvedUrl
-            val thumbPath = resourceManager.saveTempFile(url, thumb, ResourceType.THUMBNAIL)
-            val screenPath = resourceManager.saveTempFile(url, screen, ResourceType.SCREENSHOT)
-            resourceManager.saveTempFile(url, it.html.toByteArray(), ResourceType.DOCUMENT)
-            return Suggestion(cleanUrl, title, thumbPath, screenPath)
+        findProcessor(url).use {
+            val thumbPath = it.generateThumbnail()?.let { resourceManager.saveTempFile(url, it, ResourceType.THUMBNAIL) }
+            val screenPath = it.generateScreenshot()?.let { resourceManager.saveTempFile(url, it, ResourceType.SCREENSHOT) }
+            it.html?.let { resourceManager.saveTempFile(url, it.toByteArray(), ResourceType.DOCUMENT) }
+            return Suggestion(it.resolvedUrl, it.title, thumbPath, screenPath)
         }
     }
 }

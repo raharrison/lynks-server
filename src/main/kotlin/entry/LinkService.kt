@@ -5,6 +5,7 @@ import common.EntryType
 import common.Link
 import common.NewLink
 import db.EntryRepository
+import link.PersistLinkProcessingRequest
 import org.jetbrains.exposed.sql.ColumnSet
 import org.jetbrains.exposed.sql.Query
 import org.jetbrains.exposed.sql.ResultRow
@@ -15,7 +16,6 @@ import resource.ResourceManager
 import tag.TagService
 import util.RowMapper
 import util.URLUtils
-import link.PersistLinkProcessingRequest
 import worker.WorkerRegistry
 
 class LinkService(tagService: TagService, private val resourceManager: ResourceManager,
@@ -48,7 +48,7 @@ class LinkService(tagService: TagService, private val resourceManager: ResourceM
     override fun add(entry: NewLink): Link {
         val link = super.add(entry)
         if(!resourceManager.moveTempFiles(link.id, link.url)) {
-            workerRegistry.acceptLinkWork(PersistLinkProcessingRequest(link.url, link.id))
+            workerRegistry.acceptLinkWork(PersistLinkProcessingRequest(link))
         }
         return link
     }

@@ -1,5 +1,6 @@
 package link
 
+import common.BaseProperties
 import io.webfolder.cdp.AdaptiveProcessManager
 import io.webfolder.cdp.Launcher
 import io.webfolder.cdp.session.Session
@@ -12,15 +13,19 @@ import java.io.ByteArrayOutputStream
 import javax.imageio.ImageIO
 
 
-interface LinkProcessor {
+interface LinkProcessor: AutoCloseable {
 
-    fun matches(): Boolean
+    fun init(url: String)
 
-    fun generateThumbnail(): ByteArray
+    fun matches(url: String): Boolean
 
-    fun generateScreenshot(): ByteArray
+    fun generateThumbnail(): ByteArray?
 
-    val html: String
+    fun generateScreenshot(): ByteArray?
+
+    fun enrich(props: BaseProperties)
+
+    val html: String?
 
     val title: String
 
@@ -29,13 +34,17 @@ interface LinkProcessor {
 }
 
 
-open class DefaultLinkProcessor(private val url: String) : LinkProcessor, AutoCloseable {
+open class DefaultLinkProcessor : LinkProcessor {
 
-    private val session: Session by lazy {
-        connectSession()
+    protected lateinit var session: Session
+    protected lateinit var url: String
+
+    override fun init(url: String) {
+        this.url = url
+        session = connectSession(url)
     }
 
-    private fun connectSession(): Session {
+    private fun connectSession(url: String): Session {
         val factory = launcher.launch(listOf("--headless", "--disable-gpu"))
         val session = factory.create()
         session.navigate(url)
@@ -54,7 +63,7 @@ open class DefaultLinkProcessor(private val url: String) : LinkProcessor, AutoCl
 
     override fun close() = session.close()
 
-    override fun matches(): Boolean = true
+    override fun matches(url: String): Boolean = true
 
     override fun generateThumbnail(): ByteArray {
         val screen = session.command.page.captureScreenshot()
@@ -70,6 +79,9 @@ open class DefaultLinkProcessor(private val url: String) : LinkProcessor, AutoCl
 
     override fun generateScreenshot(): ByteArray = session.captureScreenshot()
 
+    override fun enrich(props: BaseProperties) {
+    }
+
     override val html: String = session.content
 
     override val title: String = session.title
@@ -78,15 +90,19 @@ open class DefaultLinkProcessor(private val url: String) : LinkProcessor, AutoCl
 
 }
 
-class YoutubeLinkProcessor(private val url: String): DefaultLinkProcessor(url) {
+class YoutubeLinkProcessor: DefaultLinkProcessor() {
 
-    override fun matches(): Boolean = URLUtils.extractSource(url) == "youtube.com"
+    override fun matches(url: String): Boolean = URLUtils.extractSource(url) == "youtube.com"
 
     override fun generateThumbnail(): ByteArray {
         TODO("not implemented")
     }
 
     override fun generateScreenshot(): ByteArray {
+        TODO("not implemented")
+    }
+
+    override fun enrich(props: BaseProperties) {
         TODO("not implemented")
     }
 }
