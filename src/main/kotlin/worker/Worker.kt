@@ -15,8 +15,16 @@ abstract class ScheduledWorker(private val time: Long, private val unit: TimeUni
 
     fun run() {
         launch {
-            doWork()
-            delay(time, unit)
+            while(true) {
+                try {
+                    doWork()
+                } catch (e: Exception) {
+                    // log error
+                }
+                finally {
+                    delay(time, unit)
+                }
+            }
         }
     }
 
