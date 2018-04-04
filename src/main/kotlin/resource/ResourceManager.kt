@@ -13,11 +13,11 @@ import java.nio.file.Paths
 
 class ResourceManager {
 
-    fun getFilesFor(entryId: String): List<Resource> = transaction {
+    fun getResourcesFor(entryId: String): List<Resource> = transaction {
         Resources.select { Resources.entryId eq entryId }.map { toResource(it, ::constructPath) }
     }
 
-    fun getFile(id: String): Resource? = transaction {
+    fun getResource(id: String): Resource? = transaction {
         Resources.select { Resources.id eq id }.map { toResource(it, ::constructPath) }.single()
     }
 
@@ -58,7 +58,7 @@ class ResourceManager {
                 it[Resources.dateCreated] = time
                 it[Resources.dateUpdated] = time
             }
-            getFile(id)!!
+            getResource(id)!!
         }
     }
 

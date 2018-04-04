@@ -12,7 +12,7 @@ fun Route.resources(resourceManager: ResourceManager) {
 
         get("/") {
             val id = call.parameters["entryId"]!!
-            call.respond(resourceManager.getFilesFor(id))
+            call.respond(resourceManager.getResourcesFor(id))
         }
 //
 //        get("/{id}") {
