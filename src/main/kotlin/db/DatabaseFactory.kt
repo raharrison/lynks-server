@@ -10,9 +10,13 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import resource.Resources
 import tag.EntryTags
 import tag.Tags
+import util.loggerFor
+
+val logger = loggerFor<DatabaseFactory>()
 
 class DatabaseFactory {
     init {
+        logger.info("Initialising database")
         Database.connect("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", driver = "org.h2.Driver")
         transaction {
             create(Entries, Comments, Tags, EntryTags, Resources)

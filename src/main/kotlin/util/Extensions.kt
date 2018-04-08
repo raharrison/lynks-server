@@ -6,6 +6,8 @@ import org.jetbrains.exposed.sql.Op
 import org.jetbrains.exposed.sql.Query
 import org.jetbrains.exposed.sql.SqlExpressionBuilder
 import org.jetbrains.exposed.sql.and
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.nio.file.Path
 
 fun Query.combine(block: SqlExpressionBuilder.() -> Op<Boolean>): Query {
@@ -22,3 +24,5 @@ fun ApplicationCall.pageRequest(): PageRequest {
 fun Path.toUrlString(): String {
     return toString().replace("\\", "/")
 }
+
+inline fun <reified T> loggerFor(): Logger = LoggerFactory.getLogger(T::class.java)
