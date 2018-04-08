@@ -7,6 +7,7 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import util.FileUtils
 import util.RandomUtils
 import util.RowMapper.toResource
+import util.toUrlString
 import java.nio.file.Files
 import java.nio.file.Paths
 
@@ -23,7 +24,7 @@ class ResourceManager {
     fun saveTempFile(src: String, data: ByteArray, type: ResourceType, extension: String): String {
         val path = constructTempPath(src, type, extension)
         FileUtils.writeToFile(path, data)
-        return path.toString()
+        return path.toUrlString()
     }
 
     fun moveTempFiles(entryId: String, src: String): Boolean {
