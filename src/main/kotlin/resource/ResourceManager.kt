@@ -1,7 +1,6 @@
 package resource
 
 import io.ktor.util.extension
-import org.apache.commons.lang3.StringUtils
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -21,8 +20,8 @@ class ResourceManager {
         Resources.select { Resources.id eq id }.map { toResource(it, ::constructPath) }.single()
     }
 
-    fun saveTempFile(src: String, data: ByteArray, type: ResourceType): String {
-        val path = constructTempPath(src, type, fileExtension(type))
+    fun saveTempFile(src: String, data: ByteArray, type: ResourceType, extension: String): String {
+        val path = constructTempPath(src, type, extension)
         FileUtils.writeToFile(path, data)
         return path.toString()
     }
@@ -35,18 +34,18 @@ class ResourceManager {
             Files.list(target).forEach {
                 val id = RandomUtils.generateUid()
                 val size = Files.size(it)
-                Files.move(it, constructPath(entryId, id, it.extension))
+                val extension = it.extension
+                Files.move(it, constructPath(entryId, id, extension))
                 val filename = FileUtils.removeExtension(it.fileName.toString())
-                saveGeneratedResource(id, entryId, ResourceType.valueOf(filename.toUpperCase()), size)
+                saveGeneratedResource(id, entryId, ResourceType.valueOf(filename.toUpperCase()), size, extension)
             }
             return true
         }
         return false
     }
 
-    private fun saveGeneratedResource(id: String, entryId: String, type: ResourceType, size: Long): Resource {
+    private fun saveGeneratedResource(id: String, entryId: String, type: ResourceType, size: Long, format: String): Resource {
         val time = System.currentTimeMillis()
-        val format = fileExtension(type)
         return transaction {
             Resources.insert {
                 it[Resources.id] = id
@@ -62,10 +61,10 @@ class ResourceManager {
         }
     }
 
-    fun saveGeneratedResource(entryId: String, type: ResourceType, file: ByteArray) {
+    fun saveGeneratedResource(entryId: String, type: ResourceType, extension: String, file: ByteArray) {
         val id = RandomUtils.generateUid()
-        saveGeneratedResource(id, entryId, type, file.size.toLong())
-        val path = constructPath(entryId, id, fileExtension(type))
+        saveGeneratedResource(id, entryId, type, file.size.toLong(), extension)
+        val path = constructPath(entryId, id, extension)
         FileUtils.writeToFile(path, file)
     }
 
@@ -74,18 +73,8 @@ class ResourceManager {
     private fun constructTempPath(name: String, type: ResourceType, extension: String) =
             Paths.get(TEMP_PATH, FileUtils.createTempFileName(name), "${type.toString().toLowerCase()}.$extension")
 
-    private fun fileExtension(type: ResourceType) = when (type) {
-        ResourceType.SCREENSHOT -> SCREENSHOT_FORMAT
-        ResourceType.THUMBNAIL -> THUMBNAIL_FORMAT
-        ResourceType.DOCUMENT -> DOCUMENT_FORMAT
-        else -> StringUtils.EMPTY
-    }
-
     companion object {
         const val BASE_PATH = "media"
         const val TEMP_PATH = "media/temp"
-        const val SCREENSHOT_FORMAT = "png"
-        const val THUMBNAIL_FORMAT = "jpg"
-        const val DOCUMENT_FORMAT = "html"
     }
 }

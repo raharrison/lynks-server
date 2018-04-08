@@ -4,6 +4,8 @@ import common.BaseProperties
 import io.webfolder.cdp.AdaptiveProcessManager
 import io.webfolder.cdp.Launcher
 import io.webfolder.cdp.session.Session
+import resource.JPG
+import resource.PNG
 import util.URLUtils
 import java.awt.Color
 import java.awt.Image
@@ -12,6 +14,7 @@ import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import javax.imageio.ImageIO
 
+data class ImageResource(val image: ByteArray, val extension: String)
 
 interface LinkProcessor: AutoCloseable {
 
@@ -19,9 +22,9 @@ interface LinkProcessor: AutoCloseable {
 
     fun matches(url: String): Boolean
 
-    fun generateThumbnail(): ByteArray?
+    fun generateThumbnail(): ImageResource?
 
-    fun generateScreenshot(): ByteArray?
+    fun generateScreenshot(): ImageResource?
 
     fun enrich(props: BaseProperties)
 
@@ -65,7 +68,7 @@ open class DefaultLinkProcessor : LinkProcessor {
 
     override fun matches(url: String): Boolean = true
 
-    override fun generateThumbnail(): ByteArray {
+    override fun generateThumbnail(): ImageResource {
         val screen = session.command.page.captureScreenshot()
         val img = ImageIO.read(ByteArrayInputStream(screen))
         val scaledImage = img.getScaledInstance(360, 270, Image.SCALE_SMOOTH)
@@ -74,10 +77,10 @@ open class DefaultLinkProcessor : LinkProcessor {
         imageBuff.graphics.dispose()
         val buffer = ByteArrayOutputStream()
         ImageIO.write(imageBuff, "jpg", buffer)
-        return buffer.toByteArray()
+        return ImageResource(buffer.toByteArray(), JPG)
     }
 
-    override fun generateScreenshot(): ByteArray = session.captureScreenshot()
+    override fun generateScreenshot(): ImageResource = ImageResource(session.captureScreenshot(), PNG)
 
     override fun enrich(props: BaseProperties) {
     }
@@ -90,15 +93,32 @@ open class DefaultLinkProcessor : LinkProcessor {
 
 }
 
-class YoutubeLinkProcessor: DefaultLinkProcessor() {
+class YoutubeLinkProcessor: LinkProcessor {
+
+    private lateinit var url: String
+    private lateinit var videoId: String
+
+    override fun init(url: String) {
+        this.url = url
+        this.videoId = URLUtils.extractQueryParams(url)["v"] ?: throw IllegalArgumentException("Invalid youtube url")
+    }
+
+    override val html: String? = null
+    override val title: String = "title"
+    override val resolvedUrl: String = url
+
+    override fun close() {
+    }
 
     override fun matches(url: String): Boolean = URLUtils.extractSource(url) == "youtube.com"
 
-    override fun generateThumbnail(): ByteArray {
+    override fun generateThumbnail(): ImageResource {
+        val dl = "http://img.youtube.com/vi/$videoId/0.jpg"
         TODO("not implemented")
     }
 
-    override fun generateScreenshot(): ByteArray {
+    override fun generateScreenshot(): ImageResource {
+        val dl = "http://img.youtube.com/vi/$videoId/maxresdefault.jpg"
         TODO("not implemented")
     }
 

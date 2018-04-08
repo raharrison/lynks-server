@@ -3,6 +3,7 @@ package link
 import common.Link
 import kotlinx.coroutines.experimental.CompletableDeferred
 import kotlinx.coroutines.experimental.channels.actor
+import resource.HTML
 import resource.ResourceManager
 import resource.ResourceType
 import suggest.Suggestion
@@ -36,18 +37,18 @@ class LinkProcessorWorker(private val resourceManager: ResourceManager): Worker 
 
     private fun processLinkPersist(link: Link) {
         findProcessor(link.url).use {
-            it.generateThumbnail()?.let { resourceManager.saveGeneratedResource(link.id, ResourceType.THUMBNAIL, it) }
-            it.generateScreenshot()?.let { resourceManager.saveGeneratedResource(link.id, ResourceType.SCREENSHOT, it) }
-            it.html?.let { resourceManager.saveGeneratedResource(link.id, ResourceType.DOCUMENT, it.toByteArray()) }
+            it.generateThumbnail()?.let { resourceManager.saveGeneratedResource(link.id, ResourceType.THUMBNAIL, it.extension, it.image) }
+            it.generateScreenshot()?.let { resourceManager.saveGeneratedResource(link.id, ResourceType.SCREENSHOT, it.extension, it.image) }
+            it.html?.let { resourceManager.saveGeneratedResource(link.id, ResourceType.DOCUMENT, HTML, it.toByteArray()) }
             it.enrich(link.props)
         }
     }
 
     private fun processLinkSuggest(url: String): Suggestion {
         findProcessor(url).use {
-            val thumbPath = it.generateThumbnail()?.let { resourceManager.saveTempFile(url, it, ResourceType.THUMBNAIL) }
-            val screenPath = it.generateScreenshot()?.let { resourceManager.saveTempFile(url, it, ResourceType.SCREENSHOT) }
-            it.html?.let { resourceManager.saveTempFile(url, it.toByteArray(), ResourceType.DOCUMENT) }
+            val thumbPath = it.generateThumbnail()?.let { resourceManager.saveTempFile(url, it.image, ResourceType.THUMBNAIL, it.extension) }
+            val screenPath = it.generateScreenshot()?.let { resourceManager.saveTempFile(url, it.image, ResourceType.SCREENSHOT, it.extension) }
+            it.html?.let { resourceManager.saveTempFile(url, it.toByteArray(), ResourceType.DOCUMENT, HTML) }
             return Suggestion(it.resolvedUrl, it.title, thumbPath, screenPath)
         }
     }
