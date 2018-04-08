@@ -6,7 +6,6 @@ import io.webfolder.cdp.Launcher
 import io.webfolder.cdp.session.Session
 import resource.JPG
 import resource.PNG
-import util.URLUtils
 import java.awt.Color
 import java.awt.Image
 import java.awt.image.BufferedImage
@@ -91,38 +90,4 @@ open class DefaultLinkProcessor : LinkProcessor {
 
     override val resolvedUrl: String = session.location
 
-}
-
-class YoutubeLinkProcessor: LinkProcessor {
-
-    private lateinit var url: String
-    private lateinit var videoId: String
-
-    override fun init(url: String) {
-        this.url = url
-        this.videoId = URLUtils.extractQueryParams(url)["v"] ?: throw IllegalArgumentException("Invalid youtube url")
-    }
-
-    override val html: String? = null
-    override val title: String = "title"
-    override val resolvedUrl: String = url
-
-    override fun close() {
-    }
-
-    override fun matches(url: String): Boolean = URLUtils.extractSource(url) == "youtube.com"
-
-    override fun generateThumbnail(): ImageResource {
-        val dl = "http://img.youtube.com/vi/$videoId/0.jpg"
-        TODO("not implemented")
-    }
-
-    override fun generateScreenshot(): ImageResource {
-        val dl = "http://img.youtube.com/vi/$videoId/maxresdefault.jpg"
-        TODO("not implemented")
-    }
-
-    override fun enrich(props: BaseProperties) {
-        TODO("not implemented")
-    }
 }
