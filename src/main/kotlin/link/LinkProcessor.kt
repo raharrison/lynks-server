@@ -84,10 +84,10 @@ open class DefaultLinkProcessor : LinkProcessor {
     override fun enrich(props: BaseProperties) {
     }
 
-    override val html: String = session.content
+    override val html: String get() = session.content
 
-    override val title: String = session.title
+    override val title: String get() = session.title
 
-    override val resolvedUrl: String = session.location
+    override val resolvedUrl: String get() = session.location
 
 }

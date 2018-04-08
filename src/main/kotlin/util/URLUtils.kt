@@ -29,4 +29,10 @@ object URLUtils {
         }
         return map
     }
+
+    fun isValidUrl(url: String): Boolean = try {
+        extractSource(url).isNotEmpty()
+    } catch (e: Exception) {
+        false
+    }
 }
