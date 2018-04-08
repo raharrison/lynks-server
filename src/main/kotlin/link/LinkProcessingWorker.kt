@@ -21,7 +21,7 @@ class LinkProcessorWorker(private val resourceManager: ResourceManager): Worker 
         for(request in channel) {
             when(request) {
                 is PersistLinkProcessingRequest -> processLinkPersist(request.link)
-                is SuggestLinkProcessingRequest -> request.response.complete(processLinkSuggest(request.url))
+                is SuggestLinkProcessingRequest -> processLinkSuggest(request.url, request.response)
             }
         }
     }
@@ -44,12 +44,17 @@ class LinkProcessorWorker(private val resourceManager: ResourceManager): Worker 
         }
     }
 
-    private fun processLinkSuggest(url: String): Suggestion {
-        findProcessor(url).use {
-            val thumbPath = it.generateThumbnail()?.let { resourceManager.saveTempFile(url, it.image, ResourceType.THUMBNAIL, it.extension) }
-            val screenPath = it.generateScreenshot()?.let { resourceManager.saveTempFile(url, it.image, ResourceType.SCREENSHOT, it.extension) }
-            it.html?.let { resourceManager.saveTempFile(url, it.toByteArray(), ResourceType.DOCUMENT, HTML) }
-            return Suggestion(it.resolvedUrl, it.title, thumbPath, screenPath)
+    private fun processLinkSuggest(url: String, deferred: CompletableDeferred<Suggestion>) {
+        try {
+            findProcessor(url).use {
+                val thumbPath = it.generateThumbnail()?.let { resourceManager.saveTempFile(url, it.image, ResourceType.THUMBNAIL, it.extension) }
+                val screenPath = it.generateScreenshot()?.let { resourceManager.saveTempFile(url, it.image, ResourceType.SCREENSHOT, it.extension) }
+                it.html?.let { resourceManager.saveTempFile(url, it.toByteArray(), ResourceType.DOCUMENT, HTML) }
+                deferred.complete(Suggestion(it.resolvedUrl, it.title, thumbPath, screenPath))
+
+            }
+        }catch (e: Exception) {
+            deferred.completeExceptionally(e)
         }
     }
 }
