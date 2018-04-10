@@ -17,7 +17,7 @@ class YoutubeLinkProcessor: LinkProcessor {
     }
 
     override val html: String? = null
-    override val title: String = "title"
+    override var title: String = "title"
     override val resolvedUrl: String get() = url
 
     override fun close() {
@@ -33,6 +33,13 @@ class YoutubeLinkProcessor: LinkProcessor {
         }
     }
 
+    private fun embedUrl(): String = "https://www.youtube.com/embed/$videoId"
+
+    private fun downloadVideoInfo(): String {
+        val dl = "http://www.youtube.com/get_video_info?video_id=$videoId&asv=3&el=detailpage&hl=en_US"
+        return dl.httpGet().responseString().third.get()
+    }
+
     override fun generateThumbnail(): ImageResource? {
         val dl = "http://img.youtube.com/vi/$videoId/0.jpg"
         return imageGet(dl)?.let { ImageResource(it, JPG) }
@@ -44,5 +51,9 @@ class YoutubeLinkProcessor: LinkProcessor {
     }
 
     override fun enrich(props: BaseProperties) {
+        props.addAttribute("embedUrl", embedUrl())
+        val info = downloadVideoInfo()
+        val params = URLUtils.extractQueryParams(info)
+        title = params[title] ?: title
     }
 }

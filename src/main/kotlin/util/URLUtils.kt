@@ -17,7 +17,7 @@ object URLUtils {
     }
 
     fun extractQueryParams(uri: String): Map<String, String?> {
-        val query = URI(uri).query ?: return emptyMap()
+        val query = URI(uri).query ?: uri
         val params = query.split("&")
         val map = linkedMapOf<String, String?>()
         for (param in params) {
