@@ -50,6 +50,8 @@ class YoutubeLinkProcessor: LinkProcessor {
         return imageGet(dl)?.let { ImageResource(it, JPG) }
     }
 
+    override fun printPage(): ImageResource? = null
+
     override fun enrich(props: BaseProperties) {
         props.addAttribute("embedUrl", embedUrl())
         val info = downloadVideoInfo()

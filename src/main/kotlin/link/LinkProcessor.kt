@@ -5,6 +5,7 @@ import io.webfolder.cdp.AdaptiveProcessManager
 import io.webfolder.cdp.Launcher
 import io.webfolder.cdp.session.Session
 import resource.JPG
+import resource.PDF
 import resource.PNG
 import java.awt.Color
 import java.awt.Image
@@ -15,7 +16,7 @@ import javax.imageio.ImageIO
 
 data class ImageResource(val image: ByteArray, val extension: String)
 
-interface LinkProcessor: AutoCloseable {
+interface LinkProcessor : AutoCloseable {
 
     fun init(url: String)
 
@@ -24,6 +25,8 @@ interface LinkProcessor: AutoCloseable {
     fun generateThumbnail(): ImageResource?
 
     fun generateScreenshot(): ImageResource?
+
+    fun printPage(): ImageResource?
 
     fun enrich(props: BaseProperties)
 
@@ -58,6 +61,7 @@ open class DefaultLinkProcessor : LinkProcessor {
 
     companion object {
         val launcher: Launcher = Launcher()
+
         init {
             launcher.processManager = AdaptiveProcessManager()
         }
@@ -80,6 +84,13 @@ open class DefaultLinkProcessor : LinkProcessor {
     }
 
     override fun generateScreenshot(): ImageResource = ImageResource(session.captureScreenshot(), PNG)
+
+    override fun printPage(): ImageResource? {
+        return ImageResource(session.command.page.printToPDF(true, false, true,
+                0.9, 11.7, 16.5,
+                0.1, 0.1, 0.1, 0.1,
+                null, false, null, null), PDF)
+    }
 
     override fun enrich(props: BaseProperties) {
     }
