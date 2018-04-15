@@ -4,6 +4,7 @@ import db.DatabaseFactory
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.junit.Before
+import tag.Tags
 
 abstract class DatabaseTest {
 
@@ -28,5 +29,15 @@ abstract class DatabaseTest {
             it[Entries.type] = type
             it[dateUpdated] = System.currentTimeMillis()
         }
+    }
+
+    protected fun createDummyTag(id: String, name: String, parentId: String?=null) = transaction{
+        Tags.insert({
+            it[Tags.id] = id
+            it[Tags.name] = name
+            it[Tags.parentId] = parentId
+            it[Tags.dateUpdated] = System.currentTimeMillis()
+        })
+
     }
 }
