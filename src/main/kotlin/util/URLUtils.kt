@@ -21,6 +21,7 @@ object URLUtils {
         val params = query.split("&")
         val map = linkedMapOf<String, String?>()
         for (param in params) {
+            if(param == uri) continue
             val split = param.split("=")
             when(split.size) {
                 1 -> map[param] = null
@@ -31,7 +32,7 @@ object URLUtils {
     }
 
     fun isValidUrl(url: String): Boolean = try {
-        extractSource(url).isNotEmpty()
+        url.contains('.') && extractSource(url).isNotEmpty()
     } catch (e: Exception) {
         false
     }

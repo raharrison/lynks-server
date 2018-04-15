@@ -50,4 +50,20 @@ class URLUtilsTest {
     fun testQueryParamInvalidUri() {
         extractQueryParams("invalid query")
     }
+
+    @Test
+    fun testValidUrl() {
+        assertThat(URLUtils.isValidUrl("google.com")).isTrue()
+        assertThat(URLUtils.isValidUrl("google.com/something")).isTrue()
+        assertThat(URLUtils.isValidUrl("http://google.com")).isTrue()
+        assertThat(URLUtils.isValidUrl("https://google.com")).isTrue()
+        assertThat(URLUtils.isValidUrl("www.google.com")).isTrue()
+        assertThat(URLUtils.isValidUrl("google.com?v=abc")).isTrue()
+    }
+
+    @Test
+    fun testInvalidUrl() {
+        assertThat(URLUtils.isValidUrl("something")).isFalse()
+        assertThat(URLUtils.isValidUrl("http:something")).isFalse()
+    }
 }
