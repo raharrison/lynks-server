@@ -25,7 +25,7 @@ abstract class DatabaseTest {
             it[Entries.title] = title
             it[plainContent] = content
             it[src] = "src"
-            it[Entries.type] = EntryType.LINK
+            it[Entries.type] = type
             it[dateUpdated] = System.currentTimeMillis()
         }
     }
