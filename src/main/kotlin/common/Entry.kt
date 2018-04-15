@@ -15,7 +15,9 @@ object Entries : Table() {
     val props = json("props", BaseProperties::class.java).nullable()
 }
 
-interface Entry
+interface Entry {
+    val props: BaseProperties
+}
 
 interface NewEntry {
     fun id(): String?

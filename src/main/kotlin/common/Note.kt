@@ -9,7 +9,7 @@ data class Note(
         val markdownText: String,
         val dateUpdated: Long,
         val tags: List<Tag>,
-        val props: BaseProperties
+        override val props: BaseProperties
 ) : Entry {
     @JvmField
     val type = EntryType.NOTE
