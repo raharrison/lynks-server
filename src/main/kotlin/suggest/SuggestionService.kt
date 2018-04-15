@@ -1,7 +1,7 @@
 package suggest
 
 import kotlinx.coroutines.experimental.CompletableDeferred
-import link.SuggestLinkProcessingRequest
+import worker.SuggestLinkProcessingRequest
 import worker.WorkerRegistry
 
 class SuggestionService(private val workerRegistry: WorkerRegistry) {

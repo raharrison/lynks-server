@@ -5,7 +5,6 @@ import common.EntryType
 import common.Link
 import common.NewLink
 import db.EntryRepository
-import link.PersistLinkProcessingRequest
 import org.jetbrains.exposed.sql.ColumnSet
 import org.jetbrains.exposed.sql.Query
 import org.jetbrains.exposed.sql.ResultRow
@@ -16,6 +15,7 @@ import resource.ResourceManager
 import tag.TagService
 import util.RowMapper
 import util.URLUtils
+import worker.PersistLinkProcessingRequest
 import worker.WorkerRegistry
 
 class LinkService(tagService: TagService, private val resourceManager: ResourceManager,

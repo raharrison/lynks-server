@@ -1,7 +1,5 @@
 package worker
 
-import link.LinkProcessingRequest
-import link.LinkProcessorWorker
 import resource.ResourceManager
 
 class WorkerRegistry(resourceManager: ResourceManager) {
