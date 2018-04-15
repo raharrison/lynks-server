@@ -5,6 +5,7 @@ import common.Entries
 import common.EntryType
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils.create
+import org.jetbrains.exposed.sql.deleteAll
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.transactions.transaction
 import resource.Resources
@@ -15,7 +16,10 @@ import util.loggerFor
 val logger = loggerFor<DatabaseFactory>()
 
 class DatabaseFactory {
-    init {
+
+    var connected = false
+
+    fun connect() {
         logger.info("Initialising database")
         Database.connect("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", driver = "org.h2.Driver")
         transaction {
@@ -29,5 +33,14 @@ class DatabaseFactory {
                 it[dateUpdated] = System.currentTimeMillis()
             }
         }
+        connected = true
+    }
+
+    fun resetAll(): Unit = transaction {
+        Resources.deleteAll()
+        EntryTags.deleteAll()
+        Tags.deleteAll()
+        Comments.deleteAll()
+        Entries.deleteAll()
     }
 }

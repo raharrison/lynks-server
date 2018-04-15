@@ -28,7 +28,7 @@ fun Application.module() {
         register(ContentType.Application.Json, JacksonConverter(defaultMapper))
     }
 
-    DatabaseFactory()
+    DatabaseFactory().connect()
 
     val resourceManager = ResourceManager()
     val workerRegistry = WorkerRegistry(resourceManager)
