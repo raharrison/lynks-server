@@ -96,12 +96,12 @@ abstract class EntryRepository<out T : Entry, in U : NewEntry>(private val tagSe
         return tagService.getTags(tags)
     }
 
-    abstract fun getBaseQuery(base: ColumnSet = Entries): Query
+    protected abstract fun getBaseQuery(base: ColumnSet = Entries): Query
 
-    abstract fun toInsert(eId: String, entry: U): Entries.(InsertStatement<*>) -> Unit
+    protected abstract fun toInsert(eId: String, entry: U): Entries.(InsertStatement<*>) -> Unit
 
-    abstract fun toUpdate(entry: U): Entries.(UpdateBuilder<*>) -> Unit
+    protected abstract fun toUpdate(entry: U): Entries.(UpdateBuilder<*>) -> Unit
 
-    abstract fun toModel(row: ResultRow): T
+    protected abstract fun toModel(row: ResultRow): T
 
 }
