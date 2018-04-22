@@ -117,7 +117,7 @@ class CommentServiceTest : DatabaseTest() {
         assertThat(commentService.deleteComment(added2.id)).isTrue()
 
         assertThat(commentService.getCommentsFor("e1", PageRequest())).isEmpty()
-        assertThat(commentService.getComment(added1.id)).isNull()
+        assertThat(commentService.getComment(added2.id)).isNull()
     }
 
     @Test
