@@ -1,9 +1,6 @@
 package service
 
-import common.DatabaseTest
-import common.EntryType
-import common.NewLink
-import common.PageRequest
+import common.*
 import entry.LinkService
 import io.mockk.*
 import org.assertj.core.api.Assertions.assertThat
@@ -178,6 +175,36 @@ class LinkServiceTest : DatabaseTest() {
         assertThat(updated.title).isEqualTo("updated")
         assertThat(updated.url).isEqualTo("amazon.com")
         assertThat(linkService.get(added1.id)?.title).isEqualTo("n1")
+    }
+
+    @Test
+    fun testUpdatePropsAttributes() {
+        val added = linkService.add(newLink("n1", "google.com"))
+        added.props.addAttribute("key1", "attribute1")
+        added.props.addAttribute("key2", "attribute2")
+
+        linkService.update(added)
+
+        val updated = linkService.get(added.id)
+        assertThat(updated?.props?.containsAttribute("key1")).isTrue()
+        assertThat(updated?.props?.containsAttribute("key2")).isTrue()
+        assertThat(updated?.props?.containsAttribute("key3")).isFalse()
+        assertThat(updated?.props?.getAttribute("key1")).isEqualTo("attribute1")
+        assertThat(updated?.props?.getAttribute("key2")).isEqualTo("attribute2")
+        assertThat(updated?.props?.getAttribute("key3")).isNull()
+    }
+
+    @Test
+    fun testUpdatePropsTasks() {
+        val added = linkService.add(newLink("n1", "google.com"))
+        val task = TaskDefinition("t1", "className", mapOf("a1" to "v1"))
+        added.props.addTask(task)
+
+        linkService.update(added)
+
+        val updated = linkService.get(added.id)
+        assertThat(updated?.props?.getTask("t1")).isEqualTo(task)
+        assertThat(updated?.props?.getAttribute("t3")).isNull()
     }
 
     private fun newLink(title: String, url: String, tags: List<String> = emptyList()) = NewLink(null, title, url, tags)

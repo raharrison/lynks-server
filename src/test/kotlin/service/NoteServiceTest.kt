@@ -1,9 +1,6 @@
 package service
 
-import common.DatabaseTest
-import common.EntryType
-import common.NewNote
-import common.PageRequest
+import common.*
 import entry.NoteService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
@@ -154,6 +151,36 @@ class NoteServiceTest : DatabaseTest() {
         assertThat(added1.id).isNotEqualTo(updated.id)
         assertThat(updated.title).isEqualTo("updated")
         assertThat(noteService.get(added1.id)?.title).isEqualTo("n1")
+    }
+
+    @Test
+    fun testUpdatePropsAttributes() {
+        val added = noteService.add(newNote("n1", "comment content 1"))
+        added.props.addAttribute("key1", "attribute1")
+        added.props.addAttribute("key2", "attribute2")
+
+        noteService.update(added)
+
+        val updated = noteService.get(added.id)
+        assertThat(updated?.props?.containsAttribute("key1")).isTrue()
+        assertThat(updated?.props?.containsAttribute("key2")).isTrue()
+        assertThat(updated?.props?.containsAttribute("key3")).isFalse()
+        assertThat(updated?.props?.getAttribute("key1")).isEqualTo("attribute1")
+        assertThat(updated?.props?.getAttribute("key2")).isEqualTo("attribute2")
+        assertThat(updated?.props?.getAttribute("key3")).isNull()
+    }
+
+    @Test
+    fun testUpdatePropsTasks() {
+        val added = noteService.add(newNote("n1", "comment content 1"))
+        val task = TaskDefinition("t1", "className", mapOf("a1" to "v1"))
+        added.props.addTask(task)
+
+        noteService.update(added)
+
+        val updated = noteService.get(added.id)
+        assertThat(updated?.props?.getTask("t1")).isEqualTo(task)
+        assertThat(updated?.props?.getAttribute("t3")).isNull()
     }
 
     private fun newNote(title: String, content: String, tags: List<String> = emptyList()) = NewNote(null, title, content, tags)
