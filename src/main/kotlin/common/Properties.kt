@@ -2,8 +2,8 @@ package common
 
 open class BaseProperties {
 
-    private val attributes = mutableMapOf<String, String>()
-    private val tasks = mutableMapOf<String, TaskDefinition>()
+    val attributes = mutableMapOf<String, String>()
+    val tasks = mutableMapOf<String, TaskDefinition>()
 
     fun addAttribute(key: String, value: String) {
         attributes[key] = value
