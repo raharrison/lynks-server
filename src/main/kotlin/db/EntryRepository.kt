@@ -14,7 +14,7 @@ import tag.TagService
 import util.RandomUtils
 import util.combine
 
-abstract class EntryRepository<out T : Entry, in U : NewEntry>(private val tagService: TagService) {
+abstract class EntryRepository<T : Entry, in U : NewEntry>(private val tagService: TagService) {
 
     fun get(id: String): T? = transaction {
         getBaseQuery().combine { Entries.id eq id }
@@ -52,6 +52,11 @@ abstract class EntryRepository<out T : Entry, in U : NewEntry>(private val tagSe
                 get(id)!!
             }
         }
+    }
+
+    fun update(entry: T): T = transaction {
+        Entries.update({ Entries.id eq entry.id }, body = toUpdate(entry))
+        entry
     }
 
     fun delete(id: String): Boolean = transaction {
@@ -101,6 +106,8 @@ abstract class EntryRepository<out T : Entry, in U : NewEntry>(private val tagSe
     protected abstract fun toInsert(eId: String, entry: U): Entries.(InsertStatement<*>) -> Unit
 
     protected abstract fun toUpdate(entry: U): Entries.(UpdateBuilder<*>) -> Unit
+
+    protected abstract fun toUpdate(entry: T): Entries.(UpdateBuilder<*>) -> Unit
 
     protected abstract fun toModel(row: ResultRow): T
 

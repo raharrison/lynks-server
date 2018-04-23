@@ -52,4 +52,12 @@ class LinkService(tagService: TagService, private val resourceManager: ResourceM
         }
         return link
     }
+
+    override fun toUpdate(entry: Link): Entries.(UpdateBuilder<*>) -> Unit = {
+        it[Entries.title] = entry.title
+        it[Entries.plainContent] = entry.url
+        it[Entries.src] = URLUtils.extractSource(entry.url)
+        it[Entries.dateUpdated] = System.currentTimeMillis()
+        it[Entries.props] = entry.props
+    }
 }

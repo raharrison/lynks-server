@@ -40,4 +40,12 @@ class NoteService(tagService: TagService) : EntryRepository<Note, NewNote>(tagSe
         it[content] = MarkdownUtils.convertToMarkdown(entry.plainText)
         it[dateUpdated] = System.currentTimeMillis()
     }
+
+    override fun toUpdate(entry: Note): Entries.(UpdateBuilder<*>) -> Unit = {
+        it[title] = entry.title
+        it[plainContent] = entry.plainText
+        it[content] = MarkdownUtils.convertToMarkdown(entry.plainText)
+        it[dateUpdated] = System.currentTimeMillis()
+        it[props] = entry.props
+    }
 }

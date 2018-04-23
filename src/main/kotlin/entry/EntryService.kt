@@ -33,4 +33,8 @@ class EntryService(tagService: TagService) : EntryRepository<Entry, NewEntry>(ta
     override fun toUpdate(entry: NewEntry): Entries.(UpdateBuilder<*>) -> Unit {
         throw NotImplementedError()
     }
+
+    override fun toUpdate(entry: Entry): Entries.(UpdateBuilder<*>) -> Unit {
+        throw NotImplementedError()
+    }
 }
