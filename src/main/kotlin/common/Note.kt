@@ -3,7 +3,7 @@ package common
 import tag.Tag
 
 data class Note(
-        val id: String,
+        override val id: String,
         val title: String,
         val plainText: String,
         val markdownText: String,

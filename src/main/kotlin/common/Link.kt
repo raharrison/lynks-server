@@ -3,7 +3,7 @@ package common
 import tag.Tag
 
 data class Link(
-        val id: String,
+        override val id: String,
         val title: String,
         val url: String,
         val source: String,

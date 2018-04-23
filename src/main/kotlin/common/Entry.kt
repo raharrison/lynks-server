@@ -16,6 +16,7 @@ object Entries : Table() {
 }
 
 interface Entry {
+    val id: String
     val props: BaseProperties
 }
 
