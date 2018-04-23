@@ -17,11 +17,8 @@ data class Note(
 
 
 data class NewNote(
-        var id: String? = null,
+        override val id: String? = null,
         val title: String,
         val plainText: String,
-        val tags: List<String>
-) : NewEntry {
-    override fun id(): String? = id
-    override fun tags(): List<String> = tags
-}
+        override val tags: List<String>
+) : NewEntry

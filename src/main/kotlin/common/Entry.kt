@@ -21,7 +21,7 @@ interface Entry {
 }
 
 interface NewEntry {
-    fun id(): String?
-    fun tags(): List<String>
+    val id: String?
+    val tags: List<String>
 }
 

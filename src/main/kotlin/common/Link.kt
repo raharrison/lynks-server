@@ -17,11 +17,8 @@ data class Link(
 
 
 data class NewLink(
-        var id: String? = null,
+        override val id: String? = null,
         val title: String,
         val url: String,
-        val tags: List<String>
-) : NewEntry {
-    override fun id(): String? = id
-    override fun tags(): List<String> = tags
-}
+        override val tags: List<String>
+) : NewEntry
