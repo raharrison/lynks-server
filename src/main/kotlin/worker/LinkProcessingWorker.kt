@@ -1,6 +1,7 @@
 package worker
 
 import common.Link
+import entry.LinkService
 import kotlinx.coroutines.experimental.CompletableDeferred
 import kotlinx.coroutines.experimental.Deferred
 import kotlinx.coroutines.experimental.async
@@ -17,7 +18,7 @@ sealed class LinkProcessingRequest
 class PersistLinkProcessingRequest(val link: Link): LinkProcessingRequest()
 class SuggestLinkProcessingRequest(val url: String, val response: CompletableDeferred<Suggestion>): LinkProcessingRequest()
 
-class LinkProcessorWorker(private val resourceManager: ResourceManager): Worker {
+class LinkProcessorWorker(private val resourceManager: ResourceManager, val linkService: LinkService): Worker {
 
     private val processors = listOf<() -> LinkProcessor>( { YoutubeLinkProcessor() } )
 
@@ -47,6 +48,7 @@ class LinkProcessorWorker(private val resourceManager: ResourceManager): Worker 
             thumb.await()?.let { resourceManager.saveGeneratedResource(link.id, ResourceType.THUMBNAIL, it.extension, it.image) }
             screen.await()?.let { resourceManager.saveGeneratedResource(link.id, ResourceType.SCREENSHOT, it.extension, it.image) }
             it.html?.let { resourceManager.saveGeneratedResource(link.id, ResourceType.DOCUMENT, HTML, it.toByteArray()) }
+            linkService.update(link)
         }
     }
 
