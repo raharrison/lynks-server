@@ -4,7 +4,10 @@ import entry.LinkService
 import worker.PersistLinkProcessingRequest
 import worker.WorkerRegistry
 
-class LinkProcessingTask(var workerRegistry: WorkerRegistry, var linkService: LinkService) : Task {
+class LinkProcessingTask : Task {
+
+    lateinit var workerRegistry: WorkerRegistry
+    lateinit var linkService: LinkService
 
     override suspend fun process(context: TaskContext) {
         linkService.get(context.entryId)?.let {
