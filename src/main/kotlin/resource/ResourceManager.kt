@@ -17,17 +17,17 @@ import java.nio.file.Paths
 class ResourceManager {
 
     fun getResourcesFor(entryId: String): List<Resource> = transaction {
-        Resources.select { Resources.entryId eq entryId }.map { toResource(it, ::constructPath) }
+        Resources.select { Resources.entryId eq entryId }.map { toResource(it) }
     }
 
     fun getResource(id: String): Resource? = transaction {
-        Resources.select { Resources.id eq id }.map { toResource(it, ::constructPath) }.singleOrNull()
+        Resources.select { Resources.id eq id }.map { toResource(it) }.singleOrNull()
     }
 
     fun getResourceAsFile(id: String): File? {
         val res = getResource(id)
         return res?.let {
-            val path = constructPath(res.entryId, res.name, res.extension)
+            val path = constructPath(res.entryId, res.name)
             return path.toFile()
         }
     }
@@ -49,7 +49,7 @@ class ResourceManager {
                 val extension = it.extension
                 Files.move(it, constructPath(entryId, id, extension))
                 val filename = FileUtils.removeExtension(it.fileName.toString())
-                saveGeneratedResource(id, entryId, id, extension, ResourceType.valueOf(filename.toUpperCase()), size)
+                saveGeneratedResource(id, entryId, "$id.$extension", extension, ResourceType.valueOf(filename.toUpperCase()), size)
             }
             return true
         }
@@ -75,7 +75,7 @@ class ResourceManager {
 
     fun saveGeneratedResource(entryId: String, type: ResourceType, extension: String, file: ByteArray) {
         val id = RandomUtils.generateUid()
-        saveGeneratedResource(id, entryId, id, extension, type, file.size.toLong())
+        saveGeneratedResource(id, entryId, "$id.$extension", extension, type, file.size.toLong())
         val path = constructPath(entryId, id, extension)
         FileUtils.writeToFile(path, file)
     }
@@ -94,7 +94,7 @@ class ResourceManager {
 
     private fun constructPath(entryId: String, id: String, extension: String) = Paths.get(BASE_PATH, entryId, "$id.$extension")
 
-    private fun constructPath(entryId: String, name: String) = Paths.get(BASE_PATH, entryId, "$name")
+    private fun constructPath(entryId: String, name: String) = Paths.get(BASE_PATH, entryId, name)
 
     private fun constructTempPath(name: String, type: ResourceType, extension: String) =
             Paths.get(TEMP_PATH, FileUtils.createTempFileName(name), "${type.toString().toLowerCase()}.$extension")
@@ -103,9 +103,8 @@ class ResourceManager {
         val res = getResource(id)
         res?.let {
             Resources.deleteWhere { Resources.id eq id }
-            val path = constructPath(res.entryId, res.id, res.extension).parent
-            path.toFile().deleteRecursively()
-            return@transaction true
+            val path = constructPath(res.entryId, res.name)
+            return@transaction path.toFile().delete()
         }
         false
     }
