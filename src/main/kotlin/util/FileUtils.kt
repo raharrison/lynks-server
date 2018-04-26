@@ -25,6 +25,10 @@ object FileUtils {
         return com.google.common.io.Files.getNameWithoutExtension(name)
     }
 
+    fun getExtension(name: String): String {
+        return com.google.common.io.Files.getFileExtension(name)
+    }
+
     fun directoriesOlderThan(path: Path, days: Long): List<Path> {
         val now = Instant.now().minus(days, ChronoUnit.DAYS)
         return Files.newDirectoryStream(path, {

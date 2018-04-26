@@ -1,12 +1,13 @@
 package resource
 
 import io.ktor.application.call
+import io.ktor.content.PartData
+import io.ktor.content.forEachPart
 import io.ktor.http.HttpStatusCode
+import io.ktor.request.receiveMultipart
 import io.ktor.response.respond
-import io.ktor.routing.Route
-import io.ktor.routing.delete
-import io.ktor.routing.get
-import io.ktor.routing.route
+import io.ktor.response.respondFile
+import io.ktor.routing.*
 
 fun Route.resources(resourceManager: ResourceManager) {
 
@@ -16,19 +17,36 @@ fun Route.resources(resourceManager: ResourceManager) {
             val id = call.parameters["entryId"]!!
             call.respond(resourceManager.getResourcesFor(id))
         }
-//
-//        get("/{id}") {
-//            val comment = commentService.getComment(call.parameters["id"]!!)
-//            if (comment == null) call.respond(HttpStatusCode.NotFound)
-//            else call.respond(comment)
-//        }
-//
-//        post("/") {
-//            val comment = call.receive<NewComment>()
-//            val entryId = call.parameters["entryId"]!!
-//            call.respond(commentService.addComment(entryId, comment))
-//        }
-//
+
+        get("/{id}") {
+            val res = resourceManager.getResourceAsFile(call.parameters["id"]!!)
+            if (res != null) call.respondFile(res)
+            else call.respond(HttpStatusCode.NotFound)
+        }
+
+        post("/") {
+            val entryId = call.parameters["entryId"]!!
+            val multipart = call.receiveMultipart()
+            var title = ""
+            var res: Resource? = null
+            multipart.forEachPart { part ->
+                when (part) {
+                    is PartData.FormItem -> {
+                        if (part.partName == "title") {
+                            title = part.value
+                        }
+                    }
+                    is PartData.FileItem -> {
+                        val name = part.originalFileName!!
+                        res = resourceManager.saveUploadedResource(entryId, name, part.streamProvider())
+                    }
+                }
+                part.dispose()
+            }
+            if(res == null) call.respond(HttpStatusCode.BadRequest)
+            else call.respond(res!!)
+        }
+
         delete("/{id}") {
             val removed = resourceManager.delete(call.parameters["id"]!!)
             if (removed) call.respond(HttpStatusCode.OK)

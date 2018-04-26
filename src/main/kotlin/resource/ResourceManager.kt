@@ -9,6 +9,8 @@ import util.FileUtils
 import util.RandomUtils
 import util.RowMapper.toResource
 import util.toUrlString
+import java.io.File
+import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.Paths
 
@@ -19,7 +21,15 @@ class ResourceManager {
     }
 
     fun getResource(id: String): Resource? = transaction {
-        Resources.select { Resources.id eq id }.map { toResource(it, ::constructPath) }.single()
+        Resources.select { Resources.id eq id }.map { toResource(it, ::constructPath) }.singleOrNull()
+    }
+
+    fun getResourceAsFile(id: String): File? {
+        val res = getResource(id)
+        return res?.let {
+            val path = constructPath(res.entryId, res.name, res.extension)
+            return path.toFile()
+        }
     }
 
     fun saveTempFile(src: String, data: ByteArray, type: ResourceType, extension: String): String {
@@ -39,20 +49,20 @@ class ResourceManager {
                 val extension = it.extension
                 Files.move(it, constructPath(entryId, id, extension))
                 val filename = FileUtils.removeExtension(it.fileName.toString())
-                saveGeneratedResource(id, entryId, ResourceType.valueOf(filename.toUpperCase()), size, extension)
+                saveGeneratedResource(id, entryId, id, extension, ResourceType.valueOf(filename.toUpperCase()), size)
             }
             return true
         }
         return false
     }
 
-    private fun saveGeneratedResource(id: String, entryId: String, type: ResourceType, size: Long, format: String): Resource {
+    private fun saveGeneratedResource(id: String, entryId: String, name: String, format: String, type: ResourceType, size: Long): Resource {
         val time = System.currentTimeMillis()
         return transaction {
             Resources.insert {
                 it[Resources.id] = id
                 it[Resources.entryId] = entryId
-                it[Resources.fileName] = id
+                it[Resources.fileName] = name
                 it[Resources.extension] = format
                 it[Resources.type] = type
                 it[Resources.size] = size
@@ -65,12 +75,26 @@ class ResourceManager {
 
     fun saveGeneratedResource(entryId: String, type: ResourceType, extension: String, file: ByteArray) {
         val id = RandomUtils.generateUid()
-        saveGeneratedResource(id, entryId, type, file.size.toLong(), extension)
+        saveGeneratedResource(id, entryId, id, extension, type, file.size.toLong())
         val path = constructPath(entryId, id, extension)
         FileUtils.writeToFile(path, file)
     }
 
+    fun saveUploadedResource(entryId: String, name: String, input: InputStream): Resource {
+        val id = RandomUtils.generateUid()
+        val path = constructPath(entryId, name)
+        val ext = FileUtils.getExtension(name)
+        val file = path.toFile().apply {
+            parentFile.mkdirs()
+            createNewFile()
+        }
+        input.use { its -> file.outputStream().buffered().use { its.copyTo(it) } }
+        return saveGeneratedResource(id, entryId, name, ext, ResourceType.UPLOAD, file.length())
+    }
+
     private fun constructPath(entryId: String, id: String, extension: String) = Paths.get(BASE_PATH, entryId, "$id.$extension")
+
+    private fun constructPath(entryId: String, name: String) = Paths.get(BASE_PATH, entryId, "$name")
 
     private fun constructTempPath(name: String, type: ResourceType, extension: String) =
             Paths.get(TEMP_PATH, FileUtils.createTempFileName(name), "${type.toString().toLowerCase()}.$extension")
