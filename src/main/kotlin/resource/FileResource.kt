@@ -5,6 +5,7 @@ import io.ktor.content.PartData
 import io.ktor.content.forEachPart
 import io.ktor.http.HttpStatusCode
 import io.ktor.request.receiveMultipart
+import io.ktor.response.header
 import io.ktor.response.respond
 import io.ktor.response.respondFile
 import io.ktor.routing.*
@@ -20,7 +21,10 @@ fun Route.resources(resourceManager: ResourceManager) {
 
         get("/{id}") {
             val res = resourceManager.getResourceAsFile(call.parameters["id"]!!)
-            if (res != null) call.respondFile(res)
+            if (res != null) {
+                call.response.header("Content-Disposition", "attachment; filename=\"${res.name}\"")
+                call.respondFile(res)
+            }
             else call.respond(HttpStatusCode.NotFound)
         }
 
