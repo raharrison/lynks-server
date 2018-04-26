@@ -19,7 +19,6 @@ data class Resource(
         val entryId: String,
         val name: String,
         val extension: String,
-        val path: String,
         val type: ResourceType,
         val size: Long,
         val dateCreated: Long,

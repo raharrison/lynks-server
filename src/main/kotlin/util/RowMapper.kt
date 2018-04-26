@@ -11,7 +11,6 @@ import resource.Resource
 import resource.Resources
 import tag.Tag
 import tag.Tags
-import java.nio.file.Path
 
 object RowMapper {
 
@@ -55,13 +54,12 @@ object RowMapper {
         )
     }
 
-    fun toResource(row: ResultRow, pathBuilder: (String, String, String) -> Path): Resource {
+    fun toResource(row: ResultRow): Resource {
         return Resource(
                 id = row[Resources.id],
                 entryId = row[Resources.entryId],
                 name = row[Resources.fileName],
                 extension = row[Resources.extension],
-                path = pathBuilder(row[Resources.entryId], row[Resources.id], row[Resources.extension]).toUrlString(),
                 type = row[Resources.type],
                 size = row[Resources.size],
                 dateCreated = row[Resources.dateCreated],
