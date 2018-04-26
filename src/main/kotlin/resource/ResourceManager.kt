@@ -1,6 +1,7 @@
 package resource
 
 import io.ktor.util.extension
+import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -73,6 +74,17 @@ class ResourceManager {
 
     private fun constructTempPath(name: String, type: ResourceType, extension: String) =
             Paths.get(TEMP_PATH, FileUtils.createTempFileName(name), "${type.toString().toLowerCase()}.$extension")
+
+    fun delete(id: String): Boolean = transaction {
+        val res = getResource(id)
+        res?.let {
+            Resources.deleteWhere { Resources.id eq id }
+            val path = constructPath(res.entryId, res.id, res.extension).parent
+            path.toFile().deleteRecursively()
+            return@transaction true
+        }
+        false
+    }
 
     companion object {
         const val BASE_PATH = "media"

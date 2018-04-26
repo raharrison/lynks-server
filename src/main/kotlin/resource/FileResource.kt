@@ -1,8 +1,10 @@
 package resource
 
 import io.ktor.application.call
+import io.ktor.http.HttpStatusCode
 import io.ktor.response.respond
 import io.ktor.routing.Route
+import io.ktor.routing.delete
 import io.ktor.routing.get
 import io.ktor.routing.route
 
@@ -27,11 +29,11 @@ fun Route.resources(resourceManager: ResourceManager) {
 //            call.respond(commentService.addComment(entryId, comment))
 //        }
 //
-//        delete("/{id}") {
-//            val removed = commentService.deleteComment(call.parameters["id"]!!)
-//            if (removed) call.respond(HttpStatusCode.OK)
-//            else call.respond(HttpStatusCode.NotFound)
-//        }
+        delete("/{id}") {
+            val removed = resourceManager.delete(call.parameters["id"]!!)
+            if (removed) call.respond(HttpStatusCode.OK)
+            else call.respond(HttpStatusCode.NotFound)
+        }
 
     }
 }
