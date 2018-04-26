@@ -197,7 +197,7 @@ class LinkServiceTest : DatabaseTest() {
     @Test
     fun testUpdatePropsTasks() {
         val added = linkService.add(newLink("n1", "google.com"))
-        val task = TaskDefinition("t1", "className", mapOf("a1" to "v1"))
+        val task = TaskDefinition("t1", "description", "className", mapOf("a1" to "v1"))
         added.props.addTask(task)
 
         linkService.update(added)

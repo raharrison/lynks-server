@@ -173,7 +173,7 @@ class NoteServiceTest : DatabaseTest() {
     @Test
     fun testUpdatePropsTasks() {
         val added = noteService.add(newNote("n1", "comment content 1"))
-        val task = TaskDefinition("t1", "className", mapOf("a1" to "v1"))
+        val task = TaskDefinition("t1", "description", "className", mapOf("a1" to "v1"))
         added.props.addTask(task)
 
         noteService.update(added)

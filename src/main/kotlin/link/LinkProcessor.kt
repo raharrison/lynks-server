@@ -32,11 +32,11 @@ interface LinkProcessor : AutoCloseable {
     fun printPage(): ImageResource?
 
     fun enrich(props: BaseProperties) {
-        props.addTask(createTaskDefinition(LinkProcessingTask::class.qualifiedName))
+        props.addTask(createTaskDefinition("Process Link", LinkProcessingTask::class.qualifiedName))
     }
 
-    fun createTaskDefinition(className: String?, input: Map<String, String> = emptyMap()) =
-            TaskDefinition(RandomUtils.generateUid(), className!!, input)
+    fun createTaskDefinition(description: String, className: String?, input: Map<String, String> = emptyMap()) =
+            TaskDefinition(RandomUtils.generateUid(), description, className!!, input)
 
     val html: String?
 
