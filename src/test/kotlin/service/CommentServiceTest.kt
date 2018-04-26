@@ -6,15 +6,16 @@ import common.DatabaseTest
 import common.EntryType
 import common.PageRequest
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.Before
-import org.junit.Test
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import java.sql.SQLException
 
 class CommentServiceTest : DatabaseTest() {
 
     private val commentService = CommentService()
 
-    @Before
+    @BeforeEach
     fun createEntries() {
         createDummyEntry("e1", "title1", "content1", EntryType.LINK)
         createDummyEntry("e2", "title2", "content2", EntryType.NOTE)
@@ -38,9 +39,9 @@ class CommentServiceTest : DatabaseTest() {
         assertThat(added.markdownText).isEqualTo(markdown)
     }
 
-    @Test(expected = SQLException::class)
+    @Test
     fun testEntryDoesntExist() {
-        commentService.addComment("invalid", newComment(content = "comment content"))
+        assertThrows<SQLException> { commentService.addComment("invalid", newComment(content = "comment content")) }
     }
 
     @Test

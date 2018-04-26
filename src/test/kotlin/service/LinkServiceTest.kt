@@ -4,8 +4,9 @@ import common.*
 import entry.LinkService
 import io.mockk.*
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.Before
-import org.junit.Test
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import resource.ResourceManager
 import tag.TagService
 import worker.PersistLinkProcessingRequest
@@ -17,7 +18,7 @@ class LinkServiceTest : DatabaseTest() {
     private val tagService = TagService()
     private lateinit var linkService: LinkService
 
-    @Before
+    @BeforeEach
     fun createTags() {
         createDummyTag("t1", "tag1")
         createDummyTag("t2", "tag2")
@@ -60,9 +61,9 @@ class LinkServiceTest : DatabaseTest() {
         verify(exactly = 1) { workerRegistry.acceptLinkWork(ofType(PersistLinkProcessingRequest::class)) }
     }
 
-    @Test(expected = SQLException::class)
+    @Test
     fun testCreateLinkWithInvalidTag() {
-        linkService.add(newLink("n1", "google.com", listOf("t1", "invalid")))
+        assertThrows<SQLException> { linkService.add(newLink("n1", "google.com", listOf("t1", "invalid"))) }
     }
 
     @Test

@@ -7,7 +7,7 @@ import entry.EntryService
 import entry.LinkService
 import io.mockk.*
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.Test
+import org.junit.jupiter.api.Test
 import task.LinkProcessingTask
 import task.TaskContext
 import task.TaskService

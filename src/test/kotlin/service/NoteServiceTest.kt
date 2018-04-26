@@ -3,8 +3,9 @@ package service
 import common.*
 import entry.NoteService
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.Before
-import org.junit.Test
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import tag.TagService
 import java.sql.SQLException
 
@@ -13,7 +14,7 @@ class NoteServiceTest : DatabaseTest() {
     private val tagService = TagService()
     private val noteService = NoteService(tagService)
 
-    @Before
+    @BeforeEach
     fun createTags() {
         createDummyTag("t1", "tag1")
         createDummyTag("t2", "tag2")
@@ -37,9 +38,9 @@ class NoteServiceTest : DatabaseTest() {
         assertThat(note.tags).hasSize(2).extracting("id").containsExactly("t1", "t2")
     }
 
-    @Test(expected = SQLException::class)
+    @Test
     fun testCreateNoteWithInvalidTag() {
-        noteService.add(newNote("n1", "content", listOf("t1", "invalid")))
+        assertThrows<SQLException> { noteService.add(newNote("n1", "content", listOf("t1", "invalid"))) }
     }
 
     @Test

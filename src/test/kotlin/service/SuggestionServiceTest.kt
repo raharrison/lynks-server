@@ -4,7 +4,7 @@ import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.experimental.runBlocking
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.Test
+import org.junit.jupiter.api.Test
 import suggest.Suggestion
 import suggest.SuggestionService
 import worker.SuggestLinkProcessingRequest

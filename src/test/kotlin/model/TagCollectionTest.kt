@@ -1,8 +1,8 @@
 package model
 
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.Before
-import org.junit.Test
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
 import tag.Tag
 import tag.TagCollection
 
@@ -13,7 +13,7 @@ class TagCollectionTest {
     private fun createTag(id: String, vararg children: Tag): Tag =
             Tag("t$id", id, children.toMutableSet(), 123456)
 
-    @Before
+    @BeforeEach
     fun setup() {
         collection = TagCollection()
 

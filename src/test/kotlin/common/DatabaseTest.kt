@@ -3,7 +3,7 @@ package common
 import db.DatabaseFactory
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.junit.Before
+import org.junit.jupiter.api.BeforeEach
 import tag.Tags
 
 abstract class DatabaseTest {
@@ -12,7 +12,7 @@ abstract class DatabaseTest {
         val databaseFactory = DatabaseFactory()
     }
 
-    @Before
+    @BeforeEach
     fun before() {
         if(!databaseFactory.connected) {
             databaseFactory.connect()

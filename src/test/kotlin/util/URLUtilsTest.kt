@@ -2,7 +2,8 @@ package util
 
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.entry
-import org.junit.Test
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import util.URLUtils.extractQueryParams
 import util.URLUtils.extractSource
 import java.net.URISyntaxException
@@ -25,9 +26,9 @@ class URLUtilsTest {
         assertThat(extractSource("file://somewhere/else")).isEqualTo("file")
     }
 
-    @Test(expected = IllegalArgumentException::class)
+    @Test
     fun testInvalidUrlSources() {
-        extractSource("http:google.com/something/")
+        assertThrows<IllegalArgumentException> { extractSource("http:google.com/something/") }
     }
 
     @Test
@@ -46,9 +47,9 @@ class URLUtilsTest {
                 entry("third", "three"))
     }
 
-    @Test(expected = URISyntaxException::class)
+    @Test
     fun testQueryParamInvalidUri() {
-        extractQueryParams("invalid query")
+        assertThrows<URISyntaxException> { extractQueryParams("invalid query") }
     }
 
     @Test
