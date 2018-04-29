@@ -33,11 +33,9 @@ fun Route.resources(resourceManager: ResourceManager) {
             val multipart = call.receiveMultipart()
             var res: Resource? = null
             multipart.forEachPart { part ->
-                when (part) {
-                    is PartData.FileItem -> {
-                        val name = part.originalFileName!!
-                        res = resourceManager.saveUploadedResource(entryId, name, part.streamProvider())
-                    }
+                if(part is PartData.FileItem) {
+                    val name = part.originalFileName!!
+                    res = resourceManager.saveUploadedResource(entryId, name, part.streamProvider())
                 }
                 part.dispose()
             }
