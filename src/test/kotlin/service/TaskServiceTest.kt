@@ -32,10 +32,12 @@ class TaskServiceTest {
 
         assertThat(res).isTrue()
 
-        val context = TaskContext("task1", "entry1", mapOf("k1" to "v1"))
+        val context = TaskContext(mapOf("k1" to "v1"))
         verify(exactly = 1) { entryService.get("entry1") }
         verify { workerRegistry.acceptTaskWork(match {
             if(it is LinkProcessingTask) {
+                assertThat(it.id).isEqualTo("task1")
+                assertThat(it.entryId).isEqualTo("entry1")
                 assertThat(it.workerRegistry).isEqualTo(workerRegistry)
                 assertThat(it.linkService).isEqualTo(linkService)
                 return@match true

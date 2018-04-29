@@ -4,7 +4,7 @@ import common.TaskDefinition
 import entry.EntryService
 import entry.LinkService
 import worker.WorkerRegistry
-import kotlin.reflect.full.createInstance
+import kotlin.reflect.full.primaryConstructor
 
 class TaskService(private val entryService: EntryService,
                   private val linkService: LinkService,
@@ -13,8 +13,8 @@ class TaskService(private val entryService: EntryService,
     fun runTask(eid: String, taskId: String): Boolean {
         entryService.get(eid)?.let {
             it.props.getTask(taskId)?.let {
-                val task = convertToConcreteTask(it)
-                val context = TaskContext(taskId, eid, it.input)
+                val task = convertToConcreteTask(taskId, eid, it)
+                val context = TaskContext(it.input)
                 workerRegistry.acceptTaskWork(task, context)
                 return true
             }
@@ -22,9 +22,9 @@ class TaskService(private val entryService: EntryService,
         return false
     }
 
-    private fun convertToConcreteTask(taskDefinition: TaskDefinition): Task {
-        val clazz = Class.forName(taskDefinition.className).kotlin
-        return (clazz.createInstance() as Task).also(::autowire)
+    private fun convertToConcreteTask(taskId: String, eid: String, def: TaskDefinition): Task {
+        val clazz = Class.forName(def.className).kotlin
+        return (clazz.primaryConstructor?.call(taskId, eid) as Task).also(::autowire)
     }
 
     private fun autowire(task: Task) {
