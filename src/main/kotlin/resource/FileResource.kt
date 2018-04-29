@@ -31,15 +31,9 @@ fun Route.resources(resourceManager: ResourceManager) {
         post("/") {
             val entryId = call.parameters["entryId"]!!
             val multipart = call.receiveMultipart()
-            var title = ""
             var res: Resource? = null
             multipart.forEachPart { part ->
                 when (part) {
-                    is PartData.FormItem -> {
-                        if (part.partName == "title") {
-                            title = part.value
-                        }
-                    }
                     is PartData.FileItem -> {
                         val name = part.originalFileName!!
                         res = resourceManager.saveUploadedResource(entryId, name, part.streamProvider())
