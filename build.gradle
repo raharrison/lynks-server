@@ -3,6 +3,7 @@ buildscript {
     ext.ktor_version = '0.9.1'
     ext.exposed_version = '0.10.1'
     ext.h2_version = '1.4.196'
+    ext.flexmark_version = '0.32.4'
 
     repositories {
         mavenCentral()
@@ -11,9 +12,6 @@ buildscript {
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
 }
-
-group 'app'
-version '1.0-SNAPSHOT'
 
 apply plugin: 'java'
 apply plugin: 'kotlin'
@@ -51,11 +49,11 @@ dependencies {
     compile "com.h2database:h2:$h2_version"
     compile "org.jetbrains.exposed:exposed:$exposed_version"
 
-    compile 'com.vladsch.flexmark:flexmark:0.32.4'
-    compile 'com.vladsch.flexmark:flexmark-ext-gfm-strikethrough:0.32.4'
-    compile 'com.vladsch.flexmark:flexmark-ext-tables:0.32.4'
-    compile 'com.vladsch.flexmark:flexmark-ext-autolink:0.32.4'
-    compile 'com.vladsch.flexmark:flexmark-ext-superscript:0.32.4'
+    compile "com.vladsch.flexmark:flexmark:$flexmark_version"
+    compile "com.vladsch.flexmark:flexmark-ext-gfm-strikethrough:$flexmark_version"
+    compile "com.vladsch.flexmark:flexmark-ext-tables:$flexmark_version"
+    compile "com.vladsch.flexmark:flexmark-ext-autolink:$flexmark_version"
+    compile "com.vladsch.flexmark:flexmark-ext-superscript:$flexmark_version"
 
     compile "io.webfolder:cdp4j:2.2.4"
     compile 'com.github.chimbori:crux:2.0.1'
