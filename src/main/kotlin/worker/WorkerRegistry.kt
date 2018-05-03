@@ -19,7 +19,7 @@ class WorkerRegistry {
         linkWorker.offer(request)
     }
 
-    fun acceptTaskWork(task: Task, context: TaskContext) {
+    fun acceptTaskWork(task: Task<TaskContext>, context: TaskContext) {
         taskWorker.offer(TaskRunnerRequest(task, context))
     }
 

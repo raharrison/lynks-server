@@ -40,6 +40,7 @@ class LinkProcessorWorker(private val resourceManager: ResourceManager, val link
         DefaultLinkProcessor().apply { init(url) }
     }
 
+    // TODO: error handling if error in findProcessor
     private suspend fun processLinkPersist(link: Link) {
         findProcessor(link.url).await().use {
             val thumb = async { it.generateThumbnail() }

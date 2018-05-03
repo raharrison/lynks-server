@@ -14,20 +14,19 @@ class TaskService(private val entryService: EntryService,
         entryService.get(eid)?.let {
             it.props.getTask(taskId)?.let {
                 val task = convertToConcreteTask(taskId, eid, it)
-                val context = TaskContext(it.input)
-                workerRegistry.acceptTaskWork(task, context)
+                workerRegistry.acceptTaskWork(task, task.createContext(it.input))
                 return true
             }
         }
         return false
     }
 
-    private fun convertToConcreteTask(taskId: String, eid: String, def: TaskDefinition): Task {
+    private fun convertToConcreteTask(taskId: String, eid: String, def: TaskDefinition): Task<TaskContext> {
         val clazz = Class.forName(def.className).kotlin
-        return (clazz.primaryConstructor?.call(taskId, eid) as Task).also(::autowire)
+        return (clazz.primaryConstructor?.call(taskId, eid) as Task<TaskContext>).also(::autowire)
     }
 
-    private fun autowire(task: Task) {
+    private fun autowire(task: Task<TaskContext>) {
         if(task is LinkProcessingTask) {
             task.linkService = linkService
             task.workerRegistry = workerRegistry

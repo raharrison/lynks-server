@@ -5,7 +5,7 @@ import kotlinx.coroutines.experimental.launch
 import task.Task
 import task.TaskContext
 
-class TaskRunnerRequest(val task: Task, val context: TaskContext)
+class TaskRunnerRequest(val task: Task<TaskContext>, val context: TaskContext)
 
 class TaskRunnerWorker: Worker {
 

@@ -1,7 +1,6 @@
 package link
 
 import common.BaseProperties
-import common.TaskDefinition
 import io.webfolder.cdp.AdaptiveProcessManager
 import io.webfolder.cdp.Launcher
 import io.webfolder.cdp.session.Session
@@ -9,7 +8,6 @@ import resource.JPG
 import resource.PDF
 import resource.PNG
 import task.LinkProcessingTask
-import util.RandomUtils
 import java.awt.Color
 import java.awt.Image
 import java.awt.image.BufferedImage
@@ -32,11 +30,9 @@ interface LinkProcessor : AutoCloseable {
     fun printPage(): ImageResource?
 
     fun enrich(props: BaseProperties) {
-        props.addTask(createTaskDefinition("Process Link", LinkProcessingTask::class.qualifiedName))
+        // TODO: don't re-add default task
+        props.addTask("Process Link", LinkProcessingTask.build())
     }
-
-    fun createTaskDefinition(description: String, className: String?, input: Map<String, String> = emptyMap()) =
-            TaskDefinition(RandomUtils.generateUid(), description, className!!, input)
 
     val html: String?
 
