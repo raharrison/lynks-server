@@ -17,11 +17,15 @@ open class BaseProperties {
     fun containsAttribute(key: String) = attributes.contains(key)
 
     fun addTask(task: TaskDefinition) {
-        tasks.add(task)
+        val index = tasks.indexOfFirst { it.description == task.description }
+        if(index > -1)
+            tasks[index] = task
+        else
+            tasks.add(task)
     }
 
     fun addTask(description: String, task: TaskBuilder) {
-        tasks.add(TaskDefinition(RandomUtils.generateUid(), description, task.clazz.qualifiedName!!, task.context.input))
+        addTask(TaskDefinition(RandomUtils.generateUid(), description, task.clazz.qualifiedName!!, task.context.input))
     }
 
     fun getTask(id: String): TaskDefinition? = tasks.find { it.id == id }
