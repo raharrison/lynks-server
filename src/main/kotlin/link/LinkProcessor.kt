@@ -19,18 +19,17 @@ data class ImageResource(val image: ByteArray, val extension: String)
 
 interface LinkProcessor : AutoCloseable {
 
-    fun init(url: String)
+    suspend fun init(url: String)
 
     fun matches(url: String): Boolean
 
-    fun generateThumbnail(): ImageResource?
+    suspend fun generateThumbnail(): ImageResource?
 
-    fun generateScreenshot(): ImageResource?
+    suspend fun generateScreenshot(): ImageResource?
 
-    fun printPage(): ImageResource?
+    suspend fun printPage(): ImageResource?
 
-    fun enrich(props: BaseProperties) {
-        // TODO: don't re-add default task
+    suspend fun enrich(props: BaseProperties) {
         props.addTask("Process Link", LinkProcessingTask.build())
     }
 
@@ -48,7 +47,7 @@ open class DefaultLinkProcessor : LinkProcessor {
     protected lateinit var session: Session
     protected lateinit var url: String
 
-    override fun init(url: String) {
+    override suspend fun init(url: String) {
         this.url = url
         session = connectSession(url)
     }
@@ -75,7 +74,7 @@ open class DefaultLinkProcessor : LinkProcessor {
 
     override fun matches(url: String): Boolean = true
 
-    override fun generateThumbnail(): ImageResource {
+    override suspend  fun generateThumbnail(): ImageResource {
         val screen = session.command.page.captureScreenshot()
         val img = ImageIO.read(ByteArrayInputStream(screen))
         val scaledImage = img.getScaledInstance(360, 270, Image.SCALE_SMOOTH)
@@ -87,9 +86,9 @@ open class DefaultLinkProcessor : LinkProcessor {
         return ImageResource(buffer.toByteArray(), JPG)
     }
 
-    override fun generateScreenshot(): ImageResource = ImageResource(session.captureScreenshot(), PNG)
+    override suspend fun generateScreenshot(): ImageResource = ImageResource(session.captureScreenshot(), PNG)
 
-    override fun printPage(): ImageResource? {
+    override suspend fun printPage(): ImageResource? {
         return ImageResource(session.command.page.printToPDF(true, false, true,
                 0.9, 11.7, 16.5,
                 0.1, 0.1, 0.1, 0.1,

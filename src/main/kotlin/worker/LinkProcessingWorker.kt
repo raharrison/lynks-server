@@ -33,8 +33,8 @@ class LinkProcessorWorker(private val resourceManager: ResourceManager, private 
     }
 
     private fun findProcessor(url: String): Deferred<List<LinkProcessor>> = async {
-        val procs = processors.asSequence().map { it() }.filter { it.matches(url) }
-                .map { it.apply { init(url) } }.toList()
+        val procs = processors.asSequence().map { it() }.filter { it.matches(url) }.toList()
+        procs.forEach { it.init(url) }
         if (procs.isNotEmpty()) procs else listOf(DefaultLinkProcessor().apply { init(url) })
     }
 

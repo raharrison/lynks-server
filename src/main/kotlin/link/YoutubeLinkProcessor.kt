@@ -10,7 +10,7 @@ class YoutubeLinkProcessor(private val retriever: ResourceRetriever) : LinkProce
     private lateinit var url: String
     private lateinit var videoId: String
 
-    override fun init(url: String) {
+    override suspend fun init(url: String) {
         this.url = url
         this.videoId = URLUtils.extractQueryParams(url)["v"] ?: throw IllegalArgumentException("Invalid youtube url")
     }
@@ -31,19 +31,19 @@ class YoutubeLinkProcessor(private val retriever: ResourceRetriever) : LinkProce
         return retriever.getString(dl)
     }
 
-    override fun generateThumbnail(): ImageResource? {
+    override suspend fun generateThumbnail(): ImageResource? {
         val dl = "http://img.youtube.com/vi/$videoId/0.jpg"
         return retriever.getFile(dl)?.let { ImageResource(it, JPG) }
     }
 
-    override fun generateScreenshot(): ImageResource? {
+    override suspend fun generateScreenshot(): ImageResource? {
         val dl = "http://img.youtube.com/vi/$videoId/maxresdefault.jpg"
         return retriever.getFile(dl)?.let { ImageResource(it, JPG) }
     }
 
-    override fun printPage(): ImageResource? = null
+    override suspend fun printPage(): ImageResource? = null
 
-    override fun enrich(props: BaseProperties) {
+    override suspend fun enrich(props: BaseProperties) {
         super.enrich(props)
         props.addAttribute("embedUrl", embedUrl())
         val info = downloadVideoInfo()
