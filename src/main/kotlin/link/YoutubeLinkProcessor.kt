@@ -1,12 +1,11 @@
 package link
 
-import com.github.kittinunf.fuel.httpGet
-import com.github.kittinunf.result.Result
 import common.BaseProperties
 import resource.JPG
+import resource.ResourceRetriever
 import util.URLUtils
 
-class YoutubeLinkProcessor: LinkProcessor {
+class YoutubeLinkProcessor(private val retriever: ResourceRetriever) : LinkProcessor {
 
     private lateinit var url: String
     private lateinit var videoId: String
@@ -25,29 +24,21 @@ class YoutubeLinkProcessor: LinkProcessor {
 
     override fun matches(url: String): Boolean = URLUtils.extractSource(url) == "youtube.com"
 
-    private fun imageGet(url: String): ByteArray? {
-        val result = url.httpGet().response().third
-        return when(result) {
-            is Result.Success -> result.get()
-            else -> null
-        }
-    }
-
     private fun embedUrl(): String = "https://www.youtube.com/embed/$videoId"
 
-    private fun downloadVideoInfo(): String {
+    private fun downloadVideoInfo(): String? {
         val dl = "http://www.youtube.com/get_video_info?video_id=$videoId&asv=3&el=detailpage&hl=en_US"
-        return dl.httpGet().responseString().third.get()
+        return retriever.getString(dl)
     }
 
     override fun generateThumbnail(): ImageResource? {
         val dl = "http://img.youtube.com/vi/$videoId/0.jpg"
-        return imageGet(dl)?.let { ImageResource(it, JPG) }
+        return retriever.getFile(dl)?.let { ImageResource(it, JPG) }
     }
 
     override fun generateScreenshot(): ImageResource? {
         val dl = "http://img.youtube.com/vi/$videoId/maxresdefault.jpg"
-        return imageGet(dl)?.let { ImageResource(it, JPG) }
+        return retriever.getFile(dl)?.let { ImageResource(it, JPG) }
     }
 
     override fun printPage(): ImageResource? = null
@@ -56,7 +47,9 @@ class YoutubeLinkProcessor: LinkProcessor {
         super.enrich(props)
         props.addAttribute("embedUrl", embedUrl())
         val info = downloadVideoInfo()
-        val params = URLUtils.extractQueryParams(info)
-        title = params[title] ?: title
+        info?.let {
+            val params = URLUtils.extractQueryParams(info)
+            title = params[title] ?: title
+        }
     }
 }

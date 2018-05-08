@@ -12,6 +12,7 @@ import link.YoutubeLinkProcessor
 import resource.HTML
 import resource.ResourceManager
 import resource.ResourceType
+import resource.WebResourceRetriever
 import suggest.Suggestion
 
 sealed class LinkProcessingRequest
@@ -20,7 +21,7 @@ class SuggestLinkProcessingRequest(val url: String, val response: CompletableDef
 
 class LinkProcessorWorker(private val resourceManager: ResourceManager, private val linkService: LinkService) : Worker {
 
-    private val processors = listOf<() -> LinkProcessor>({ YoutubeLinkProcessor() })
+    private val processors = listOf<() -> LinkProcessor>({ YoutubeLinkProcessor(WebResourceRetriever()) })
 
     override fun worker() = actor<LinkProcessingRequest> {
         for (request in channel) {

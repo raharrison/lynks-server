@@ -21,6 +21,7 @@ class TaskService(private val entryService: EntryService,
         return false
     }
 
+    @Suppress("UNCHECKED_CAST")
     private fun convertToConcreteTask(taskId: String, eid: String, def: TaskDefinition): Task<TaskContext> {
         val clazz = Class.forName(def.className).kotlin
         return (clazz.primaryConstructor?.call(taskId, eid) as Task<TaskContext>).also(::autowire)
