@@ -31,26 +31,25 @@ class LinkProcessorWorker(private val resourceManager: ResourceManager, private 
         }
     }
 
-    private fun findProcessor(url: String): Deferred<LinkProcessor> = async {
-        for (proc in processors) {
-            val processor = proc()
-            if (processor.matches(url))
-                processor.apply { init(url) }
-        }
-        DefaultLinkProcessor().apply { init(url) }
+    private fun findProcessor(url: String): Deferred<List<LinkProcessor>> = async {
+        val procs = processors.asSequence().map { it() }.filter { it.matches(url) }
+                .map { it.apply { init(url) } }.toList()
+        if (procs.isNotEmpty()) procs else listOf(DefaultLinkProcessor().apply { init(url) })
     }
 
     private suspend fun processLinkPersist(link: Link) {
         try {
-            findProcessor(link.url).await().use {
-                val thumb = async { it.generateThumbnail() }
-                val screen = async { it.generateScreenshot() }
-                it.enrich(link.props)
-                thumb.await()?.let { resourceManager.saveGeneratedResource(link.id, ResourceType.THUMBNAIL, it.extension, it.image) }
-                screen.await()?.let { resourceManager.saveGeneratedResource(link.id, ResourceType.SCREENSHOT, it.extension, it.image) }
-                it.html?.let { resourceManager.saveGeneratedResource(link.id, ResourceType.DOCUMENT, HTML, it.toByteArray()) }
-                linkService.update(link)
+            findProcessor(link.url).await().forEach {
+                it.use {
+                    val thumb = async { it.generateThumbnail() }
+                    val screen = async { it.generateScreenshot() }
+                    it.enrich(link.props)
+                    thumb.await()?.let { resourceManager.saveGeneratedResource(link.id, ResourceType.THUMBNAIL, it.extension, it.image) }
+                    screen.await()?.let { resourceManager.saveGeneratedResource(link.id, ResourceType.SCREENSHOT, it.extension, it.image) }
+                    it.html?.let { resourceManager.saveGeneratedResource(link.id, ResourceType.DOCUMENT, HTML, it.toByteArray()) }
+                }
             }
+            linkService.update(link)
         } catch (e: Exception) {
             // log and reschedule
         }
@@ -58,14 +57,15 @@ class LinkProcessorWorker(private val resourceManager: ResourceManager, private 
 
     private suspend fun processLinkSuggest(url: String, deferred: CompletableDeferred<Suggestion>) {
         try {
-            findProcessor(url).await().use {
-                val thumb = async { it.generateThumbnail() }
-                val screen = async { it.generateScreenshot() }
-                val thumbPath = thumb.await()?.let { resourceManager.saveTempFile(url, it.image, ResourceType.THUMBNAIL, it.extension) }
-                val screenPath = screen.await()?.let { resourceManager.saveTempFile(url, it.image, ResourceType.SCREENSHOT, it.extension) }
-                it.html?.let { resourceManager.saveTempFile(url, it.toByteArray(), ResourceType.DOCUMENT, HTML) }
-                deferred.complete(Suggestion(it.resolvedUrl, it.title, thumbPath, screenPath))
-
+            findProcessor(url).await().forEach {
+                it.use {
+                    val thumb = async { it.generateThumbnail() }
+                    val screen = async { it.generateScreenshot() }
+                    val thumbPath = thumb.await()?.let { resourceManager.saveTempFile(url, it.image, ResourceType.THUMBNAIL, it.extension) }
+                    val screenPath = screen.await()?.let { resourceManager.saveTempFile(url, it.image, ResourceType.SCREENSHOT, it.extension) }
+                    it.html?.let { resourceManager.saveTempFile(url, it.toByteArray(), ResourceType.DOCUMENT, HTML) }
+                    deferred.complete(Suggestion(it.resolvedUrl, it.title, thumbPath, screenPath))
+                }
             }
         } catch (e: Exception) {
             deferred.completeExceptionally(e)
