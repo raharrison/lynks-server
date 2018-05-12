@@ -1,13 +1,18 @@
 package task
 
 import common.TaskDefinition
+import common.inject.Inject
+import common.inject.ServiceProvider
 import entry.EntryService
-import entry.LinkService
 import worker.WorkerRegistry
+import kotlin.reflect.KMutableProperty1
+import kotlin.reflect.full.findAnnotation
+import kotlin.reflect.full.memberProperties
 import kotlin.reflect.full.primaryConstructor
+import kotlin.reflect.jvm.jvmErasure
 
 class TaskService(private val entryService: EntryService,
-                  private val linkService: LinkService,
+                  private val serviceProvider: ServiceProvider,
                   private val workerRegistry: WorkerRegistry) {
 
     fun runTask(eid: String, taskId: String): Boolean {
@@ -28,9 +33,14 @@ class TaskService(private val entryService: EntryService,
     }
 
     private fun autowire(task: Task<TaskContext>) {
-        if(task is LinkProcessingTask) {
-            task.linkService = linkService
-            task.workerRegistry = workerRegistry
+        task::class.memberProperties.forEach {
+            if(it.findAnnotation<Inject>() != null) {
+                if(it is KMutableProperty1) {
+                    val service = serviceProvider.get(it.returnType.jvmErasure)
+                    if(service != null)
+                        it.setter.call(task, service)
+                }
+            }
         }
     }
 

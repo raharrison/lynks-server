@@ -1,11 +1,15 @@
 package task
 
+import common.inject.Inject
 import resource.ResourceManager
 import resource.ResourceRetriever
 
 class ResourceRetrievingTask(id: String, entryId: String) : Task<ResourceRetrievingTask.ResourceTaskContext>(id, entryId) {
 
+    @Inject
     lateinit var resourceManager: ResourceManager
+
+    @Inject
     lateinit var resourceRetriever: ResourceRetriever
 
     override suspend fun process(context: ResourceTaskContext) {

@@ -1,5 +1,6 @@
 import comment.CommentService
 import comment.comment
+import common.inject.ServiceProvider
 import db.DatabaseFactory
 import entry.*
 import io.ktor.application.Application
@@ -32,28 +33,29 @@ fun Application.module() {
 
     DatabaseFactory().connect()
 
-    val resourceManager = ResourceManager()
     val workerRegistry = WorkerRegistry()
-
-    val tagService = TagService()
-    val entryService = EntryService(tagService)
-    val linkService = LinkService(tagService, resourceManager, workerRegistry)
-    val noteService = NoteService(tagService)
-    val commentService = CommentService()
-    val suggestionService = SuggestionService(workerRegistry)
-    val taskService = TaskService(entryService, linkService, workerRegistry)
-
-    workerRegistry.init(resourceManager, linkService)
+    val serviceProvider = ServiceProvider().apply {
+        register(ResourceManager())
+        register(workerRegistry)
+        register(TagService())
+        register(EntryService(get()))
+        register(LinkService(get(), get(), get()))
+        register(NoteService(get()))
+        register(CommentService())
+        register(SuggestionService(get()))
+        register(TaskService(get(), this, get()))
+        workerRegistry.init(get(), get())
+    }
 
     install(Routing) {
-        link(linkService)
-        note(noteService)
-        entry(entryService)
-        comment(commentService)
-        tag(tagService)
-        suggest(suggestionService)
-        resources(resourceManager)
-        task(taskService)
+        link(serviceProvider.get())
+        note(serviceProvider.get())
+        entry(serviceProvider.get())
+        comment(serviceProvider.get())
+        tag(serviceProvider.get())
+        suggest(serviceProvider.get())
+        resources(serviceProvider.get())
+        task(serviceProvider.get())
     }
 }
 
