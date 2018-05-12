@@ -3,10 +3,12 @@ package service
 import common.BaseProperties
 import common.Link
 import common.TaskDefinition
+import common.inject.ServiceProvider
 import entry.EntryService
 import entry.LinkService
 import io.mockk.*
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import task.LinkProcessingTask
 import task.TaskContext
@@ -15,9 +17,18 @@ import worker.WorkerRegistry
 
 class TaskServiceTest {
     private val workerRegistry = mockk<WorkerRegistry>()
-    private val entryService = mockk<EntryService>()
     private val linkService = mockk<LinkService>()
-    private val taskService = TaskService(entryService, linkService, workerRegistry)
+    private val entryService = mockk<EntryService>()
+    private val serviceProvider = ServiceProvider()
+    private val taskService = TaskService(entryService, serviceProvider, workerRegistry)
+
+    @BeforeEach
+    fun before() {
+        serviceProvider.apply {
+            register(linkService)
+            register(workerRegistry)
+        }
+    }
 
     @Test
     fun testRunValidTask() {
