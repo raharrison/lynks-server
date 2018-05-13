@@ -48,14 +48,16 @@ fun Application.module() {
     }
 
     install(Routing) {
-        link(serviceProvider.get())
-        note(serviceProvider.get())
-        entry(serviceProvider.get())
-        comment(serviceProvider.get())
-        tag(serviceProvider.get())
-        suggest(serviceProvider.get())
-        resources(serviceProvider.get())
-        task(serviceProvider.get())
+        with(serviceProvider) {
+            link(get())
+            note(get())
+            entry(get())
+            comment(get())
+            tag(get())
+            suggest(get())
+            resources(get())
+            task(get())
+        }
     }
 }
 
