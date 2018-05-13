@@ -13,6 +13,8 @@ open class TaskContext(val input: Map<String, String> = emptyMap()) {
 
     protected fun param(field: String) = input[field]!!
 
+    protected fun optParam(field: String) = input[field]
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
