@@ -4,7 +4,6 @@ import com.github.kittinunf.result.Result
 import org.apache.commons.lang3.SystemUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.io.BufferedReader
 import java.io.InputStream
 import java.util.*
 
@@ -39,8 +38,10 @@ object ExecUtils {
         val process = pb.start()
         val result = collectOutput(process.inputStream, listener)
         val errors = process.errorStream.bufferedReader().use { it.readText() }
+        process.outputStream.close()
 
         val res = process.waitFor()
+        process.destroy()
         if (res != 0) {
             LOGGER.info("Failed to execute command {}.\nstderr: {}\nstdout: {}", pb.command(), errors, result)
             return Result.Failure(ExecException(res, errors))
@@ -50,16 +51,17 @@ object ExecUtils {
 
     private fun collectOutput(inputStream: InputStream, listener: (String) -> Unit): String {
         val out = StringBuilder()
-        val buf: BufferedReader = inputStream.bufferedReader()
-        var line: String? = buf.readLine()
-        do {
-            if (line != null) {
-                out.append(line).append("\n")
-                listener(line)
-            }
-            line = buf.readLine()
-        } while (line != null)
-        return out.toString()
+        inputStream.bufferedReader().use {
+            var line: String? = it.readLine()
+            do {
+                if (line != null) {
+                    out.append(line).append("\n")
+                    listener(line)
+                }
+                line = it.readLine()
+            } while (line != null)
+            return out.toString()
+        }
     }
 
 }
