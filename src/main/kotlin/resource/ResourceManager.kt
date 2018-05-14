@@ -12,6 +12,7 @@ import util.toUrlString
 import java.io.File
 import java.io.InputStream
 import java.nio.file.Files
+import java.nio.file.Path
 import java.nio.file.Paths
 
 class ResourceManager {
@@ -56,7 +57,7 @@ class ResourceManager {
         return false
     }
 
-    private fun saveGeneratedResource(id: String, entryId: String, name: String, format: String, type: ResourceType, size: Long): Resource {
+    fun saveGeneratedResource(id: String = RandomUtils.generateUid(), entryId: String, name: String, format: String, type: ResourceType, size: Long): Resource {
         val time = System.currentTimeMillis()
         return transaction {
             Resources.insert {
@@ -94,7 +95,7 @@ class ResourceManager {
 
     private fun constructPath(entryId: String, id: String, extension: String) = Paths.get(BASE_PATH, entryId, "$id.$extension")
 
-    private fun constructPath(entryId: String, name: String) = Paths.get(BASE_PATH, entryId, name)
+    fun constructPath(entryId: String, name: String): Path = Paths.get(BASE_PATH, entryId, name)
 
     private fun constructTempPath(name: String, type: ResourceType, extension: String) =
             Paths.get(TEMP_PATH, FileUtils.createTempFileName(name), "${type.toString().toLowerCase()}.$extension")
