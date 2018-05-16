@@ -41,6 +41,7 @@ class YoutubeDlTask(id: String, entryId: String) : Task<YoutubeDlTask.YoutubeDlT
                             type = ResourceType.UPLOAD)
                 }
             }
+            else -> { /* error reporting */ }
         }
     }
 
