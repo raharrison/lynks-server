@@ -2,22 +2,27 @@ package service
 
 import common.*
 import entry.NoteService
+import io.mockk.every
+import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import resource.ResourceManager
 import tag.TagService
 import java.sql.SQLException
 
 class NoteServiceTest : DatabaseTest() {
 
     private val tagService = TagService()
-    private val noteService = NoteService(tagService)
+    private val resourceManager = mockk<ResourceManager>()
+    private val noteService = NoteService(tagService, resourceManager)
 
     @BeforeEach
     fun createTags() {
         createDummyTag("t1", "tag1")
         createDummyTag("t2", "tag2")
+        every { resourceManager.deleteAll(any()) } returns true
     }
 
     @Test

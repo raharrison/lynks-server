@@ -59,7 +59,7 @@ abstract class EntryRepository<T : Entry, in U : NewEntry>(private val tagServic
         entry
     }
 
-    fun delete(id: String): Boolean = transaction {
+    open fun delete(id: String): Boolean = transaction {
         EntryTags.deleteWhere { EntryTags.entryId eq id }
         Entries.deleteWhere { Entries.id eq id } > 0
     }

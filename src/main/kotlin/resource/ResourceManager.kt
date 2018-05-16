@@ -110,6 +110,12 @@ class ResourceManager {
         false
     }
 
+    fun deleteAll(entryId: String): Boolean = transaction {
+        Resources.deleteWhere { Resources.entryId eq entryId }
+        val path = constructPath(entryId, "")
+        path.toFile().deleteRecursively()
+    }
+
     companion object {
         const val BASE_PATH = "media"
         const val TEMP_PATH = "media/temp"

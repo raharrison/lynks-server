@@ -53,6 +53,10 @@ class LinkService(tagService: TagService, private val resourceManager: ResourceM
         return link
     }
 
+    override fun delete(id: String): Boolean {
+        return super.delete(id) && resourceManager.deleteAll(id)
+    }
+
     override fun toUpdate(entry: Link): Entries.(UpdateBuilder<*>) -> Unit = {
         it[Entries.title] = entry.title
         it[Entries.plainContent] = entry.url

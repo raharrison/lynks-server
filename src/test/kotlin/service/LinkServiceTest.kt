@@ -25,6 +25,7 @@ class LinkServiceTest : DatabaseTest() {
 
         val resourceManager = mockk<ResourceManager>()
         every { resourceManager.moveTempFiles(any(), any()) } returns true
+        every { resourceManager.deleteAll(any()) } returns true
         val workerRegistry = mockk<WorkerRegistry>()
         linkService = LinkService(tagService, resourceManager, workerRegistry)
     }

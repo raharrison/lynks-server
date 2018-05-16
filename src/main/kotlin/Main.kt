@@ -40,7 +40,7 @@ fun Application.module() {
         register(TagService())
         register(EntryService(get()))
         register(LinkService(get(), get(), get()))
-        register(NoteService(get()))
+        register(NoteService(get(), get()))
         register(CommentService())
         register(SuggestionService(get()))
         register(TaskService(get(), this, get()))

@@ -10,11 +10,12 @@ import org.jetbrains.exposed.sql.Query
 import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.statements.UpdateBuilder
+import resource.ResourceManager
 import tag.TagService
 import util.MarkdownUtils
 import util.RowMapper
 
-class NoteService(tagService: TagService) : EntryRepository<Note, NewNote>(tagService) {
+class NoteService(tagService: TagService, private val resourceManager: ResourceManager) : EntryRepository<Note, NewNote>(tagService) {
 
     override fun toModel(row: ResultRow): Note {
         return RowMapper.toNote(row, ::getTagsForEntry)
@@ -47,5 +48,9 @@ class NoteService(tagService: TagService) : EntryRepository<Note, NewNote>(tagSe
         it[content] = MarkdownUtils.convertToMarkdown(entry.plainText)
         it[dateUpdated] = System.currentTimeMillis()
         it[props] = entry.props
+    }
+
+    override fun delete(id: String): Boolean {
+        return super.delete(id) && resourceManager.deleteAll(id)
     }
 }
