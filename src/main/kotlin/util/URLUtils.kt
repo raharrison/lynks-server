@@ -1,6 +1,7 @@
 package util
 
 import java.net.URI
+import java.net.URLDecoder
 
 object URLUtils {
     fun extractSource(url: String): String {
@@ -25,7 +26,7 @@ object URLUtils {
             val split = param.split("=")
             when(split.size) {
                 1 -> map[param] = null
-                else -> map[split[0]] = split[1]
+                else -> map[split[0]] = URLDecoder.decode(split[1], "UTF-8")
             }
         }
         return map

@@ -67,4 +67,10 @@ class URLUtilsTest {
         assertThat(URLUtils.isValidUrl("something")).isFalse()
         assertThat(URLUtils.isValidUrl("http:something")).isFalse()
     }
+
+    @Test
+    fun testUrlDecode() {
+        val uri = "http://youtube.com/?v=something%5Eelse*if%2Bsome()!%20-%20more"
+        assertThat(extractQueryParams(uri)).hasSize(1).containsExactly(entry("v", "something^else*if some()! - more"))
+    }
 }
