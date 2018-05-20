@@ -22,7 +22,7 @@ class NoteService(tagService: TagService, private val resourceManager: ResourceM
     }
 
     override fun getBaseQuery(base: ColumnSet): Query {
-        return Entries.select { Entries.type eq EntryType.NOTE }
+        return base.select { Entries.type eq EntryType.NOTE }
     }
 
     override fun toInsert(eId: String, entry: NewNote): Entries.(UpdateBuilder<*>) -> Unit = {

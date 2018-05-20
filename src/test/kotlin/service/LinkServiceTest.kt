@@ -22,6 +22,7 @@ class LinkServiceTest : DatabaseTest() {
     fun createTags() {
         createDummyTag("t1", "tag1")
         createDummyTag("t2", "tag2")
+        createDummyTag("t3", "tag3", "t2")
 
         val resourceManager = mockk<ResourceManager>()
         every { resourceManager.moveTempFiles(any(), any()) } returns true
@@ -108,6 +109,25 @@ class LinkServiceTest : DatabaseTest() {
         links = linkService.get(PageRequest(0, 10))
         assertThat(links).hasSize(3)
         assertThat(links).extracting("title").doesNotHaveDuplicates()
+    }
+
+    @Test
+    fun testGetLinksByTag() {
+        linkService.add(newLink("l1", "google.com", listOf("t1", "t2")))
+        linkService.add(newLink("l2", "amazon.com", listOf("t1")))
+        linkService.add(newLink("l3", "netflix.com", listOf("t3")))
+
+        val notes = linkService.get(PageRequest(tag = "t1"))
+        assertThat(notes).hasSize(2)
+        assertThat(notes).extracting("title").containsExactlyInAnyOrder("l1", "l2")
+
+        val notes2 = linkService.get(PageRequest(tag = "t2"))
+        assertThat(notes2).hasSize(2)
+        assertThat(notes2).extracting("title").containsExactlyInAnyOrder("l1", "l3")
+
+        val notes3 = linkService.get(PageRequest(tag = "t3"))
+        assertThat(notes3).hasSize(1)
+        assertThat(notes3).extracting("title").containsExactlyInAnyOrder("l3")
     }
 
     @Test

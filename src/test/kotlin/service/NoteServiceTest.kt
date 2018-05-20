@@ -22,6 +22,7 @@ class NoteServiceTest : DatabaseTest() {
     fun createTags() {
         createDummyTag("t1", "tag1")
         createDummyTag("t2", "tag2")
+        createDummyTag("t3", "tag3", "t2")
         every { resourceManager.deleteAll(any()) } returns true
     }
 
@@ -88,6 +89,25 @@ class NoteServiceTest : DatabaseTest() {
         notes = noteService.get(PageRequest(0, 10))
         assertThat(notes).hasSize(3)
         assertThat(notes).extracting("title").doesNotHaveDuplicates()
+    }
+
+    @Test
+    fun testGetNotesByTag() {
+        noteService.add(newNote("n1", "content1", listOf("t1", "t2")))
+        noteService.add(newNote("n2", "content2", listOf("t1")))
+        noteService.add(newNote("n3", "content3", listOf("t3")))
+
+        val notes = noteService.get(PageRequest(tag = "t1"))
+        assertThat(notes).hasSize(2)
+        assertThat(notes).extracting("title").containsExactlyInAnyOrder("n1", "n2")
+
+        val notes2 = noteService.get(PageRequest(tag = "t2"))
+        assertThat(notes2).hasSize(2)
+        assertThat(notes2).extracting("title").containsExactlyInAnyOrder("n1", "n3")
+
+        val notes3 = noteService.get(PageRequest(tag = "t3"))
+        assertThat(notes3).hasSize(1)
+        assertThat(notes3).extracting("title").containsExactlyInAnyOrder("n3")
     }
 
     @Test

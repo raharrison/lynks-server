@@ -22,7 +22,7 @@ class LinkService(tagService: TagService, private val resourceManager: ResourceM
                   private val workerRegistry: WorkerRegistry) : EntryRepository<Link, NewLink>(tagService) {
 
     override fun getBaseQuery(base: ColumnSet): Query {
-        return Entries.select { Entries.type eq EntryType.LINK }
+        return base.select { Entries.type eq EntryType.LINK }
     }
 
     override fun toInsert(eId: String, entry: NewLink): Entries.(InsertStatement<*>) -> Unit = {
