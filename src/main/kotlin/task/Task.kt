@@ -9,7 +9,7 @@ abstract class Task<T: TaskContext>(val id: String, val entryId: String) {
     abstract fun createContext(input: Map<String, String>): T
 }
 
-open class TaskContext(val input: Map<String, String> = emptyMap()) {
+open class TaskContext(internal val input: Map<String, String> = emptyMap()) {
 
     protected fun param(field: String) = input[field]!!
 
@@ -25,7 +25,6 @@ open class TaskContext(val input: Map<String, String> = emptyMap()) {
     override fun hashCode(): Int {
         return input.hashCode()
     }
-
 
 }
 
