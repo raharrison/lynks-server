@@ -32,6 +32,7 @@ class NoteServiceTest : DatabaseTest() {
         assertThat(note.title).isEqualTo("n1")
         assertThat(note.plainText).isEqualTo("content")
         assertThat(note.markdownText).isEqualTo("<p>content</p>\n")
+        assertThat(note.dateUpdated).isPositive()
     }
 
     @Test

@@ -37,6 +37,7 @@ class LinkServiceTest : DatabaseTest() {
         assertThat(link.title).isEqualTo("n1")
         assertThat(link.url).isEqualTo("google.com/page")
         assertThat(link.source).isEqualTo("google.com")
+        assertThat(link.dateUpdated).isPositive()
     }
 
     @Test

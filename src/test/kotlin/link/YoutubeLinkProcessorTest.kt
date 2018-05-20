@@ -20,9 +20,11 @@ class YoutubeLinkProcessorTest {
 
     @Test
     fun testGetAttributes() = runBlocking {
-        assertThat(processor.html).isNull()
-        assertThat(processor.resolvedUrl).isEqualTo(url)
-        assertThat(processor.printPage()).isNull()
+        processor.use {
+            assertThat(processor.html).isNull()
+            assertThat(processor.resolvedUrl).isEqualTo(url)
+            assertThat(processor.printPage()).isNull()
+        }
     }
 
     @Test
@@ -31,6 +33,12 @@ class YoutubeLinkProcessorTest {
         every { retriever.getString(any()) } returns vidInfo
         assertThat(processor.title).isEqualTo("Savoy - How U Like Me Now (feat. Roniit) [Monstercat Release]")
         verify(exactly = 1) { retriever.getString(any()) }
+    }
+
+    @Test
+    fun testGetTitleBadInfo() {
+        every { retriever.getString(any()) } returns null
+        assertThat(processor.title).isEmpty()
     }
 
     @Test
