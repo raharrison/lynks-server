@@ -169,6 +169,22 @@ class NoteServiceTest : DatabaseTest() {
     }
 
     @Test
+    fun testUpdateNoteTags() {
+        val added1 = noteService.add(newNote("n1", "content 1", listOf("t1", "t2")))
+        assertThat(noteService.get(added1.id)?.title).isEqualTo("n1")
+        assertThat(noteService.get(added1.id)?.plainText).isEqualTo("content 1")
+        assertThat(noteService.get(added1.id)?.tags).extracting("id").containsExactlyInAnyOrder("t1", "t2")
+
+        noteService.update(newNote(added1.id, "n1", "content 1", listOf("t2")))
+        assertThat(noteService.get(added1.id)?.title).isEqualTo("n1")
+        assertThat(noteService.get(added1.id)?.plainText).isEqualTo("content 1")
+        assertThat(noteService.get(added1.id)?.tags).extracting("id").containsExactlyInAnyOrder("t2")
+
+        noteService.update(newNote(added1.id, "n1", "content 1", listOf("t2", "t3")))
+        assertThat(noteService.get(added1.id)?.tags).extracting("id").containsExactlyInAnyOrder("t2", "t3")
+    }
+
+    @Test
     fun testUpdateNoteNoId() {
         val added1 = noteService.add(newNote("n1", "comment content 1"))
         assertThat(noteService.get(added1.id)?.title).isEqualTo("n1")

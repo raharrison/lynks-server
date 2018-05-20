@@ -189,6 +189,22 @@ class LinkServiceTest : DatabaseTest() {
     }
 
     @Test
+    fun testUpdateLinkTags() {
+        val added1 = linkService.add(newLink("n1", "google.com", listOf("t1", "t2")))
+        assertThat(linkService.get(added1.id)?.title).isEqualTo("n1")
+        assertThat(linkService.get(added1.id)?.url).isEqualTo("google.com")
+        assertThat(linkService.get(added1.id)?.tags).extracting("id").containsExactlyInAnyOrder("t1", "t2")
+
+        linkService.update(newLink(added1.id, "n1", "google.com", listOf("t2")))
+        assertThat(linkService.get(added1.id)?.title).isEqualTo("n1")
+        assertThat(linkService.get(added1.id)?.url).isEqualTo("google.com")
+        assertThat(linkService.get(added1.id)?.tags).extracting("id").containsExactlyInAnyOrder("t2")
+
+        linkService.update(newLink(added1.id, "n1", "google.com", listOf("t2", "t3")))
+        assertThat(linkService.get(added1.id)?.tags).extracting("id").containsExactlyInAnyOrder("t2", "t3")
+    }
+
+    @Test
     fun testUpdateLinkNoId() {
         val added1 = linkService.add(newLink("n1", "google.com"))
         assertThat(linkService.get(added1.id)?.title).isEqualTo("n1")
