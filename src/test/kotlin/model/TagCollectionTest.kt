@@ -242,4 +242,14 @@ class TagCollectionTest {
         assertThat(collection.subtree("none")).isEmpty()
     }
 
+    @Test
+    fun testGetRootTags() {
+        var root = collection.rootTags()
+        assertThat(root).hasSize(2).extracting("id").containsExactly("t1", "t2")
+
+        collection.delete("t1")
+        root = collection.rootTags()
+        assertThat(root).hasSize(1).extracting("id").containsExactly("t2")
+    }
+
 }

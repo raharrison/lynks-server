@@ -25,6 +25,7 @@ abstract class DatabaseTest {
             it[Entries.id] = id
             it[Entries.title] = title
             it[plainContent] = content
+            it[Entries.content] = content
             it[src] = "src"
             it[Entries.type] = type
             it[dateUpdated] = System.currentTimeMillis()
