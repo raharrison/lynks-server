@@ -32,10 +32,11 @@ class LinkServiceTest : DatabaseTest() {
 
     @Test
     fun testCreateBasicLink() {
-        val link = linkService.add(newLink("n1", "google.com"))
+        val link = linkService.add(newLink("n1", "google.com/page"))
         assertThat(link.type).isEqualTo(EntryType.LINK)
         assertThat(link.title).isEqualTo("n1")
-        assertThat(link.url).isEqualTo("google.com")
+        assertThat(link.url).isEqualTo("google.com/page")
+        assertThat(link.source).isEqualTo("google.com")
     }
 
     @Test

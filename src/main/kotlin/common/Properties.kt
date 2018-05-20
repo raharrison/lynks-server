@@ -24,8 +24,10 @@ open class BaseProperties {
             tasks.add(task)
     }
 
-    fun addTask(description: String, task: TaskBuilder) {
-        addTask(TaskDefinition(RandomUtils.generateUid(), description, task.clazz.qualifiedName!!, task.context.input))
+    fun addTask(description: String, task: TaskBuilder): TaskDefinition {
+        val definition = TaskDefinition(RandomUtils.generateUid(), description, task.clazz.qualifiedName!!, task.context.input)
+        addTask(definition)
+        return definition
     }
 
     fun getTask(id: String): TaskDefinition? = tasks.find { it.id == id }
