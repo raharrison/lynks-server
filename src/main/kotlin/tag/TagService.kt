@@ -28,13 +28,13 @@ class TagService {
                 .map { toTag(it, ::getTagChildren) }
     }
 
-    fun getAllTags(): Collection<Tag> = tagCollection.rootTags()
+    fun getAllTags(): Collection<Tag> = tagCollection.rootTags().map { it.copy() }
 
-    fun getTags(ids: List<String>): List<Tag> = tagCollection.tagsIn(ids)
+    fun getTags(ids: List<String>): List<Tag> = tagCollection.tagsIn(ids).map { it.copy() }
 
-    fun getTag(id: String): Tag? = tagCollection.tag(id)
+    fun getTag(id: String): Tag? = tagCollection.tag(id)?.copy()
 
-    fun subtree(id: String): Collection<Tag> = tagCollection.subtree(id)
+    fun subtree(id: String): Collection<Tag> = tagCollection.subtree(id).map { it.copy() }
 
     fun updateTag(tag: NewTag): Tag {
         val id = tag.id
