@@ -92,7 +92,7 @@ open class DefaultLinkProcessor : LinkProcessor {
         return ImageResource(session.command.page.printToPDF(true, false, true,
                 0.9, 11.7, 16.5,
                 0.1, 0.1, 0.1, 0.1,
-                null, false, null, null), PDF)
+                null, false, null, null, false), PDF)
     }
 
     override val html: String get() = session.content

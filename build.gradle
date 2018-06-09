@@ -55,16 +55,14 @@ dependencies {
     compile "com.vladsch.flexmark:flexmark-ext-autolink:$flexmark_version"
     compile "com.vladsch.flexmark:flexmark-ext-superscript:$flexmark_version"
 
-    compile "io.webfolder:cdp4j:2.2.4"
+    compile "io.webfolder:cdp4j:3.0.0"
     compile 'com.github.chimbori:crux:2.0.1'
-    compile "com.google.guava:guava:24.0-jre"
+    compile "com.google.guava:guava:25.1-jre"
     compile 'com.github.kittinunf.fuel:fuel:1.12.1'
 
     compile "ch.qos.logback:logback-classic:1.2.1"
 
-    testCompile("org.junit.jupiter:junit-jupiter-api:5.1.1")
-    testCompile 'org.assertj:assertj-core:3.9.0'
-    testCompile "io.mockk:mockk:1.7.15"
-    testCompile 'net.bytebuddy:byte-buddy:1.8.8'
-    testCompile 'net.bytebuddy:byte-buddy-agent:1.8.8'
+    testCompile("org.junit.jupiter:junit-jupiter-api:5.2.0")
+    testCompile 'org.assertj:assertj-core:3.10.0'
+    testCompile "io.mockk:mockk:1.8.3"
 }
