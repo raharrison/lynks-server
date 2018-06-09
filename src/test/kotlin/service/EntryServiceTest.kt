@@ -15,6 +15,7 @@ class EntryServiceTest: DatabaseTest() {
     @BeforeEach
     fun createEntries() {
         createDummyEntry("id1", "link1", "link content", EntryType.LINK)
+        Thread.sleep(10)// prevent having same creation timestamp
         createDummyEntry("id2", "note1", "note content", EntryType.NOTE)
     }
 
