@@ -63,18 +63,19 @@ class YoutubeDlTaskTest {
                 type = ResourceType.UPLOAD) } returns
                 Resource("rid", "eid", name, "", ResourceType.UPLOAD, 1, 1, 1)
 
-        objectMockk(ExecUtils).use {
+        mockkObject(ExecUtils)
 
-            every { ExecUtils.executeCommand(any()) } returns Result.Success(commandResult)
+        every { ExecUtils.executeCommand(any()) } returns Result.Success(commandResult)
 
-            runBlocking {
-                youtubeDlTask.process(context)
-            }
-
-            verify(exactly = 1) { ExecUtils.executeCommand(match {
-                it.startsWith("youtube-dl") && it.endsWith(url)
-            }) }
+        runBlocking {
+            youtubeDlTask.process(context)
         }
+
+        verify(exactly = 1) { ExecUtils.executeCommand(match {
+            it.startsWith("youtube-dl") && it.endsWith(url)
+        }) }
+
+        unmockkObject(ExecUtils)
 
         verify(exactly = 1) {
             resourceManager.saveGeneratedResource(
@@ -97,14 +98,15 @@ class YoutubeDlTaskTest {
 
         every { resourceManager.constructPath("eid", any()) } returns Paths.get("file.webm")
 
-        objectMockk(ExecUtils).use {
+        mockkObject(ExecUtils)
 
-            every { ExecUtils.executeCommand(any()) } returns Result.Failure(ExecException(-1, "error"))
+        every { ExecUtils.executeCommand(any()) } returns Result.Failure(ExecException(-1, "error"))
 
-            runBlocking {
-                youtubeDlTask.process(context)
-            }
+        runBlocking {
+            youtubeDlTask.process(context)
         }
+
+        unmockkObject(ExecUtils)
 
         verify(exactly = 1) { resourceManager.constructPath("eid", any()) }
     }
