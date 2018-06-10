@@ -50,6 +50,7 @@ class LinkService(tagService: TagService, private val resourceManager: ResourceM
         if(!resourceManager.moveTempFiles(link.id, link.url)) {
             workerRegistry.acceptLinkWork(PersistLinkProcessingRequest(link))
         }
+        workerRegistry.acceptDiscussionWork(link)
         return link
     }
 

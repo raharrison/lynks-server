@@ -5,14 +5,14 @@ import util.RandomUtils
 
 open class BaseProperties {
 
-    val attributes = mutableMapOf<String, String>()
+    val attributes = mutableMapOf<String, Any>()
     val tasks = mutableListOf<TaskDefinition>()
 
-    fun addAttribute(key: String, value: String) {
+    fun addAttribute(key: String, value: Any) {
         attributes[key] = value
     }
 
-    fun getAttribute(key: String): String? = attributes[key]
+    fun getAttribute(key: String): Any? = attributes[key]
 
     fun containsAttribute(key: String) = attributes.contains(key)
 

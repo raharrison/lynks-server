@@ -28,6 +28,7 @@ class LinkServiceTest : DatabaseTest() {
         every { resourceManager.moveTempFiles(any(), any()) } returns true
         every { resourceManager.deleteAll(any()) } returns true
         val workerRegistry = mockk<WorkerRegistry>()
+        every { workerRegistry.acceptDiscussionWork(any()) } just Runs
         linkService = LinkService(tagService, resourceManager, workerRegistry)
     }
 
@@ -57,12 +58,14 @@ class LinkServiceTest : DatabaseTest() {
 
         val workerRegistry = mockk<WorkerRegistry>()
         every { workerRegistry.acceptLinkWork(any()) } just Runs
+        every { workerRegistry.acceptDiscussionWork(any()) } just Runs
 
         linkService = LinkService(tagService, resourceManager, workerRegistry)
         val link = linkService.add(newLink("n1", "google.com", listOf("t1", "t2")))
 
         verify(exactly = 1) { resourceManager.moveTempFiles(link.id, link.url) }
         verify(exactly = 1) { workerRegistry.acceptLinkWork(ofType(PersistLinkProcessingRequest::class)) }
+        verify(exactly = 1) { workerRegistry.acceptDiscussionWork(link) }
     }
 
     @Test
