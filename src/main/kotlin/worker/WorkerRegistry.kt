@@ -5,14 +5,15 @@ import entry.LinkService
 import kotlinx.coroutines.experimental.channels.SendChannel
 import resource.ResourceManager
 import resource.WebResourceRetriever
+import schedule.ScheduleService
 import task.Task
 import task.TaskContext
 
 class WorkerRegistry {
 
-    fun init(resourceManager: ResourceManager, linkService: LinkService) {
+    fun init(resourceManager: ResourceManager, linkService: LinkService, scheduleService: ScheduleService) {
         linkWorker = LinkProcessorWorker(resourceManager, linkService).worker()
-        discussionWorker = DiscussionFinderWorker(linkService, WebResourceRetriever()).worker()
+        discussionWorker = DiscussionFinderWorker(linkService, scheduleService, WebResourceRetriever()).worker()
     }
 
     private lateinit var linkWorker: SendChannel<LinkProcessingRequest>

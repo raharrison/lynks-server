@@ -6,6 +6,10 @@ import kotlinx.coroutines.experimental.channels.actor
 import kotlinx.coroutines.experimental.delay
 import kotlinx.coroutines.experimental.launch
 import resource.ResourceRetriever
+import schedule.ScheduleService
+import schedule.ScheduleType
+import schedule.ScheduledJobs.entryId
+import schedule.ScheduledJobs.interval
 import util.JsonMapper.defaultMapper
 import util.loggerFor
 import java.net.URLEncoder
@@ -14,17 +18,32 @@ import java.util.concurrent.TimeUnit
 
 private val logger = loggerFor<DiscussionFinderWorker>()
 
-class DiscussionFinderWorker(private val linkService: LinkService, private val resourceRetriever: ResourceRetriever) : Worker {
+class DiscussionFinderWorker(private val linkService: LinkService,
+                             private val scheduleService: ScheduleService,
+                             private val resourceRetriever: ResourceRetriever) : Worker {
 
     private data class Discussion(val title: String, val url: String, val score: Int, val comments: Int, val created: Long)
 
     override fun worker() = actor<Link> {
-        for (request in channel) {
-            launch {
-                logger.info("Launching discussion finder for entry ${request.id}")
-                findDiscussions(request.id, -1)
-            }
+
+        scheduleService.get(ScheduleType.DISCUSSION_FINDER).forEach {
+            val id = it[entryId]
+            val intervalVal = it[interval]
+            val intervalIndex = intervals.indexOf(intervalVal)
+            launchFinderJob(id, intervalIndex)
         }
+
+        for (request in channel) {
+            launchFinderJob(request.id, -1)
+        }
+    }
+
+    private fun launchFinderJob(linkId: String, initialIntervalIndex: Int) = launch {
+        logger.info("Launching discussion finder for entry $linkId")
+        if(initialIntervalIndex == -1) {
+            scheduleService.add(linkId, ScheduleType.DISCUSSION_FINDER, intervals[0])
+        }
+        findDiscussions(linkId, initialIntervalIndex)
     }
 
     private val intervals = listOf<Long>(60, 60 * 4, 60 * 10, 60 * 24)
@@ -53,12 +72,16 @@ class DiscussionFinderWorker(private val linkService: LinkService, private val r
                     intervalIndex--
                 } else {
                     logger.info("Discussion finder for entry ${link.id} ending")
+                    scheduleService.delete(linkId, ScheduleType.DISCUSSION_FINDER)
                     break
                 }
             }
 
             val interval = intervals[intervalIndex]
             logger.info("Discussion finder for entry ${link.id} sleeping for $interval minutes")
+
+            scheduleService.update(linkId, ScheduleType.DISCUSSION_FINDER, interval)
+
             delay(interval, TimeUnit.MINUTES)
         }
     }

@@ -9,6 +9,7 @@ import org.jetbrains.exposed.sql.deleteAll
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.transactions.transaction
 import resource.Resources
+import schedule.ScheduledJobs
 import tag.EntryTags
 import tag.Tags
 import util.loggerFor
@@ -23,7 +24,7 @@ class DatabaseFactory {
         logger.info("Initialising database")
         Database.connect("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", driver = "org.h2.Driver")
         transaction {
-            create(Entries, Comments, Tags, EntryTags, Resources)
+            create(Entries, Comments, Tags, EntryTags, Resources, ScheduledJobs)
             Entries.insert {
                 it[id] = "3kf92nf304"
                 it[title] = "link title"
@@ -41,6 +42,7 @@ class DatabaseFactory {
         EntryTags.deleteAll()
         Tags.deleteAll()
         Comments.deleteAll()
+        ScheduledJobs.deleteAll()
         Entries.deleteAll()
     }
 }

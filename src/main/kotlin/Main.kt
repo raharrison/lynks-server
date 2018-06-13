@@ -15,6 +15,7 @@ import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import resource.ResourceManager
 import resource.resources
+import schedule.ScheduleService
 import suggest.SuggestionService
 import suggest.suggest
 import tag.TagService
@@ -42,9 +43,10 @@ fun Application.module() {
         register(LinkService(get(), get(), get()))
         register(NoteService(get(), get()))
         register(CommentService())
+        register(ScheduleService())
         register(SuggestionService(get()))
         register(TaskService(get(), this, get()))
-        workerRegistry.init(get(), get())
+        workerRegistry.init(get(), get(), get())
     }
 
     install(Routing) {
