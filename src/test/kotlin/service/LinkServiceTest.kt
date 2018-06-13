@@ -91,7 +91,9 @@ class LinkServiceTest : DatabaseTest() {
     @Test
     fun testGetLinksPage() {
         linkService.add(newLink("n1", "google.com", listOf("t1", "t2")))
+        Thread.sleep(10)
         linkService.add(newLink("n2", "amazon.com", listOf("t1", "t2")))
+        Thread.sleep(10)
         linkService.add(newLink("n3", "netflix.com", listOf("t1", "t2")))
 
         var links = linkService.get(PageRequest(0, 1))

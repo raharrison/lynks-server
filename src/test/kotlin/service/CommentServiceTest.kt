@@ -80,7 +80,9 @@ class CommentServiceTest : DatabaseTest() {
     @Test
     fun testGetCommentsPage() {
         commentService.addComment("e1", newComment(content = "comment content 1"))
+        Thread.sleep(10)
         commentService.addComment("e1", newComment(content = "comment content 2"))
+        Thread.sleep(10)
         commentService.addComment("e1", newComment(content = "comment content 3"))
 
         var comments = commentService.getCommentsFor("e1", PageRequest(0, 1))

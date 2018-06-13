@@ -68,7 +68,9 @@ class NoteServiceTest : DatabaseTest() {
     @Test
     fun testGetNotesPage() {
         noteService.add(newNote("n1", "content1", listOf("t1", "t2")))
+        Thread.sleep(10)
         noteService.add(newNote("n2", "content2", listOf("t1", "t2")))
+        Thread.sleep(10)
         noteService.add(newNote("n3", "content3", listOf("t1", "t2")))
 
         var notes = noteService.get(PageRequest(0, 1))
