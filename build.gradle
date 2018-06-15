@@ -1,9 +1,9 @@
 buildscript {
     ext.kotlin_version = '1.2.50'
     ext.ktor_version = '0.9.2'
-    ext.exposed_version = '0.10.2'
-    ext.h2_version = '1.4.196'
-    ext.flexmark_version = '0.32.4'
+    ext.exposed_version = '0.10.3'
+    ext.h2_version = '1.4.197'
+    ext.flexmark_version = '0.34.0'
 
     repositories {
         mavenCentral()
