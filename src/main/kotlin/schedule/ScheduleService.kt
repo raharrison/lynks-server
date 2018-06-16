@@ -8,31 +8,34 @@ import schedule.ScheduledJobs.type
 class ScheduleService {
 
     fun get(scheduleType: ScheduleType) = transaction {
-        ScheduledJobs.select { type eq scheduleType }.toList()
+        ScheduledJobs.select { type eq scheduleType }.map {
+            ScheduledJob(it[ScheduledJobs.entryId], it[ScheduledJobs.type], it[ScheduledJobs.interval])
+        }
     }
 
     fun get(eId: String, scheduleType: ScheduleType) = transaction {
-        ScheduledJobs.select { (entryId eq eId) and (type eq scheduleType) }.toList()
+        ScheduledJobs.select { (entryId eq eId) and (type eq scheduleType) }.map {
+            ScheduledJob(it[ScheduledJobs.entryId], it[ScheduledJobs.type], it[ScheduledJobs.interval])
+        }
     }
 
-    fun add(eId: String, scheduleType: ScheduleType, interval: Long): Unit = transaction {
+    fun add(job: ScheduledJob): Unit = transaction {
         ScheduledJobs.insert {
-            it[ScheduledJobs.entryId] = eId
-            it[ScheduledJobs.type] = scheduleType
-            it[ScheduledJobs.interval] = interval
-        }
-        Unit
-    }
-
-    fun update(linkId: String, scheduleType: ScheduleType, interval: Long) = transaction {
-        ScheduledJobs.update( { (entryId eq linkId) and
-                (type eq scheduleType)}) {
-            it[ScheduledJobs.interval] = interval
+            it[ScheduledJobs.entryId] = job.entryId
+            it[ScheduledJobs.type] = job.type
+            it[ScheduledJobs.interval] = job.interval
         }
     }
 
-    fun delete(eId: String, scheduleType: ScheduleType) = transaction {
-        ScheduledJobs.deleteWhere { (entryId eq eId) and (type eq scheduleType) } > 0
+    fun update(job: ScheduledJob) = transaction {
+        ScheduledJobs.update( { (entryId eq job.entryId) and
+                (type eq job.type)}) {
+            it[ScheduledJobs.interval] = job.interval
+        }
+    }
+
+    fun delete(job: ScheduledJob) = transaction {
+        ScheduledJobs.deleteWhere { (entryId eq job.entryId) and (type eq job.type) } > 0
     }
 
 }

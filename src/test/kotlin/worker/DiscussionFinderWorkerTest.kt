@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test
 import resource.ResourceRetriever
 import schedule.ScheduleService
 import schedule.ScheduleType
+import schedule.ScheduledJob
 
 class DiscussionFinderWorkerTest {
 
@@ -21,15 +22,15 @@ class DiscussionFinderWorkerTest {
     private val scheduleService = mockk<ScheduleService>()
     private val linkService = mockk<LinkService>()
     private val retriever = mockk<ResourceRetriever>()
-    private val intervals = mutableListOf<Long>()
+    private val intervals = mutableListOf<ScheduledJob>()
     private val linkSlot = slot<Link>()
 
     @BeforeEach
     fun before() {
         every { scheduleService.get(ScheduleType.DISCUSSION_FINDER) } returns emptyList()
-        every { scheduleService.add(link.id, ScheduleType.DISCUSSION_FINDER, any()) } just Runs
-        every { scheduleService.update(link.id, ScheduleType.DISCUSSION_FINDER, capture(intervals)) } returns 1
-        every { scheduleService.delete(link.id, ScheduleType.DISCUSSION_FINDER) } returns true
+        every { scheduleService.add(any()) } just Runs
+        every { scheduleService.update(capture(intervals)) } returns 1
+        every { scheduleService.delete(ScheduledJob(link.id, ScheduleType.DISCUSSION_FINDER)) } returns true
 
         every { linkService.get("id1") } answers { link } andThen { linkSlot.captured }
         every { linkService.update(capture(linkSlot)) } answers { link } andThen { linkSlot.captured }
@@ -47,9 +48,9 @@ class DiscussionFinderWorkerTest {
         worker.close()
 
         verify(exactly = 1) { scheduleService.get(ScheduleType.DISCUSSION_FINDER) }
-        verify(exactly = 1) { scheduleService.add(link.id, ScheduleType.DISCUSSION_FINDER, any()) }
-        verify(exactly = 1) { scheduleService.delete(link.id, ScheduleType.DISCUSSION_FINDER) }
-        verify(exactly = 4) { scheduleService.update(link.id, ScheduleType.DISCUSSION_FINDER, any()) }
+        verify(exactly = 1) { scheduleService.add(any()) }
+        verify(exactly = 1) { scheduleService.delete(ScheduledJob(link.id, ScheduleType.DISCUSSION_FINDER)) }
+        verify(exactly = 4) { scheduleService.update(any()) }
         assertThat(intervals).hasSize(4).doesNotHaveDuplicates()
 
         verify(exactly = 5) { linkService.get(link.id) }
@@ -72,9 +73,9 @@ class DiscussionFinderWorkerTest {
         worker.close()
 
         verify(exactly = 1) { scheduleService.get(ScheduleType.DISCUSSION_FINDER) }
-        verify(exactly = 1) { scheduleService.add(link.id, ScheduleType.DISCUSSION_FINDER, any()) }
-        verify(exactly = 1) { scheduleService.delete(link.id, ScheduleType.DISCUSSION_FINDER) }
-        verify(exactly = 4) { scheduleService.update(link.id, ScheduleType.DISCUSSION_FINDER, any()) }
+        verify(exactly = 1) { scheduleService.add(any()) }
+        verify(exactly = 1) { scheduleService.delete(ScheduledJob(link.id, ScheduleType.DISCUSSION_FINDER)) }
+        verify(exactly = 4) { scheduleService.update(any()) }
         assertThat(intervals).hasSize(4).doesNotHaveDuplicates()
 
         verify(exactly = 5) { linkService.get(link.id) }

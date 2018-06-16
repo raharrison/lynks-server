@@ -12,3 +12,5 @@ object ScheduledJobs : Table() {
 enum class ScheduleType {
     DISCUSSION_FINDER
 }
+
+data class ScheduledJob(val entryId: String, val type: ScheduleType, val interval: Long=0)
