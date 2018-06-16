@@ -2,9 +2,7 @@ package worker
 
 import common.Link
 import entry.LinkService
-import kotlinx.coroutines.experimental.channels.actor
 import kotlinx.coroutines.experimental.delay
-import kotlinx.coroutines.experimental.launch
 import resource.ResourceRetriever
 import schedule.ScheduleService
 import schedule.ScheduleType
@@ -20,25 +18,25 @@ private val logger = loggerFor<DiscussionFinderWorker>()
 
 class DiscussionFinderWorker(private val linkService: LinkService,
                              private val scheduleService: ScheduleService,
-                             private val resourceRetriever: ResourceRetriever) : Worker {
+                             private val resourceRetriever: ResourceRetriever) : Worker<Link>() {
 
     private data class Discussion(val title: String, val url: String, val score: Int, val comments: Int, val created: Long)
 
-    override fun worker() = actor<Link> {
-
+    override suspend fun beforeWork() {
+        super.beforeWork()
         scheduleService.get(ScheduleType.DISCUSSION_FINDER).forEach {
             val id = it[entryId]
             val intervalVal = it[interval]
             val intervalIndex = intervals.indexOf(intervalVal)
-            launchFinderJob(id, intervalIndex)
-        }
-
-        for (request in channel) {
-            launchFinderJob(request.id, -1)
+            launchJob({launchFinderJob(id, intervalIndex)})
         }
     }
 
-    private fun launchFinderJob(linkId: String, initialIntervalIndex: Int) = launch {
+    override suspend fun doWork(input: Link) {
+        launchFinderJob(input.id, -1)
+    }
+
+    private suspend fun launchFinderJob(linkId: String, initialIntervalIndex: Int) {
         logger.info("Launching discussion finder for entry $linkId")
         if(initialIntervalIndex == -1) {
             scheduleService.add(linkId, ScheduleType.DISCUSSION_FINDER, intervals[0])
@@ -91,8 +89,9 @@ class DiscussionFinderWorker(private val linkService: LinkService,
     private fun hackerNewsDiscussions(url: String): List<Discussion> {
         val base = "http://hn.algolia.com/api/v1/search?query=%s&restrictSearchableAttributes=url"
         val response = resourceRetriever.getString(base.format(encode(url)))
-        val node = defaultMapper.readTree(response)
         val discussions = mutableListOf<Discussion>()
+        if(response == null || response.isBlank()) return discussions
+        val node = defaultMapper.readTree(response)
 
         if (node.has("hits")) {
             for (hit in node.get("hits")) {
@@ -112,8 +111,9 @@ class DiscussionFinderWorker(private val linkService: LinkService,
     private fun redditDiscussions(url: String): List<Discussion> {
         val base = "https://www.reddit.com/api/info.json?url=%s"
         val response = resourceRetriever.getString(base.format(encode(url)))
-        val node = defaultMapper.readTree(response)
         val discussions = mutableListOf<Discussion>()
+        if(response == null || response.isBlank()) return discussions
+        val node = defaultMapper.readTree(response)
 
         if (node.has("data")) {
             val data = node.get("data")

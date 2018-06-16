@@ -5,7 +5,6 @@ import entry.LinkService
 import kotlinx.coroutines.experimental.CompletableDeferred
 import kotlinx.coroutines.experimental.Deferred
 import kotlinx.coroutines.experimental.async
-import kotlinx.coroutines.experimental.channels.actor
 import link.DefaultLinkProcessor
 import link.LinkProcessor
 import link.YoutubeLinkProcessor
@@ -19,16 +18,15 @@ sealed class LinkProcessingRequest
 class PersistLinkProcessingRequest(val link: Link) : LinkProcessingRequest()
 class SuggestLinkProcessingRequest(val url: String, val response: CompletableDeferred<Suggestion>) : LinkProcessingRequest()
 
-class LinkProcessorWorker(private val resourceManager: ResourceManager, private val linkService: LinkService) : Worker {
+class LinkProcessorWorker(private val resourceManager: ResourceManager, private val linkService: LinkService) : Worker<LinkProcessingRequest>() {
+
 
     private val processors = listOf<() -> LinkProcessor>({ YoutubeLinkProcessor(WebResourceRetriever()) })
 
-    override fun worker() = actor<LinkProcessingRequest> {
-        for (request in channel) {
-            when (request) {
-                is PersistLinkProcessingRequest -> processLinkPersist(request.link)
-                is SuggestLinkProcessingRequest -> processLinkSuggest(request.url, request.response)
-            }
+    override suspend fun doWork(input: LinkProcessingRequest) {
+        when (input) {
+            is PersistLinkProcessingRequest -> processLinkPersist(input.link)
+            is SuggestLinkProcessingRequest -> processLinkSuggest(input.url, input.response)
         }
     }
 
