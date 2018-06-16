@@ -1,0 +1,62 @@
+{
+  "hits":[
+    {
+      "created_at":"2018-06-08T21:40:42.000Z",
+      "title":"Ok-Cancel versus Cancel-Ok",
+      "url":"https://www.factorio.com/blog/post/fff-246",
+      "author":"zaksoup",
+      "points":543,
+      "story_text":null,
+      "comment_text":null,
+      "num_comments":278,
+      "story_id":null,
+      "story_title":null,
+      "story_url":null,
+      "parent_id":null,
+      "created_at_i":1528494042,
+      "_tags":[
+        "story",
+        "author_zaksoup",
+        "story_17269938"
+      ],
+      "objectID":"17269938",
+      "_highlightResult":{
+        "title":{
+          "value":"Ok-Cancel versus Cancel-Ok",
+          "matchLevel":"none",
+          "matchedWords":[
+
+          ]
+        },
+        "url":{
+          "value":"\u003cem\u003ehttps\u003c/em\u003e://\u003cem\u003ewww.factorio.com\u003c/em\u003e/\u003cem\u003eblog\u003c/em\u003e/\u003cem\u003epost\u003c/em\u003e\u003cem\u003e/fff-246\u003c/em\u003e",
+          "matchLevel":"full",
+          "fullyHighlighted":true,
+          "matchedWords":[
+            "https",
+            "wwwfactoriocom",
+            "blog",
+            "post",
+            "fff",
+            "246"
+          ]
+        },
+        "author":{
+          "value":"zaksoup",
+          "matchLevel":"none",
+          "matchedWords":[
+
+          ]
+        }
+      }
+    }
+  ],
+  "nbHits":1,
+  "page":0,
+  "nbPages":1,
+  "hitsPerPage":20,
+  "processingTimeMS":8,
+  "exhaustiveNbHits":true,
+  "query":"https://www.factorio.com/blog/post/fff-246",
+  "params":"advancedSyntax=true\u0026analytics=false\u0026query=https%3A%2F%2Fwww.factorio.com%2Fblog%2Fpost%2Ffff-246\u0026restrictSearchableAttributes=url"
+}
