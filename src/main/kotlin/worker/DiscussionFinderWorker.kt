@@ -25,20 +25,14 @@ class DiscussionFinderWorker(private val linkService: LinkService,
         super.beforeWork()
         scheduleService.get(ScheduleType.DISCUSSION_FINDER).forEach {
             val intervalIndex = intervals.indexOf(it.interval)
-            launchJob({launchFinderJob(it.entryId, intervalIndex)})
+            launchJob({findDiscussions(it.entryId, intervalIndex)})
         }
     }
 
     override suspend fun doWork(input: Link) {
-        launchFinderJob(input.id, -1)
-    }
-
-    private suspend fun launchFinderJob(linkId: String, initialIntervalIndex: Int) {
-        logger.info("Launching discussion finder for entry $linkId")
-        if(initialIntervalIndex == -1) {
-            scheduleService.add(ScheduledJob(linkId, ScheduleType.DISCUSSION_FINDER, intervals[0]))
-        }
-        findDiscussions(linkId, initialIntervalIndex)
+        logger.info("Launching discussion finder for entry ${input.id}")
+        scheduleService.add(ScheduledJob(input.id, ScheduleType.DISCUSSION_FINDER, intervals[0]))
+        findDiscussions(input.id, -1)
     }
 
     private val intervals = listOf<Long>(60, 60 * 4, 60 * 10, 60 * 24)

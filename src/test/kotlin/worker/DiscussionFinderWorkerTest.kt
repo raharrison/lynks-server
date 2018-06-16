@@ -92,6 +92,32 @@ class DiscussionFinderWorkerTest {
         verify(exactly = 5 * 2) { retriever.getString(any()) }
     }
 
+    @Test
+    fun testInitFromSchedule() = runBlocking(TestCoroutineContext()) {
+        every { retriever.getString(match { it.contains("hn.algolia") }) } returns ""
+        every { retriever.getString(match { it.contains("reddit.com") }) } returns ""
+
+        every { scheduleService.get(ScheduleType.DISCUSSION_FINDER) } returns listOf(ScheduledJob(link.id, ScheduleType.DISCUSSION_FINDER, 600))
+
+        val worker = DiscussionFinderWorker(linkService, scheduleService, retriever)
+                .apply { runner = coroutineContext }.worker()
+
+        worker.close()
+
+        verify(exactly = 1) { scheduleService.get(ScheduleType.DISCUSSION_FINDER) }
+        verify(exactly = 0) { scheduleService.add(any()) }
+        verify(exactly = 1) { scheduleService.update(any()) }
+        verify(exactly = 1) { scheduleService.delete(ScheduledJob(link.id, ScheduleType.DISCUSSION_FINDER)) }
+        assertThat(intervals).hasSize(1)
+
+        verify(exactly = 2) { linkService.get(link.id) }
+        verify(exactly = 2) { linkService.update(ofType(Link::class)) }
+        assertThat(linkSlot.captured.props.containsAttribute("discussions")).isTrue()
+        assertThat(linkSlot.captured.props.getAttribute("discussions") as List<*>).isEmpty()
+
+        verify(exactly = 2 * 2) { retriever.getString(any()) }
+    }
+
     // test init from schedule table
 
     private fun getFile(name: String) = this.javaClass.getResource(name).readText()
