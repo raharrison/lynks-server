@@ -20,5 +20,6 @@ data class NewLink(
         override val id: String? = null,
         val title: String,
         val url: String,
-        override val tags: List<String>
+        override val tags: List<String>,
+        val process: Boolean = true
 ) : NewEntry

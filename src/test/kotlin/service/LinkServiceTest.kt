@@ -69,6 +69,19 @@ class LinkServiceTest : DatabaseTest() {
     }
 
     @Test
+    fun testNoProcessFlag() {
+        val resourceManager = mockk<ResourceManager>()
+        every { resourceManager.moveTempFiles(any(), any()) } returns true
+        val workerRegistry = mockk<WorkerRegistry>()
+        linkService = LinkService(tagService, resourceManager, workerRegistry)
+        val link = linkService.add(newLink("n1", "google.com", "url", listOf("t1", "t2"), false))
+
+        verify(exactly = 1) { resourceManager.moveTempFiles(link.id, link.url) }
+        verify(exactly = 0) { workerRegistry.acceptLinkWork(any()) }
+        verify(exactly = 0) { workerRegistry.acceptDiscussionWork(link) }
+    }
+
+    @Test
     fun testCreateLinkWithInvalidTag() {
         assertThrows<SQLException> { linkService.add(newLink("n1", "google.com", listOf("t1", "invalid"))) }
     }
@@ -254,5 +267,6 @@ class LinkServiceTest : DatabaseTest() {
 
     private fun newLink(title: String, url: String, tags: List<String> = emptyList()) = NewLink(null, title, url, tags)
     private fun newLink(id: String, title: String, url: String, tags: List<String> = emptyList()) = NewLink(id, title, url, tags)
+    private fun newLink(id: String, title: String, url: String, tags: List<String> = emptyList(), process: Boolean) = NewLink(id, title, url, tags, process)
 
 }
