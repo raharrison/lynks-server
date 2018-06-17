@@ -47,6 +47,11 @@ class DiscussionFinderWorker(private val linkService: LinkService,
                 addAll(redditDiscussions(link.url))
             }
             logger.info("Found ${discussions.size} discussions for entry ${link.id}")
+
+            val current = if (link.props.containsAttribute("discussions"))
+                link.props.getAttribute("discussions") as List<*>
+            else emptyList<Any>()
+
             if(discussions.isNotEmpty()) {
                 link.props.addAttribute("discussions", discussions)
                 linkService.update(link)
@@ -54,9 +59,6 @@ class DiscussionFinderWorker(private val linkService: LinkService,
 
             intervalIndex++
             if (intervalIndex >= intervals.size) {
-                val current = if (link.props.containsAttribute("discussions"))
-                    link.props.getAttribute("discussions") as List<*>
-                else emptyList<Any>()
                 // would break but more discussions found
                 if (current.size != discussions.size && discussions.isNotEmpty()) {
                     logger.info("Discussion finder for entry ${link.id} remaining active")

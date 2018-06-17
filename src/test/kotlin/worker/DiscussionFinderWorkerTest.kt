@@ -127,8 +127,6 @@ class DiscussionFinderWorkerTest {
         worker.send(link)
         worker.close()
 
-        //assertThat(intervals).hasSize(4).doesNotHaveDuplicates()
-
         // ensure items not removed
         val discussions = linkSlot.captured.props.getAttribute("discussions") as List<Any?>
         assertThat(discussions).hasSize(6)
@@ -137,6 +135,31 @@ class DiscussionFinderWorkerTest {
         verify(exactly = 5 * 2) { retriever.getString(any()) }
     }
 
+    @Test
+    fun testWorkerContinues() = runBlocking(TestCoroutineContext()){
+        val hnResponses = listOf("", "", "", "", getFile("/hacker_discussions.json"))
+        val redditResponses = listOf("", "", "", "", getFile("/reddit_discussions.json"))
+        every { retriever.getString(match { it.contains("hn.algolia") }) } returnsMany hnResponses
+        every { retriever.getString(match { it.contains("reddit.com") }) } returnsMany redditResponses
+
+        val worker = DiscussionFinderWorker(linkService, scheduleService, retriever)
+                .apply { runner = coroutineContext }.worker()
+
+        worker.send(link)
+        worker.close()
+
+        verify(exactly = 1) { scheduleService.add(any()) }
+        verify(exactly = 1) { scheduleService.delete(ScheduledJob(link.id, ScheduleType.DISCUSSION_FINDER)) }
+        verify(exactly = 5) { scheduleService.update(any()) }
+        assertThat(intervals).hasSize(5)
+
+        verify(exactly = 6) { linkService.get(link.id) }
+        verify(exactly = 2) { linkService.update(ofType(Link::class)) }
+        val discussions = linkSlot.captured.props.getAttribute("discussions") as List<Any?>
+        assertThat(discussions).hasSize(6)
+
+        verify(exactly = 6 * 2) { retriever.getString(any()) }
+    }
 
     private fun getFile(name: String) = this.javaClass.getResource(name).readText()
 
