@@ -3,7 +3,6 @@ package worker
 import common.Link
 import entry.LinkService
 import kotlinx.coroutines.experimental.CompletableDeferred
-import kotlinx.coroutines.experimental.Deferred
 import kotlinx.coroutines.experimental.async
 import link.DefaultLinkProcessor
 import link.LinkProcessor
@@ -18,10 +17,19 @@ sealed class LinkProcessingRequest
 class PersistLinkProcessingRequest(val link: Link) : LinkProcessingRequest()
 class SuggestLinkProcessingRequest(val url: String, val response: CompletableDeferred<Suggestion>) : LinkProcessingRequest()
 
+class LinkProcessorFactory {
+    private val processors = listOf<() -> LinkProcessor>({ YoutubeLinkProcessor(WebResourceRetriever()) })
+
+    suspend fun createProcessors(url: String): List<LinkProcessor> {
+        val procs = processors.asSequence().map { it() }.filter { it.matches(url) }.toList()
+        procs.forEach { it.init(url) }
+        return if (procs.isNotEmpty()) procs else listOf(DefaultLinkProcessor().apply { init(url) })
+    }
+}
+
 class LinkProcessorWorker(private val resourceManager: ResourceManager, private val linkService: LinkService) : Worker<LinkProcessingRequest>() {
 
-
-    private val processors = listOf<() -> LinkProcessor>({ YoutubeLinkProcessor(WebResourceRetriever()) })
+    internal var processorFactory = LinkProcessorFactory()
 
     override suspend fun doWork(input: LinkProcessingRequest) {
         when (input) {
@@ -30,18 +38,12 @@ class LinkProcessorWorker(private val resourceManager: ResourceManager, private 
         }
     }
 
-    private fun findProcessor(url: String): Deferred<List<LinkProcessor>> = async {
-        val procs = processors.asSequence().map { it() }.filter { it.matches(url) }.toList()
-        procs.forEach { it.init(url) }
-        if (procs.isNotEmpty()) procs else listOf(DefaultLinkProcessor().apply { init(url) })
-    }
-
     private suspend fun processLinkPersist(link: Link) {
         try {
-            findProcessor(link.url).await().forEach {
+            processorFactory.createProcessors(link.url).forEach {
                 it.use {
-                    val thumb = async { it.generateThumbnail() }
-                    val screen = async { it.generateScreenshot() }
+                    val thumb = async(runner) { it.generateThumbnail() }
+                    val screen = async(runner) { it.generateScreenshot() }
                     it.enrich(link.props)
                     thumb.await()?.let { resourceManager.saveGeneratedResource(link.id, ResourceType.THUMBNAIL, it.extension, it.image) }
                     screen.await()?.let { resourceManager.saveGeneratedResource(link.id, ResourceType.SCREENSHOT, it.extension, it.image) }
@@ -56,10 +58,10 @@ class LinkProcessorWorker(private val resourceManager: ResourceManager, private 
 
     private suspend fun processLinkSuggest(url: String, deferred: CompletableDeferred<Suggestion>) {
         try {
-            findProcessor(url).await().forEach {
+            processorFactory.createProcessors(url).forEach {
                 it.use {
-                    val thumb = async { it.generateThumbnail() }
-                    val screen = async { it.generateScreenshot() }
+                    val thumb = async(runner) { it.generateThumbnail() }
+                    val screen = async(runner) { it.generateScreenshot() }
                     val thumbPath = thumb.await()?.let { resourceManager.saveTempFile(url, it.image, ResourceType.THUMBNAIL, it.extension) }
                     val screenPath = screen.await()?.let { resourceManager.saveTempFile(url, it.image, ResourceType.SCREENSHOT, it.extension) }
                     it.html?.let { resourceManager.saveTempFile(url, it.toByteArray(), ResourceType.DOCUMENT, HTML) }
