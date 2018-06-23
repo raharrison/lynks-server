@@ -42,11 +42,12 @@ class DatabaseFactory {
 
     private fun enableSearch() = transaction {
         val conn = TransactionManager.current().connection
-        val statement = conn.createStatement()
-        statement.execute("CREATE ALIAS IF NOT EXISTS FT_INIT FOR \"org.h2.fulltext.FullText.init\";")
-        statement.execute("CALL FT_INIT()")
-        statement.execute("CALL FT_CREATE_INDEX('PUBLIC', 'ENTRIES', 'TITLE,PLAINCONTENT');")
-        Unit
+        conn.createStatement().use {
+            it.execute("CREATE ALIAS IF NOT EXISTS FT_INIT FOR \"org.h2.fulltext.FullText.init\";")
+            it.execute("CALL FT_INIT()")
+            it.execute("CALL FT_CREATE_INDEX('PUBLIC', 'ENTRIES', 'TITLE,PLAINCONTENT');")
+            Unit
+        }
     }
 
     fun resetAll(): Unit = transaction {

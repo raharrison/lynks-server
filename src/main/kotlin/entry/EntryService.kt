@@ -42,14 +42,16 @@ class EntryService(tagService: TagService) : EntryRepository<Entry, NewEntry>(ta
 
     fun search(term: String): List<Entry> = transaction {
         val conn = TransactionManager.current().connection
-        val st = conn.prepareStatement("SELECT * FROM FT_SEARCH_DATA(?, 0, 0)")
-        st.setString(1, term)
-        val rs = st.executeQuery()
-        val keys = mutableListOf<String>()
-        while(rs.next()) {
-            val res = rs.getArray("KEYS")
-            (res.array as Array<*>).forEach { keys.add(it.toString())}
+        conn.prepareStatement("SELECT * FROM FT_SEARCH_DATA(?, 0, 0)").use {
+            it.setString(1, term)
+            it.executeQuery().use {
+                val keys = mutableListOf<String>()
+                while (it.next()) {
+                    val res = it.getArray("KEYS")
+                    (res.array as Array<*>).forEach { keys.add(it.toString()) }
+                }
+                keys.mapNotNull { get(it) }
+            }
         }
-        keys.mapNotNull { get(it) }
     }
 }
