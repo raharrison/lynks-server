@@ -22,6 +22,7 @@ class YoutubeLinkProcessorTest {
     fun testGetAttributes() = runBlocking {
         processor.use {
             assertThat(processor.html).isNull()
+            assertThat(processor.content).isNull()
             assertThat(processor.resolvedUrl).isEqualTo(url)
             assertThat(processor.printPage()).isNull()
         }

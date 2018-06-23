@@ -20,6 +20,7 @@ object RowMapper {
                     title = row[Entries.title],
                     url = row[Entries.plainContent]!!,
                     source = row[Entries.src],
+                    content = row[Entries.content],
                     dateUpdated = row[Entries.dateUpdated],
                     tags = tagResolver(row[Entries.id]),
                     props = row[Entries.props] ?: BaseProperties()

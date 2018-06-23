@@ -17,6 +17,8 @@ class YoutubeLinkProcessor(private val retriever: ResourceRetriever) : LinkProce
     }
 
     override val html: String? = null
+    override val content: String? = null
+
     override val title: String get() {
         downloadVideoInfo()?.let {
             val params = URLUtils.extractQueryParams(it)

@@ -28,7 +28,6 @@ class DatabaseFactory {
             create(Entries, Comments, Tags, EntryTags, Resources, ScheduledJobs)
             enableSearch()
         }
-        enableSearch()
         connected = true
     }
 

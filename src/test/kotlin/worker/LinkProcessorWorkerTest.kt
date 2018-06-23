@@ -25,16 +25,18 @@ class LinkProcessorWorkerTest {
 
     @Test
     fun testDefaultPersist() = runBlocking(TestCoroutineContext()) {
-        val link = Link("id1", "title", "google.com", "google.com", 100, emptyList(), BaseProperties())
+        val link = Link("id1", "title", "google.com", "google.com", "", 100, emptyList(), BaseProperties())
 
         val thumb = ImageResource(byteArrayOf(1,2,3), ".jpg")
         val screen = ImageResource(byteArrayOf(4,5,6), ".png")
         val html = "<html>"
+        val content = "article content"
         val processor = mockk<LinkProcessor>()
 
         coEvery { processor.generateThumbnail() } returns thumb
         coEvery { processor.generateScreenshot() } returns screen
         coEvery { processor.html } returns html
+        coEvery { processor.content } returns content
         coEvery { processor.enrich(link.props) } just Runs
         every { processor.close() } just Runs
 
@@ -49,10 +51,12 @@ class LinkProcessorWorkerTest {
         coVerify(exactly = 1) { processorFactory.createProcessors(link.url) }
         verify(exactly = 1) { processor.close() }
         verify(exactly = 1) { linkService.update(link) }
+        assertThat(link.content).isEqualTo(content)
 
         coVerify(exactly = 1) { processor.generateThumbnail() }
         coVerify(exactly = 1) { processor.generateScreenshot() }
         coVerify(exactly = 1) { processor.html }
+        coVerify(exactly = 1) { processor.content }
 
         verify(exactly = 1) { resourceManager.saveGeneratedResource(link.id, ResourceType.THUMBNAIL, thumb.extension, thumb.image) }
         verify(exactly = 1) { resourceManager.saveGeneratedResource(link.id, ResourceType.SCREENSHOT, screen.extension, screen.image) }

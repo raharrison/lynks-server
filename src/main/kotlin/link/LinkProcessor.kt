@@ -1,5 +1,6 @@
 package link
 
+import com.chimbori.crux.articles.ArticleExtractor
 import common.BaseProperties
 import io.webfolder.cdp.AdaptiveProcessManager
 import io.webfolder.cdp.Launcher
@@ -34,6 +35,8 @@ interface LinkProcessor : AutoCloseable {
     }
 
     val html: String?
+
+    val content: String?
 
     val title: String
 
@@ -96,6 +99,15 @@ open class DefaultLinkProcessor : LinkProcessor {
     }
 
     override val html: String get() = session.content
+
+    override val content: String?
+        get() {
+            val article = ArticleExtractor.with(resolvedUrl, html)
+                    .extractMetadata()
+                    .extractContent()
+                    .article()
+            return article.document.toString()
+        }
 
     override val title: String get() = session.title
 

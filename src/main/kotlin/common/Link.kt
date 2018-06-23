@@ -7,6 +7,7 @@ data class Link(
         val title: String,
         val url: String,
         val source: String,
+        var content: String?,
         val dateUpdated: Long,
         val tags: List<Tag>,
         override val props: BaseProperties
