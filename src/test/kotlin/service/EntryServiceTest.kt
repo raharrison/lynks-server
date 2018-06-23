@@ -62,4 +62,32 @@ class EntryServiceTest: DatabaseTest() {
         assertThat(retrieved2).hasAtLeastOneElementOfType(Note::class.java)
     }
 
+    @Test
+    fun testSearchTitle() {
+        val entries = entryService.search("note")
+        assertThat(entries).hasSize(1)
+        assertThat(entries).extracting("id").containsExactly("id2")
+        assertThat(entries).hasAtLeastOneElementOfType(Note::class.java)
+
+        val entries2 = entryService.search("link")
+        assertThat(entries2).hasSize(1)
+        assertThat(entries2).extracting("id").containsExactly("id1")
+        assertThat(entries2).hasAtLeastOneElementOfType(Link::class.java)
+    }
+
+    @Test
+    fun testSearchMultipleResults() {
+        val entries = entryService.search("content")
+        assertThat(entries).hasSize(2)
+        assertThat(entries).extracting("id").containsExactlyInAnyOrder("id1", "id2")
+        assertThat(entries).hasAtLeastOneElementOfType(Note::class.java)
+        assertThat(entries).hasAtLeastOneElementOfType(Link::class.java)
+    }
+
+    @Test
+    fun testSearchNoResults() {
+        val entries = entryService.search("nothing")
+        assertThat(entries).isEmpty()
+    }
+
 }
