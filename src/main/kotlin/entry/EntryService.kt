@@ -10,6 +10,8 @@ import org.jetbrains.exposed.sql.Query
 import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.statements.UpdateBuilder
+import org.jetbrains.exposed.sql.transactions.TransactionManager
+import org.jetbrains.exposed.sql.transactions.transaction
 import tag.TagService
 import util.RowMapper
 
@@ -36,5 +38,18 @@ class EntryService(tagService: TagService) : EntryRepository<Entry, NewEntry>(ta
 
     override fun toUpdate(entry: Entry): Entries.(UpdateBuilder<*>) -> Unit {
         throw NotImplementedError()
+    }
+
+    fun search(term: String): List<Entry> = transaction {
+        val conn = TransactionManager.current().connection
+        val st = conn.prepareStatement("SELECT * FROM FT_SEARCH_DATA(?, 0, 0)")
+        st.setString(1, term)
+        val rs = st.executeQuery()
+        val keys = mutableListOf<String>()
+        while(rs.next()) {
+            val res = rs.getArray("KEYS")
+            (res.array as Array<*>).forEach { keys.add(it.toString())}
+        }
+        keys.mapNotNull { get(it) }
     }
 }

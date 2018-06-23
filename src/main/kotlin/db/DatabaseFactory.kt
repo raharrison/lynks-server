@@ -8,6 +8,7 @@ import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils.create
 import org.jetbrains.exposed.sql.deleteAll
 import org.jetbrains.exposed.sql.insert
+import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.jetbrains.exposed.sql.transactions.transaction
 import resource.Resources
 import schedule.ScheduledJobs
@@ -35,7 +36,17 @@ class DatabaseFactory {
                 it[dateUpdated] = System.currentTimeMillis()
             }
         }
+        enableSearch()
         connected = true
+    }
+
+    private fun enableSearch() = transaction {
+        val conn = TransactionManager.current().connection
+        val statement = conn.createStatement()
+        statement.execute("CREATE ALIAS IF NOT EXISTS FT_INIT FOR \"org.h2.fulltext.FullText.init\";")
+        statement.execute("CALL FT_INIT()")
+        statement.execute("CALL FT_CREATE_INDEX('PUBLIC', 'ENTRIES', 'TITLE,PLAINCONTENT');")
+        Unit
     }
 
     fun resetAll(): Unit = transaction {

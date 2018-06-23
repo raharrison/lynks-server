@@ -21,5 +21,11 @@ fun Route.entry(entryService: EntryService) {
             if (entry == null) call.respond(HttpStatusCode.NotFound)
             else call.respond(entry)
         }
+
+        get("/search") {
+            val query = call.request.queryParameters["q"]
+            if(query == null) call.respond(HttpStatusCode.NotFound)
+            else call.respond(entryService.search(query))
+        }
     }
 }
