@@ -1,5 +1,6 @@
 import comment.CommentService
 import comment.comment
+import common.Environment
 import common.inject.ServiceProvider
 import db.DatabaseFactory
 import entry.*
@@ -64,5 +65,5 @@ fun Application.module() {
 }
 
 fun main(args: Array<String>) {
-    embeddedServer(Netty, 8080, watchPaths = listOf("Main"), module = Application::module).start()
+    embeddedServer(Netty, Environment.port, watchPaths = listOf("Main"), module = Application::module).start()
 }

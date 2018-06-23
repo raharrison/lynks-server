@@ -3,6 +3,7 @@ package db
 import comment.Comments
 import common.Entries
 import common.EntryType
+import common.Environment
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils.create
 import org.jetbrains.exposed.sql.deleteAll
@@ -22,7 +23,7 @@ class DatabaseFactory {
 
     fun connect() {
         logger.info("Initialising database")
-        Database.connect("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", driver = "org.h2.Driver")
+        Database.connect(Environment.database, driver = Environment.driver)
         transaction {
             create(Entries, Comments, Tags, EntryTags, Resources, ScheduledJobs)
             Entries.insert {

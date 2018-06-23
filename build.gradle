@@ -61,6 +61,7 @@ dependencies {
     compile 'com.github.kittinunf.fuel:fuel:1.12.1'
 
     compile "ch.qos.logback:logback-classic:1.2.1"
+    compile "com.uchuhimo:konf:0.10"
 
     testCompile("org.junit.jupiter:junit-jupiter-api:5.2.0")
     testCompile 'org.assertj:assertj-core:3.10.0'
