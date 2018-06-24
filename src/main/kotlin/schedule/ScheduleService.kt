@@ -2,6 +2,7 @@ package schedule
 
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
+import util.RandomUtils
 
 class ScheduleService {
 
@@ -18,15 +19,25 @@ class ScheduleService {
     }
 
     fun getIntervalJobsByType(type: ScheduleType) = transaction {
-        Schedules.select { (Schedules.type eq type) and
-                (Schedules.type neq ScheduleType.REMINDER) and
-                (Schedules.type neq ScheduleType.REMINDER) }.map {
+        Schedules.select {
+            (Schedules.type eq type) and
+                    (Schedules.type neq ScheduleType.REMINDER) and
+                    (Schedules.type neq ScheduleType.REMINDER)
+        }.map {
             IntervalJob(it[Schedules.scheduleId], it[Schedules.entryId],
                     it[Schedules.type], it[Schedules.spec].toLong())
         }
     }
 
     fun getRemindersForEntry(eId: String) = transaction {
+        Schedules.select {
+            (Schedules.scheduleId eq eId) and ((Schedules.type eq ScheduleType.RECURRING) or
+                    (Schedules.type eq ScheduleType.REMINDER))
+        }
+                .map { toModel(it) }
+    }
+
+    fun getAllReminders() = transaction {
         Schedules.select { (Schedules.type eq ScheduleType.RECURRING) or (Schedules.type eq ScheduleType.REMINDER) }
                 .map { toModel(it) }
     }
@@ -46,8 +57,36 @@ class ScheduleService {
         get(job.scheduleId)!!
     }
 
+    fun addReminder(reminder: NewReminder): Schedule = transaction {
+        if (reminder.scheduleId == null) {
+            val id = RandomUtils.generateUid()
+            Schedules.insert {
+                it[Schedules.scheduleId] = id
+                it[Schedules.entryId] = reminder.entryId
+                it[Schedules.type] = reminder.type
+                it[Schedules.spec] = reminder.spec
+            }
+            get(id)!!
+        } else {
+            updateReminder(reminder)
+        }
+    }
+
+    fun updateReminder(reminder: NewReminder): Schedule = transaction {
+        if (reminder.scheduleId == null) {
+            addReminder(reminder)
+        } else {
+            Schedules.update({ Schedules.scheduleId eq reminder.scheduleId }) {
+                it[Schedules.type] = reminder.type
+                it[Schedules.spec] = reminder.spec
+            }
+            get(reminder.scheduleId)!!
+        }
+    }
+
     fun update(job: Schedule): Schedule? = transaction {
         Schedules.update({ Schedules.scheduleId eq job.scheduleId }) {
+            it[Schedules.type] = job.type
             it[Schedules.spec] = job.spec
         }
         get(job.scheduleId)

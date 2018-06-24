@@ -36,4 +36,4 @@ data class RecurringReminder(override val scheduleId: String, override val entry
     override val spec: String = fire
 }
 
-data class NewReminder(val scheduleId: String?=null, val entryId: String, val type: ScheduleType, val fire: String)
+data class NewReminder(val scheduleId: String?=null, val entryId: String, val type: ScheduleType, val spec: String)
