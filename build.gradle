@@ -58,12 +58,12 @@ dependencies {
     compile "io.webfolder:cdp4j:3.0.0"
     compile 'com.github.chimbori:crux:2.0.1'
     compile "com.google.guava:guava:25.1-jre"
-    compile 'com.github.kittinunf.fuel:fuel:1.12.1'
+    compile 'com.github.kittinunf.fuel:fuel:1.13.0'
 
-    compile "ch.qos.logback:logback-classic:1.2.1"
+    compile "ch.qos.logback:logback-classic:1.2.3"
     compile "com.uchuhimo:konf:0.10"
 
     testCompile("org.junit.jupiter:junit-jupiter-api:5.2.0")
     testCompile 'org.assertj:assertj-core:3.10.0'
-    testCompile "io.mockk:mockk:1.8.3"
+    testCompile "io.mockk:mockk:1.8.4"
 }
