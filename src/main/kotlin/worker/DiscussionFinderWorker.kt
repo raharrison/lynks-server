@@ -41,7 +41,7 @@ class DiscussionFinderWorker(private val linkService: LinkService,
     private suspend fun findDiscussions(linkId: String, initialIntervalIndex: Int, scheduleId: String) {
         var intervalIndex = initialIntervalIndex
         while (true) {
-            val link = linkService.get(linkId)!!
+            val link = linkService.get(linkId) ?: break
             logger.info("Finding discussions for entry ${link.id}")
             val discussions = mutableListOf<Discussion>().apply {
                 addAll(hackerNewsDiscussions(link.url))
