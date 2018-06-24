@@ -4,9 +4,9 @@ import common.Link
 import entry.LinkService
 import kotlinx.coroutines.experimental.delay
 import resource.ResourceRetriever
+import schedule.IntervalJob
 import schedule.ScheduleService
 import schedule.ScheduleType
-import schedule.ScheduledJob
 import util.JsonMapper.defaultMapper
 import util.loggerFor
 import java.net.URLEncoder
@@ -23,21 +23,22 @@ class DiscussionFinderWorker(private val linkService: LinkService,
 
     override suspend fun beforeWork() {
         super.beforeWork()
-        scheduleService.get(ScheduleType.DISCUSSION_FINDER).forEach {
+        scheduleService.getIntervalJobsByType(ScheduleType.DISCUSSION_FINDER).forEach {
             val intervalIndex = intervals.indexOf(it.interval)
-            launchJob({findDiscussions(it.entryId, intervalIndex)})
+            launchJob({findDiscussions(it.entryId, intervalIndex, it.scheduleId)})
         }
     }
 
     override suspend fun doWork(input: Link) {
         logger.info("Launching discussion finder for entry ${input.id}")
-        scheduleService.add(ScheduledJob(input.id, ScheduleType.DISCUSSION_FINDER, intervals[0]))
-        findDiscussions(input.id, -1)
+        val schedule = IntervalJob(entryId = input.id, type = ScheduleType.DISCUSSION_FINDER, interval = intervals[0])
+        scheduleService.add(schedule)
+        findDiscussions(input.id, -1, schedule.scheduleId)
     }
 
     private val intervals = listOf<Long>(60, 60 * 4, 60 * 10, 60 * 24)
 
-    private suspend fun findDiscussions(linkId: String, initialIntervalIndex: Int) {
+    private suspend fun findDiscussions(linkId: String, initialIntervalIndex: Int, scheduleId: String) {
         var intervalIndex = initialIntervalIndex
         while (true) {
             val link = linkService.get(linkId)!!
@@ -65,7 +66,7 @@ class DiscussionFinderWorker(private val linkService: LinkService,
                     intervalIndex--
                 } else {
                     logger.info("Discussion finder for entry ${link.id} ending")
-                    scheduleService.delete(ScheduledJob(linkId, ScheduleType.DISCUSSION_FINDER))
+                    scheduleService.delete(scheduleId)
                     break
                 }
             }
@@ -73,7 +74,7 @@ class DiscussionFinderWorker(private val linkService: LinkService,
             val interval = intervals[intervalIndex]
             logger.info("Discussion finder for entry ${link.id} sleeping for $interval minutes")
 
-            scheduleService.update(ScheduledJob(linkId, ScheduleType.DISCUSSION_FINDER, interval))
+            scheduleService.update(IntervalJob(scheduleId, linkId, ScheduleType.DISCUSSION_FINDER, interval))
 
             delay(interval, TimeUnit.MINUTES)
         }

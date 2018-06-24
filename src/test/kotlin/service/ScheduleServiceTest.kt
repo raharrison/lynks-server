@@ -5,11 +5,9 @@ import common.EntryType
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
+import schedule.IntervalJob
 import schedule.ScheduleService
 import schedule.ScheduleType
-import schedule.ScheduledJob
-import java.sql.SQLException
 
 class ScheduleServiceTest: DatabaseTest() {
 
@@ -22,10 +20,10 @@ class ScheduleServiceTest: DatabaseTest() {
     }
 
     @Test
-    fun testAddNewSchedule() {
-        scheduleService.add(job("e1", ScheduleType.DISCUSSION_FINDER, 100))
+    fun testAddNewIntervalSchedule() {
+        scheduleService.add(intervalJob("e1", ScheduleType.DISCUSSION_FINDER, 100))
 
-        val res = scheduleService.get("e1", ScheduleType.DISCUSSION_FINDER)
+        val res = scheduleService.getIntervalJobsByType(ScheduleType.DISCUSSION_FINDER)
         assertThat(res).hasSize(1)
         assertThat(res[0].entryId).isEqualTo("e1")
         assertThat(res[0].type).isEqualTo(ScheduleType.DISCUSSION_FINDER)
@@ -33,19 +31,11 @@ class ScheduleServiceTest: DatabaseTest() {
     }
 
     @Test
-    fun testAddDuplicateSchedule() {
-        assertThrows<SQLException> {
-            scheduleService.add(job("e1", ScheduleType.DISCUSSION_FINDER, 100))
-            scheduleService.add(job("e1", ScheduleType.DISCUSSION_FINDER, 100))
-        }
-    }
+    fun testGetIntervalJobsByType() {
+        scheduleService.add(intervalJob("e1", ScheduleType.DISCUSSION_FINDER, 100))
+        scheduleService.add(intervalJob("e2", ScheduleType.DISCUSSION_FINDER, 200))
 
-    @Test
-    fun testGetScheduleByType() {
-        scheduleService.add(job("e1", ScheduleType.DISCUSSION_FINDER, 100))
-        scheduleService.add(job("e2", ScheduleType.DISCUSSION_FINDER, 200))
-
-        val res = scheduleService.get(ScheduleType.DISCUSSION_FINDER)
+        val res = scheduleService.getIntervalJobsByType(ScheduleType.DISCUSSION_FINDER)
         assertThat(res).hasSize(2)
         assertThat(res.map { it.entryId }).containsExactlyInAnyOrder("e1", "e2")
         assertThat(res.map { it.type }).containsOnly(ScheduleType.DISCUSSION_FINDER)
@@ -53,20 +43,15 @@ class ScheduleServiceTest: DatabaseTest() {
     }
 
     @Test
-    fun testDeleteSchedule() {
-        scheduleService.add(job("e1", ScheduleType.DISCUSSION_FINDER, 100))
-        assertThat(scheduleService.get("e1", ScheduleType.DISCUSSION_FINDER)).hasSize(1)
-        assertThat(scheduleService.delete(job("e1", ScheduleType.DISCUSSION_FINDER))).isTrue()
-        assertThat(scheduleService.get("e1", ScheduleType.DISCUSSION_FINDER)).isEmpty()
-        assertThat(scheduleService.delete(job("e1", ScheduleType.DISCUSSION_FINDER))).isFalse()
-    }
+    fun testUpdateIntervalSchedule() {
+        val job = intervalJob("e1", ScheduleType.DISCUSSION_FINDER, 100)
+        scheduleService.add(job)
+        val copied = job.copy(interval = 200)
+        assertThat(scheduleService.update(copied)).isEqualTo(copied)
+        assertThat(job.interval).isEqualTo(100)
+        assertThat(copied.interval).isEqualTo(200)
 
-    @Test
-    fun testUpdateSchedule() {
-        scheduleService.add(job("e1", ScheduleType.DISCUSSION_FINDER, 100))
-        assertThat(scheduleService.update(job("e1", ScheduleType.DISCUSSION_FINDER, 200))).isEqualTo(1)
-
-        val res = scheduleService.get("e1", ScheduleType.DISCUSSION_FINDER)
+        val res = scheduleService.getIntervalJobsByType(ScheduleType.DISCUSSION_FINDER)
         assertThat(res).hasSize(1)
         assertThat(res[0].entryId).isEqualTo("e1")
         assertThat(res[0].type).isEqualTo(ScheduleType.DISCUSSION_FINDER)
@@ -74,10 +59,20 @@ class ScheduleServiceTest: DatabaseTest() {
     }
 
     @Test
-    fun testUpdateScheduleNoRow() {
-        assertThat(scheduleService.update(job("e1", ScheduleType.DISCUSSION_FINDER, 200))).isEqualTo(0)
+    fun testDeleteSchedule() {
+        val job = intervalJob("e1", ScheduleType.DISCUSSION_FINDER, 100)
+        scheduleService.add(job)
+        assertThat(scheduleService.getIntervalJobsByType(ScheduleType.DISCUSSION_FINDER)).hasSize(1)
+        assertThat(scheduleService.delete(job.scheduleId)).isTrue()
+        assertThat(scheduleService.getIntervalJobsByType(ScheduleType.DISCUSSION_FINDER)).isEmpty()
+        assertThat(scheduleService.delete(job.scheduleId)).isFalse()
     }
 
-    fun job(eId: String, type: ScheduleType, interval: Long=0) = ScheduledJob(eId, type, interval)
+    @Test
+    fun testUpdateScheduleNoRow() {
+        assertThat(scheduleService.update(intervalJob("e1", ScheduleType.DISCUSSION_FINDER, 200))).isNull()
+    }
+
+    fun intervalJob(eId: String, type: ScheduleType, interval: Long=0) = IntervalJob(entryId=eId, type=type, interval=interval)
 
 }

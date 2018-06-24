@@ -10,7 +10,7 @@ import org.jetbrains.exposed.sql.deleteAll
 import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.jetbrains.exposed.sql.transactions.transaction
 import resource.Resources
-import schedule.ScheduledJobs
+import schedule.Schedules
 import tag.EntryTags
 import tag.Tags
 import util.loggerFor
@@ -25,7 +25,7 @@ class DatabaseFactory {
         logger.info("Initialising database")
         Database.connect(Environment.database, driver = Environment.driver)
         transaction {
-            create(Entries, Comments, Tags, EntryTags, Resources, ScheduledJobs)
+            create(Entries, Comments, Tags, EntryTags, Resources, Schedules)
             enableSearch()
         }
         connected = true
@@ -48,7 +48,7 @@ class DatabaseFactory {
         EntryTags.deleteAll()
         Tags.deleteAll()
         Comments.deleteAll()
-        ScheduledJobs.deleteAll()
+        Schedules.deleteAll()
         Entries.deleteAll()
     }
 }

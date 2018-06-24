@@ -2,40 +2,59 @@ package schedule
 
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
-import schedule.ScheduledJobs.entryId
-import schedule.ScheduledJobs.type
 
 class ScheduleService {
 
-    fun get(scheduleType: ScheduleType) = transaction {
-        ScheduledJobs.select { type eq scheduleType }.map {
-            ScheduledJob(it[ScheduledJobs.entryId], it[ScheduledJobs.type], it[ScheduledJobs.interval])
+    private fun toModel(row: ResultRow): Schedule {
+        val type = row[Schedules.type]
+        return when (type) {
+            ScheduleType.REMINDER -> Reminder(row[Schedules.scheduleId], row[Schedules.entryId],
+                    type, row[Schedules.spec].toLong())
+            ScheduleType.RECURRING -> RecurringReminder(row[Schedules.scheduleId], row[Schedules.entryId],
+                    type, row[Schedules.spec])
+            else -> IntervalJob(row[Schedules.scheduleId], row[Schedules.entryId],
+                    type, row[Schedules.spec].toLong())
         }
     }
 
-    fun get(eId: String, scheduleType: ScheduleType) = transaction {
-        ScheduledJobs.select { (entryId eq eId) and (type eq scheduleType) }.map {
-            ScheduledJob(it[ScheduledJobs.entryId], it[ScheduledJobs.type], it[ScheduledJobs.interval])
+    fun getIntervalJobsByType(type: ScheduleType) = transaction {
+        Schedules.select { (Schedules.type eq type) and
+                (Schedules.type neq ScheduleType.REMINDER) and
+                (Schedules.type neq ScheduleType.REMINDER) }.map {
+            IntervalJob(it[Schedules.scheduleId], it[Schedules.entryId],
+                    it[Schedules.type], it[Schedules.spec].toLong())
         }
     }
 
-    fun add(job: ScheduledJob): Unit = transaction {
-        ScheduledJobs.insert {
-            it[ScheduledJobs.entryId] = job.entryId
-            it[ScheduledJobs.type] = job.type
-            it[ScheduledJobs.interval] = job.interval
-        }
+    fun getRemindersForEntry(eId: String) = transaction {
+        Schedules.select { (Schedules.type eq ScheduleType.RECURRING) or (Schedules.type eq ScheduleType.REMINDER) }
+                .map { toModel(it) }
     }
 
-    fun update(job: ScheduledJob) = transaction {
-        ScheduledJobs.update( { (entryId eq job.entryId) and
-                (type eq job.type)}) {
-            it[ScheduledJobs.interval] = job.interval
-        }
+    fun get(id: String): Schedule? {
+        return Schedules.select { Schedules.scheduleId eq id }
+                .mapNotNull { toModel(it) }.singleOrNull()
     }
 
-    fun delete(job: ScheduledJob) = transaction {
-        ScheduledJobs.deleteWhere { (entryId eq job.entryId) and (type eq job.type) } > 0
+    fun add(job: Schedule) = transaction {
+        Schedules.insert {
+            it[Schedules.scheduleId] = job.scheduleId
+            it[Schedules.entryId] = job.entryId
+            it[Schedules.type] = job.type
+            it[Schedules.spec] = job.spec
+        }
+        get(job.scheduleId)!!
+    }
+
+    fun update(job: Schedule): Schedule? = transaction {
+        Schedules.update({ Schedules.scheduleId eq job.scheduleId }) {
+            it[Schedules.spec] = job.spec
+        }
+        get(job.scheduleId)
+    }
+
+    fun delete(id: String) = transaction {
+        Schedules.deleteWhere { Schedules.scheduleId eq id } > 0
     }
 
 }

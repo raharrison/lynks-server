@@ -4,15 +4,18 @@ import common.BaseProperties
 import common.Link
 import common.TestCoroutineContext
 import entry.LinkService
-import io.mockk.*
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.slot
+import io.mockk.verify
 import kotlinx.coroutines.experimental.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import resource.ResourceRetriever
+import schedule.IntervalJob
 import schedule.ScheduleService
 import schedule.ScheduleType
-import schedule.ScheduledJob
 
 class DiscussionFinderWorkerTest {
 
@@ -22,15 +25,16 @@ class DiscussionFinderWorkerTest {
     private val scheduleService = mockk<ScheduleService>()
     private val linkService = mockk<LinkService>()
     private val retriever = mockk<ResourceRetriever>()
-    private val intervals = mutableListOf<ScheduledJob>()
+    private val intervals = mutableListOf<IntervalJob>()
     private val linkSlot = slot<Link>()
+    private val schedule = slot<IntervalJob>()
 
     @BeforeEach
     fun before() {
-        every { scheduleService.get(ScheduleType.DISCUSSION_FINDER) } returns emptyList()
-        every { scheduleService.add(any()) } just Runs
-        every { scheduleService.update(capture(intervals)) } returns 1
-        every { scheduleService.delete(ScheduledJob(link.id, ScheduleType.DISCUSSION_FINDER)) } returns true
+        every { scheduleService.getIntervalJobsByType(ScheduleType.DISCUSSION_FINDER) } returns emptyList()
+        every { scheduleService.add(capture(schedule)) } answers { schedule.captured }
+        every { scheduleService.update(capture(intervals)) } answers { intervals.last() }
+        every { scheduleService.delete(any()) } returns true
 
         every { linkService.get("id1") } answers { if(linkSlot.isCaptured) linkSlot.captured else link }
         every { linkService.update(capture(linkSlot)) } answers { link } andThen { linkSlot.captured }
@@ -47,10 +51,10 @@ class DiscussionFinderWorkerTest {
         worker.send(link)
         worker.close()
 
-        verify(exactly = 1) { scheduleService.get(ScheduleType.DISCUSSION_FINDER) }
-        verify(exactly = 1) { scheduleService.add(any()) }
-        verify(exactly = 1) { scheduleService.delete(ScheduledJob(link.id, ScheduleType.DISCUSSION_FINDER)) }
-        verify(exactly = 4) { scheduleService.update(any()) }
+        verify(exactly = 1) { scheduleService.getIntervalJobsByType(ScheduleType.DISCUSSION_FINDER) }
+        verify(exactly = 1) { scheduleService.add(schedule.captured) }
+        verify(exactly = 1) { scheduleService.delete(schedule.captured.scheduleId) }
+        verify(exactly = 4) { scheduleService.update(match { it.scheduleId == schedule.captured.scheduleId }) }
         assertThat(intervals).hasSize(4).doesNotHaveDuplicates()
 
         verify(exactly = 5) { linkService.get(link.id) }
@@ -70,10 +74,10 @@ class DiscussionFinderWorkerTest {
         worker.send(link)
         worker.close()
 
-        verify(exactly = 1) { scheduleService.get(ScheduleType.DISCUSSION_FINDER) }
+        verify(exactly = 1) { scheduleService.getIntervalJobsByType(ScheduleType.DISCUSSION_FINDER) }
         verify(exactly = 1) { scheduleService.add(any()) }
-        verify(exactly = 1) { scheduleService.delete(ScheduledJob(link.id, ScheduleType.DISCUSSION_FINDER)) }
-        verify(exactly = 4) { scheduleService.update(any()) }
+        verify(exactly = 1) { scheduleService.delete(schedule.captured.scheduleId) }
+        verify(exactly = 4) { scheduleService.update(match { it.scheduleId == schedule.captured.scheduleId }) }
         assertThat(intervals).hasSize(4).doesNotHaveDuplicates()
 
         verify(exactly = 5) { linkService.get(link.id) }
@@ -95,17 +99,18 @@ class DiscussionFinderWorkerTest {
         every { retriever.getString(match { it.contains("hn.algolia") }) } returns getFile("/hacker_discussions.json")
         every { retriever.getString(match { it.contains("reddit.com") }) } returns getFile("/reddit_discussions.json")
 
-        every { scheduleService.get(ScheduleType.DISCUSSION_FINDER) } returns listOf(ScheduledJob(link.id, ScheduleType.DISCUSSION_FINDER, 600))
+        val scheduleId = "abc123"
+        every { scheduleService.getIntervalJobsByType(ScheduleType.DISCUSSION_FINDER) } returns listOf(IntervalJob(scheduleId, link.id, ScheduleType.DISCUSSION_FINDER, 600))
 
         val worker = DiscussionFinderWorker(linkService, scheduleService, retriever)
                 .apply { runner = coroutineContext }.worker()
 
         worker.close()
 
-        verify(exactly = 1) { scheduleService.get(ScheduleType.DISCUSSION_FINDER) }
+        verify(exactly = 1) { scheduleService.getIntervalJobsByType(ScheduleType.DISCUSSION_FINDER) }
         verify(exactly = 0) { scheduleService.add(any()) }
-        verify(exactly = 1) { scheduleService.update(any()) }
-        verify(exactly = 1) { scheduleService.delete(ScheduledJob(link.id, ScheduleType.DISCUSSION_FINDER)) }
+        verify(exactly = 1) { scheduleService.update(match { it.scheduleId == scheduleId }) }
+        verify(exactly = 1) { scheduleService.delete(scheduleId) }
         assertThat(intervals).hasSize(1)
 
         verify(exactly = 2) { linkService.get(link.id) }
@@ -149,8 +154,8 @@ class DiscussionFinderWorkerTest {
         worker.close()
 
         verify(exactly = 1) { scheduleService.add(any()) }
-        verify(exactly = 1) { scheduleService.delete(ScheduledJob(link.id, ScheduleType.DISCUSSION_FINDER)) }
-        verify(exactly = 5) { scheduleService.update(any()) }
+        verify(exactly = 1) { scheduleService.delete(schedule.captured.scheduleId) }
+        verify(exactly = 5) { scheduleService.update(match { it.scheduleId == schedule.captured.scheduleId }) }
         assertThat(intervals).hasSize(5)
 
         verify(exactly = 6) { linkService.get(link.id) }
