@@ -10,7 +10,7 @@ class FileUtilsTest {
         val iterations = 100
         val set = (0 until iterations).map { FileUtils.createTempFileName("src") }.toSet()
         assertThat(set).hasSize(1)
-        set.forEach( {assertThat(32).isEqualTo(it.length) })
+        set.forEach {assertThat(32).isEqualTo(it.length) }
     }
 
     @Test

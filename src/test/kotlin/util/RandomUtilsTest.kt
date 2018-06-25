@@ -9,7 +9,7 @@ class RandomUtilsTest {
     fun testRandomUidLength() {
         val iterations = 1000
         val set = (0 until iterations).map { RandomUtils.generateUid() }.toSet()
-        set.forEach( {assertThat(12).isEqualTo(it.length) })
+        set.forEach {assertThat(12).isEqualTo(it.length) }
     }
 
     @Test

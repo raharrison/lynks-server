@@ -33,12 +33,12 @@ abstract class DatabaseTest {
     }
 
     protected fun createDummyTag(id: String, name: String, parentId: String?=null) = transaction{
-        Tags.insert({
+        Tags.insert {
             it[Tags.id] = id
             it[Tags.name] = name
             it[Tags.parentId] = parentId
             it[Tags.dateUpdated] = System.currentTimeMillis()
-        })
+        }
 
     }
 }

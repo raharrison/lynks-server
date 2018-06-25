@@ -86,9 +86,9 @@ class YoutubeLinkProcessorTest {
         processor.enrich(props)
         assertThat(props.tasks).extracting("description").contains("Process Link", "Download Audio", "Download Video (max 720p)", "Download Video (max 1080p)")
         assertThat(props.tasks).extracting("className").contains(LinkProcessingTask::class.qualifiedName, YoutubeDlTask::class.qualifiedName)
-        val types = props.tasks.map{
+        val types = props.tasks.mapNotNull {
             it.input["type"]
-        }.filterNotNull()
+        }
         assertThat(types).hasSize(3).containsAll(YoutubeDlTask.YoutubeDlDownload.values().map { it.toString() })
         Unit
     }

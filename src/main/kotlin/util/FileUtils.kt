@@ -31,10 +31,10 @@ object FileUtils {
 
     fun directoriesOlderThan(path: Path, days: Long): List<Path> {
         val now = Instant.now().minus(days, ChronoUnit.DAYS)
-        return Files.newDirectoryStream(path, {
+        return Files.newDirectoryStream(path) {
             Files.readAttributes(path, BasicFileAttributes::class.java)
                     .creationTime().toInstant().isBefore(now)
-        }).toList()
+        }.toList()
     }
 
     fun deleteDirectories(dirs: List<Path>) {

@@ -27,7 +27,7 @@ class YoutubeDlTask(id: String, entryId: String) : Task<YoutubeDlTask.YoutubeDlT
             is Result.Success -> {
                 // find destination
                 val prefix = "[download] Destination:"
-                val filename = result.value.lines().singleOrNull() {
+                val filename = result.value.lines().singleOrNull {
                     it.startsWith(prefix)
                 }
                 // error or file already exists

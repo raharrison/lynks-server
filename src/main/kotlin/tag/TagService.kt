@@ -54,13 +54,13 @@ class TagService {
 
     fun addTag(tag: NewTag): Tag = transaction {
         val newId = RandomUtils.generateUid()
-        Tags.insert({
+        Tags.insert {
             it[id] = newId
             it[name] = tag.name
             it[parentId] = tag.parentId
             it[dateUpdated] = System.currentTimeMillis()
-        })
-            val created =  queryTag(newId)!!
+        }
+        val created =  queryTag(newId)!!
         tagCollection.add(created, tag.parentId)
     }
 

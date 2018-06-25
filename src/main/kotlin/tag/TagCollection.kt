@@ -47,7 +47,7 @@ class TagCollection {
 
     fun tag(id: String): Tag? = tagLookup[id]
 
-    fun tagsIn(ids: Collection<String>): List<Tag> = ids.map { tagLookup[it] }.filterNotNull()
+    fun tagsIn(ids: Collection<String>): List<Tag> = ids.mapNotNull { tagLookup[it] }
 
     fun add(tag: Tag, parent: String?): Tag {
         tagLookup[tag.id] = tag
@@ -57,7 +57,7 @@ class TagCollection {
             ptag.children.add(tag)
             tagParents[tag.id] = ptag
         }
-        traverseParents(tag.id, { tagTree.put(it, tag) })
+        traverseParents(tag.id) { tagTree.put(it, tag) }
         return tag
     }
 
@@ -100,7 +100,7 @@ class TagCollection {
         tagTree.removeAll(id)
         tagLookup.remove(id)
         tag?.children?.forEach{ delete(it.id) }
-        traverseParents(id, { tagTree.remove(it, tag) })
+        traverseParents(id) { tagTree.remove(it, tag) }
         tagParents[id]?.also {
             it.children.remove(tag)
             tagParents.remove(id)
