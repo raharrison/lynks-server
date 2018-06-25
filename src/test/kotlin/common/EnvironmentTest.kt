@@ -22,11 +22,14 @@ class EnvironmentTest {
 
         val db = node.get("database").textValue()
         val driver = node.get("driver").textValue()
+        val resPath = node.get("resourceBasePath").textValue()
+        val tempPath = node.get("resourceTempPath").textValue()
 
         assertThat(db).isEqualTo(Environment.database)
         assertThat(driver).isEqualTo(Environment.driver)
         assertThat(Environment.port).isEqualTo(8080)
-
+        assertThat(resPath).isEqualTo(Environment.resourceBasePath)
+        assertThat(tempPath).isEqualTo(Environment.resourceTempPath)
     }
 
 }

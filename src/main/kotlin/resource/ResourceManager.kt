@@ -1,5 +1,6 @@
 package resource
 
+import common.Environment
 import io.ktor.util.extension
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insert
@@ -40,9 +41,9 @@ class ResourceManager {
     }
 
     fun moveTempFiles(entryId: String, src: String): Boolean {
-        val tempPath = Paths.get(TEMP_PATH, FileUtils.createTempFileName(src))
+        val tempPath = constructTempPath(src)
         if(Files.exists(tempPath)) {
-            val target = Paths.get(BASE_PATH, entryId)
+            val target = Paths.get(Environment.resourceBasePath, entryId)
             Files.move(tempPath, target)
             Files.list(target).forEach {
                 val id = RandomUtils.generateUid()
@@ -93,12 +94,14 @@ class ResourceManager {
         return saveGeneratedResource(id, entryId, name, ext, ResourceType.UPLOAD, file.length())
     }
 
-    private fun constructPath(entryId: String, id: String, extension: String) = Paths.get(BASE_PATH, entryId, "$id.$extension")
+    private fun constructPath(entryId: String, id: String, extension: String) = constructPath(entryId, "$id.$extension")
 
-    fun constructPath(entryId: String, name: String): Path = Paths.get(BASE_PATH, entryId, name)
+    fun constructPath(entryId: String, name: String): Path = Paths.get(Environment.resourceBasePath, entryId, name)
 
     private fun constructTempPath(name: String, type: ResourceType, extension: String) =
-            Paths.get(TEMP_PATH, FileUtils.createTempFileName(name), "${type.toString().toLowerCase()}.$extension")
+            Paths.get(Environment.resourceTempPath, FileUtils.createTempFileName(name), "${type.toString().toLowerCase()}.$extension")
+
+    private fun constructTempPath(name: String) = Paths.get(Environment.resourceTempPath, FileUtils.createTempFileName(name))
 
     fun delete(id: String): Boolean = transaction {
         val res = getResource(id)
@@ -114,10 +117,5 @@ class ResourceManager {
         Resources.deleteWhere { Resources.entryId eq entryId }
         val path = constructPath(entryId, "")
         path.toFile().deleteRecursively()
-    }
-
-    companion object {
-        const val BASE_PATH = "media"
-        const val TEMP_PATH = "media/temp"
     }
 }

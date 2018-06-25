@@ -1,6 +1,6 @@
 package worker
 
-import resource.ResourceManager
+import common.Environment
 import util.FileUtils
 import java.nio.file.Paths
 import java.util.concurrent.TimeUnit
@@ -8,7 +8,7 @@ import java.util.concurrent.TimeUnit
 class TempFileCleanupWorker: ScheduledWorker(6, TimeUnit.HOURS) {
 
     override fun doWork() {
-        val dirs = FileUtils.directoriesOlderThan(Paths.get(ResourceManager.TEMP_PATH), 2)
+        val dirs = FileUtils.directoriesOlderThan(Paths.get(Environment.resourceTempPath), 2)
         FileUtils.deleteDirectories(dirs)
     }
 

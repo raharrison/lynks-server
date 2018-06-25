@@ -13,6 +13,8 @@ object Environment {
         val database by required<String>()
         val driver by required<String>()
         val port by optional(8080)
+        val resourceBasePath by required<String>()
+        val resourceTempPath by required<String>()
     }
 
     val mode = ConfigMode.valueOf(System.getProperty("CONFIG_MODE") ?: "DEV")
@@ -28,4 +30,7 @@ object Environment {
 
     val port = config[ServerSpec.port]
 
+    val resourceBasePath = config[ServerSpec.resourceBasePath]
+
+    val resourceTempPath = config[ServerSpec.resourceTempPath]
 }
