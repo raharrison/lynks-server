@@ -22,7 +22,7 @@ class ScheduleService {
         Schedules.select {
             (Schedules.type eq type) and
                     (Schedules.type neq ScheduleType.REMINDER) and
-                    (Schedules.type neq ScheduleType.REMINDER)
+                    (Schedules.type neq ScheduleType.RECURRING)
         }.map {
             IntervalJob(it[Schedules.scheduleId], it[Schedules.entryId],
                     it[Schedules.type], it[Schedules.spec].toLong())
@@ -31,7 +31,7 @@ class ScheduleService {
 
     fun getRemindersForEntry(eId: String) = transaction {
         Schedules.select {
-            (Schedules.scheduleId eq eId) and ((Schedules.type eq ScheduleType.RECURRING) or
+            (Schedules.entryId eq eId) and ((Schedules.type eq ScheduleType.RECURRING) or
                     (Schedules.type eq ScheduleType.REMINDER))
         }
                 .map { toModel(it) }
@@ -42,8 +42,8 @@ class ScheduleService {
                 .map { toModel(it) }
     }
 
-    fun get(id: String): Schedule? {
-        return Schedules.select { Schedules.scheduleId eq id }
+    fun get(id: String): Schedule? = transaction {
+        Schedules.select { Schedules.scheduleId eq id }
                 .mapNotNull { toModel(it) }.singleOrNull()
     }
 
