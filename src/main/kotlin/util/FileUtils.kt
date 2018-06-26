@@ -34,7 +34,7 @@ object FileUtils {
         return Files.newDirectoryStream(path) {
             Files.readAttributes(path, BasicFileAttributes::class.java)
                     .creationTime().toInstant().isBefore(now)
-        }.toList()
+        }.use { it.toList() }
     }
 
     fun deleteDirectories(dirs: List<Path>) {
