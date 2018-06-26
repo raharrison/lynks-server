@@ -6,6 +6,7 @@ import kotlinx.coroutines.experimental.runBlocking
 import org.junit.jupiter.api.Test
 import task.Task
 import task.TaskContext
+import kotlin.coroutines.experimental.coroutineContext
 
 class TaskRunnerWorkerTest {
 

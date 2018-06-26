@@ -15,6 +15,7 @@ import resource.HTML
 import resource.ResourceManager
 import resource.ResourceType
 import suggest.Suggestion
+import kotlin.coroutines.experimental.coroutineContext
 
 class LinkProcessorWorkerTest {
 

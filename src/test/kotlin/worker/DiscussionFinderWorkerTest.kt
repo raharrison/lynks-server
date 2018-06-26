@@ -16,6 +16,7 @@ import resource.ResourceRetriever
 import schedule.IntervalJob
 import schedule.ScheduleService
 import schedule.ScheduleType
+import kotlin.coroutines.experimental.coroutineContext
 
 class DiscussionFinderWorkerTest {
 
