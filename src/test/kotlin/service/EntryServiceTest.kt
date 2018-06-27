@@ -5,6 +5,7 @@ import entry.EntryService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import tag.TagService
 
 class EntryServiceTest: DatabaseTest() {
@@ -88,6 +89,23 @@ class EntryServiceTest: DatabaseTest() {
     fun testSearchNoResults() {
         val entries = entryService.search("nothing")
         assertThat(entries).isEmpty()
+    }
+
+    @Test
+    fun testCannotAdd() {
+        assertThrows<NotImplementedError> {
+            entryService.add(NewLink("id", "title", "url", emptyList()))
+        }
+    }
+
+    @Test
+    fun testCannotUpdate() {
+        assertThrows<NotImplementedError> {
+            entryService.update(NewLink("id", "title", "url", emptyList()))
+        }
+        assertThrows<NotImplementedError> {
+            entryService.update(Link("id", "title", "url", "src", "content", 1L, emptyList(), BaseProperties()))
+        }
     }
 
 }
