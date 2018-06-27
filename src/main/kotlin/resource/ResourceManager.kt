@@ -75,11 +75,12 @@ class ResourceManager {
         }
     }
 
-    fun saveGeneratedResource(entryId: String, type: ResourceType, extension: String, file: ByteArray) {
+    fun saveGeneratedResource(entryId: String, type: ResourceType, extension: String, file: ByteArray): Resource {
         val id = RandomUtils.generateUid()
-        saveGeneratedResource(id, entryId, "$id.$extension", extension, type, file.size.toLong())
-        val path = constructPath(entryId, id, extension)
-        FileUtils.writeToFile(path, file)
+        return saveGeneratedResource(id, entryId, "$id.$extension", extension, type, file.size.toLong()).also {
+            val path = constructPath(entryId, id, extension)
+            FileUtils.writeToFile(path, file)
+        }
     }
 
     fun saveUploadedResource(entryId: String, name: String, input: InputStream): Resource {
@@ -116,6 +117,8 @@ class ResourceManager {
     fun deleteAll(entryId: String): Boolean = transaction {
         Resources.deleteWhere { Resources.entryId eq entryId }
         val path = constructPath(entryId, "")
-        path.toFile().deleteRecursively()
+        path.toFile().let {
+            if(it.exists()) it.deleteRecursively() else false
+        }
     }
 }

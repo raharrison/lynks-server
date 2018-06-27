@@ -12,6 +12,7 @@ import link.LinkProcessor
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import resource.HTML
+import resource.Resource
 import resource.ResourceManager
 import resource.ResourceType
 import suggest.Suggestion
@@ -42,7 +43,7 @@ class LinkProcessorWorkerTest {
         every { processor.close() } just Runs
 
         coEvery { processorFactory.createProcessors(link.url) } returns listOf(processor)
-        every { resourceManager.saveGeneratedResource(link.id, any(), any(), any()) } just Runs
+        every { resourceManager.saveGeneratedResource(link.id, any(), any(), any()) } returns Resource("rid", "eid", "file1.txt", "txt", ResourceType.UPLOAD, 12L, 12L, 12L)
         every { linkService.update(link) } returns link
 
         val channel = worker.apply { runner = coroutineContext }.worker()
