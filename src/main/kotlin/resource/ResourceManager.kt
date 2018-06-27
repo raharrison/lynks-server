@@ -45,13 +45,15 @@ class ResourceManager {
         if(Files.exists(tempPath)) {
             val target = Paths.get(Environment.resourceBasePath, entryId)
             Files.move(tempPath, target)
-            Files.list(target).forEach {
-                val id = RandomUtils.generateUid()
-                val size = Files.size(it)
-                val extension = it.extension
-                Files.move(it, constructPath(entryId, id, extension))
-                val filename = FileUtils.removeExtension(it.fileName.toString())
-                saveGeneratedResource(id, entryId, "$id.$extension", extension, ResourceType.valueOf(filename.toUpperCase()), size)
+            Files.list(target).use {
+                it.forEach {
+                    val id = RandomUtils.generateUid()
+                    val size = Files.size(it)
+                    val extension = it.extension
+                    Files.move(it, constructPath(entryId, id, extension))
+                    val filename = FileUtils.removeExtension(it.fileName.toString())
+                    saveGeneratedResource(id, entryId, "$id.$extension", extension, ResourceType.valueOf(filename.toUpperCase()), size)
+                }
             }
             return true
         }
