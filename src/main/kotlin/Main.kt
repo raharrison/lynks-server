@@ -1,6 +1,7 @@
 import comment.CommentService
 import comment.comment
 import common.Environment
+import common.endpoint.health
 import common.inject.ServiceProvider
 import db.DatabaseFactory
 import entry.*
@@ -60,6 +61,7 @@ fun Application.module() {
             suggest(get())
             resources(get())
             task(get())
+            health()
         }
     }
 }
