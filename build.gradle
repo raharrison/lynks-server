@@ -4,6 +4,7 @@ buildscript {
     ext.exposed_version = '0.10.3'
     ext.h2_version = '1.4.197'
     ext.flexmark_version = '0.34.0'
+    ext.fuel_version = '1.13.0'
 
     repositories {
         mavenCentral()
@@ -87,7 +88,8 @@ dependencies {
     compile "io.webfolder:cdp4j:3.0.0"
     compile "com.github.chimbori:crux:2.0.1"
     compile "com.google.guava:guava:25.1-jre"
-    compile 'com.github.kittinunf.fuel:fuel:1.13.0'
+    compile "com.github.kittinunf.fuel:fuel:$fuel_version"
+    compile "com.github.kittinunf.fuel:fuel-coroutines:$fuel_version"
 
     compile "ch.qos.logback:logback-classic:1.2.3"
     compile "com.uchuhimo:konf:0.10"

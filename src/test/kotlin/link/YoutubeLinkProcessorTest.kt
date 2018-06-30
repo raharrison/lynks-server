@@ -1,9 +1,9 @@
 package link
 
 import common.BaseProperties
-import io.mockk.every
+import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.mockk
-import io.mockk.verify
 import kotlinx.coroutines.experimental.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.entry
@@ -31,14 +31,14 @@ class YoutubeLinkProcessorTest {
     @Test
     fun testGetTitle() {
         val vidInfo = this.javaClass.getResource("/get_video_info.txt").readText()
-        every { retriever.getString(any()) } returns vidInfo
+        coEvery { retriever.getString(any()) } returns vidInfo
         assertThat(processor.title).isEqualTo("Savoy - How U Like Me Now (feat. Roniit) [Monstercat Release]")
-        verify(exactly = 1) { retriever.getString(any()) }
+        coVerify(exactly = 1) { retriever.getString(any()) }
     }
 
     @Test
     fun testGetTitleBadInfo() {
-        every { retriever.getString(any()) } returns null
+        coEvery { retriever.getString(any()) } returns null
         assertThat(processor.title).isEmpty()
     }
 
@@ -53,9 +53,9 @@ class YoutubeLinkProcessorTest {
     @Test
     fun testGenerateThumbnail() = runBlocking {
         val img = byteArrayOf(1,2,3,4,5)
-        every { retriever.getFile(any()) } returns img
+        coEvery { retriever.getFile(any()) } returns img
         val thumb = processor.generateThumbnail()
-        assertThat(thumb).isNotNull()
+        assertThat(thumb).isNotNull
         assertThat(thumb?.extension).isEqualTo("jpg")
         assertThat(thumb?.image).isEqualTo(img)
         Unit
@@ -64,9 +64,9 @@ class YoutubeLinkProcessorTest {
     @Test
     fun testGenerateScreenshot() = runBlocking {
         val img = byteArrayOf(5,6,7,8,9)
-        every { retriever.getFile(any()) } returns img
+        coEvery { retriever.getFile(any()) } returns img
         val thumb = processor.generateScreenshot()
-        assertThat(thumb).isNotNull()
+        assertThat(thumb).isNotNull
         assertThat(thumb?.extension).isEqualTo("jpg")
         assertThat(thumb?.image).isEqualTo(img)
         Unit

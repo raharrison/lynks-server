@@ -4,10 +4,7 @@ import common.BaseProperties
 import common.Link
 import common.TestCoroutineContext
 import entry.LinkService
-import io.mockk.every
-import io.mockk.mockk
-import io.mockk.slot
-import io.mockk.verify
+import io.mockk.*
 import kotlinx.coroutines.experimental.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -43,8 +40,8 @@ class DiscussionFinderWorkerTest {
 
     @Test
     fun testNoResponse(): Unit = runBlocking(TestCoroutineContext()) {
-        every { retriever.getString(match { it.contains("hn.algolia") }) } returns ""
-        every { retriever.getString(match { it.contains("reddit.com") }) } returns ""
+        coEvery { retriever.getString(match { it.contains("hn.algolia") }) } returns ""
+        coEvery { retriever.getString(match { it.contains("reddit.com") }) } returns ""
 
         val worker = DiscussionFinderWorker(linkService, scheduleService, retriever)
                 .apply { runner = coroutineContext }.worker()
@@ -61,13 +58,13 @@ class DiscussionFinderWorkerTest {
         verify(exactly = 5) { linkService.get(link.id) }
         assertThat(link.props.containsAttribute("discussions")).isFalse()
 
-        verify(exactly = 5 * 2) { retriever.getString(any()) }
+        coVerify(exactly = 5 * 2) { retriever.getString(any()) }
     }
 
     @Test
     fun testSameResponse(): Unit = runBlocking(TestCoroutineContext()) {
-        every { retriever.getString(match { it.contains("hn.algolia") }) } returns getFile("/hacker_discussions.json")
-        every { retriever.getString(match { it.contains("reddit.com") }) } returns getFile("/reddit_discussions.json")
+        coEvery { retriever.getString(match { it.contains("hn.algolia") }) } returns getFile("/hacker_discussions.json")
+        coEvery { retriever.getString(match { it.contains("reddit.com") }) } returns getFile("/reddit_discussions.json")
 
         val worker = DiscussionFinderWorker(linkService, scheduleService, retriever)
                 .apply { runner = coroutineContext }.worker()
@@ -92,13 +89,13 @@ class DiscussionFinderWorkerTest {
                         "r/hackernews", "r/bprogramming", "r/factorio")
         assertThat(discussions).extracting("url").doesNotHaveDuplicates()
 
-        verify(exactly = 5 * 2) { retriever.getString(any()) }
+        coVerify(exactly = 5 * 2) { retriever.getString(any()) }
     }
 
     @Test
     fun testInitFromSchedule() = runBlocking(TestCoroutineContext()) {
-        every { retriever.getString(match { it.contains("hn.algolia") }) } returns getFile("/hacker_discussions.json")
-        every { retriever.getString(match { it.contains("reddit.com") }) } returns getFile("/reddit_discussions.json")
+        coEvery { retriever.getString(match { it.contains("hn.algolia") }) } returns getFile("/hacker_discussions.json")
+        coEvery { retriever.getString(match { it.contains("reddit.com") }) } returns getFile("/reddit_discussions.json")
 
         val scheduleId = "abc123"
         every { scheduleService.getIntervalJobsByType(ScheduleType.DISCUSSION_FINDER) } returns listOf(IntervalJob(scheduleId, link.id, ScheduleType.DISCUSSION_FINDER, 600))
@@ -119,13 +116,13 @@ class DiscussionFinderWorkerTest {
         assertThat(linkSlot.captured.props.containsAttribute("discussions")).isTrue()
         assertThat(linkSlot.captured.props.getAttribute("discussions") as List<*>).hasSize(6)
 
-        verify(exactly = 2 * 2) { retriever.getString(any()) }
+        coVerify(exactly = 2 * 2) { retriever.getString(any()) }
     }
 
     @Test
     fun testDifferingResponses(): Unit = runBlocking(TestCoroutineContext()) {
-        every { retriever.getString(match { it.contains("hn.algolia") }) } returns "" andThen getFile("/hacker_discussions.json") andThen ""
-        every { retriever.getString(match { it.contains("reddit.com") }) } returns "" andThen getFile("/reddit_discussions.json") andThen ""
+        coEvery { retriever.getString(match { it.contains("hn.algolia") }) } returns "" andThen getFile("/hacker_discussions.json") andThen ""
+        coEvery { retriever.getString(match { it.contains("reddit.com") }) } returns "" andThen getFile("/reddit_discussions.json") andThen ""
 
         val worker = DiscussionFinderWorker(linkService, scheduleService, retriever)
                 .apply { runner = coroutineContext }.worker()
@@ -138,15 +135,15 @@ class DiscussionFinderWorkerTest {
         assertThat(discussions).hasSize(6)
         assertThat(discussions).extracting("url").doesNotHaveDuplicates()
 
-        verify(exactly = 5 * 2) { retriever.getString(any()) }
+        coVerify(exactly = 5 * 2) { retriever.getString(any()) }
     }
 
     @Test
     fun testWorkerContinues() = runBlocking(TestCoroutineContext()){
         val hnResponses = listOf("", "", "", "", getFile("/hacker_discussions.json"))
         val redditResponses = listOf("", "", "", "", getFile("/reddit_discussions.json"))
-        every { retriever.getString(match { it.contains("hn.algolia") }) } returnsMany hnResponses
-        every { retriever.getString(match { it.contains("reddit.com") }) } returnsMany redditResponses
+        coEvery { retriever.getString(match { it.contains("hn.algolia") }) } returnsMany hnResponses
+        coEvery { retriever.getString(match { it.contains("reddit.com") }) } returnsMany redditResponses
 
         val worker = DiscussionFinderWorker(linkService, scheduleService, retriever)
                 .apply { runner = coroutineContext }.worker()
@@ -164,7 +161,7 @@ class DiscussionFinderWorkerTest {
         val discussions = linkSlot.captured.props.getAttribute("discussions") as List<Any?>
         assertThat(discussions).hasSize(6)
 
-        verify(exactly = 6 * 2) { retriever.getString(any()) }
+        coVerify(exactly = 6 * 2) { retriever.getString(any()) }
     }
 
     private fun getFile(name: String) = this.javaClass.getResource(name).readText()

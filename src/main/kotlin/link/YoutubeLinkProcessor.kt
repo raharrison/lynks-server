@@ -1,6 +1,7 @@
 package link
 
 import common.BaseProperties
+import kotlinx.coroutines.experimental.runBlocking
 import resource.JPG
 import resource.ResourceRetriever
 import task.YoutubeDlTask
@@ -19,12 +20,12 @@ class YoutubeLinkProcessor(private val retriever: ResourceRetriever) : LinkProce
     override val html: String? = null
     override val content: String? = null
 
-    override val title: String get() {
+    override val title: String get() = runBlocking {
         downloadVideoInfo()?.let {
             val params = URLUtils.extractQueryParams(it)
-            return params["title"] ?: title
+            return@runBlocking params["title"] ?: ""
         }
-        return ""
+        ""
     }
     override val resolvedUrl: String get() = url
 
@@ -35,7 +36,7 @@ class YoutubeLinkProcessor(private val retriever: ResourceRetriever) : LinkProce
 
     private fun embedUrl(): String = "https://www.youtube.com/embed/$videoId"
 
-    private fun downloadVideoInfo(): String? {
+    private suspend fun downloadVideoInfo(): String? {
         val dl = "http://www.youtube.com/get_video_info?video_id=$videoId&asv=3&el=detailpage&hl=en_US"
         return retriever.getString(dl)
     }

@@ -1,8 +1,6 @@
 package task
 
-import io.mockk.every
-import io.mockk.mockk
-import io.mockk.verify
+import io.mockk.*
 import kotlinx.coroutines.experimental.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.entry
@@ -46,7 +44,7 @@ class ResourceRetrievingTaskTest {
         val name = "filename"
         val context = resourceRetrievingTask.createContext(mapOf("url" to url, "name" to name))
         val bytes = byteArrayOf(1,2,3,4,5,6)
-        every { retriever.getFile(url) } returns bytes
+        coEvery { retriever.getFile(url) } returns bytes
         every { resourceManager.saveUploadedResource("eid", name, any()) } returns
                 Resource("rid", "eid", name, "", ResourceType.UPLOAD, 1, 1, 1)
 
@@ -54,7 +52,7 @@ class ResourceRetrievingTaskTest {
             resourceRetrievingTask.process(context)
         }
 
-        verify(exactly = 1) { retriever.getFile(url)  }
+        coVerify(exactly = 1) { retriever.getFile(url)  }
         verify(exactly = 1) { resourceManager.saveUploadedResource("eid", name, any())  }
     }
 
@@ -62,13 +60,13 @@ class ResourceRetrievingTaskTest {
     fun testProcessNoResult() {
         val url = "youtube.com"
         val context = resourceRetrievingTask.createContext(mapOf("url" to url, "name" to "filename"))
-        every { retriever.getFile(url) } returns null
+        coEvery { retriever.getFile(url) } returns null
 
         runBlocking {
             resourceRetrievingTask.process(context)
         }
 
-        verify(exactly = 1) { retriever.getFile(url)  }
+        coVerify(exactly = 1) { retriever.getFile(url)  }
     }
 
 

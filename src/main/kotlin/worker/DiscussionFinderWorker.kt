@@ -82,7 +82,7 @@ class DiscussionFinderWorker(private val linkService: LinkService,
 
     private fun encode(s: String): String = URLEncoder.encode(s, "UTF-8")
 
-    private fun hackerNewsDiscussions(url: String): List<Discussion> {
+    private suspend fun hackerNewsDiscussions(url: String): List<Discussion> {
         val base = "http://hn.algolia.com/api/v1/search?query=%s&restrictSearchableAttributes=url"
         val response = resourceRetriever.getString(base.format(encode(url)))
         val discussions = mutableListOf<Discussion>()
@@ -104,7 +104,7 @@ class DiscussionFinderWorker(private val linkService: LinkService,
                 .thenComparing(compareByDescending(Discussion::comments)))
     }
 
-    private fun redditDiscussions(url: String): List<Discussion> {
+    private suspend fun redditDiscussions(url: String): List<Discussion> {
         val base = "https://www.reddit.com/api/info.json?url=%s"
         val response = resourceRetriever.getString(base.format(encode(url)))
         val discussions = mutableListOf<Discussion>()
