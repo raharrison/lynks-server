@@ -19,7 +19,8 @@ val logger = loggerFor<DatabaseFactory>()
 
 class DatabaseFactory {
 
-    var connected = false
+    var connected: Boolean = false
+        private set
 
     fun connect() {
         logger.info("Initialising database")
