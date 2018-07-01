@@ -3,7 +3,7 @@ package common
 import db.json
 import org.jetbrains.exposed.sql.Table
 
-object Entries : Table() {
+object Entries : Table("Entry") {
 
     val id = varchar("id", 12).primaryKey()
     val title = varchar("title", 255)

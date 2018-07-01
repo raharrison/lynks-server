@@ -3,7 +3,7 @@ package resource
 import common.Entries
 import org.jetbrains.exposed.sql.Table
 
-object Resources : Table() {
+object Resources : Table("Resource") {
     val id = varchar("id", 12).primaryKey()
     val entryId = (varchar("entryId", 12) references Entries.id).index()
     val fileName = varchar("filename", 255)

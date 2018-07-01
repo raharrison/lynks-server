@@ -3,7 +3,7 @@ package comment
 import common.Entries
 import org.jetbrains.exposed.sql.Table
 
-object Comments : Table() {
+object Comments : Table("Comment") {
     val id = varchar("id", 12).primaryKey()
     val entryId = (varchar("entryId", 12) references Entries.id).index()
     val plainText = text("plainText")

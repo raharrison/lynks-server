@@ -3,14 +3,14 @@ package tag
 import common.Entries
 import org.jetbrains.exposed.sql.Table
 
-object Tags : Table() {
+object Tags : Table("Tag") {
     val id = varchar("id", 12).primaryKey()
     val name = varchar("name", 255)
     val parentId = (varchar("parentId", 12) references id).nullable()
     val dateUpdated = long("dateCreated")
 }
 
-object EntryTags : Table() {
+object EntryTags : Table("EntryTag") {
     val tagId = (varchar("tagId", 12) references Tags.id).primaryKey()
     val entryId = (varchar("entryId", 12) references Entries.id).primaryKey()
 }

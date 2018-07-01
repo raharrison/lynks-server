@@ -4,7 +4,7 @@ import common.Entries
 import org.jetbrains.exposed.sql.Table
 import util.RandomUtils
 
-object Schedules : Table() {
+object Schedules : Table("Schedule") {
     val scheduleId = varchar("scheduleId", 12).primaryKey()
     val entryId = (varchar("entryId", 12) references Entries.id)
     val type = enumeration("type", ScheduleType::class.java)
