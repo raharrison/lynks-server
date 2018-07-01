@@ -18,7 +18,7 @@ internal fun createDummyEntry(id: String, title: String, content: String, type: 
     }
 }
 
-internal fun createDummyTag(id: String, name: String, parentId: String?=null) = transaction{
+fun createDummyTag(id: String, name: String, parentId: String?=null) = transaction{
     Tags.insert {
         it[Tags.id] = id
         it[Tags.name] = name

@@ -8,6 +8,7 @@ import io.ktor.server.netty.Netty
 import io.restassured.RestAssured
 import io.restassured.config.ObjectMapperConfig.objectMapperConfig
 import io.restassured.config.RestAssuredConfig
+import io.restassured.response.ResponseBodyExtractionOptions
 import io.restassured.specification.RequestSpecification
 import module
 import org.junit.jupiter.api.BeforeAll
@@ -19,6 +20,10 @@ open class ServerTest {
 
     protected fun RequestSpecification.When(): RequestSpecification {
         return this.`when`()
+    }
+
+    protected inline fun <reified T> ResponseBodyExtractionOptions.to(): T {
+        return this.`as`(T::class.java)
     }
 
     companion object {

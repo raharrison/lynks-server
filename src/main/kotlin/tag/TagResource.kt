@@ -22,7 +22,7 @@ fun Route.tag(tagService: TagService) {
 
         post("/") {
             val tag = call.receive<NewTag>()
-            call.respond(tagService.addTag(tag))
+            call.respond(HttpStatusCode.Created, tagService.addTag(tag))
         }
 
         put("/") {
