@@ -7,6 +7,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import schedule.*
+import util.createDummyEntry
 import java.sql.SQLException
 
 class ScheduleServiceTest: DatabaseTest() {

@@ -9,6 +9,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import tag.NewTag
 import tag.TagService
+import util.createDummyTag
 
 class TagServiceTest : DatabaseTest() {
 

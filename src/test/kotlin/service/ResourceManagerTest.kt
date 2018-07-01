@@ -11,6 +11,7 @@ import org.junit.jupiter.api.fail
 import resource.*
 import util.FileUtils.getExtension
 import util.FileUtils.removeExtension
+import util.createDummyEntry
 import util.toUrlString
 import java.nio.file.Files
 import java.nio.file.Paths

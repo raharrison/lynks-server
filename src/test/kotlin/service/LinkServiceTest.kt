@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import resource.ResourceManager
 import tag.TagService
+import util.createDummyTag
 import worker.PersistLinkProcessingRequest
 import worker.WorkerRegistry
 import java.sql.SQLException

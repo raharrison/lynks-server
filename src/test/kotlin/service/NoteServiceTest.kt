@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import resource.ResourceManager
 import tag.TagService
+import util.createDummyTag
 import java.sql.SQLException
 
 class NoteServiceTest : DatabaseTest() {

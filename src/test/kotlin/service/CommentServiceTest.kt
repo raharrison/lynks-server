@@ -9,6 +9,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import util.createDummyEntry
 import java.sql.SQLException
 
 class CommentServiceTest : DatabaseTest() {
@@ -18,6 +19,7 @@ class CommentServiceTest : DatabaseTest() {
     @BeforeEach
     fun createEntries() {
         createDummyEntry("e1", "title1", "content1", EntryType.LINK)
+        Thread.sleep(10)// prevent having same creation timestamp
         createDummyEntry("e2", "title2", "content2", EntryType.NOTE)
     }
 
