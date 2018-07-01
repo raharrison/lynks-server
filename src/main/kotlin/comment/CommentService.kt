@@ -1,19 +1,16 @@
 package comment
 
 import common.PageRequest
-import org.jetbrains.exposed.sql.deleteWhere
-import org.jetbrains.exposed.sql.insert
-import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.jetbrains.exposed.sql.update
 import util.MarkdownUtils
 import util.RandomUtils
 import util.RowMapper.toComment
 
 class CommentService {
 
-    fun getComment(id: String): Comment? = transaction {
-        Comments.select { Comments.id eq id }.mapNotNull {
+    fun getComment(entryId: String, id: String): Comment? = transaction {
+        Comments.select { Comments.id eq id and (Comments.entryId eq entryId) }.mapNotNull {
             toComment(it)
         }.singleOrNull()
     }
@@ -25,8 +22,8 @@ class CommentService {
                 .map { toComment(it) }
     }
 
-    fun deleteComment(id: String): Boolean = transaction {
-        Comments.deleteWhere { Comments.id eq id } > 0
+    fun deleteComment(entryId: String, id: String): Boolean = transaction {
+        Comments.deleteWhere { Comments.id eq id and (Comments.entryId eq entryId) } > 0
     }
 
     fun addComment(eId: String, comment: NewComment): Comment = transaction {
@@ -38,20 +35,20 @@ class CommentService {
             it[markdownText] = MarkdownUtils.convertToMarkdown(comment.plainText)
             it[dateCreated] = System.currentTimeMillis()
         }
-        getComment(newId)!!
+        getComment(eId, newId)!!
     }
 
-    fun updateComment(entryId: String, comment: NewComment): Comment {
+    fun updateComment(entryId: String, comment: NewComment): Comment? {
         val id = comment.id
         return if (id == null) {
             addComment(entryId, comment)
         } else {
             transaction {
-                Comments.update({ Comments.id eq id }) {
+                val updated = Comments.update({ Comments.id eq id and (Comments.entryId eq entryId) }) {
                     it[plainText] = comment.plainText
                     it[markdownText] = MarkdownUtils.convertToMarkdown(comment.plainText)
                 }
-                getComment(id)!!
+                if(updated > 0) getComment(entryId, id)!! else null
             }
         }
     }

@@ -18,7 +18,9 @@ fun Route.comment(commentService: CommentService) {
         }
 
         get("/{id}") {
-            val comment = commentService.getComment(call.parameters["id"]!!)
+            val id = call.parameters["id"]!!
+            val entryId = call.parameters["entryId"]!!
+            val comment = commentService.getComment(entryId, id)
             if (comment == null) call.respond(HttpStatusCode.NotFound)
             else call.respond(comment)
         }
@@ -26,17 +28,21 @@ fun Route.comment(commentService: CommentService) {
         post("/") {
             val comment = call.receive<NewComment>()
             val entryId = call.parameters["entryId"]!!
-            call.respond(commentService.addComment(entryId, comment))
+            call.respond(HttpStatusCode.Created, commentService.addComment(entryId, comment))
         }
 
         put("/") {
             val comment = call.receive<NewComment>()
             val entryId = call.parameters["entryId"]!!
-            call.respond(commentService.updateComment(entryId, comment))
+            val updated = commentService.updateComment(entryId, comment)
+            if(updated == null) call.respond(HttpStatusCode.NotFound)
+            else call.respond(HttpStatusCode.OK, updated)
         }
 
         delete("/{id}") {
-            val removed = commentService.deleteComment(call.parameters["id"]!!)
+            val id = call.parameters["id"]!!
+            val entryId = call.parameters["entryId"]!!
+            val removed = commentService.deleteComment(entryId, id)
             if (removed) call.respond(HttpStatusCode.OK)
             else call.respond(HttpStatusCode.NotFound)
         }

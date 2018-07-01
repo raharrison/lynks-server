@@ -1,12 +1,13 @@
 package util
 
+import comment.Comments
 import common.Entries
 import common.EntryType
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.transactions.transaction
 import tag.Tags
 
-internal fun createDummyEntry(id: String, title: String, content: String, type: EntryType) = transaction {
+fun createDummyEntry(id: String, title: String, content: String, type: EntryType) = transaction {
     Entries.insert {
         it[Entries.id] = id
         it[Entries.title] = title
@@ -24,5 +25,15 @@ fun createDummyTag(id: String, name: String, parentId: String?=null) = transacti
         it[Tags.name] = name
         it[Tags.parentId] = parentId
         it[dateUpdated] = System.currentTimeMillis()
+    }
+}
+
+fun createDummyComment(id: String, entryId: String, content: String) = transaction {
+    Comments.insert {
+        it[Comments.id] = id
+        it[Comments.entryId] = entryId
+        it[plainText] = content
+        it[markdownText] = content
+        it[dateCreated] = System.currentTimeMillis()
     }
 }

@@ -49,8 +49,8 @@ class CommentServiceTest : DatabaseTest() {
     @Test
     fun testGetCommentById() {
         val added = commentService.addComment("e1", newComment(content = "comment content 1"))
-        val retrieved = commentService.getComment(added.id)
-        assertThat(retrieved).isNotNull()
+        val retrieved = commentService.getComment(added.entryId, added.id)
+        assertThat(retrieved).isNotNull
         assertThat(retrieved?.entryId).isEqualTo("e1")
         assertThat(retrieved?.plainText).isEqualTo(added.plainText)
         assertThat(retrieved?.dateCreated).isEqualTo(added.dateCreated)
@@ -60,7 +60,7 @@ class CommentServiceTest : DatabaseTest() {
 
     @Test
     fun testGetCommentByIdDoesntExist() {
-        assertThat(commentService.getComment("invalid")).isNull()
+        assertThat(commentService.getComment("invalid", "invalid")).isNull()
     }
 
     @Test
@@ -108,34 +108,34 @@ class CommentServiceTest : DatabaseTest() {
 
     @Test
     fun testDeleteComments() {
-        assertThat(commentService.deleteComment("invalid")).isFalse()
+        assertThat(commentService.deleteComment("invalid", "invalid")).isFalse()
 
         val added1 = commentService.addComment("e1", newComment(content = "comment content 1"))
         val added2 = commentService.addComment("e1", newComment(content = "comment content 2"))
 
-        assertThat(commentService.deleteComment("e1")).isFalse()
-        assertThat(commentService.deleteComment(added1.id)).isTrue()
+        assertThat(commentService.deleteComment("e1", "e1")).isFalse()
+        assertThat(commentService.deleteComment(added1.entryId, added1.id)).isTrue()
 
         assertThat(commentService.getCommentsFor("e1", PageRequest())).hasSize(1)
-        assertThat(commentService.getComment(added1.id)).isNull()
+        assertThat(commentService.getComment(added1.entryId, added1.id)).isNull()
 
-        assertThat(commentService.deleteComment(added2.id)).isTrue()
+        assertThat(commentService.deleteComment(added2.entryId, added2.id)).isTrue()
 
         assertThat(commentService.getCommentsFor("e1", PageRequest())).isEmpty()
-        assertThat(commentService.getComment(added2.id)).isNull()
+        assertThat(commentService.getComment(added2.entryId, added2.id)).isNull()
     }
 
     @Test
     fun testUpdateExistingComment() {
         val added1 = commentService.addComment("e1", newComment(content = "comment content 1"))
-        assertThat(commentService.getComment(added1.id)?.entryId).isEqualTo("e1")
+        assertThat(commentService.getComment(added1.entryId, added1.id)?.entryId).isEqualTo("e1")
 
         val updated = commentService.updateComment("e1", newComment(added1.id, "changed"))
-        val newComm = commentService.getComment(updated.id)
+        val newComm = commentService.getComment(updated!!.entryId, updated.id)
         assertThat(newComm?.entryId).isEqualTo("e1")
         assertThat(newComm?.plainText).isEqualTo("changed")
 
-        val oldComm = commentService.getComment(added1.id)
+        val oldComm = commentService.getComment(added1.entryId, added1.id)
         assertThat(oldComm?.entryId).isEqualTo("e1")
         assertThat(oldComm?.plainText).isEqualTo("changed")
     }
@@ -143,10 +143,10 @@ class CommentServiceTest : DatabaseTest() {
     @Test
     fun testUpdateCommentNoId() {
         val added1 = commentService.addComment("e1", newComment(content = "comment content 1"))
-        assertThat(commentService.getComment(added1.id)?.entryId).isEqualTo("e1")
+        assertThat(commentService.getComment(added1.entryId, added1.id)?.entryId).isEqualTo("e1")
 
         val updated = commentService.updateComment("e1", newComment(content = "new comment"))
-        assertThat(commentService.getComment(updated.id)?.entryId).isEqualTo("e1")
+        assertThat(commentService.getComment(updated!!.entryId, updated.id)?.entryId).isEqualTo("e1")
         assertThat(added1.id).isNotEqualTo(updated.id)
 
         val comments = commentService.getCommentsFor("e1", PageRequest())
