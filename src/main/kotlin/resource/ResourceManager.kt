@@ -120,7 +120,7 @@ class ResourceManager {
         Resources.deleteWhere { Resources.entryId eq entryId }
         val path = constructPath(entryId, "")
         path.toFile().let {
-            if(it.exists()) it.deleteRecursively() else false
+            if(it.exists()) it.deleteRecursively() else true
         }
     }
 }

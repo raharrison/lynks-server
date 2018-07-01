@@ -17,19 +17,21 @@ fun Route.note(noteService: NoteService) {
         }
 
         get("/{id}") {
-            val link = noteService.get(call.parameters["id"]!!)
-            if (link == null) call.respond(HttpStatusCode.NotFound)
-            else call.respond(link)
+            val note = noteService.get(call.parameters["id"]!!)
+            if (note == null) call.respond(HttpStatusCode.NotFound)
+            else call.respond(note)
         }
 
         post("/") {
-            val link = call.receive<NewNote>()
-            call.respond(noteService.add(link))
+            val note = call.receive<NewNote>()
+            call.respond(HttpStatusCode.Created, noteService.add(note))
         }
 
         put("/") {
-            val link = call.receive<NewNote>()
-            call.respond(noteService.update(link))
+            val note = call.receive<NewNote>()
+            val updated = noteService.update(note)
+            if (updated == null) call.respond(HttpStatusCode.NotFound)
+            else call.respond(HttpStatusCode.OK, updated)
         }
 
         delete("/{id}") {

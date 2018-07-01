@@ -29,7 +29,9 @@ fun Route.link(linkService: LinkService) {
 
         put("/") {
             val link = call.receive<NewLink>()
-            call.respond(linkService.update(link))
+            val updated = linkService.update(link)
+            if (updated == null) call.respond(HttpStatusCode.NotFound)
+            else call.respond(HttpStatusCode.OK, updated)
         }
 
         delete("/{id}") {

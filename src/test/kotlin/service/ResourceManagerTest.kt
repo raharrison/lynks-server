@@ -255,7 +255,8 @@ class ResourceManagerTest: DatabaseTest() {
 
     @Test
     fun testDeleteAllForEntryDoesntExist() {
-        assertThat(resourceManager.deleteAll("nothing")).isFalse()
+        // still successfully deleted everything
+        assertThat(resourceManager.deleteAll("nothing")).isTrue()
     }
 
     @Test

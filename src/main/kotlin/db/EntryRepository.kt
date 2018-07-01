@@ -41,20 +41,24 @@ abstract class EntryRepository<T : Entry, in U : NewEntry>(private val tagServic
         get(newId)!!
     }
 
-    fun update(entry: U): T {
+    fun update(entry: U): T? {
         val id = entry.id
         return if (id == null) {
             add(entry)
         } else {
             transaction {
-                Entries.update({ Entries.id eq id }, body = toUpdate(entry))
-                updateTagsForEntry(entry.tags, id)
-                get(id)!!
+                val updated = Entries.update({ Entries.id eq id }, body = toUpdate(entry))
+                if(updated > 0) {
+                    updateTagsForEntry(entry.tags, id)
+                    get(id)!!
+                } else {
+                    null
+                }
             }
         }
     }
 
-    fun update(entry: T): T = transaction {
+    fun update(entry: T): T? = transaction {
         Entries.update({ Entries.id eq entry.id }, body = toUpdate(entry))
         entry
     }

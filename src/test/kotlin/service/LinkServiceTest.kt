@@ -194,7 +194,7 @@ class LinkServiceTest : DatabaseTest() {
         assertThat(linkService.get(added1.id)?.tags).isEmpty()
 
         val updated = linkService.update(newLink(added1.id, "updated", "amazon.com", listOf("t1")))
-        val newLink = linkService.get(updated.id)
+        val newLink = linkService.get(updated!!.id)
         assertThat(newLink?.id).isEqualTo(added1.id)
         assertThat(newLink?.title).isEqualTo("updated")
         assertThat(newLink?.url).isEqualTo("amazon.com")
@@ -214,7 +214,7 @@ class LinkServiceTest : DatabaseTest() {
         assertThat(added.content).isNull()
         added.content = "modified"
         val updated = linkService.update(added)
-        assertThat(added.content).isEqualTo(updated.content)
+        assertThat(added.content).isEqualTo(updated!!.content)
         assertThat(updated.content).isEqualTo("modified")
         val retrieved = linkService.get(added.id)
         assertThat(retrieved?.content).isEqualTo(updated.content)
@@ -242,7 +242,7 @@ class LinkServiceTest : DatabaseTest() {
         assertThat(linkService.get(added1.id)?.title).isEqualTo("n1")
 
         val updated = linkService.update(newLink("updated", "amazon.com"))
-        assertThat(linkService.get(updated.id)?.id).isNotEqualTo(added1.id)
+        assertThat(linkService.get(updated!!.id)?.id).isNotEqualTo(added1.id)
         assertThat(added1.id).isNotEqualToIgnoringCase(updated.id)
         assertThat(updated.title).isEqualTo("updated")
         assertThat(updated.url).isEqualTo("amazon.com")

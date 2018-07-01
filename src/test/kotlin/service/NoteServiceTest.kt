@@ -158,7 +158,7 @@ class NoteServiceTest : DatabaseTest() {
         assertThat(noteService.get(added1.id)?.tags).isEmpty()
 
         val updated = noteService.update(newNote(added1.id, "updated", "new content", listOf("t1")))
-        val newNote = noteService.get(updated.id)
+        val newNote = noteService.get(updated!!.id)
         assertThat(newNote?.id).isEqualTo(added1.id)
         assertThat(newNote?.title).isEqualTo("updated")
         assertThat(newNote?.plainText).isEqualTo("new content")
@@ -193,7 +193,7 @@ class NoteServiceTest : DatabaseTest() {
         assertThat(noteService.get(added1.id)?.title).isEqualTo("n1")
 
         val updated = noteService.update(newNote("updated", "new content"))
-        assertThat(noteService.get(updated.id)?.id).isNotEqualTo(added1.id)
+        assertThat(noteService.get(updated!!.id)?.id).isNotEqualTo(added1.id)
         assertThat(added1.id).isNotEqualTo(updated.id)
         assertThat(updated.title).isEqualTo("updated")
         assertThat(noteService.get(added1.id)?.title).isEqualTo("n1")
