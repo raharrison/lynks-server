@@ -28,6 +28,8 @@ class TagService {
                 .map { toTag(it, ::getTagChildren) }
     }
 
+    fun rebuild() = tagCollection.build(queryAllTags())
+
     fun getAllTags(): Collection<Tag> = tagCollection.rootTags().map { it.copy() }
 
     fun getTags(ids: List<String>): List<Tag> = tagCollection.tagsIn(ids).map { it.copy() }
