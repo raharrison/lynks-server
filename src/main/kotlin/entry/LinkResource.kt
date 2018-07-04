@@ -24,7 +24,7 @@ fun Route.link(linkService: LinkService) {
 
         post("/") {
             val link = call.receive<NewLink>()
-            call.respond(linkService.add(link))
+            call.respond(HttpStatusCode.Created, linkService.add(link))
         }
 
         put("/") {
