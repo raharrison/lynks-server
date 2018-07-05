@@ -70,6 +70,7 @@ open class DefaultLinkProcessor : LinkProcessor {
 
         init {
             launcher.processManager = AdaptiveProcessManager()
+            Runtime.getRuntime().addShutdownHook(Thread { launcher.kill() })
         }
     }
 
@@ -77,7 +78,7 @@ open class DefaultLinkProcessor : LinkProcessor {
 
     override fun matches(url: String): Boolean = true
 
-    override suspend  fun generateThumbnail(): ImageResource {
+    override suspend fun generateThumbnail(): ImageResource {
         val screen = session.command.page.captureScreenshot()
         val img = ImageIO.read(ByteArrayInputStream(screen))
         val scaledImage = img.getScaledInstance(360, 270, Image.SCALE_SMOOTH)
