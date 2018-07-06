@@ -47,10 +47,11 @@ abstract class EntryRepository<T : Entry, in U : NewEntry>(private val tagServic
             add(entry)
         } else {
             transaction {
-                val updated = Entries.update({ Entries.id eq id }, body = toUpdate(entry))
+                val where = getBaseQuery().combine { Entries.id eq id }.where!!
+                val updated = Entries.update({ where }, body = toUpdate(entry))
                 if(updated > 0) {
                     updateTagsForEntry(entry.tags, id)
-                    get(id)!!
+                    get(id)
                 } else {
                     null
                 }
@@ -59,13 +60,21 @@ abstract class EntryRepository<T : Entry, in U : NewEntry>(private val tagServic
     }
 
     fun update(entry: T): T? = transaction {
-        Entries.update({ Entries.id eq entry.id }, body = toUpdate(entry))
-        entry
+        val where = getBaseQuery().combine { Entries.id eq entry.id }.where!!
+        Entries.update({ where }, body = toUpdate(entry))
+        get(entry.id)
     }
 
     open fun delete(id: String): Boolean = transaction {
-        EntryTags.deleteWhere { EntryTags.entryId eq id }
-        Entries.deleteWhere { Entries.id eq id } > 0
+        val entry = getBaseQuery().adjustSlice { this.slice(Entries.type) }
+                .combine { Entries.id eq id }
+                .singleOrNull()
+
+        entry?.let {
+            EntryTags.deleteWhere { EntryTags.entryId eq id }
+            return@transaction Entries.deleteWhere { Entries.id eq id } > 0
+        }
+        false
     }
 
     private fun addTagsForEntry(tags: List<String>, id: String) = transaction {

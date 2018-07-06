@@ -84,6 +84,13 @@ class LinkResourceTest: ServerTest() {
     }
 
     @Test
+    fun testCannotDeleteNonLinkEntry() {
+        delete("/link/{id}", "e2")
+                .then()
+                .statusCode(404)
+    }
+
+    @Test
     fun testUpdateLinkNoProcess() {
         val updatedLink = NewLink("e3", "title3", "http://gmail.com", listOf("t1"), false)
         val updated = given()
@@ -105,6 +112,19 @@ class LinkResourceTest: ServerTest() {
     @Test
     fun testUpdateLinkReturnsNotFound() {
         val updatedLink = NewLink("invalid", "title2", "modified", emptyList())
+        given()
+                .contentType(ContentType.JSON)
+                .body(updatedLink)
+                .When()
+                .put("/link")
+                .then()
+                .statusCode(404)
+    }
+
+    @Test
+    fun testCannotUpdateNonLink() {
+        // e2 = existing note entry
+        val updatedLink = NewLink("e2", "title2", "modified", emptyList())
         given()
                 .contentType(ContentType.JSON)
                 .body(updatedLink)
@@ -139,8 +159,6 @@ class LinkResourceTest: ServerTest() {
         assertThat(links).hasSize(1).extracting("id").containsExactly("e1")
     }
 
-    // TODO: delete note from link endpoint
-    // TODO: update note from link endpoint
     // TODO: submit invalid url
     // TODO: link processing
 

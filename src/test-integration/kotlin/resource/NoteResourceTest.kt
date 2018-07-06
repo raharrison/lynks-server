@@ -83,6 +83,13 @@ class NoteResourceTest: ServerTest() {
     }
 
     @Test
+    fun testCannotDeleteNonNoteEntry() {
+        delete("/note/{id}", "e1")
+                .then()
+                .statusCode(404)
+    }
+
+    @Test
     fun testUpdateNote() {
         val updatedNote = NewNote("e2", "title2", "modified", listOf("t1"))
         val updated = given()
@@ -99,6 +106,19 @@ class NoteResourceTest: ServerTest() {
         val retrieved = get("/note/{id}", "e2")
                 .then().extract().to<Note>()
         assertThat(retrieved).isEqualToIgnoringGivenFields(updated, "dateUpdated", "props")
+    }
+
+    @Test
+    fun testCannotUpdateNonNote() {
+        // e1 = existing link entry
+        val updatedLink = NewNote("e1", "title2", "modified", emptyList())
+        given()
+                .contentType(ContentType.JSON)
+                .body(updatedLink)
+                .When()
+                .put("/note")
+                .then()
+                .statusCode(404)
     }
 
     @Test
