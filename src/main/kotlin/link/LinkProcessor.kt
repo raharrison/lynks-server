@@ -14,9 +14,22 @@ import java.awt.Image
 import java.awt.image.BufferedImage
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
+import java.util.*
 import javax.imageio.ImageIO
 
-data class ImageResource(val image: ByteArray, val extension: String)
+data class ImageResource(val image: ByteArray, val extension: String) {
+
+    override fun equals(other: Any?): Boolean {
+        if(other != null && other is ImageResource) {
+            return image contentEquals other.image && extension == other.extension
+        }
+        return false
+    }
+
+    override fun hashCode(): Int {
+        return Objects.hash(image.contentHashCode(), extension)
+    }
+}
 
 interface LinkProcessor : AutoCloseable {
 
