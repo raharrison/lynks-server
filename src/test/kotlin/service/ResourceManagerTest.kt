@@ -28,6 +28,7 @@ class ResourceManagerTest: DatabaseTest() {
     @BeforeEach
     fun createEntries() {
         createDummyEntry("eid", "note", "content", EntryType.NOTE)
+        Thread.sleep(10)
         createDummyEntry("eid2", "link", "website", EntryType.LINK)
     }
 

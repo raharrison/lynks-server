@@ -17,6 +17,7 @@ class ScheduleServiceTest: DatabaseTest() {
     @BeforeEach
     fun insertEntry() {
         createDummyEntry("e1", "title", "content", EntryType.NOTE)
+        Thread.sleep(10)
         createDummyEntry("e2", "title", "content", EntryType.NOTE)
     }
 

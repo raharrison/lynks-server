@@ -20,7 +20,9 @@ class CommentResourceTest: ServerTest() {
         Thread.sleep(10)// prevent having same creation timestamp
         createDummyEntry("e2", "title2", "content2", EntryType.NOTE)
         createDummyComment("c1", "e1", "comment content")
+        Thread.sleep(10)
         createDummyComment("c2", "e2", "comment content2")
+        Thread.sleep(10)
         createDummyComment("c3", "e1", "comment content3")
     }
 

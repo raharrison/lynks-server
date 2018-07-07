@@ -66,6 +66,7 @@ class URLUtilsTest {
     fun testInvalidUrl() {
         assertThat(URLUtils.isValidUrl("something")).isFalse()
         assertThat(URLUtils.isValidUrl("http:something")).isFalse()
+        assertThat(URLUtils.isValidUrl("http:google.com/something/")).isFalse()
     }
 
     @Test
