@@ -4,7 +4,10 @@ import com.chimbori.crux.articles.ArticleExtractor
 import common.BaseProperties
 import io.webfolder.cdp.AdaptiveProcessManager
 import io.webfolder.cdp.Launcher
+import io.webfolder.cdp.event.Events
+import io.webfolder.cdp.event.network.ResponseReceived
 import io.webfolder.cdp.session.Session
+import io.webfolder.cdp.type.page.ResourceType
 import resource.JPG
 import resource.PDF
 import resource.PNG
@@ -69,21 +72,40 @@ open class DefaultLinkProcessor : LinkProcessor {
     }
 
     private fun connectSession(url: String): Session {
-        val factory = launcher.launch(listOf("--headless", "--disable-gpu"))
-        val session = factory.create()
+        val session = sessionFactory.value.create()
+        val statuses = mutableListOf<Int>()
+        session.command.network.enable()
+        session.addEventListener { event, value ->
+            if (Events.NetworkResponseReceived == event) {
+                val rr = value as ResponseReceived
+                if(rr.type == ResourceType.Document) {
+                    statuses.add(rr.response.status)
+                }
+            }
+        }
         session.navigate(url)
         session.waitDocumentReady()
         session.wait(1000)
         session.activate()
-        return session
+        if(statuses.size > 0 && statuses.first() == 200)
+            return session
+        else
+            throw IllegalArgumentException("Could not navigate to $url")
     }
 
     companion object {
-        val launcher: Launcher = Launcher()
+        private val launcher: Launcher = Launcher()
+        private val sessionFactory = lazy {
+            launcher.launch(listOf("--headless", "--disable-gpu"))
+        }
 
         init {
             launcher.processManager = AdaptiveProcessManager()
-            Runtime.getRuntime().addShutdownHook(Thread { launcher.kill() })
+            Runtime.getRuntime().addShutdownHook(Thread {
+                if(sessionFactory.isInitialized())
+                    sessionFactory.value.close()
+                launcher.processManager.kill()
+            })
         }
     }
 
