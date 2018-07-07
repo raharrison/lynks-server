@@ -1,9 +1,6 @@
 package entry
 
-import common.Entries
-import common.Entry
-import common.EntryType
-import common.NewEntry
+import common.*
 import db.EntryRepository
 import org.jetbrains.exposed.sql.ColumnSet
 import org.jetbrains.exposed.sql.Query
@@ -40,7 +37,7 @@ class EntryService(tagService: TagService) : EntryRepository<Entry, NewEntry>(ta
         throw NotImplementedError()
     }
 
-    fun search(term: String): List<Entry> = transaction {
+    fun search(term: String, page: PageRequest=PageRequest()): List<Entry> = transaction {
         val conn = TransactionManager.current().connection
         conn.prepareStatement("SELECT * FROM FT_SEARCH_DATA(?, 0, 0)").use {
             it.setString(1, term)
@@ -50,7 +47,7 @@ class EntryService(tagService: TagService) : EntryRepository<Entry, NewEntry>(ta
                     val res = it.getArray("KEYS")
                     (res.array as Array<*>).forEach { keys.add(it.toString()) }
                 }
-                keys.mapNotNull { get(it) }
+                get(keys, page)
             }
         }
     }

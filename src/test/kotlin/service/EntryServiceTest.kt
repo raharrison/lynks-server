@@ -19,6 +19,8 @@ class EntryServiceTest: DatabaseTest() {
         createDummyEntry("id1", "link1", "link content", EntryType.LINK)
         Thread.sleep(10)// prevent having same creation timestamp
         createDummyEntry("id2", "note1", "note content", EntryType.NOTE)
+        Thread.sleep(10)
+        createDummyEntry("id3", "note2", "note content2", EntryType.NOTE)
     }
 
     @Test
@@ -44,37 +46,51 @@ class EntryServiceTest: DatabaseTest() {
     @Test
     fun testGetAll() {
         val retrieved = entryService.get(PageRequest())
-        assertThat(retrieved).hasSize(2)
-        assertThat(retrieved).extracting("id").containsExactlyInAnyOrder("id1", "id2")
+        assertThat(retrieved).hasSize(3)
+        assertThat(retrieved).extracting("id").containsExactlyInAnyOrder("id1", "id2", "id3")
         assertThat(retrieved).hasAtLeastOneElementOfType(Note::class.java)
         assertThat(retrieved).hasAtLeastOneElementOfType(Link::class.java)
     }
 
     @Test
+    fun testGetByIds() {
+        val retrieved = entryService.get(listOf("id2", "id3"), PageRequest())
+        assertThat(retrieved).hasSize(2)
+        assertThat(retrieved).extracting("id").containsExactlyInAnyOrder("id2", "id3")
+    }
+
+    @Test
+    fun testGetByIdsAndPaged() {
+        val retrieved = entryService.get(listOf("id1", "id2", "id3"), PageRequest(1, 1))
+        assertThat(retrieved).hasSize(1)
+        assertThat(retrieved).extracting("id").containsExactlyInAnyOrder("id2")
+    }
+
+    @Test
     fun testPaging() {
         // order by date updated
-        val retrieved = entryService.get(PageRequest(1))
+        val retrieved = entryService.get(PageRequest(2))
         assertThat(retrieved).hasSize(1)
         assertThat(retrieved).extracting("id").containsExactly("id1")
-        assertThat(retrieved).hasAtLeastOneElementOfType(Link::class.java)
+        assertThat(retrieved).hasOnlyElementsOfType(Link::class.java)
 
         val retrieved2 = entryService.get(PageRequest(0, 1))
         assertThat(retrieved2).hasSize(1)
-        assertThat(retrieved2).extracting("id").containsExactly("id2")
-        assertThat(retrieved2).hasAtLeastOneElementOfType(Note::class.java)
+        assertThat(retrieved2).extracting("id").containsExactly("id3")
+        assertThat(retrieved2).hasOnlyElementsOfType(Note::class.java)
     }
 
     @Test
     fun testSearchTitle() {
         val entries = entryService.search("note")
-        assertThat(entries).hasSize(1)
-        assertThat(entries).extracting("id").containsExactly("id2")
-        assertThat(entries).hasAtLeastOneElementOfType(Note::class.java)
+        assertThat(entries).hasSize(2)
+        assertThat(entries).extracting("id").containsExactlyInAnyOrder("id2", "id3")
+        assertThat(entries).hasOnlyElementsOfType(Note::class.java)
 
         val entries2 = entryService.search("link")
         assertThat(entries2).hasSize(1)
         assertThat(entries2).extracting("id").containsExactly("id1")
-        assertThat(entries2).hasAtLeastOneElementOfType(Link::class.java)
+        assertThat(entries2).hasOnlyElementsOfType(Link::class.java)
     }
 
     @Test

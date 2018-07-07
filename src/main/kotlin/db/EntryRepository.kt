@@ -22,16 +22,25 @@ abstract class EntryRepository<T : Entry, in U : NewEntry>(private val tagServic
                 .singleOrNull()
     }
 
-    fun get(pageRequest: PageRequest): List<T> = transaction {
-        val select = if (pageRequest.tag == null) getBaseQuery() else {
-            val tags = tagService.subtree(pageRequest.tag).map { it.id }
+    fun get(page: PageRequest): List<T> = transaction {
+        createPagedQuery(page).map { toModel(it) }
+    }
+
+    fun get(ids: List<String>, page: PageRequest): List<T> = transaction {
+        if(ids.isEmpty()) emptyList()
+        else createPagedQuery(page).combine { Entries.id inList ids }
+                .map { toModel(it) }
+    }
+
+    private fun createPagedQuery(page: PageRequest): Query {
+        return if (page.tag == null) getBaseQuery() else {
+            val tags = tagService.subtree(page.tag).map { it.id }
             getBaseQuery(Entries.innerJoin(EntryTags))
                     .combine { EntryTags.tagId.inList(tags) }
+        }.apply {
+            orderBy(Entries.dateUpdated, false)
+            limit(page.limit, page.offset)
         }
-
-        select.orderBy(Entries.dateUpdated, false)
-                .limit(pageRequest.limit, pageRequest.offset)
-                .map { toModel(it) }
     }
 
     open fun add(entry: U): T = transaction {
