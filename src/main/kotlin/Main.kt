@@ -67,5 +67,5 @@ fun Application.module() {
 }
 
 fun main(args: Array<String>) {
-    embeddedServer(Netty, Environment.port, watchPaths = listOf("Main"), module = Application::module).start()
+    embeddedServer(Netty, Environment.port, watchPaths = listOf("MainKt.main"), module = Application::module).start()
 }
