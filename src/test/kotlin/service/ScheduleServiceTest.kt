@@ -9,10 +9,12 @@ import org.junit.jupiter.api.assertThrows
 import schedule.*
 import util.createDummyEntry
 import java.sql.SQLException
+import java.time.ZoneId
 
 class ScheduleServiceTest: DatabaseTest() {
 
     private val scheduleService = ScheduleService()
+    private val tz = ZoneId.systemDefault().id
 
     @BeforeEach
     fun insertEntry() {
@@ -31,6 +33,7 @@ class ScheduleServiceTest: DatabaseTest() {
         assertThat(res[0].entryId).isEqualTo("e1")
         assertThat(res[0].type).isEqualTo(ScheduleType.DISCUSSION_FINDER)
         assertThat(res[0].interval).isEqualTo(100)
+        assertThat(res[0].tz).isEqualTo(tz)
     }
 
     @Test
@@ -45,14 +48,16 @@ class ScheduleServiceTest: DatabaseTest() {
 
     @Test
     fun testAddNewReminder() {
-        val reminder1 = NewReminder(null,"e1", ScheduleType.REMINDER, "100")
-        val reminder2 = NewReminder(null,"e1", ScheduleType.RECURRING, "every")
+        val reminder1 = NewReminder(null,"e1", ScheduleType.REMINDER, "100", tz)
+        val reminder2 = NewReminder(null,"e1", ScheduleType.RECURRING, "every", tz)
         val saved1 = scheduleService.addReminder(reminder1)
         val saved2 = scheduleService.addReminder(reminder2)
         val retrieved = scheduleService.get(saved1.scheduleId)
         val retrieved2 = scheduleService.get(saved2.scheduleId)
         assertThat(retrieved).isEqualTo(saved1)
+        assertThat(retrieved?.tz).isEqualTo(reminder1.tz)
         assertThat(retrieved2).isEqualTo(saved2)
+        assertThat(retrieved2?.tz).isEqualTo(reminder2.tz)
         assertThat(retrieved?.type).isEqualTo(ScheduleType.REMINDER)
         assertThat(retrieved2?.type).isEqualTo(ScheduleType.RECURRING)
         assertThat(retrieved?.spec).isEqualTo(reminder1.spec)
@@ -60,13 +65,21 @@ class ScheduleServiceTest: DatabaseTest() {
     }
 
     @Test
+    fun testAddReminderInvalidTimeZone() {
+        assertThrows<IllegalArgumentException> {
+            scheduleService.addReminder(NewReminder(null,"e1", ScheduleType.REMINDER, "100", "invalid"))
+        }
+    }
+
+    @Test
     fun testAddReminderGivenIdDoesNotPerformUpdate() {
-        val rem = scheduleService.addReminder(NewReminder(null,"e1", ScheduleType.REMINDER, "100"))
-        val res = scheduleService.addReminder(NewReminder(rem.scheduleId,"e1", ScheduleType.RECURRING, "200"))
+        val rem = scheduleService.addReminder(NewReminder(null,"e1", ScheduleType.REMINDER, "100", tz))
+        val res = scheduleService.addReminder(NewReminder(rem.scheduleId,"e1", ScheduleType.RECURRING, "200", tz))
         assertThat(rem.scheduleId).isNotEqualTo(res.scheduleId)
         assertThat(res.entryId).isEqualTo("e1")
         assertThat(res.type).isEqualTo(ScheduleType.RECURRING)
         assertThat(res.spec).isEqualTo("200")
+        assertThat(res.tz).isEqualTo(tz)
         assertThat(scheduleService.getAllReminders()).hasSize(2)
         assertThat(scheduleService.get(res.scheduleId)).isEqualTo(res)
         assertThat(scheduleService.get(rem.scheduleId)).isEqualTo(rem)
@@ -78,7 +91,7 @@ class ScheduleServiceTest: DatabaseTest() {
             scheduleService.add(reminder("sid", "nothing", ScheduleType.REMINDER, 100))
         }
         assertThrows<SQLException> {
-            scheduleService.addReminder(NewReminder(null,"nothing", ScheduleType.REMINDER, "100"))
+            scheduleService.addReminder(NewReminder(null,"nothing", ScheduleType.REMINDER, "100", tz))
         }
     }
 
@@ -94,6 +107,7 @@ class ScheduleServiceTest: DatabaseTest() {
         assertThat(res.map { it.entryId }).containsExactlyInAnyOrder("e1", "e2")
         assertThat(res.map { it.type }).containsOnly(ScheduleType.DISCUSSION_FINDER)
         assertThat(res.map { it.interval }).containsExactlyInAnyOrder(100, 200)
+        assertThat(res.map { it.tz }).containsOnly(tz)
     }
 
     @Test
@@ -109,6 +123,7 @@ class ScheduleServiceTest: DatabaseTest() {
         assertThat(reminders).extracting("entryId").containsOnly("e1", "e2")
         assertThat(reminders).extracting("type").containsOnly(ScheduleType.RECURRING, ScheduleType.REMINDER)
         assertThat(reminders).extracting("spec").doesNotContain("400")
+        assertThat(reminders).extracting("tz").containsOnly(tz)
     }
 
     @Test
@@ -141,7 +156,9 @@ class ScheduleServiceTest: DatabaseTest() {
         val copied = job.copy(interval = 200)
         assertThat(scheduleService.update(copied)).isEqualTo(copied)
         assertThat(job.interval).isEqualTo(100)
+        assertThat(job.tz).isEqualTo(tz)
         assertThat(copied.interval).isEqualTo(200)
+        assertThat(copied.tz).isEqualTo(tz)
 
         val res = scheduleService.getIntervalJobsByType(ScheduleType.DISCUSSION_FINDER)
         assertThat(res).hasSize(1)
@@ -157,12 +174,12 @@ class ScheduleServiceTest: DatabaseTest() {
 
     @Test
     fun testUpdateReminderNoRow() {
-        assertThat(scheduleService.updateReminder(NewReminder("invalid", "e1", ScheduleType.REMINDER, "300"))).isNull()
+        assertThat(scheduleService.updateReminder(NewReminder("invalid", "e1", ScheduleType.REMINDER, "300", tz))).isNull()
     }
 
     @Test
     fun testUpdateReminderNoId() {
-        val res = scheduleService.updateReminder(NewReminder(null, "e1", ScheduleType.REMINDER, "300"))
+        val res = scheduleService.updateReminder(NewReminder(null, "e1", ScheduleType.REMINDER, "300", tz))
         assertThat(res?.scheduleId).isNotBlank()
         assertThat(res?.entryId).isEqualTo("e1")
         assertThat(res?.type).isEqualTo(ScheduleType.REMINDER)
@@ -173,22 +190,31 @@ class ScheduleServiceTest: DatabaseTest() {
 
     @Test
     fun testUpdateReminder() {
-        val res1 = scheduleService.addReminder(NewReminder(null,"e1", ScheduleType.REMINDER, "100"))
-        val res2 = scheduleService.addReminder(NewReminder(null,"e1", ScheduleType.RECURRING, "200"))
+        val res1 = scheduleService.addReminder(NewReminder(null,"e1", ScheduleType.REMINDER, "100", tz))
+        val res2 = scheduleService.addReminder(NewReminder(null,"e1", ScheduleType.RECURRING, "200", tz))
         assertThat(scheduleService.getAllReminders()).hasSize(2).extracting("scheduleId").doesNotHaveDuplicates()
 
-        val updated = scheduleService.updateReminder(NewReminder(res1.scheduleId,"e1", ScheduleType.RECURRING, "500"))
+        val updated = scheduleService.updateReminder(NewReminder(res1.scheduleId,"e1", ScheduleType.RECURRING, "500", tz))
         assertThat(updated?.entryId).isEqualTo("e1")
         assertThat(updated?.type).isEqualTo(ScheduleType.RECURRING)
         assertThat(updated?.spec).isEqualTo("500")
         assertThat(scheduleService.get(res1.scheduleId)).isEqualTo(updated)
 
         // cannot update entryId
-        val updated2 = scheduleService.updateReminder(NewReminder(res2.scheduleId,"e2", ScheduleType.REMINDER, "800"))
+        val updated2 = scheduleService.updateReminder(NewReminder(res2.scheduleId,"e2", ScheduleType.REMINDER, "800", "America/New_York"))
         assertThat(updated2?.entryId).isEqualTo("e1")
         assertThat(updated2?.type).isEqualTo(ScheduleType.REMINDER)
         assertThat(updated2?.spec).isEqualTo("800")
+        assertThat(updated2?.tz).isEqualTo("America/New_York")
         assertThat(scheduleService.get(res2.scheduleId)).isEqualTo(updated2)
+    }
+
+    @Test
+    fun testUpdateReminderInvalidTimeZone() {
+        val res1 = scheduleService.addReminder(NewReminder(null,"e1", ScheduleType.REMINDER, "100", tz))
+        assertThrows<IllegalArgumentException> {
+            scheduleService.updateReminder(NewReminder(res1.scheduleId,"e1", ScheduleType.RECURRING, "500", "invalid"))
+        }
     }
 
     @Test
@@ -210,6 +236,6 @@ class ScheduleServiceTest: DatabaseTest() {
     }
 
     private fun intervalJob(eId: String, type: ScheduleType, interval: Long=0) = IntervalJob(entryId=eId, type=type, interval=interval)
-    private fun reminder(sid: String, eId: String, type: ScheduleType, interval: Long=0) = Reminder(sid, entryId=eId, type=type, interval=interval)
+    private fun reminder(sid: String, eId: String, type: ScheduleType, interval: Long=0) = Reminder(sid, entryId=eId, type=type, interval=interval, tz=this.tz)
 
 }

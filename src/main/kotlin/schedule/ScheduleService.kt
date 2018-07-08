@@ -3,6 +3,7 @@ package schedule
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 import util.RandomUtils
+import java.time.ZoneId
 
 class ScheduleService {
 
@@ -10,11 +11,11 @@ class ScheduleService {
         val type = row[Schedules.type]
         return when (type) {
             ScheduleType.REMINDER -> Reminder(row[Schedules.scheduleId], row[Schedules.entryId],
-                    type, row[Schedules.spec].toLong())
+                    type, row[Schedules.spec].toLong(), row[Schedules.tz])
             ScheduleType.RECURRING -> RecurringReminder(row[Schedules.scheduleId], row[Schedules.entryId],
-                    type, row[Schedules.spec])
+                    type, row[Schedules.spec], row[Schedules.tz])
             else -> IntervalJob(row[Schedules.scheduleId], row[Schedules.entryId],
-                    type, row[Schedules.spec].toLong())
+                    type, row[Schedules.spec].toLong(), row[Schedules.tz])
         }
     }
 
@@ -25,7 +26,7 @@ class ScheduleService {
                     (Schedules.type neq ScheduleType.RECURRING)
         }.map {
             IntervalJob(it[Schedules.scheduleId], it[Schedules.entryId],
-                    it[Schedules.type], it[Schedules.spec].toLong())
+                    it[Schedules.type], it[Schedules.spec].toLong(), it[Schedules.tz])
         }
     }
 
@@ -53,6 +54,7 @@ class ScheduleService {
             it[Schedules.entryId] = job.entryId
             it[Schedules.type] = job.type
             it[Schedules.spec] = job.spec
+            it[Schedules.tz] = checkValidTimeZone(job.tz)
         }
         get(job.scheduleId)!!
     }
@@ -64,6 +66,7 @@ class ScheduleService {
             it[Schedules.entryId] = reminder.entryId
             it[Schedules.type] = reminder.type
             it[Schedules.spec] = reminder.spec
+            it[Schedules.tz] = checkValidTimeZone(reminder.tz)
         }
         get(id)!!
     }
@@ -75,6 +78,7 @@ class ScheduleService {
             val updated = Schedules.update({ Schedules.scheduleId eq reminder.scheduleId }) {
                 it[Schedules.type] = reminder.type
                 it[Schedules.spec] = reminder.spec
+                it[Schedules.tz] = checkValidTimeZone(reminder.tz)
             }
             if(updated > 0) get(reminder.scheduleId) else null
         }
@@ -84,12 +88,22 @@ class ScheduleService {
         Schedules.update({ Schedules.scheduleId eq job.scheduleId }) {
             it[Schedules.type] = job.type
             it[Schedules.spec] = job.spec
+            it[Schedules.tz] = checkValidTimeZone(job.tz)
         }
         get(job.scheduleId)
     }
 
     fun delete(id: String) = transaction {
         Schedules.deleteWhere { Schedules.scheduleId eq id } > 0
+    }
+
+    private fun checkValidTimeZone(tz: String): String {
+        try {
+            ZoneId.of(tz)
+            return tz
+        } catch(e: Exception) {
+            throw IllegalArgumentException("Invalid timezone code: $tz")
+        }
     }
 
 }
