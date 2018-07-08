@@ -60,15 +60,16 @@ class ScheduleServiceTest: DatabaseTest() {
     }
 
     @Test
-    fun testAddReminderGivenIdPerformsUpdate() {
+    fun testAddReminderGivenIdDoesNotPerformUpdate() {
         val rem = scheduleService.addReminder(NewReminder(null,"e1", ScheduleType.REMINDER, "100"))
         val res = scheduleService.addReminder(NewReminder(rem.scheduleId,"e1", ScheduleType.RECURRING, "200"))
-        assertThat(res.scheduleId).isEqualTo(rem.scheduleId)
+        assertThat(rem.scheduleId).isNotEqualTo(res.scheduleId)
         assertThat(res.entryId).isEqualTo("e1")
         assertThat(res.type).isEqualTo(ScheduleType.RECURRING)
         assertThat(res.spec).isEqualTo("200")
-        assertThat(scheduleService.getAllReminders()).hasSize(1)
-        assertThat(scheduleService.get(rem.scheduleId)).isEqualTo(res)
+        assertThat(scheduleService.getAllReminders()).hasSize(2)
+        assertThat(scheduleService.get(res.scheduleId)).isEqualTo(res)
+        assertThat(scheduleService.get(rem.scheduleId)).isEqualTo(rem)
     }
 
     @Test
@@ -155,13 +156,18 @@ class ScheduleServiceTest: DatabaseTest() {
     }
 
     @Test
+    fun testUpdateReminderNoRow() {
+        assertThat(scheduleService.updateReminder(NewReminder("invalid", "e1", ScheduleType.REMINDER, "300"))).isNull()
+    }
+
+    @Test
     fun testUpdateReminderNoId() {
         val res = scheduleService.updateReminder(NewReminder(null, "e1", ScheduleType.REMINDER, "300"))
-        assertThat(res.scheduleId).isNotBlank()
-        assertThat(res.entryId).isEqualTo("e1")
-        assertThat(res.type).isEqualTo(ScheduleType.REMINDER)
-        assertThat(res.spec).isEqualTo("300")
-        assertThat(scheduleService.get(res.scheduleId)).isEqualTo(res)
+        assertThat(res?.scheduleId).isNotBlank()
+        assertThat(res?.entryId).isEqualTo("e1")
+        assertThat(res?.type).isEqualTo(ScheduleType.REMINDER)
+        assertThat(res?.spec).isEqualTo("300")
+        assertThat(scheduleService.get(res!!.scheduleId)).isEqualTo(res)
         assertThat(scheduleService.getAllReminders()).hasSize(1)
     }
 
@@ -172,16 +178,16 @@ class ScheduleServiceTest: DatabaseTest() {
         assertThat(scheduleService.getAllReminders()).hasSize(2).extracting("scheduleId").doesNotHaveDuplicates()
 
         val updated = scheduleService.updateReminder(NewReminder(res1.scheduleId,"e1", ScheduleType.RECURRING, "500"))
-        assertThat(updated.entryId).isEqualTo("e1")
-        assertThat(updated.type).isEqualTo(ScheduleType.RECURRING)
-        assertThat(updated.spec).isEqualTo("500")
+        assertThat(updated?.entryId).isEqualTo("e1")
+        assertThat(updated?.type).isEqualTo(ScheduleType.RECURRING)
+        assertThat(updated?.spec).isEqualTo("500")
         assertThat(scheduleService.get(res1.scheduleId)).isEqualTo(updated)
 
         // cannot update entryId
         val updated2 = scheduleService.updateReminder(NewReminder(res2.scheduleId,"e2", ScheduleType.REMINDER, "800"))
-        assertThat(updated2.entryId).isEqualTo("e1")
-        assertThat(updated2.type).isEqualTo(ScheduleType.REMINDER)
-        assertThat(updated2.spec).isEqualTo("800")
+        assertThat(updated2?.entryId).isEqualTo("e1")
+        assertThat(updated2?.type).isEqualTo(ScheduleType.REMINDER)
+        assertThat(updated2?.spec).isEqualTo("800")
         assertThat(scheduleService.get(res2.scheduleId)).isEqualTo(updated2)
     }
 

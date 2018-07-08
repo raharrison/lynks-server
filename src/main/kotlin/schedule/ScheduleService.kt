@@ -58,29 +58,25 @@ class ScheduleService {
     }
 
     fun addReminder(reminder: NewReminder): Schedule = transaction {
-        if (reminder.scheduleId == null) {
-            val id = RandomUtils.generateUid()
-            Schedules.insert {
-                it[Schedules.scheduleId] = id
-                it[Schedules.entryId] = reminder.entryId
-                it[Schedules.type] = reminder.type
-                it[Schedules.spec] = reminder.spec
-            }
-            get(id)!!
-        } else {
-            updateReminder(reminder)
+        val id = RandomUtils.generateUid()
+        Schedules.insert {
+            it[Schedules.scheduleId] = id
+            it[Schedules.entryId] = reminder.entryId
+            it[Schedules.type] = reminder.type
+            it[Schedules.spec] = reminder.spec
         }
+        get(id)!!
     }
 
-    fun updateReminder(reminder: NewReminder): Schedule = transaction {
+    fun updateReminder(reminder: NewReminder): Schedule? = transaction {
         if (reminder.scheduleId == null) {
             addReminder(reminder)
         } else {
-            Schedules.update({ Schedules.scheduleId eq reminder.scheduleId }) {
+            val updated = Schedules.update({ Schedules.scheduleId eq reminder.scheduleId }) {
                 it[Schedules.type] = reminder.type
                 it[Schedules.spec] = reminder.spec
             }
-            get(reminder.scheduleId)!!
+            if(updated > 0) get(reminder.scheduleId) else null
         }
     }
 

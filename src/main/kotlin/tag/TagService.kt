@@ -38,18 +38,20 @@ class TagService {
 
     fun subtree(id: String): Collection<Tag> = tagCollection.subtree(id).map { it.copy() }
 
-    fun updateTag(tag: NewTag): Tag {
+    fun updateTag(tag: NewTag): Tag? {
         val id = tag.id
         return if (id == null) {
             addTag(tag)
         } else {
             transaction {
-                Tags.update({ Tags.id eq id }) {
+                val updated = Tags.update({ Tags.id eq id }) {
                     it[name] = tag.name
                     it[parentId] = tag.parentId
                     it[dateUpdated] = System.currentTimeMillis()
                 }
-                tagCollection.update(tag.parentId, queryTag(id)!!)
+                if(updated > 0) {
+                    tagCollection.update(tag.parentId, queryTag(id)!!)
+                } else null
             }
         }
     }

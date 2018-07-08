@@ -140,4 +140,16 @@ class TagResourceTest : ServerTest() {
         assertThat(updated).isEqualTo(retrieved)
     }
 
+    @Test
+    fun testUpdateTagNoRow() {
+        val updatedTag = NewTag("invalid","updated", null)
+        given()
+                .contentType(ContentType.JSON)
+                .body(updatedTag)
+                .When()
+                .put("/tag")
+                .then()
+                .statusCode(404)
+    }
+
 }

@@ -27,7 +27,9 @@ fun Route.tag(tagService: TagService) {
 
         put("/") {
             val tag = call.receive<NewTag>()
-            call.respond(tagService.updateTag(tag))
+            val updated = tagService.updateTag(tag)
+            if(updated == null) call.respond(HttpStatusCode.NotFound)
+            else call.respond(HttpStatusCode.OK, updated)
         }
 
         delete("/{id}") {

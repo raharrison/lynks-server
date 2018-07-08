@@ -134,7 +134,7 @@ class TagServiceTest : DatabaseTest() {
 
         assertThat(tagService.getAllTags()).hasSize(3).extracting("id").contains(created.id)
         val retr = tagService.getTag(created.id)
-        assertThat(retr).isNotNull()
+        assertThat(retr).isNotNull
         assertThat(retr).isEqualTo(created)
     }
 
@@ -153,27 +153,27 @@ class TagServiceTest : DatabaseTest() {
         assertThat(subtree).hasSize(2).extracting("id").containsExactlyInAnyOrder("t1", created.id)
 
         val retr = tagService.getTag(created.id)
-        assertThat(retr).isNotNull()
+        assertThat(retr).isNotNull
         assertThat(retr?.children).isEmpty()
     }
 
     @Test
     fun testUpdateTagNoId() {
         val res = tagService.updateTag(NewTag(null, "newTag", null))
-        assertThat(res.name).isEqualTo("newTag")
+        assertThat(res?.name).isEqualTo("newTag")
 
         assertThat(tagService.getAllTags()).hasSize(3)
-        assertThat(tagService.getTag(res.id)).isEqualTo(res)
+        assertThat(tagService.getTag(res!!.id)).isEqualTo(res)
     }
 
     @Test
     fun testUpdateTag() {
         val current = tagService.getTag("t1")
-        assertThat(current).isNotNull()
+        assertThat(current).isNotNull
         val updated = tagService.updateTag(NewTag("t1", "updated", null))
         val retr = tagService.getTag("t1")
         assertThat(updated).isEqualTo(retr)
-        assertThat(retr).isNotNull()
+        assertThat(retr).isNotNull
         assertThat(retr?.name).isEqualTo("updated")
         assertThat(retr?.dateUpdated).isNotEqualTo(current?.dateUpdated)
     }
@@ -195,6 +195,11 @@ class TagServiceTest : DatabaseTest() {
         assertThat(tagService.getAllTags()).hasSize(2).extracting("id").containsExactly("t2", "t3")
 
         assertThat(tagService.getTag("t2")?.children).hasSize(1).extracting("id").containsExactly("t4")
+    }
+
+    @Test
+    fun testUpdateTagDoesntExist() {
+        assertThat(tagService.updateTag(NewTag("invalid", "name", null))).isNull()
     }
 
 }
