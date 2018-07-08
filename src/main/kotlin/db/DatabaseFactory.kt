@@ -1,5 +1,7 @@
 package db
 
+import com.zaxxer.hikari.HikariConfig
+import com.zaxxer.hikari.HikariDataSource
 import comment.Comments
 import common.ConfigMode
 import common.Entries
@@ -24,12 +26,30 @@ class DatabaseFactory {
 
     fun connect() {
         logger.info("Initialising database")
-        Database.connect(Environment.database, driver = Environment.driver)
+
+        if(Environment.mode == ConfigMode.TEST) {
+            // no connection pooling
+            Database.connect(Environment.database, driver = Environment.driver)
+        } else {
+            Database.connect(hikari())
+        }
+
         transaction {
             create(Entries, Comments, Tags, EntryTags, Resources, Schedules)
             enableSearch()
         }
         connected = true
+    }
+
+    private fun hikari(): HikariDataSource {
+        val config = HikariConfig()
+        config.driverClassName = Environment.driver
+        config.jdbcUrl = Environment.database
+        config.maximumPoolSize = 3
+        config.isAutoCommit = false
+        config.transactionIsolation = "TRANSACTION_REPEATABLE_READ"
+        config.validate()
+        return HikariDataSource(config)
     }
 
     private fun enableSearch() {
