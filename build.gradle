@@ -4,7 +4,7 @@ buildscript {
     ext.exposed_version = '0.10.3'
     ext.h2_version = '1.4.197'
     ext.flexmark_version = '0.34.0'
-    ext.fuel_version = '1.13.0'
+    ext.fuel_version = '1.14.0'
 
     repositories {
         mavenCentral()
