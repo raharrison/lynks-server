@@ -52,12 +52,13 @@ class ReminderWorker(private val scheduleService: ScheduleService,
         while(true) {
             val next = schedule.next(ZonedDateTime.now(tz))
             val sleep = calcDelay(next)
+            logger.info("Sleeping for ${sleep}ms")
             delay(sleep, TimeUnit.MILLISECONDS)
             reminderElapsed(reminder)
         }
     }
 
-    private fun reminderElapsed(reminder: Schedule) {
+    private suspend fun reminderElapsed(reminder: Schedule) {
         notifyService.accept(reminder)
     }
 
