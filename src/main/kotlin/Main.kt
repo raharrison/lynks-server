@@ -15,6 +15,9 @@ import io.ktor.jackson.JacksonConverter
 import io.ktor.routing.Routing
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
+import io.ktor.websocket.WebSockets
+import notify.NotifyService
+import notify.notify
 import resource.ResourceManager
 import resource.resources
 import schedule.ScheduleService
@@ -33,6 +36,7 @@ fun Application.module() {
     install(ContentNegotiation) {
         register(ContentType.Application.Json, JacksonConverter(defaultMapper))
     }
+    install(WebSockets)
 
     DatabaseFactory().connect()
 
@@ -48,6 +52,7 @@ fun Application.module() {
         register(ScheduleService())
         register(SuggestionService(get()))
         register(TaskService(get(), this, get()))
+        register(NotifyService())
         workerRegistry.init(get(), get(), get())
     }
 
@@ -61,6 +66,7 @@ fun Application.module() {
             suggest(get())
             resources(get())
             task(get())
+            notify(get())
             health()
         }
     }
