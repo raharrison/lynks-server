@@ -235,6 +235,16 @@ class ScheduleServiceTest: DatabaseTest() {
         assertThat(scheduleService.delete(s2.scheduleId)).isFalse()
     }
 
+    @Test
+    fun testIsActive() {
+        val res1 = scheduleService.addReminder(NewReminder(null,"e1", ScheduleType.REMINDER, "100", tz))
+        val res2 = scheduleService.addReminder(NewReminder(null,"e1", ScheduleType.RECURRING, "200", tz))
+        assertThat(scheduleService.isActive(res1.scheduleId)).isTrue()
+        assertThat(scheduleService.isActive(res2.scheduleId)).isTrue()
+        assertThat(scheduleService.isActive("invalid")).isFalse()
+        assertThat(scheduleService.isActive("")).isFalse()
+    }
+
     private fun intervalJob(eId: String, type: ScheduleType, interval: Long=0) = IntervalJob(entryId=eId, type=type, interval=interval)
     private fun reminder(sid: String, eId: String, type: ScheduleType, interval: Long=0) = Reminder(sid, entryId=eId, type=type, interval=interval, tz=this.tz)
 

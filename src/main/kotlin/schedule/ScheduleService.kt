@@ -48,6 +48,11 @@ class ScheduleService {
                 .mapNotNull { toModel(it) }.singleOrNull()
     }
 
+    fun isActive(id: String): Boolean = transaction {
+        Schedules.slice(Schedules.scheduleId)
+                .select { Schedules.scheduleId eq id }.count() > 0
+    }
+
     fun add(job: Schedule) = transaction {
         Schedules.insert {
             it[Schedules.scheduleId] = job.scheduleId
