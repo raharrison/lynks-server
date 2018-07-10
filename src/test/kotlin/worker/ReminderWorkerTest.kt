@@ -3,6 +3,7 @@ package worker
 import io.mockk.*
 import kotlinx.coroutines.experimental.runBlocking
 import kotlinx.coroutines.experimental.test.TestCoroutineContext
+import notify.Notification
 import notify.NotifyService
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -24,7 +25,7 @@ class ReminderWorkerTest {
     @BeforeEach
     fun before() {
         every { scheduleService.getAllReminders() } returns emptyList()
-        coEvery { notifyService.accept(any()) } just Runs
+        coEvery { notifyService.accept(Notification.EXECUTED, any()) } just Runs
         every { scheduleService.isActive(any()) } returns true
     }
 
@@ -47,16 +48,16 @@ class ReminderWorkerTest {
         worker.close()
 
         context.advanceTimeBy(14, TimeUnit.MINUTES)
-        coVerify(exactly = 0) { notifyService.accept(reminder) }
-        coVerify(exactly = 0) { notifyService.accept(reminder2) }
+        coVerify(exactly = 0) { notifyService.accept(Notification.EXECUTED, reminder) }
+        coVerify(exactly = 0) { notifyService.accept(Notification.EXECUTED, reminder2) }
 
         context.advanceTimeBy(1, TimeUnit.MINUTES)
-        coVerify(exactly = 1) { notifyService.accept(reminder) }
-        coVerify(exactly = 0) { notifyService.accept(reminder2) }
+        coVerify(exactly = 1) { notifyService.accept(Notification.EXECUTED, reminder) }
+        coVerify(exactly = 0) { notifyService.accept(Notification.EXECUTED, reminder2) }
 
         context.advanceTimeBy(30, TimeUnit.MINUTES)
-        coVerify(exactly = 1) { notifyService.accept(reminder) }
-        coVerify(exactly = 1) { notifyService.accept(reminder2) }
+        coVerify(exactly = 1) { notifyService.accept(Notification.EXECUTED, reminder) }
+        coVerify(exactly = 1) { notifyService.accept(Notification.EXECUTED, reminder2) }
     }
 
     @Test
@@ -73,16 +74,16 @@ class ReminderWorkerTest {
         worker.close()
 
         context.advanceTimeBy(118, TimeUnit.MINUTES)
-        coVerify(exactly = 0) { notifyService.accept(reminder) }
-        coVerify(exactly = 0) { notifyService.accept(reminder2) }
+        coVerify(exactly = 0) { notifyService.accept(Notification.EXECUTED, reminder) }
+        coVerify(exactly = 0) { notifyService.accept(Notification.EXECUTED, reminder2) }
 
         context.advanceTimeBy(2, TimeUnit.MINUTES)
-        coVerify(exactly = 1) { notifyService.accept(reminder) }
-        coVerify(exactly = 0) { notifyService.accept(reminder2) }
+        coVerify(exactly = 1) { notifyService.accept(Notification.EXECUTED, reminder) }
+        coVerify(exactly = 0) { notifyService.accept(Notification.EXECUTED, reminder2) }
 
         context.advanceTimeBy(30, TimeUnit.MINUTES)
-        coVerify(exactly = 1) { notifyService.accept(reminder) }
-        coVerify(exactly = 1) { notifyService.accept(reminder2) }
+        coVerify(exactly = 1) { notifyService.accept(Notification.EXECUTED, reminder) }
+        coVerify(exactly = 1) { notifyService.accept(Notification.EXECUTED, reminder2) }
     }
 
     @Test
@@ -96,24 +97,24 @@ class ReminderWorkerTest {
         worker.send(reminder2)
 
         context.advanceTimeBy(29, TimeUnit.MINUTES)
-        coVerify(exactly = 0) { notifyService.accept(reminder) }
-        coVerify(exactly = 0) { notifyService.accept(reminder2) }
+        coVerify(exactly = 0) { notifyService.accept(Notification.EXECUTED, reminder) }
+        coVerify(exactly = 0) { notifyService.accept(Notification.EXECUTED, reminder2) }
 
         context.advanceTimeBy(151, TimeUnit.MINUTES)
-        coVerify(exactly = 1) { notifyService.accept(reminder) }
-        coVerify(exactly = 6) { notifyService.accept(reminder2) }
+        coVerify(exactly = 1) { notifyService.accept(Notification.EXECUTED, reminder) }
+        coVerify(exactly = 6) { notifyService.accept(Notification.EXECUTED, reminder2) }
 
         context.advanceTimeBy(1, TimeUnit.HOURS)
-        coVerify(exactly = 1) { notifyService.accept(reminder) }
-        coVerify(exactly = 8) { notifyService.accept(reminder2) }
+        coVerify(exactly = 1) { notifyService.accept(Notification.EXECUTED, reminder) }
+        coVerify(exactly = 8) { notifyService.accept(Notification.EXECUTED, reminder2) }
 
         context.advanceTimeBy(2, TimeUnit.HOURS)
-        coVerify(exactly = 2) { notifyService.accept(reminder) }
-        coVerify(exactly = 12) { notifyService.accept(reminder2) }
+        coVerify(exactly = 2) { notifyService.accept(Notification.EXECUTED, reminder) }
+        coVerify(exactly = 12) { notifyService.accept(Notification.EXECUTED, reminder2) }
 
         context.advanceTimeBy(3, TimeUnit.HOURS)
-        coVerify(exactly = 3) { notifyService.accept(reminder) }
-        coVerify(exactly = 18) { notifyService.accept(reminder2) }
+        coVerify(exactly = 3) { notifyService.accept(Notification.EXECUTED, reminder) }
+        coVerify(exactly = 18) { notifyService.accept(Notification.EXECUTED, reminder2) }
 
         worker.close()
         Unit
@@ -131,10 +132,10 @@ class ReminderWorkerTest {
         val until = ZonedDateTime.now().until(fireDate, ChronoUnit.MILLIS)
 
         context.advanceTimeBy(until / 2, TimeUnit.MILLISECONDS)
-        coVerify(exactly = 0) { notifyService.accept(reminder) }
+        coVerify(exactly = 0) { notifyService.accept(Notification.EXECUTED, reminder) }
 
         context.advanceTimeBy(until / 2, TimeUnit.MILLISECONDS)
-        coVerify(exactly = 1) { notifyService.accept(reminder) }
+        coVerify(exactly = 1) { notifyService.accept(Notification.EXECUTED, reminder) }
 
         worker.close()
         Unit
@@ -151,7 +152,7 @@ class ReminderWorkerTest {
         worker.close()
 
         context.advanceTimeBy(16, TimeUnit.MINUTES)
-        coVerify(exactly = 0) { notifyService.accept(reminder) }
+        coVerify(exactly = 0) { notifyService.accept(Notification.EXECUTED, reminder) }
         verify(exactly = 1) { scheduleService.isActive(reminder.scheduleId) }
     }
 
@@ -164,7 +165,7 @@ class ReminderWorkerTest {
         worker.send(reminder)
 
         context.advanceTimeBy(185, TimeUnit.MINUTES)
-        coVerify(exactly = 0) { notifyService.accept(reminder) }
+        coVerify(exactly = 0) { notifyService.accept(Notification.EXECUTED, reminder) }
         verify(exactly = 1) { scheduleService.isActive(reminder.scheduleId) }
 
         worker.close()
@@ -183,8 +184,8 @@ class ReminderWorkerTest {
         val worker = ReminderWorker(scheduleService, notifyService).apply { runner = context }.worker()
 
         context.advanceTimeBy(185, TimeUnit.MINUTES)
-        coVerify(exactly = 1) { notifyService.accept(reminder) }
-        coVerify(exactly = 1) { notifyService.accept(recurring) }
+        coVerify(exactly = 1) { notifyService.accept(Notification.EXECUTED, reminder) }
+        coVerify(exactly = 1) { notifyService.accept(Notification.EXECUTED, recurring) }
         verify(exactly = 2) { scheduleService.isActive(reminder.scheduleId) }
 
         worker.close()

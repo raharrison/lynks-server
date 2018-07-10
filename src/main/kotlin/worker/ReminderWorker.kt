@@ -1,6 +1,7 @@
 package worker
 
 import kotlinx.coroutines.experimental.delay
+import notify.Notification
 import notify.NotifyService
 import schedule.RecurringReminder
 import schedule.Reminder
@@ -61,7 +62,7 @@ class ReminderWorker(private val scheduleService: ScheduleService,
     }
 
     private suspend fun reminderElapsed(reminder: Schedule) {
-        notifyService.accept(reminder)
+        notifyService.accept(Notification.EXECUTED, reminder)
     }
 
     private fun calcDelay(date: ZonedDateTime): Long {
