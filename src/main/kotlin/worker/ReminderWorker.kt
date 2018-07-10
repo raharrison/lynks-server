@@ -17,20 +17,20 @@ import com.github.shyiko.skedule.Schedule as Skedule
 private val logger = loggerFor<ReminderWorker>()
 
 class ReminderWorker(private val scheduleService: ScheduleService,
-                     private val notifyService: NotifyService): Worker<Schedule>() {
+                     private val notifyService: NotifyService) : Worker<Schedule>() {
 
     override suspend fun beforeWork() {
         super.beforeWork()
         scheduleService.getAllReminders().forEach {
-            when(it) {
-                is Reminder -> launchJob({launchReminder(it)})
-                is RecurringReminder -> launchJob({launchRecurringReminder(it)})
+            when (it) {
+                is Reminder -> launchJob({ launchReminder(it) })
+                is RecurringReminder -> launchJob({ launchRecurringReminder(it) })
             }
         }
     }
 
     override suspend fun doWork(input: Schedule) {
-        when(input) {
+        when (input) {
             is Reminder -> launchReminder(input)
             is RecurringReminder -> launchRecurringReminder(input)
         }
@@ -42,19 +42,21 @@ class ReminderWorker(private val scheduleService: ScheduleService,
         val sleep = calcDelay(fireDate)
         logger.info("Sleeping for ${sleep}ms")
         delay(sleep, TimeUnit.MILLISECONDS)
-        reminderElapsed(reminder)
+        if (scheduleService.isActive(reminder.scheduleId))
+            reminderElapsed(reminder)
     }
 
     private suspend fun launchRecurringReminder(reminder: RecurringReminder) {
         val fire = reminder.fire
         val tz = ZoneId.of(reminder.tz)
         val schedule = Skedule.parse(fire)
-        while(true) {
+        while (true) {
             val next = schedule.next(ZonedDateTime.now(tz))
             val sleep = calcDelay(next)
             logger.info("Sleeping for ${sleep}ms")
             delay(sleep, TimeUnit.MILLISECONDS)
-            reminderElapsed(reminder)
+            if (scheduleService.isActive(reminder.scheduleId)) reminderElapsed(reminder)
+            else break
         }
     }
 

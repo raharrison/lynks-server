@@ -25,6 +25,7 @@ class ReminderWorkerTest {
     fun before() {
         every { scheduleService.getAllReminders() } returns emptyList()
         coEvery { notifyService.accept(any()) } just Runs
+        every { scheduleService.isActive(any()) } returns true
     }
 
     @AfterEach
@@ -134,6 +135,57 @@ class ReminderWorkerTest {
 
         context.advanceTimeBy(until / 2, TimeUnit.MILLISECONDS)
         coVerify(exactly = 1) { notifyService.accept(reminder) }
+
+        worker.close()
+        Unit
+    }
+
+    @Test
+    fun testReminderNotExecutedIfDeleted() = runBlocking(context) {
+        val fire = Instant.now().plus(15, ChronoUnit.MINUTES).toEpochMilli()
+        val reminder = Reminder("sc1", "e1", ScheduleType.REMINDER, fire, ZoneId.systemDefault().id)
+
+        every { scheduleService.isActive(reminder.scheduleId) } returns false
+        val worker = ReminderWorker(scheduleService, notifyService).apply { runner = context }.worker()
+        worker.send(reminder)
+        worker.close()
+
+        context.advanceTimeBy(16, TimeUnit.MINUTES)
+        coVerify(exactly = 0) { notifyService.accept(reminder) }
+        verify(exactly = 1) { scheduleService.isActive(reminder.scheduleId) }
+    }
+
+    @Test
+    fun testRecurringNotDeletedIfDeleted() = runBlocking(context) {
+        val reminder = RecurringReminder("sc1", "e1", ScheduleType.RECURRING, "every 3 hours", ZoneId.systemDefault().id)
+
+        every { scheduleService.isActive(reminder.scheduleId) } returns false
+        val worker = ReminderWorker(scheduleService, notifyService).apply { runner = context }.worker()
+        worker.send(reminder)
+
+        context.advanceTimeBy(185, TimeUnit.MINUTES)
+        coVerify(exactly = 0) { notifyService.accept(reminder) }
+        verify(exactly = 1) { scheduleService.isActive(reminder.scheduleId) }
+
+        worker.close()
+        Unit
+    }
+
+    @Test
+    fun testInitFromStart() = runBlocking(context) {
+        val tz = ZoneId.systemDefault()
+        val fire = Instant.now().plus(15, ChronoUnit.MINUTES).toEpochMilli()
+        val reminder = Reminder("sc1", "e1", ScheduleType.REMINDER, fire, tz.id)
+        val recurring = RecurringReminder("sc1", "e1", ScheduleType.RECURRING, "every 3 hours", tz.id)
+
+        every { scheduleService.getAllReminders() } returns listOf(reminder, recurring)
+
+        val worker = ReminderWorker(scheduleService, notifyService).apply { runner = context }.worker()
+
+        context.advanceTimeBy(185, TimeUnit.MINUTES)
+        coVerify(exactly = 1) { notifyService.accept(reminder) }
+        coVerify(exactly = 1) { notifyService.accept(recurring) }
+        verify(exactly = 2) { scheduleService.isActive(reminder.scheduleId) }
 
         worker.close()
         Unit
