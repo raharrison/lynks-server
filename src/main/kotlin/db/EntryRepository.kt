@@ -57,7 +57,12 @@ abstract class EntryRepository<T : Entry, in U : NewEntry>(private val tagServic
         } else {
             transaction {
                 val where = getBaseQuery().combine { Entries.id eq id }.where!!
-                val updated = Entries.update({ where }, body = toUpdate(entry))
+                val updated = Entries.update({ where }, body = {
+                    toUpdate(entry)
+                    with(SqlExpressionBuilder) {
+                        it.update(Entries.version, Entries.version + 1)
+                    }
+                })
                 if(updated > 0) {
                     updateTagsForEntry(entry.tags, id)
                     get(id)
@@ -70,7 +75,12 @@ abstract class EntryRepository<T : Entry, in U : NewEntry>(private val tagServic
 
     fun update(entry: T): T? = transaction {
         val where = getBaseQuery().combine { Entries.id eq entry.id }.where!!
-        Entries.update({ where }, body = toUpdate(entry))
+        Entries.update({ where }, body = {
+            toUpdate(entry)
+            with(SqlExpressionBuilder) {
+                it.update(Entries.version, Entries.version + 1)
+            }
+        })
         get(entry.id)
     }
 
