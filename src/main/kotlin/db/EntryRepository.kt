@@ -49,8 +49,7 @@ abstract class EntryRepository<T : Entry, in U : NewEntry>(private val tagServic
 
     open fun add(entry: U): T = transaction {
         val newId = RandomUtils.generateUid()
-        Entries.insert( toInsert(newId, entry))
-        EntryVersions.insert(toInsert(newId, entry))
+        Entries.insert(toInsert(newId, entry))
         addTagsForEntry(entry.tags, newId)
         get(newId)!!
     }

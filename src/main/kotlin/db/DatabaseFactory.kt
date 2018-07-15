@@ -57,7 +57,9 @@ class DatabaseFactory {
     private fun enableTriggers() {
         val conn = TransactionManager.current().connection
         conn.createStatement().use {
-            it.execute("CREATE TRIGGER ENTRY_VERS AFTER UPDATE ON ENTRY " +
+            it.execute("CREATE TRIGGER ENTRY_VERS_INS AFTER INSERT ON ENTRY " +
+                    "FOR EACH ROW CALL \"${EntryVersionTrigger::class.qualifiedName}\"")
+            it.execute("CREATE TRIGGER ENTRY_VERS_UPD AFTER UPDATE ON ENTRY " +
                     "FOR EACH ROW CALL \"${EntryVersionTrigger::class.qualifiedName}\"")
         }
     }

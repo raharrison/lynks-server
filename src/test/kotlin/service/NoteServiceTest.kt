@@ -234,12 +234,12 @@ class NoteServiceTest : DatabaseTest() {
         val added = noteService.add(newNote("n1", "some content"))
         val version1 = noteService.get(added.id, 0)
         assertThat(added.version).isZero()
-        assertThat(added).isEqualToIgnoringGivenFields(version1, "dateUpdated", "props")
+        assertThat(added).isEqualToIgnoringGivenFields(version1, "props")
 
         val updated = noteService.update(newNote(added.id, "edited", "different content"))
         val version2 = noteService.get(added.id, 1)
         assertThat(updated?.version).isOne()
-        assertThat(version2).isEqualToIgnoringGivenFields(updated, "dateUpdated", "props")
+        assertThat(version2).isEqualToIgnoringGivenFields(updated, "props")
 
         assertThat(version2?.title).isEqualTo("edited")
         val first = noteService.get(added.id, 0)

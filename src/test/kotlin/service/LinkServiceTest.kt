@@ -284,12 +284,12 @@ class LinkServiceTest : DatabaseTest() {
         val added = linkService.add(newLink("n1", "google.com"))
         val version1 = linkService.get(added.id, 0)
         assertThat(added.version).isZero()
-        assertThat(added).isEqualToIgnoringGivenFields(version1, "dateUpdated", "props")
+        assertThat(added).isEqualToIgnoringGivenFields(version1, "props")
 
         val updated = linkService.update(newLink(added.id, "edited", "something"))
         val version2 = linkService.get(added.id, 1)
         assertThat(updated?.version).isOne()
-        assertThat(version2).isEqualToIgnoringGivenFields(updated, "dateUpdated", "props")
+        assertThat(version2).isEqualToIgnoringGivenFields(updated, "props")
 
         assertThat(version2?.title).isEqualTo("edited")
         val first = linkService.get(added.id, 0)
