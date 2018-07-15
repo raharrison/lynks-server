@@ -158,5 +158,61 @@ class NoteResourceTest: ServerTest() {
         assertThat(notes).hasSize(1).extracting("id").containsExactly("e2")
     }
 
+    @Test
+    fun testGetInvalidVersion() {
+        get("/note/{id}/{version}", "e2", 0)
+                .then()
+                .statusCode(404)
+    }
+
+    @Test
+    fun testGetVersion() {
+        val newNote = NewNote(null, "title4", "content4", emptyList())
+        val created = given()
+                .contentType(ContentType.JSON)
+                .body(newNote)
+                .When()
+                .post("/note")
+                .then()
+                .statusCode(201)
+                .extract().to<Note>()
+
+        assertThat(created.version).isZero()
+        assertThat(created.title).isEqualTo(newNote.title)
+        assertThat(created.plainText).isEqualTo(newNote.plainText)
+
+        // update
+        val updateNote = NewNote(created.id, "edited", "new content", emptyList())
+        val updated = given()
+                .contentType(ContentType.JSON)
+                .body(updateNote)
+                .When()
+                .put("/note")
+                .then()
+                .statusCode(200)
+                .extract().to<Note>()
+
+        assertThat(updated.title).isEqualTo(updateNote.title)
+        assertThat(updated.plainText).isEqualTo(updateNote.plainText)
+        assertThat(updated.version).isOne()
+
+        // retrieve versions
+        val original = get("/note/{id}/{version}", created.id, 0)
+                .then()
+                .statusCode(200)
+                .extract().to<Note>()
+        assertThat(original.version).isEqualTo(0)
+        assertThat(original.title).isEqualTo(newNote.title)
+        assertThat(original.plainText).isEqualTo(newNote.plainText)
+
+        val current = get("/note/{id}/{version}", created.id, 1)
+                .then()
+                .statusCode(200)
+                .extract().to<Note>()
+        assertThat(current.version).isEqualTo(1)
+        assertThat(current.title).isEqualTo(updateNote.title)
+        assertThat(current.plainText).isEqualTo(updateNote.plainText)
+    }
+
 
 }

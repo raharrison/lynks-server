@@ -159,6 +159,62 @@ class LinkResourceTest: ServerTest() {
         assertThat(links).hasSize(1).extracting("id").containsExactly("e1")
     }
 
+    @Test
+    fun testGetInvalidVersion() {
+        get("/link/{id}/{version}", "e1", 0)
+                .then()
+                .statusCode(404)
+    }
+
+    @Test
+    fun testGetVersion() {
+        val newLink = NewLink(null, "title4", "content4", emptyList())
+        val created = given()
+                .contentType(ContentType.JSON)
+                .body(newLink)
+                .When()
+                .post("/link")
+                .then()
+                .statusCode(201)
+                .extract().to<Link>()
+
+        assertThat(created.version).isZero()
+        assertThat(created.title).isEqualTo(newLink.title)
+        assertThat(created.url).isEqualTo(newLink.url)
+
+        // update
+        val updateLink = NewLink(created.id, "edited", "google.com", emptyList())
+        val updated = given()
+                .contentType(ContentType.JSON)
+                .body(updateLink)
+                .When()
+                .put("/link")
+                .then()
+                .statusCode(200)
+                .extract().to<Link>()
+
+        assertThat(updated.title).isEqualTo(updateLink.title)
+        assertThat(updated.url).isEqualTo(updateLink.url)
+        assertThat(updated.version).isOne()
+
+        // retrieve versions
+        val original = get("/link/{id}/{version}", created.id, 0)
+                .then()
+                .statusCode(200)
+                .extract().to<Link>()
+        assertThat(original.version).isEqualTo(0)
+        assertThat(original.title).isEqualTo(newLink.title)
+        assertThat(original.url).isEqualTo(newLink.url)
+
+        val current = get("/link/{id}/{version}", created.id, 1)
+                .then()
+                .statusCode(200)
+                .extract().to<Link>()
+        assertThat(current.version).isEqualTo(1)
+        assertThat(current.title).isEqualTo(updateLink.title)
+        assertThat(current.url).isEqualTo(updateLink.url)
+    }
+
     // TODO: submit invalid url
     // TODO: link processing
 

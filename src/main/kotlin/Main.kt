@@ -58,10 +58,10 @@ fun Application.module() {
 
     install(Routing) {
         with(serviceProvider) {
+            comment(get())
             link(get())
             note(get())
             entry(get())
-            comment(get())
             tag(get())
             suggest(get())
             resources(get())

@@ -135,4 +135,11 @@ class EntryResourceTest: ServerTest() {
                 .extract().to<List<Entry>>()
         assertThat(entries).hasSize(1).extracting("id").containsExactly("e2")
     }
+
+    @Test
+    fun testGetInvalidVersion() {
+        get("/entry/{id}/{version}", "e2", 0)
+            .then()
+            .statusCode(404)
+    }
 }

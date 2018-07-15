@@ -22,6 +22,14 @@ fun Route.entry(entryService: EntryService) {
             else call.respond(entry)
         }
 
+        get("/{id}/{version}") {
+            val id = call.parameters["id"]!!
+            val version = call.parameters["version"]!!
+            val entry = entryService.get(id, version.toInt())
+            if (entry == null) call.respond(HttpStatusCode.NotFound)
+            else call.respond(entry)
+        }
+
         get("/search") {
             val query = call.request.queryParameters["q"]
             if(query == null) call.respond(HttpStatusCode.NotFound)

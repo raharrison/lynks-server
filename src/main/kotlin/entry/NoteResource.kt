@@ -22,6 +22,14 @@ fun Route.note(noteService: NoteService) {
             else call.respond(note)
         }
 
+        get("/{id}/{version}") {
+            val id = call.parameters["id"]!!
+            val version = call.parameters["version"]!!
+            val note = noteService.get(id, version.toInt())
+            if (note == null) call.respond(HttpStatusCode.NotFound)
+            else call.respond(note)
+        }
+
         post("/") {
             val note = call.receive<NewNote>()
             call.respond(HttpStatusCode.Created, noteService.add(note))

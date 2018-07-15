@@ -22,6 +22,14 @@ fun Route.link(linkService: LinkService) {
             else call.respond(link)
         }
 
+        get("/{id}/{version}") {
+            val id = call.parameters["id"]!!
+            val version = call.parameters["version"]!!
+            val link = linkService.get(id, version.toInt())
+            if (link == null) call.respond(HttpStatusCode.NotFound)
+            else call.respond(link)
+        }
+
         post("/") {
             val link = call.receive<NewLink>()
             call.respond(HttpStatusCode.Created, linkService.add(link))
