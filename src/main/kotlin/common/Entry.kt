@@ -12,12 +12,15 @@ abstract class BaseEntries(name: String): Table(name) {
     val type = enumeration("type", EntryType::class.java)
     val dateUpdated = long("dateUpdated")
     val props = json("props", BaseProperties::class.java).nullable()
+}
+
+object Entries : BaseEntries("Entry") {
     val version = integer("version").default(0)
 }
 
-object Entries : BaseEntries("Entry")
-
-object EntryVersions: BaseEntries("EntryVersion")
+object EntryVersions: BaseEntries("EntryVersion") {
+    val version = integer("version").primaryKey().default(0)
+}
 
 interface Entry {
     val id: String
