@@ -1,6 +1,9 @@
 package entry
 
-import common.*
+import common.BaseEntries
+import common.EntryType
+import common.NewNote
+import common.Note
 import db.EntryRepository
 import org.jetbrains.exposed.sql.ColumnSet
 import org.jetbrains.exposed.sql.Query
@@ -14,12 +17,12 @@ import util.RowMapper
 
 class NoteService(tagService: TagService, private val resourceManager: ResourceManager) : EntryRepository<Note, NewNote>(tagService) {
 
-    override fun toModel(row: ResultRow): Note {
-        return RowMapper.toNote(row, ::getTagsForEntry)
+    override fun toModel(row: ResultRow, table: BaseEntries): Note {
+        return RowMapper.toNote(table, row, ::getTagsForEntry)
     }
 
-    override fun getBaseQuery(base: ColumnSet): Query {
-        return base.select { Entries.type eq EntryType.NOTE }
+    override fun getBaseQuery(base: ColumnSet, where: BaseEntries): Query {
+        return base.select { where.type eq EntryType.NOTE }
     }
 
     override fun toInsert(eId: String, entry: NewNote): BaseEntries.(UpdateBuilder<*>) -> Unit = {

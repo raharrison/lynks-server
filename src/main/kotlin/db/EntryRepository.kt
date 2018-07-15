@@ -19,6 +19,13 @@ abstract class EntryRepository<T : Entry, in U : NewEntry>(private val tagServic
                 .singleOrNull()
     }
 
+    fun get(id: String, version: Int): T? = transaction {
+        getBaseQuery(EntryVersions, EntryVersions).combine { EntryVersions.id eq id and
+                (EntryVersions.version eq version) }
+                .mapNotNull { toModel(it, EntryVersions) }
+                .singleOrNull()
+    }
+
     fun get(page: PageRequest): List<T> = transaction {
         createPagedQuery(page).map { toModel(it) }
     }
@@ -131,7 +138,7 @@ abstract class EntryRepository<T : Entry, in U : NewEntry>(private val tagServic
         return tagService.getTags(tags)
     }
 
-    protected abstract fun getBaseQuery(base: ColumnSet = Entries): Query
+    protected abstract fun getBaseQuery(base: ColumnSet = Entries, where: BaseEntries = Entries): Query
 
     protected abstract fun toInsert(eId: String, entry: U): BaseEntries.(InsertStatement<*>) -> Unit
 
@@ -139,6 +146,6 @@ abstract class EntryRepository<T : Entry, in U : NewEntry>(private val tagServic
 
     protected abstract fun toUpdate(entry: T): BaseEntries.(UpdateBuilder<*>) -> Unit
 
-    protected abstract fun toModel(row: ResultRow): T
+    protected abstract fun toModel(row: ResultRow, table: BaseEntries = Entries): T
 
 }

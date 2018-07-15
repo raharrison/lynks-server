@@ -14,14 +14,14 @@ import util.RowMapper
 
 class EntryService(tagService: TagService) : EntryRepository<Entry, NewEntry>(tagService) {
 
-    override fun toModel(row: ResultRow): Entry {
+    override fun toModel(row: ResultRow, table: BaseEntries): Entry {
         return when (row[Entries.type]) {
-            EntryType.LINK -> RowMapper.toLink(row, ::getTagsForEntry)
-            EntryType.NOTE -> RowMapper.toNote(row, ::getTagsForEntry)
+            EntryType.LINK -> RowMapper.toLink(table, row, ::getTagsForEntry)
+            EntryType.NOTE -> RowMapper.toNote(table, row, ::getTagsForEntry)
         }
     }
 
-    override fun getBaseQuery(base: ColumnSet): Query {
+    override fun getBaseQuery(base: ColumnSet, where: BaseEntries): Query {
         return base.selectAll()
     }
 

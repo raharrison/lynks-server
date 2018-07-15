@@ -2,8 +2,8 @@ package util
 
 import comment.Comment
 import comment.Comments
+import common.BaseEntries
 import common.BaseProperties
-import common.Entries
 import common.Link
 import common.Note
 import org.jetbrains.exposed.sql.ResultRow
@@ -14,27 +14,29 @@ import tag.Tags
 
 object RowMapper {
 
-    fun toLink(row: ResultRow, tagResolver: (String) -> List<Tag>): Link =
+    fun toLink(table: BaseEntries, row: ResultRow, tagResolver: (String) -> List<Tag>): Link =
             Link(
-                    id = row[Entries.id],
-                    title = row[Entries.title],
-                    url = row[Entries.plainContent]!!,
-                    source = row[Entries.src],
-                    content = row[Entries.content],
-                    dateUpdated = row[Entries.dateUpdated],
-                    tags = tagResolver(row[Entries.id]),
-                    props = row[Entries.props] ?: BaseProperties()
+                    id = row[table.id],
+                    title = row[table.title],
+                    url = row[table.plainContent]!!,
+                    source = row[table.src],
+                    content = row[table.content],
+                    dateUpdated = row[table.dateUpdated],
+                    tags = tagResolver(row[table.id]),
+                    props = row[table.props] ?: BaseProperties(),
+                    version = row[table.version]
             )
 
-    fun toNote(row: ResultRow, tagResolver: (String) -> List<Tag>): Note =
+    fun toNote(table: BaseEntries, row: ResultRow, tagResolver: (String) -> List<Tag>): Note =
             Note(
-                    id = row[Entries.id],
-                    title = row[Entries.title],
-                    plainText = row[Entries.plainContent]!!,
-                    markdownText = row[Entries.content]!!,
-                    dateUpdated = row[Entries.dateUpdated],
-                    tags = tagResolver(row[Entries.id]),
-                    props = row[Entries.props] ?: BaseProperties()
+                    id = row[table.id],
+                    title = row[table.title],
+                    plainText = row[table.plainContent]!!,
+                    markdownText = row[table.content]!!,
+                    dateUpdated = row[table.dateUpdated],
+                    tags = tagResolver(row[table.id]),
+                    props = row[table.props] ?: BaseProperties(),
+                    version = row[table.version]
             )
 
     fun toComment(row: ResultRow): Comment =

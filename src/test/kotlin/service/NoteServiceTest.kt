@@ -229,6 +229,32 @@ class NoteServiceTest : DatabaseTest() {
         assertThat(updated?.props?.getAttribute("t3")).isNull()
     }
 
+    @Test
+    fun testVersioning() {
+        val added = noteService.add(newNote("n1", "some content"))
+        val version1 = noteService.get(added.id, 0)
+        assertThat(added.version).isZero()
+        assertThat(added).isEqualToIgnoringGivenFields(version1, "dateUpdated", "props")
+
+        val updated = noteService.update(newNote(added.id, "edited", "different content"))
+        val version2 = noteService.get(added.id, 1)
+        assertThat(updated?.version).isOne()
+        assertThat(version2).isEqualToIgnoringGivenFields(updated, "dateUpdated", "props")
+
+        assertThat(version2?.title).isEqualTo("edited")
+        val first = noteService.get(added.id, 0)
+        assertThat(first?.title).isEqualTo("n1")
+        assertThat(first?.version).isZero()
+    }
+
+    @Test
+    fun testGetInvalidVersion() {
+        val added = noteService.add(newNote("n1", "some content"))
+        assertThat(noteService.get(added.id, 1)).isNull()
+        assertThat(noteService.get(added.id, -1)).isNull()
+        assertThat(noteService.get("invalid", 0)).isNull()
+    }
+
     private fun newNote(title: String, content: String, tags: List<String> = emptyList()) = NewNote(null, title, content, tags)
     private fun newNote(id: String, title: String, content: String, tags: List<String> = emptyList()) = NewNote(id, title, content, tags)
 

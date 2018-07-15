@@ -279,6 +279,32 @@ class LinkServiceTest : DatabaseTest() {
         assertThat(updated?.props?.getAttribute("t3")).isNull()
     }
 
+    @Test
+    fun testVersioning() {
+        val added = linkService.add(newLink("n1", "google.com"))
+        val version1 = linkService.get(added.id, 0)
+        assertThat(added.version).isZero()
+        assertThat(added).isEqualToIgnoringGivenFields(version1, "dateUpdated", "props")
+
+        val updated = linkService.update(newLink(added.id, "edited", "something"))
+        val version2 = linkService.get(added.id, 1)
+        assertThat(updated?.version).isOne()
+        assertThat(version2).isEqualToIgnoringGivenFields(updated, "dateUpdated", "props")
+
+        assertThat(version2?.title).isEqualTo("edited")
+        val first = linkService.get(added.id, 0)
+        assertThat(first?.title).isEqualTo("n1")
+        assertThat(first?.version).isZero()
+    }
+
+    @Test
+    fun testGetInvalidVersion() {
+        val added = linkService.add(newLink("n1", "google.com"))
+        assertThat(linkService.get(added.id, 1)).isNull()
+        assertThat(linkService.get(added.id, -1)).isNull()
+        assertThat(linkService.get("invalid", 0)).isNull()
+    }
+
     private fun newLink(title: String, url: String, tags: List<String> = emptyList()) = NewLink(null, title, url, tags)
     private fun newLink(id: String, title: String, url: String, tags: List<String> = emptyList()) = NewLink(id, title, url, tags)
     private fun newLink(id: String, title: String, url: String, tags: List<String> = emptyList(), process: Boolean) = NewLink(id, title, url, tags, process)

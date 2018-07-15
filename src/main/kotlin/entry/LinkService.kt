@@ -18,8 +18,8 @@ import worker.WorkerRegistry
 class LinkService(tagService: TagService, private val resourceManager: ResourceManager,
                   private val workerRegistry: WorkerRegistry) : EntryRepository<Link, NewLink>(tagService) {
 
-    override fun getBaseQuery(base: ColumnSet): Query {
-        return base.select { Entries.type eq EntryType.LINK }
+    override fun getBaseQuery(base: ColumnSet, where: BaseEntries): Query {
+        return base.select { where.type eq EntryType.LINK }
     }
 
     override fun toInsert(eId: String, entry: NewLink): BaseEntries.(InsertStatement<*>) -> Unit = {
@@ -38,8 +38,8 @@ class LinkService(tagService: TagService, private val resourceManager: ResourceM
         it[dateUpdated] = System.currentTimeMillis()
     }
 
-    override fun toModel(row: ResultRow): Link {
-        return RowMapper.toLink(row, ::getTagsForEntry)
+    override fun toModel(row: ResultRow, table: BaseEntries): Link {
+        return RowMapper.toLink(table, row, ::getTagsForEntry)
     }
 
     override fun add(entry: NewLink): Link {
