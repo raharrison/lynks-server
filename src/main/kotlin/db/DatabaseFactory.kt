@@ -5,6 +5,7 @@ import com.zaxxer.hikari.HikariDataSource
 import comment.Comments
 import common.ConfigMode
 import common.Entries
+import common.EntryVersions
 import common.Environment
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils.create
@@ -35,8 +36,9 @@ class DatabaseFactory {
         }
 
         transaction {
-            create(Entries, Comments, Tags, EntryTags, Resources, Schedules)
+            create(Entries, EntryVersions, Comments, Tags, EntryTags, Resources, Schedules)
             enableSearch()
+            enableTriggers()
         }
         connected = true
     }
@@ -50,6 +52,14 @@ class DatabaseFactory {
         config.transactionIsolation = "TRANSACTION_REPEATABLE_READ"
         config.validate()
         return HikariDataSource(config)
+    }
+
+    private fun enableTriggers() {
+        val conn = TransactionManager.current().connection
+        conn.createStatement().use {
+            it.execute("CREATE TRIGGER ENTRY_VERS AFTER UPDATE ON ENTRY " +
+                    "FOR EACH ROW CALL \"${EntryVersionTrigger::class.qualifiedName}\"")
+        }
     }
 
     private fun enableSearch() {
@@ -71,5 +81,6 @@ class DatabaseFactory {
         Comments.deleteAll()
         Schedules.deleteAll()
         Entries.deleteAll()
+        EntryVersions.deleteAll()
     }
 }
