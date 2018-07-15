@@ -1,9 +1,6 @@
 package entry
 
-import common.Entries
-import common.EntryType
-import common.Link
-import common.NewLink
+import common.*
 import db.EntryRepository
 import org.jetbrains.exposed.sql.ColumnSet
 import org.jetbrains.exposed.sql.Query
@@ -25,16 +22,16 @@ class LinkService(tagService: TagService, private val resourceManager: ResourceM
         return base.select { Entries.type eq EntryType.LINK }
     }
 
-    override fun toInsert(eId: String, entry: NewLink): Entries.(InsertStatement<*>) -> Unit = {
-        it[Entries.id] = eId
-        it[Entries.title] = entry.title
-        it[Entries.plainContent] = entry.url
-        it[Entries.src] = URLUtils.extractSource(entry.url)
-        it[Entries.type] = EntryType.LINK
-        it[Entries.dateUpdated] = System.currentTimeMillis()
+    override fun toInsert(eId: String, entry: NewLink): BaseEntries.(InsertStatement<*>) -> Unit = {
+        it[id] = eId
+        it[title] = entry.title
+        it[plainContent] = entry.url
+        it[src] = URLUtils.extractSource(entry.url)
+        it[type] = EntryType.LINK
+        it[dateUpdated] = System.currentTimeMillis()
     }
 
-    override fun toUpdate(entry: NewLink): Entries.(UpdateBuilder<*>) -> Unit = {
+    override fun toUpdate(entry: NewLink): BaseEntries.(UpdateBuilder<*>) -> Unit = {
         it[title] = entry.title
         it[plainContent] = entry.url
         it[src] = URLUtils.extractSource(entry.url)
@@ -60,7 +57,7 @@ class LinkService(tagService: TagService, private val resourceManager: ResourceM
         return super.delete(id) && resourceManager.deleteAll(id)
     }
 
-    override fun toUpdate(entry: Link): Entries.(UpdateBuilder<*>) -> Unit = {
+    override fun toUpdate(entry: Link): BaseEntries.(UpdateBuilder<*>) -> Unit = {
         it[Entries.title] = entry.title
         it[Entries.plainContent] = entry.url
         it[Entries.content] = entry.content

@@ -1,9 +1,6 @@
 package entry
 
-import common.Entries
-import common.EntryType
-import common.NewNote
-import common.Note
+import common.*
 import db.EntryRepository
 import org.jetbrains.exposed.sql.ColumnSet
 import org.jetbrains.exposed.sql.Query
@@ -25,7 +22,7 @@ class NoteService(tagService: TagService, private val resourceManager: ResourceM
         return base.select { Entries.type eq EntryType.NOTE }
     }
 
-    override fun toInsert(eId: String, entry: NewNote): Entries.(UpdateBuilder<*>) -> Unit = {
+    override fun toInsert(eId: String, entry: NewNote): BaseEntries.(UpdateBuilder<*>) -> Unit = {
         it[id] = eId
         it[title] = entry.title
         it[plainContent] = entry.plainText
@@ -35,14 +32,14 @@ class NoteService(tagService: TagService, private val resourceManager: ResourceM
         it[dateUpdated] = System.currentTimeMillis()
     }
 
-    override fun toUpdate(entry: NewNote): Entries.(UpdateBuilder<*>) -> Unit = {
+    override fun toUpdate(entry: NewNote): BaseEntries.(UpdateBuilder<*>) -> Unit = {
         it[title] = entry.title
         it[plainContent] = entry.plainText
         it[content] = MarkdownUtils.convertToMarkdown(entry.plainText)
         it[dateUpdated] = System.currentTimeMillis()
     }
 
-    override fun toUpdate(entry: Note): Entries.(UpdateBuilder<*>) -> Unit = {
+    override fun toUpdate(entry: Note): BaseEntries.(UpdateBuilder<*>) -> Unit = {
         it[title] = entry.title
         it[plainContent] = entry.plainText
         it[content] = MarkdownUtils.convertToMarkdown(entry.plainText)

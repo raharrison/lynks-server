@@ -25,15 +25,15 @@ class EntryService(tagService: TagService) : EntryRepository<Entry, NewEntry>(ta
         return base.selectAll()
     }
 
-    override fun toInsert(eId: String, entry: NewEntry): Entries.(UpdateBuilder<*>) -> Unit {
+    override fun toInsert(eId: String, entry: NewEntry): BaseEntries.(UpdateBuilder<*>) -> Unit {
         throw NotImplementedError()
     }
 
-    override fun toUpdate(entry: NewEntry): Entries.(UpdateBuilder<*>) -> Unit {
+    override fun toUpdate(entry: NewEntry): BaseEntries.(UpdateBuilder<*>) -> Unit {
         throw NotImplementedError()
     }
 
-    override fun toUpdate(entry: Entry): Entries.(UpdateBuilder<*>) -> Unit {
+    override fun toUpdate(entry: Entry): BaseEntries.(UpdateBuilder<*>) -> Unit {
         throw NotImplementedError()
     }
 
