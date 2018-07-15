@@ -128,7 +128,12 @@ class ReminderWorkerTest {
         val worker = ReminderWorker(scheduleService, notifyService).apply { runner = context }.worker()
         worker.send(reminder)
 
-        val fireDate = ZonedDateTime.of(LocalDate.now(tz), LocalTime.of(6, 0), tz)
+        val day = LocalDateTime.now(tz).let {
+            if(it.hour > 6) it.plusDays(1)
+            else it
+        }
+        val fireDate = ZonedDateTime.of(day.toLocalDate(), LocalTime.of(6, 0), tz)
+
         val until = ZonedDateTime.now().until(fireDate, ChronoUnit.MILLIS)
 
         context.advanceTimeBy(until / 2, TimeUnit.MILLISECONDS)
