@@ -62,7 +62,7 @@ class ReminderWorker(private val scheduleService: ScheduleService,
     }
 
     private suspend fun reminderElapsed(reminder: Schedule) {
-        notifyService.accept(Notification.EXECUTED, reminder)
+        notifyService.accept(Notification.reminder(), reminder)
     }
 
     private fun calcDelay(date: ZonedDateTime): Long {

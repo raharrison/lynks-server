@@ -8,28 +8,27 @@ import util.loggerFor
 
 private val logger = loggerFor<NotifyService>()
 
-enum class Notification { CREATE, UPDATE, DELETE, EXECUTED, ERROR }
-
 class NotifyService {
 
     private val notifiers = Sets.newConcurrentHashSet<SendChannel<Frame>>()
 
-    suspend fun accept(type: Notification, any: Any) {
-        logger.info("Accepted notification for: $any")
+    suspend fun accept(notify: Notification, body: Any) {
+        logger.info("Accepting ${notify.type} notification: ${notify.message}")
         notifiers.forEach {
             if(it.isClosedForSend) notifiers.remove(it)
             else {
-                val payload = defaultMapper.writeValueAsString(buildNotification(type, any))
+                val payload = defaultMapper.writeValueAsString(buildNotification(notify, body))
                 it.send(Frame.Text(defaultMapper.writeValueAsString(payload)))
             }
         }
     }
 
-    private fun buildNotification(type: Notification, any: Any): Map<String, Any?> {
-        val entityType = any::class.simpleName
+    private fun buildNotification(notify: Notification, body: Any): Map<String, Any?> {
+        val entityType = body::class.simpleName
         return mapOf("entity" to entityType,
-                "type" to type,
-                "body" to any)
+                "type" to notify.type,
+                "message" to notify.message,
+                "body" to body)
 
     }
 
