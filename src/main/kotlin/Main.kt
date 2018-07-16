@@ -53,7 +53,7 @@ fun Application.module() {
         register(SuggestionService(get()))
         register(TaskService(get(), this, get()))
         register(NotifyService())
-        workerRegistry.init(get(), get(), get())
+        workerRegistry.init(this)
     }
 
     install(Routing) {

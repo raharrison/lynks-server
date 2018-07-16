@@ -1,24 +1,24 @@
 package worker
 
 import common.Link
-import entry.LinkService
+import common.inject.ServiceProvider
 import kotlinx.coroutines.experimental.channels.SendChannel
-import resource.ResourceManager
 import resource.WebResourceRetriever
-import schedule.ScheduleService
 import task.Task
 import task.TaskContext
 
 class WorkerRegistry {
 
-    fun init(resourceManager: ResourceManager, linkService: LinkService, scheduleService: ScheduleService) {
-        linkWorker = LinkProcessorWorker(resourceManager, linkService).worker()
-        discussionWorker = DiscussionFinderWorker(linkService, scheduleService, WebResourceRetriever()).worker()
+    fun init(serviceProvider: ServiceProvider) {
+        linkWorker = LinkProcessorWorker(serviceProvider.get(), serviceProvider.get(), serviceProvider.get()).worker()
+        discussionWorker = DiscussionFinderWorker(serviceProvider.get(), serviceProvider.get(),
+                WebResourceRetriever(), serviceProvider.get()).worker()
+        taskWorker = TaskRunnerWorker(serviceProvider.get()).worker()
     }
 
     private lateinit var linkWorker: SendChannel<LinkProcessingRequest>
     private lateinit var discussionWorker: SendChannel<Link>
-    private val taskWorker = TaskRunnerWorker().worker()
+    private lateinit var taskWorker: SendChannel<TaskRunnerRequest>
 
     fun acceptLinkWork(request: LinkProcessingRequest) {
         linkWorker.offer(request)
