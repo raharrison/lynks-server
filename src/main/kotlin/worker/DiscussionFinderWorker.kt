@@ -3,6 +3,8 @@ package worker
 import common.Link
 import entry.LinkService
 import kotlinx.coroutines.experimental.delay
+import notify.Notification
+import notify.NotifyService
 import resource.ResourceRetriever
 import schedule.IntervalJob
 import schedule.ScheduleService
@@ -17,7 +19,8 @@ private val logger = loggerFor<DiscussionFinderWorker>()
 
 class DiscussionFinderWorker(private val linkService: LinkService,
                              private val scheduleService: ScheduleService,
-                             private val resourceRetriever: ResourceRetriever) : Worker<Link>() {
+                             private val resourceRetriever: ResourceRetriever,
+                             notifyService: NotifyService) : Worker<Link>(notifyService) {
 
     private data class Discussion(val title: String, val url: String, val score: Int, val comments: Int, val created: Long)
 
@@ -56,6 +59,7 @@ class DiscussionFinderWorker(private val linkService: LinkService,
             if(discussions.isNotEmpty()) {
                 link.props.addAttribute("discussions", discussions)
                 linkService.update(link)
+                sendNotification(Notification.processed("Discussions found"), link)
             }
 
             intervalIndex++

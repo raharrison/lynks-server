@@ -18,7 +18,7 @@ import com.github.shyiko.skedule.Schedule as Skedule
 private val logger = loggerFor<ReminderWorker>()
 
 class ReminderWorker(private val scheduleService: ScheduleService,
-                     private val notifyService: NotifyService) : Worker<Schedule>() {
+                     notifyService: NotifyService) : Worker<Schedule>(notifyService) {
 
     override suspend fun beforeWork() {
         super.beforeWork()
@@ -62,7 +62,7 @@ class ReminderWorker(private val scheduleService: ScheduleService,
     }
 
     private suspend fun reminderElapsed(reminder: Schedule) {
-        notifyService.accept(Notification.reminder(), reminder)
+        sendNotification(Notification.reminder(), reminder)
     }
 
     private fun calcDelay(date: ZonedDateTime): Long {

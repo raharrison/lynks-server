@@ -12,7 +12,7 @@ class NotifyService {
 
     private val notifiers = Sets.newConcurrentHashSet<SendChannel<Frame>>()
 
-    suspend fun accept(notify: Notification, body: Any) {
+    suspend fun accept(notify: Notification, body: Any?) {
         logger.info("Accepting ${notify.type} notification: ${notify.message}")
         notifiers.forEach {
             if(it.isClosedForSend) notifiers.remove(it)
@@ -23,8 +23,8 @@ class NotifyService {
         }
     }
 
-    private fun buildNotification(notify: Notification, body: Any): Map<String, Any?> {
-        val entityType = body::class.simpleName
+    private fun buildNotification(notify: Notification, body: Any?): Map<String, Any?> {
+        val entityType = body?.javaClass?.simpleName
         return mapOf("entity" to entityType,
                 "type" to notify.type,
                 "message" to notify.message,

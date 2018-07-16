@@ -6,6 +6,7 @@ import common.TestCoroutineContext
 import entry.LinkService
 import io.mockk.*
 import kotlinx.coroutines.experimental.runBlocking
+import notify.NotifyService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -23,6 +24,7 @@ class DiscussionFinderWorkerTest {
     private val scheduleService = mockk<ScheduleService>()
     private val linkService = mockk<LinkService>()
     private val retriever = mockk<ResourceRetriever>()
+    private val notifyService = mockk<NotifyService>(relaxUnitFun = true)
     private val intervals = mutableListOf<IntervalJob>()
     private val linkSlot = slot<Link>()
     private val schedule = slot<IntervalJob>()
@@ -36,6 +38,8 @@ class DiscussionFinderWorkerTest {
 
         every { linkService.get("id1") } answers { if(linkSlot.isCaptured) linkSlot.captured else link }
         every { linkService.update(capture(linkSlot)) } answers { link } andThen { linkSlot.captured }
+
+        coEvery { notifyService.accept(any(), ofType(Link::class)) } just Runs
     }
 
     @Test
@@ -43,7 +47,7 @@ class DiscussionFinderWorkerTest {
         coEvery { retriever.getString(match { it.contains("hn.algolia") }) } returns ""
         coEvery { retriever.getString(match { it.contains("reddit.com") }) } returns ""
 
-        val worker = DiscussionFinderWorker(linkService, scheduleService, retriever)
+        val worker = DiscussionFinderWorker(linkService, scheduleService, retriever, notifyService)
                 .apply { runner = coroutineContext }.worker()
 
         worker.send(link)
@@ -59,6 +63,7 @@ class DiscussionFinderWorkerTest {
         assertThat(link.props.containsAttribute("discussions")).isFalse()
 
         coVerify(exactly = 5 * 2) { retriever.getString(any()) }
+        coVerify(exactly = 0) { notifyService.accept(any(), any()) }
     }
 
     @Test
@@ -66,7 +71,7 @@ class DiscussionFinderWorkerTest {
         coEvery { retriever.getString(match { it.contains("hn.algolia") }) } returns getFile("/hacker_discussions.json")
         coEvery { retriever.getString(match { it.contains("reddit.com") }) } returns getFile("/reddit_discussions.json")
 
-        val worker = DiscussionFinderWorker(linkService, scheduleService, retriever)
+        val worker = DiscussionFinderWorker(linkService, scheduleService, retriever, notifyService)
                 .apply { runner = coroutineContext }.worker()
 
         worker.send(link)
@@ -90,6 +95,7 @@ class DiscussionFinderWorkerTest {
         assertThat(discussions).extracting("url").doesNotHaveDuplicates()
 
         coVerify(exactly = 5 * 2) { retriever.getString(any()) }
+        coVerify(exactly = 5) { notifyService.accept(any(), linkSlot.captured) }
     }
 
     @Test
@@ -100,7 +106,7 @@ class DiscussionFinderWorkerTest {
         val scheduleId = "abc123"
         every { scheduleService.getIntervalJobsByType(ScheduleType.DISCUSSION_FINDER) } returns listOf(IntervalJob(scheduleId, link.id, ScheduleType.DISCUSSION_FINDER, 600))
 
-        val worker = DiscussionFinderWorker(linkService, scheduleService, retriever)
+        val worker = DiscussionFinderWorker(linkService, scheduleService, retriever, notifyService)
                 .apply { runner = coroutineContext }.worker()
 
         worker.close()
@@ -117,6 +123,7 @@ class DiscussionFinderWorkerTest {
         assertThat(linkSlot.captured.props.getAttribute("discussions") as List<*>).hasSize(6)
 
         coVerify(exactly = 2 * 2) { retriever.getString(any()) }
+        coVerify(exactly = 2) { notifyService.accept(any(), linkSlot.captured) }
     }
 
     @Test
@@ -124,7 +131,7 @@ class DiscussionFinderWorkerTest {
         coEvery { retriever.getString(match { it.contains("hn.algolia") }) } returns "" andThen getFile("/hacker_discussions.json") andThen ""
         coEvery { retriever.getString(match { it.contains("reddit.com") }) } returns "" andThen getFile("/reddit_discussions.json") andThen ""
 
-        val worker = DiscussionFinderWorker(linkService, scheduleService, retriever)
+        val worker = DiscussionFinderWorker(linkService, scheduleService, retriever, notifyService)
                 .apply { runner = coroutineContext }.worker()
 
         worker.send(link)
@@ -136,6 +143,7 @@ class DiscussionFinderWorkerTest {
         assertThat(discussions).extracting("url").doesNotHaveDuplicates()
 
         coVerify(exactly = 5 * 2) { retriever.getString(any()) }
+        coVerify(exactly = 1) { notifyService.accept(any(), linkSlot.captured) }
     }
 
     @Test
@@ -145,7 +153,7 @@ class DiscussionFinderWorkerTest {
         coEvery { retriever.getString(match { it.contains("hn.algolia") }) } returnsMany hnResponses
         coEvery { retriever.getString(match { it.contains("reddit.com") }) } returnsMany redditResponses
 
-        val worker = DiscussionFinderWorker(linkService, scheduleService, retriever)
+        val worker = DiscussionFinderWorker(linkService, scheduleService, retriever, notifyService)
                 .apply { runner = coroutineContext }.worker()
 
         worker.send(link)
@@ -162,6 +170,7 @@ class DiscussionFinderWorkerTest {
         assertThat(discussions).hasSize(6)
 
         coVerify(exactly = 6 * 2) { retriever.getString(any()) }
+        coVerify(exactly = 2) { notifyService.accept(any(), linkSlot.captured) }
     }
 
     private fun getFile(name: String) = this.javaClass.getResource(name).readText()

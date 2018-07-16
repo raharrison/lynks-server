@@ -5,12 +5,14 @@ import kotlinx.coroutines.experimental.channels.SendChannel
 import kotlinx.coroutines.experimental.channels.actor
 import kotlinx.coroutines.experimental.delay
 import kotlinx.coroutines.experimental.launch
+import notify.Notification
+import notify.NotifyService
 import java.util.concurrent.TimeUnit
 import kotlin.coroutines.experimental.CoroutineContext
 
 private val workerContext = DefaultDispatcher
 
-abstract class Worker<T> {
+abstract class Worker<T>(private val notifyService: NotifyService) {
 
     var runner: CoroutineContext = workerContext
 
@@ -30,6 +32,10 @@ abstract class Worker<T> {
 
     protected fun launchJob(job: suspend () -> Unit) = launch(runner) {
         job()
+    }
+
+    protected suspend fun sendNotification(notification: Notification = Notification.processed(), body: Any?=null) {
+        notifyService.accept(notification, body)
     }
 }
 

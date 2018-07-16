@@ -7,6 +7,8 @@ import kotlinx.coroutines.experimental.async
 import link.DefaultLinkProcessor
 import link.LinkProcessor
 import link.YoutubeLinkProcessor
+import notify.Notification
+import notify.NotifyService
 import resource.HTML
 import resource.ResourceManager
 import resource.ResourceType
@@ -27,7 +29,9 @@ class LinkProcessorFactory {
     }
 }
 
-class LinkProcessorWorker(private val resourceManager: ResourceManager, private val linkService: LinkService) : Worker<LinkProcessingRequest>() {
+class LinkProcessorWorker(private val resourceManager: ResourceManager,
+                          private val linkService: LinkService,
+                          notifyService: NotifyService) : Worker<LinkProcessingRequest>(notifyService) {
 
     internal var processorFactory = LinkProcessorFactory()
 
@@ -52,7 +56,9 @@ class LinkProcessorWorker(private val resourceManager: ResourceManager, private 
                 }
             }
             linkService.update(link)
+            sendNotification(body=link)
         } catch (e: Exception) {
+            sendNotification(Notification.error("Error occurred processing link"))
             // log and reschedule
         }
     }

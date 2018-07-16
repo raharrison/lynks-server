@@ -9,6 +9,7 @@ import kotlinx.coroutines.experimental.CompletableDeferred
 import kotlinx.coroutines.experimental.runBlocking
 import link.ImageResource
 import link.LinkProcessor
+import notify.NotifyService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import resource.HTML
@@ -23,7 +24,8 @@ class LinkProcessorWorkerTest {
     private val linkService = mockk<LinkService>()
     private val resourceManager = mockk<ResourceManager>()
     private val processorFactory = mockk<LinkProcessorFactory>()
-    private val worker = LinkProcessorWorker(resourceManager, linkService).also { it.processorFactory = processorFactory }
+    private val notifyService = mockk<NotifyService>(relaxUnitFun = true)
+    private val worker = LinkProcessorWorker(resourceManager, linkService, notifyService).also { it.processorFactory = processorFactory }
 
     @Test
     fun testDefaultPersist() = runBlocking(TestCoroutineContext()) {
@@ -35,6 +37,7 @@ class LinkProcessorWorkerTest {
         val content = "article content"
         val processor = mockk<LinkProcessor>()
 
+        coEvery { notifyService.accept(any(), ofType(Link::class)) } just Runs
         coEvery { processor.generateThumbnail() } returns thumb
         coEvery { processor.generateScreenshot() } returns screen
         coEvery { processor.html } returns html
@@ -53,6 +56,7 @@ class LinkProcessorWorkerTest {
         coVerify(exactly = 1) { processorFactory.createProcessors(link.url) }
         verify(exactly = 1) { processor.close() }
         verify(exactly = 1) { linkService.update(link) }
+        coVerify(exactly = 1) { notifyService.accept(any(), ofType(Link::class)) }
         assertThat(link.content).isEqualTo(content)
 
         coVerify(exactly = 1) { processor.generateThumbnail() }
