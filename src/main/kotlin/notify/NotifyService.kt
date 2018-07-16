@@ -18,7 +18,7 @@ class NotifyService {
             if(it.isClosedForSend) notifiers.remove(it)
             else {
                 val payload = defaultMapper.writeValueAsString(buildNotification(notify, body))
-                it.send(Frame.Text(defaultMapper.writeValueAsString(payload)))
+                it.send(Frame.Text(payload))
             }
         }
     }
