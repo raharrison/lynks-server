@@ -61,7 +61,7 @@ fun Application.module() {
             comment(get())
             link(get())
             note(get())
-            entry(get())
+            entry(get(), get())
             tag(get())
             suggest(get())
             resources(get())

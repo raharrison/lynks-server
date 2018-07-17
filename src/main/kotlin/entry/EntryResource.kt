@@ -6,9 +6,10 @@ import io.ktor.response.respond
 import io.ktor.routing.Route
 import io.ktor.routing.get
 import io.ktor.routing.route
+import schedule.ScheduleService
 import util.pageRequest
 
-fun Route.entry(entryService: EntryService) {
+fun Route.entry(entryService: EntryService, scheduleService: ScheduleService) {
 
     route("/entry") {
 
@@ -34,6 +35,11 @@ fun Route.entry(entryService: EntryService) {
             val query = call.request.queryParameters["q"]
             if(query == null) call.respond(HttpStatusCode.NotFound)
             else call.respond(entryService.search(query, call.pageRequest()))
+        }
+
+        get("/{id}/reminder") {
+            val id = call.parameters["id"]!!
+            call.respond(scheduleService.getRemindersForEntry(id))
         }
     }
 }
