@@ -5,7 +5,10 @@ import common.Entries
 import common.EntryType
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.transactions.transaction
+import schedule.ScheduleType
+import schedule.Schedules
 import tag.Tags
+import java.time.ZoneId
 
 fun createDummyEntry(id: String, title: String, content: String, type: EntryType) = transaction {
     Entries.insert {
@@ -35,5 +38,15 @@ fun createDummyComment(id: String, entryId: String, content: String) = transacti
         it[plainText] = content
         it[markdownText] = content
         it[dateCreated] = System.currentTimeMillis()
+    }
+}
+
+fun createDummyReminder(id: String, entryId: String, type: ScheduleType, spec: String, tz: String = ZoneId.systemDefault().id) = transaction {
+    Schedules.insert {
+        it[Schedules.scheduleId] = id
+        it[Schedules.entryId] = entryId
+        it[Schedules.type] = type
+        it[Schedules.spec] = spec
+        it[Schedules.tz] = tz
     }
 }
