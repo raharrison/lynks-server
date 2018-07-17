@@ -161,7 +161,7 @@ class LinkResourceTest: ServerTest() {
 
     @Test
     fun testGetInvalidVersion() {
-        get("/link/{id}/{version}", "e1", 0)
+        get("/link/{id}/{version}", "e1", 2)
                 .then()
                 .statusCode(404)
     }

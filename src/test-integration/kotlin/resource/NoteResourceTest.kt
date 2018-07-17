@@ -160,7 +160,7 @@ class NoteResourceTest: ServerTest() {
 
     @Test
     fun testGetInvalidVersion() {
-        get("/note/{id}/{version}", "e2", 0)
+        get("/note/{id}/{version}", "e2", 2)
                 .then()
                 .statusCode(404)
     }

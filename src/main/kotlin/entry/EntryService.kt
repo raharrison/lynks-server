@@ -15,7 +15,7 @@ import util.RowMapper
 class EntryService(tagService: TagService) : EntryRepository<Entry, NewEntry>(tagService) {
 
     override fun toModel(row: ResultRow, table: BaseEntries): Entry {
-        return when (row[Entries.type]) {
+        return when (row[table.type]) {
             EntryType.LINK -> RowMapper.toLink(table, row, ::getTagsForEntry)
             EntryType.NOTE -> RowMapper.toNote(table, row, ::getTagsForEntry)
         }

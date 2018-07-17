@@ -138,7 +138,7 @@ class EntryResourceTest: ServerTest() {
 
     @Test
     fun testGetInvalidVersion() {
-        get("/entry/{id}/{version}", "e2", 0)
+        get("/entry/{id}/{version}", "e2", 2)
             .then()
             .statusCode(404)
     }
