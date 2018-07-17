@@ -21,6 +21,7 @@ import notify.notify
 import resource.ResourceManager
 import resource.resources
 import schedule.ScheduleService
+import schedule.schedule
 import suggest.SuggestionService
 import suggest.suggest
 import tag.TagService
@@ -68,6 +69,7 @@ fun Application.module() {
             task(get())
             notify(get())
             health()
+            schedule(get())
         }
     }
 }
