@@ -5,6 +5,7 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.response.respond
 import io.ktor.routing.Route
 import io.ktor.routing.get
+import io.ktor.routing.post
 import io.ktor.routing.route
 import schedule.ScheduleService
 import util.pageRequest
@@ -40,6 +41,20 @@ fun Route.entry(entryService: EntryService, scheduleService: ScheduleService) {
         get("/{id}/reminder") {
             val id = call.parameters["id"]!!
             call.respond(scheduleService.getRemindersForEntry(id))
+        }
+
+        post("/{id}/star") {
+            val id = call.parameters["id"]!!
+            val updated = entryService.star(id, true)
+            if (updated == null) call.respond(HttpStatusCode.NotFound)
+            else call.respond(updated)
+        }
+
+        post("/{id}/unstar") {
+            val id = call.parameters["id"]!!
+            val updated = entryService.star(id, false)
+            if (updated == null) call.respond(HttpStatusCode.NotFound)
+            else call.respond(updated)
         }
     }
 }

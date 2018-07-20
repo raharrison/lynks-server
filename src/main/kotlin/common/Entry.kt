@@ -14,6 +14,7 @@ abstract class BaseEntries(name: String): Table(name) {
     val dateUpdated = long("dateUpdated")
     val props = json("props", BaseProperties::class.java).nullable()
     abstract val version: Column<Int>
+    val starred = bool("starred").default(false)
 }
 
 object Entries : BaseEntries("Entry") {
@@ -26,6 +27,7 @@ object EntryVersions: BaseEntries("EntryVersion") {
 
 interface Entry {
     val id: String
+    val starred: Boolean
     val props: BaseProperties
 }
 

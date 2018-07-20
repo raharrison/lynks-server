@@ -11,7 +11,8 @@ data class Link(
         val dateUpdated: Long,
         val tags: List<Tag>,
         override val props: BaseProperties,
-        val version: Int=0
+        val version: Int=0,
+        override val starred: Boolean=false
 ) : Entry {
     @JvmField
     val type = EntryType.LINK

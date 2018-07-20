@@ -125,4 +125,23 @@ class EntryServiceTest: DatabaseTest() {
         }
     }
 
+    @Test
+    fun testStar() {
+        assertThat(entryService.get("id1")?.starred).isFalse()
+
+        val star = entryService.star("id1", true)
+        assertThat(star?.starred).isTrue()
+
+        val unstar = entryService.star("id1", false)
+        assertThat(unstar?.starred).isFalse()
+
+        assertThat(entryService.get("id1")?.starred).isFalse()
+    }
+
+    @Test
+    fun testSetStarInvalidEntry() {
+        assertThat(entryService.star("invalid", true)).isNull()
+        assertThat(entryService.star("invalid", false)).isNull()
+    }
+
 }

@@ -2,10 +2,7 @@ package entry
 
 import common.*
 import db.EntryRepository
-import org.jetbrains.exposed.sql.ColumnSet
-import org.jetbrains.exposed.sql.Query
-import org.jetbrains.exposed.sql.ResultRow
-import org.jetbrains.exposed.sql.selectAll
+import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.statements.UpdateBuilder
 import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -50,5 +47,16 @@ class EntryService(tagService: TagService) : EntryRepository<Entry, NewEntry>(ta
                 get(keys, page)
             }
         }
+    }
+
+    fun star(id: String, starred: Boolean): Entry? = transaction {
+        Entries.update({Entries.id eq id}) {
+            it[Entries.starred] = starred
+            // TODO: don't create new version for update
+            with(SqlExpressionBuilder) {
+                it.update(Entries.version, Entries.version + 1)
+            }
+        }
+        get(id)
     }
 }

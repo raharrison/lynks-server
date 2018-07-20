@@ -1,8 +1,7 @@
 package resource
 
 import common.*
-import io.restassured.RestAssured.get
-import io.restassured.RestAssured.given
+import io.restassured.RestAssured.*
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -168,5 +167,44 @@ class EntryResourceTest: ServerTest() {
                 .extract()
                 .to<List<Any>>()
         assertThat(none).isEmpty()
+    }
+
+    @Test
+    fun testSetStarInvalidEntry() {
+        post("/entry/{id}/star", "invalid")
+                .then()
+                .statusCode(404)
+        post("/entry/{id}/unstar", "invalid")
+                .then()
+                .statusCode(404)
+    }
+
+    @Test
+    fun testSetEntryStar() {
+        val read = post("/entry/{id}/star", "e1")
+                .then()
+                .statusCode(200)
+                .extract().to<Link>()
+        assertThat(read.starred).isTrue()
+        val retrieved = get("/entry/{id}", "e1")
+                .then()
+                .statusCode(200)
+                .extract().to<Link>()
+        assertThat(retrieved.starred).isTrue()
+    }
+
+    @Test
+    fun testSetEntryUnstar() {
+        post("/entry/{id}/star", "e1")
+        val read = post("/entry/{id}/unstar", "e1")
+                .then()
+                .statusCode(200)
+                .extract().to<Link>()
+        assertThat(read.starred).isFalse()
+        val retrieved = get("/entry/{id}", "e1")
+                .then()
+                .statusCode(200)
+                .extract().to<Link>()
+        assertThat(retrieved.starred).isFalse()
     }
 }

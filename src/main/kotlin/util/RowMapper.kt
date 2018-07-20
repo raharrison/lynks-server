@@ -24,7 +24,8 @@ object RowMapper {
                     dateUpdated = row[table.dateUpdated],
                     tags = tagResolver(row[table.id]),
                     props = row[table.props] ?: BaseProperties(),
-                    version = row[table.version]
+                    version = row[table.version],
+                    starred = row[table.starred]
             )
 
     fun toNote(table: BaseEntries, row: ResultRow, tagResolver: (String) -> List<Tag>): Note =
@@ -36,7 +37,8 @@ object RowMapper {
                     dateUpdated = row[table.dateUpdated],
                     tags = tagResolver(row[table.id]),
                     props = row[table.props] ?: BaseProperties(),
-                    version = row[table.version]
+                    version = row[table.version],
+                    starred = row[table.starred]
             )
 
     fun toComment(row: ResultRow): Comment =
