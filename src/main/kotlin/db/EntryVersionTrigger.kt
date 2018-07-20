@@ -11,9 +11,25 @@ import java.sql.ResultSet
 
 class EntryVersionTrigger: TriggerAdapter() {
 
+    private val versionColumnIndex = findVersionColumn()
+
+    private fun findVersionColumn(): Int {
+        return EntryVersions.columns.indexOfFirst {
+            it.name == "version"
+        }
+    }
+
     @Suppress("UNCHECKED_CAST")
     override fun fire(conn: Connection?, oldRow: ResultSet?, newRow: ResultSet) {
         if(!newRow.next()) return
+
+        // update operation
+        if(oldRow != null) {
+            // if no version change
+            if(oldRow.getInt(versionColumnIndex + 1) == newRow.getInt(versionColumnIndex + 1))
+                return
+        }
+
         val insert : EntryVersions.(InsertStatement<Number>)->Unit = {
             val statement = it
             this.columns.forEachIndexed { index, column ->
