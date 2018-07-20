@@ -8,6 +8,7 @@ import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.statements.InsertStatement
 import org.jetbrains.exposed.sql.statements.UpdateBuilder
+import org.jetbrains.exposed.sql.transactions.transaction
 import resource.ResourceManager
 import tag.TagService
 import util.RowMapper
@@ -64,5 +65,12 @@ class LinkService(tagService: TagService, private val resourceManager: ResourceM
         it[Entries.src] = URLUtils.extractSource(entry.url)
         it[Entries.dateUpdated] = System.currentTimeMillis()
         it[Entries.props] = entry.props
+    }
+
+    fun read(id: String, read: Boolean): Link? = transaction {
+        get(id)?.let {
+            it.props.addAttribute("read", read)
+            update(it)
+        }
     }
 }

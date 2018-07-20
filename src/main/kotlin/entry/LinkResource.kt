@@ -47,5 +47,19 @@ fun Route.link(linkService: LinkService) {
             if (removed) call.respond(HttpStatusCode.OK)
             else call.respond(HttpStatusCode.NotFound)
         }
+
+        post("/{id}/read") {
+            val id = call.parameters["id"]!!
+            val updated = linkService.read(id, true)
+            if (updated == null) call.respond(HttpStatusCode.NotFound)
+            else call.respond(updated)
+        }
+
+        post("/{id}/unread") {
+            val id = call.parameters["id"]!!
+            val updated = linkService.read(id, false)
+            if (updated == null) call.respond(HttpStatusCode.NotFound)
+            else call.respond(updated)
+        }
     }
 }

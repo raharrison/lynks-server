@@ -305,6 +305,26 @@ class LinkServiceTest : DatabaseTest() {
         assertThat(linkService.get("invalid", 0)).isNull()
     }
 
+    @Test
+    fun testSetRead() {
+        val added = linkService.add(newLink("n1", "google.com"))
+        assertThat(added.props.containsAttribute("read")).isFalse()
+
+        val read = linkService.read(added.id, true)
+        assertThat(read?.props?.getAttribute("read")).isEqualTo(true)
+
+        val unread = linkService.read(added.id, false)
+        assertThat(unread?.props?.getAttribute("read")).isEqualTo(false)
+
+        assertThat(linkService.get(added.id)?.props?.getAttribute("read")).isEqualTo(false)
+    }
+
+    @Test
+    fun testSetReadInvalidLink() {
+        assertThat(linkService.read("invalid", true)).isNull()
+        assertThat(linkService.read("invalid", false)).isNull()
+    }
+
     private fun newLink(title: String, url: String, tags: List<String> = emptyList()) = NewLink(null, title, url, tags)
     private fun newLink(id: String, title: String, url: String, tags: List<String> = emptyList()) = NewLink(id, title, url, tags)
     private fun newLink(id: String, title: String, url: String, tags: List<String> = emptyList(), process: Boolean) = NewLink(id, title, url, tags, process)

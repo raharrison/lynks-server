@@ -215,6 +215,44 @@ class LinkResourceTest: ServerTest() {
         assertThat(current.url).isEqualTo(updateLink.url)
     }
 
+    @Test
+    fun testSetReadInvalidLink() {
+        post("/link/{id}/read", "invalid")
+                .then()
+                .statusCode(404)
+        post("/link/{id}/unread", "invalid")
+                .then()
+                .statusCode(404)
+    }
+
+    @Test
+    fun testSetLinkRead() {
+        val read = post("/link/{id}/read", "e1")
+                .then()
+                .statusCode(200)
+                .extract().to<Link>()
+        assertThat(read.props.getAttribute("read")).isEqualTo(true)
+        val retrieved = get("/link/{id}", "e1")
+                .then()
+                .statusCode(200)
+                .extract().to<Link>()
+        assertThat(retrieved.props.getAttribute("read")).isEqualTo(true)
+    }
+
+    @Test
+    fun testSetLinkUnread() {
+        val read = post("/link/{id}/unread", "e1")
+                .then()
+                .statusCode(200)
+                .extract().to<Link>()
+        assertThat(read.props.getAttribute("read")).isEqualTo(false)
+        val retrieved = get("/link/{id}", "e1")
+                .then()
+                .statusCode(200)
+                .extract().to<Link>()
+        assertThat(retrieved.props.getAttribute("read")).isEqualTo(false)
+    }
+
     // TODO: submit invalid url
     // TODO: link processing
 
