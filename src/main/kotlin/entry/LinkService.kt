@@ -63,7 +63,6 @@ class LinkService(tagService: TagService, private val resourceManager: ResourceM
         it[Entries.plainContent] = entry.url
         it[Entries.content] = entry.content
         it[Entries.src] = URLUtils.extractSource(entry.url)
-        it[Entries.dateUpdated] = System.currentTimeMillis()
         it[Entries.props] = entry.props
     }
 

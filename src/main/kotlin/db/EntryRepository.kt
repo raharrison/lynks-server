@@ -77,12 +77,15 @@ abstract class EntryRepository<T : Entry, in U : NewEntry>(private val tagServic
         }
     }
 
-    fun update(entry: T): T? = transaction {
+    fun update(entry: T, newVersion: Boolean=false): T? = transaction {
         val where = getBaseQuery().combine { Entries.id eq entry.id }.where!!
         Entries.update({ where }, body = {
             toUpdate(entry)(it)
-            with(SqlExpressionBuilder) {
-                it.update(Entries.version, Entries.version + 1)
+            if(newVersion) {
+                it[dateUpdated] = System.currentTimeMillis()
+                with(SqlExpressionBuilder) {
+                    it.update(Entries.version, Entries.version + 1)
+                }
             }
         })
         get(entry.id)

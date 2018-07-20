@@ -46,7 +46,6 @@ class NoteService(tagService: TagService, private val resourceManager: ResourceM
         it[title] = entry.title
         it[plainContent] = entry.plainText
         it[content] = MarkdownUtils.convertToMarkdown(entry.plainText)
-        it[dateUpdated] = System.currentTimeMillis()
         it[props] = entry.props
     }
 
