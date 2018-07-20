@@ -27,6 +27,8 @@ object EntryVersions: BaseEntries("EntryVersion") {
 
 interface Entry {
     val id: String
+    val dateUpdated: Long
+    val version: Int
     val starred: Boolean
     val props: BaseProperties
 }

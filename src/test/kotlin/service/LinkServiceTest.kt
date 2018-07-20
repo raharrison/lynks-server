@@ -312,9 +312,14 @@ class LinkServiceTest : DatabaseTest() {
 
         val read = linkService.read(added.id, true)
         assertThat(read?.props?.getAttribute("read")).isEqualTo(true)
+        // date and version is still the same
+        assertThat(read?.version).isZero()
+        assertThat(read?.dateUpdated).isEqualTo(added.dateUpdated)
 
         val unread = linkService.read(added.id, false)
         assertThat(unread?.props?.getAttribute("read")).isEqualTo(false)
+        assertThat(unread?.version).isZero()
+        assertThat(unread?.dateUpdated).isEqualTo(added.dateUpdated)
 
         assertThat(linkService.get(added.id)?.props?.getAttribute("read")).isEqualTo(false)
     }

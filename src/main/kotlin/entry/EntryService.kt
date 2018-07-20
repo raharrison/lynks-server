@@ -52,10 +52,6 @@ class EntryService(tagService: TagService) : EntryRepository<Entry, NewEntry>(ta
     fun star(id: String, starred: Boolean): Entry? = transaction {
         Entries.update({Entries.id eq id}) {
             it[Entries.starred] = starred
-            // TODO: don't create new version for update
-            with(SqlExpressionBuilder) {
-                it.update(Entries.version, Entries.version + 1)
-            }
         }
         get(id)
     }

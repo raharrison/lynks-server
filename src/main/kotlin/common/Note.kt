@@ -7,10 +7,10 @@ data class Note(
         val title: String,
         val plainText: String,
         val markdownText: String,
-        val dateUpdated: Long,
+        override val dateUpdated: Long,
         val tags: List<Tag>,
         override val props: BaseProperties,
-        val version: Int=0,
+        override val version: Int=0,
         override val starred: Boolean=false
 ) : Entry {
     @JvmField

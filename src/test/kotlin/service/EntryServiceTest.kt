@@ -127,13 +127,20 @@ class EntryServiceTest: DatabaseTest() {
 
     @Test
     fun testStar() {
-        assertThat(entryService.get("id1")?.starred).isFalse()
+        val original = entryService.get("id1")
+        assertThat(original?.starred).isFalse()
+        val dateUpdated = original?.dateUpdated
 
         val star = entryService.star("id1", true)
         assertThat(star?.starred).isTrue()
+        assertThat(star?.version).isZero()
+        // date updated is same
+        assertThat(star?.dateUpdated).isEqualTo(dateUpdated)
 
         val unstar = entryService.star("id1", false)
         assertThat(unstar?.starred).isFalse()
+        assertThat(unstar?.version).isZero()
+        assertThat(unstar?.dateUpdated).isEqualTo(dateUpdated)
 
         assertThat(entryService.get("id1")?.starred).isFalse()
     }
