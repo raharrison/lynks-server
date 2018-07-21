@@ -110,8 +110,10 @@ class ResourceManager {
         val res = getResource(id)
         res?.let {
             Resources.deleteWhere { Resources.id eq id }
-            val path = constructPath(res.entryId, res.name)
-            return@transaction path.toFile().delete()
+            val path = constructPath(res.entryId, res.name).toFile()
+            if(path.exists())
+                return@transaction path.delete()
+            return@transaction true
         }
         false
     }

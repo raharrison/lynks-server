@@ -15,7 +15,7 @@ class CommentService {
         }.singleOrNull()
     }
 
-    fun getCommentsFor(id: String, pageRequest: PageRequest): List<Comment> = transaction {
+    fun getCommentsFor(id: String, pageRequest: PageRequest=PageRequest()): List<Comment> = transaction {
         Comments.select { Comments.entryId eq id }
                 .orderBy(Comments.dateCreated, false)
                 .limit(pageRequest.limit, pageRequest.offset)

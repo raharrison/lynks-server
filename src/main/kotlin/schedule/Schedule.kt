@@ -1,13 +1,14 @@
 package schedule
 
 import common.Entries
+import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.Table
 import util.RandomUtils
 import java.time.ZoneId
 
 object Schedules : Table("Schedule") {
     val scheduleId = varchar("scheduleId", 12).primaryKey()
-    val entryId = (varchar("entryId", 12) references Entries.id)
+    val entryId = (varchar("entryId", 12).references(Entries.id, ReferenceOption.CASCADE))
     val type = enumeration("type", ScheduleType::class.java)
     val spec = varchar("spec", 32)
     val tz = varchar("tz", 32)

@@ -1,6 +1,7 @@
 package tag
 
 import common.Entries
+import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.Table
 
 object Tags : Table("Tag") {
@@ -11,8 +12,8 @@ object Tags : Table("Tag") {
 }
 
 object EntryTags : Table("EntryTag") {
-    val tagId = (varchar("tagId", 12) references Tags.id).primaryKey()
-    val entryId = (varchar("entryId", 12) references Entries.id).primaryKey()
+    val tagId = (varchar("tagId", 12).references(Tags.id, ReferenceOption.CASCADE)).primaryKey()
+    val entryId = (varchar("entryId", 12).references(Entries.id, ReferenceOption.CASCADE)).primaryKey()
 }
 
 data class Tag(
