@@ -40,7 +40,7 @@ fun Route.resources(resourceManager: ResourceManager) {
                 part.dispose()
             }
             if(res == null) call.respond(HttpStatusCode.BadRequest)
-            else call.respond(res!!)
+            else call.respond(HttpStatusCode.Created, res!!)
         }
 
         delete("/{id}") {
