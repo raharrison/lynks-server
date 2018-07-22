@@ -89,8 +89,10 @@ open class DefaultLinkProcessor : LinkProcessor {
         session.activate()
         if(statuses.size > 0 && statuses.first() == 200)
             return session
-        else
+        else {
+            session.close()
             throw IllegalArgumentException("Could not navigate to $url")
+        }
     }
 
     companion object {

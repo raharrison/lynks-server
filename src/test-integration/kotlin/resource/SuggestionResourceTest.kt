@@ -19,6 +19,15 @@ class SuggestionResourceTest: ServerTest() {
     }
 
     @Test
+    fun testValidUrlInvalidNavigation() {
+        given()
+                .body("http://invalidname.fo/")
+                .post("/suggest")
+                .then()
+                .statusCode(500)
+    }
+
+    @Test
     fun testGetSuggestion() {
         val suggestion = given()
                 .body("https://ryanharrison.co.uk")
