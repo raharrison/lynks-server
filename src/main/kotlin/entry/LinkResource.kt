@@ -6,9 +6,12 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.request.receive
 import io.ktor.response.respond
 import io.ktor.routing.*
+import util.URLUtils
 import util.pageRequest
 
 fun Route.link(linkService: LinkService) {
+
+    fun checkLink(link: NewLink): Boolean = URLUtils.isValidUrl(link.url)
 
     route("/link") {
 
@@ -32,14 +35,18 @@ fun Route.link(linkService: LinkService) {
 
         post("/") {
             val link = call.receive<NewLink>()
-            call.respond(HttpStatusCode.Created, linkService.add(link))
+            if(!checkLink(link)) call.respond(HttpStatusCode.BadRequest)
+            else call.respond(HttpStatusCode.Created, linkService.add(link))
         }
 
         put("/") {
             val link = call.receive<NewLink>()
             val updated = linkService.update(link)
-            if (updated == null) call.respond(HttpStatusCode.NotFound)
-            else call.respond(HttpStatusCode.OK, updated)
+            if(!checkLink(link)) call.respond(HttpStatusCode.BadRequest)
+            else {
+                if (updated == null) call.respond(HttpStatusCode.NotFound)
+                else call.respond(HttpStatusCode.OK, updated)
+            }
         }
 
         delete("/{id}") {

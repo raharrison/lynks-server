@@ -253,7 +253,22 @@ class LinkResourceTest: ServerTest() {
         assertThat(retrieved.props.getAttribute("read")).isEqualTo(false)
     }
 
-    // TODO: submit invalid url
-    // TODO: link processing
+    @Test
+    fun testCreateLinkWithInvalidUrl() {
+        given()
+                .contentType(ContentType.JSON)
+                .body(NewLink(null, "title4", "http:google.com", emptyList(), false))
+                .When()
+                .post("/link")
+                .then()
+                .statusCode(400)
+        given()
+                .contentType(ContentType.JSON)
+                .body(NewLink(null, "title5", "invalid", emptyList(), false))
+                .When()
+                .post("/link")
+                .then()
+                .statusCode(400)
+    }
 
 }
