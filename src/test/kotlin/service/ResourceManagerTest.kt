@@ -53,6 +53,7 @@ class ResourceManagerTest: DatabaseTest() {
         // create document
         val doc = byteArrayOf(1,2,3,4,5)
         val docPath = resourceManager.saveTempFile(src, doc, ResourceType.DOCUMENT, HTML)
+                .let { tempFileToFullPath(it).toUrlString() }
         assertThat(fileExists(docPath)).isTrue()
         assertFileContents(docPath, doc)
 
@@ -64,6 +65,7 @@ class ResourceManagerTest: DatabaseTest() {
         // create thumbnail
         val thumb = byteArrayOf(6,7,8,9,10)
         val thumbPath = resourceManager.saveTempFile(src, thumb, ResourceType.THUMBNAIL, JPG)
+                .let { tempFileToFullPath(it).toUrlString() }
         assertThat(fileExists(thumbPath)).isTrue()
         assertFileContents(thumbPath, thumb)
 
@@ -82,7 +84,9 @@ class ResourceManagerTest: DatabaseTest() {
         val data1 = byteArrayOf(1,2,3,4,5)
         val data2 = byteArrayOf(6,7,8,9,10)
         val path1 = resourceManager.saveTempFile("imgur.com", data1, ResourceType.DOCUMENT, HTML)
+                .let { tempFileToFullPath(it).toUrlString() }
         val path2 = resourceManager.saveTempFile("gmail.com", data2, ResourceType.THUMBNAIL, JPG)
+                .let { tempFileToFullPath(it).toUrlString() }
         assertFileCount(Environment.resourceTempPath, 2)
         assertFileCount(Paths.get(path1).parent.toString(), 1)
         assertFileCount(Paths.get(path2).parent.toString(), 1)
@@ -93,8 +97,11 @@ class ResourceManagerTest: DatabaseTest() {
         val data1 = byteArrayOf(1,2,3,4,5)
         val data2 = byteArrayOf(6,7,8,9,10)
         val path1 = resourceManager.saveTempFile("youtube.com", data1, ResourceType.DOCUMENT, HTML)
+                .let { tempFileToFullPath(it).toUrlString() }
         val path2 = resourceManager.saveTempFile("youtube.com", data2, ResourceType.THUMBNAIL, JPG)
+                .let { tempFileToFullPath(it).toUrlString() }
         val path3 = resourceManager.saveTempFile("twitter.com", data2, ResourceType.THUMBNAIL, JPG)
+                .let { tempFileToFullPath(it).toUrlString() }
 
         assertThat(resourceManager.moveTempFiles("eid", "youtube.com")).isTrue()
 
@@ -304,5 +311,7 @@ class ResourceManagerTest: DatabaseTest() {
     }
 
     private fun fileName(path: String) = Paths.get(path).fileName.toString()
+
+    private fun tempFileToFullPath(path: String) = Paths.get(Environment.resourceTempPath).resolve(Paths.get(path))
 
 }

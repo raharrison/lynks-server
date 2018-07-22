@@ -37,7 +37,7 @@ class ResourceManager {
     fun saveTempFile(src: String, data: ByteArray, type: ResourceType, extension: String): String {
         val path = constructTempPath(src, type, extension)
         FileUtils.writeToFile(path, data)
-        return path.toUrlString()
+        return Paths.get(Environment.resourceTempPath).relativize(path).toUrlString()
     }
 
     fun moveTempFiles(entryId: String, src: String): Boolean {
