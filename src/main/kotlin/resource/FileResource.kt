@@ -1,8 +1,11 @@
 package resource
 
+import common.Environment
 import io.ktor.application.call
 import io.ktor.content.PartData
+import io.ktor.content.files
 import io.ktor.content.forEachPart
+import io.ktor.content.static
 import io.ktor.http.HttpStatusCode
 import io.ktor.request.receiveMultipart
 import io.ktor.response.header
@@ -11,6 +14,10 @@ import io.ktor.response.respondFile
 import io.ktor.routing.*
 
 fun Route.resources(resourceManager: ResourceManager) {
+
+    static("temp") {
+        files(Environment.resourceTempPath)
+    }
 
     route("/entry/{entryId}/resources") {
 

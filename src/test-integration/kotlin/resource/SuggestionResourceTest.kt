@@ -1,6 +1,7 @@
 package resource
 
 import common.ServerTest
+import io.restassured.RestAssured.get
 import io.restassured.RestAssured.given
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -28,7 +29,9 @@ class SuggestionResourceTest: ServerTest() {
         assertThat(suggestion.title).isEqualTo("Ryan Harrison - My blog, portfolio and technology related ramblings")
         assertThat(suggestion.screenshot).isNotNull()
         assertThat(suggestion.thumbnail).isNotNull()
-        //TODO: test retrieval of static temp files
+
+        retrieveTempResource(suggestion.screenshot)
+        retrieveTempResource(suggestion.thumbnail)
     }
 
     @Test
@@ -42,6 +45,15 @@ class SuggestionResourceTest: ServerTest() {
         assertThat(suggestion.title).isEqualTo("Savoy - How U Like Me Now (feat. Roniit) [Monstercat Release]")
         assertThat(suggestion.screenshot).isNull()
         assertThat(suggestion.thumbnail).isNotNull()
+
+        retrieveTempResource(suggestion.thumbnail)
+    }
+
+    private fun retrieveTempResource(path: String?) {
+        assertThat(get("/temp/$path")
+                .then()
+                .statusCode(200)
+                .extract().asByteArray()).isNotEmpty()
     }
 
 }
