@@ -20,20 +20,20 @@ class WebResourceRetrieverTest: ServerTest() {
 
     @Test
     fun testInvalidPathReturnsNull()= runBlocking {
-        assertThat(retriever.getString("$baseUrl/invalid")).isNull()
-        assertThat(retriever.getFile("$baseUrl/invalid")).isNull()
+        assertThat(retriever.getString("/invalid")).isNull()
+        assertThat(retriever.getFile("/invalid")).isNull()
     }
 
     @Test
     fun testGetString()= runBlocking {
-        val res = retriever.getString("$baseUrl/health")
+        val res = retriever.getString("/health")
         assertThat(res).isEqualTo(expected)
         Unit
     }
 
     @Test
     fun testGetFile()= runBlocking {
-        val res = retriever.getFile("$baseUrl/health")
+        val res = retriever.getFile("/health")
         assertThat(res).isEqualTo(expected.toByteArray())
         Unit
     }
