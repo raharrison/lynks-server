@@ -37,13 +37,13 @@ class ResourceManager {
     fun saveTempFile(src: String, data: ByteArray, type: ResourceType, extension: String): String {
         val path = constructTempPath(src, type, extension)
         FileUtils.writeToFile(path, data)
-        return Paths.get(Environment.resourceTempPath).relativize(path).toUrlString()
+        return Paths.get(Environment.server.resourceTempPath).relativize(path).toUrlString()
     }
 
     fun moveTempFiles(entryId: String, src: String): Boolean {
         val tempPath = constructTempPath(src)
         if(Files.exists(tempPath)) {
-            val target = Paths.get(Environment.resourceBasePath, entryId)
+            val target = Paths.get(Environment.server.resourceBasePath, entryId)
             Files.move(tempPath, target)
             Files.list(target).use {
                 it.forEach {
@@ -99,12 +99,12 @@ class ResourceManager {
 
     private fun constructPath(entryId: String, id: String, extension: String) = constructPath(entryId, "$id.$extension")
 
-    fun constructPath(entryId: String, name: String): Path = Paths.get(Environment.resourceBasePath, entryId, name)
+    fun constructPath(entryId: String, name: String): Path = Paths.get(Environment.server.resourceBasePath, entryId, name)
 
     private fun constructTempPath(name: String, type: ResourceType, extension: String) =
-            Paths.get(Environment.resourceTempPath, FileUtils.createTempFileName(name), "${type.toString().toLowerCase()}.$extension")
+            Paths.get(Environment.server.resourceTempPath, FileUtils.createTempFileName(name), "${type.toString().toLowerCase()}.$extension")
 
-    private fun constructTempPath(name: String) = Paths.get(Environment.resourceTempPath, FileUtils.createTempFileName(name))
+    private fun constructTempPath(name: String) = Paths.get(Environment.server.resourceTempPath, FileUtils.createTempFileName(name))
 
     fun delete(id: String): Boolean = transaction {
         val res = getResource(id)

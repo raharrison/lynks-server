@@ -22,7 +22,7 @@ class ResourceManagerTest: DatabaseTest() {
 
     @AfterEach
     fun cleanUp() {
-        Paths.get(Environment.resourceBasePath).toFile().deleteRecursively()
+        Paths.get(Environment.server.resourceBasePath).toFile().deleteRecursively()
     }
 
     @BeforeEach
@@ -57,7 +57,7 @@ class ResourceManagerTest: DatabaseTest() {
         assertThat(fileExists(docPath)).isTrue()
         assertFileContents(docPath, doc)
 
-        assertThat(docPath).startsWith(Environment.resourceTempPath)
+        assertThat(docPath).startsWith(Environment.server.resourceTempPath)
         val docFile = fileName(docPath)
         assertThat(getExtension(docFile)).isEqualTo(HTML)
         assertThat(removeExtension(docFile)).isEqualTo(ResourceType.DOCUMENT.toString().toLowerCase())
@@ -69,7 +69,7 @@ class ResourceManagerTest: DatabaseTest() {
         assertThat(fileExists(thumbPath)).isTrue()
         assertFileContents(thumbPath, thumb)
 
-        assertThat(thumbPath).startsWith(Environment.resourceTempPath)
+        assertThat(thumbPath).startsWith(Environment.server.resourceTempPath)
         val thumbFile = fileName(thumbPath)
         assertThat(getExtension(thumbFile)).isEqualTo(JPG)
         assertThat(removeExtension(thumbFile)).isEqualTo(ResourceType.THUMBNAIL.toString().toLowerCase())
@@ -87,7 +87,7 @@ class ResourceManagerTest: DatabaseTest() {
                 .let { tempFileToFullPath(it).toUrlString() }
         val path2 = resourceManager.saveTempFile("gmail.com", data2, ResourceType.THUMBNAIL, JPG)
                 .let { tempFileToFullPath(it).toUrlString() }
-        assertFileCount(Environment.resourceTempPath, 2)
+        assertFileCount(Environment.server.resourceTempPath, 2)
         assertFileCount(Paths.get(path1).parent.toString(), 1)
         assertFileCount(Paths.get(path2).parent.toString(), 1)
     }
@@ -147,7 +147,7 @@ class ResourceManagerTest: DatabaseTest() {
         val file = "file.txt"
         val path = resourceManager.constructPath(eid, file)
         val pathStr = path.toUrlString()
-        assertThat(pathStr).startsWith(Environment.resourceBasePath)
+        assertThat(pathStr).startsWith(Environment.server.resourceBasePath)
         assertThat(path.fileName.toString()).isEqualTo(file)
         assertThat(path.parent.fileName.toString()).isEqualTo(eid)
     }
@@ -223,7 +223,7 @@ class ResourceManagerTest: DatabaseTest() {
         assertThat(file?.readBytes()).isEqualTo(data)
         assertThat(file?.name).isEqualTo("${resource.id}.$extension")
         assertThat(resourceManager.getResource(resource.id)).isEqualTo(resource)
-        assertThat(file?.toPath()?.toUrlString()).startsWith(Environment.resourceBasePath)
+        assertThat(file?.toPath()?.toUrlString()).startsWith(Environment.server.resourceBasePath)
     }
 
     @Test
@@ -253,7 +253,7 @@ class ResourceManagerTest: DatabaseTest() {
         val file = resourceManager.getResourceAsFile(resource.id)
         assertThat(file?.readBytes()).isEqualTo(data)
         assertThat(file?.name).isEqualTo(name)
-        assertThat(file?.toPath()?.toUrlString()).startsWith(Environment.resourceBasePath)
+        assertThat(file?.toPath()?.toUrlString()).startsWith(Environment.server.resourceBasePath)
     }
 
     @Test
@@ -312,6 +312,6 @@ class ResourceManagerTest: DatabaseTest() {
 
     private fun fileName(path: String) = Paths.get(path).fileName.toString()
 
-    private fun tempFileToFullPath(path: String) = Paths.get(Environment.resourceTempPath).resolve(Paths.get(path))
+    private fun tempFileToFullPath(path: String) = Paths.get(Environment.server.resourceTempPath).resolve(Paths.get(path))
 
 }

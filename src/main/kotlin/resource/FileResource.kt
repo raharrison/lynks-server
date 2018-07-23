@@ -16,7 +16,7 @@ import io.ktor.routing.*
 fun Route.resources(resourceManager: ResourceManager) {
 
     static("temp") {
-        files(Environment.resourceTempPath)
+        files(Environment.server.resourceTempPath)
     }
 
     route("/entry/{entryId}/resources") {

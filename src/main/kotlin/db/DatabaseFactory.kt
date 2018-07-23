@@ -30,7 +30,7 @@ class DatabaseFactory {
 
         if(Environment.mode == ConfigMode.TEST) {
             // no connection pooling
-            Database.connect(Environment.database, driver = Environment.driver)
+            Database.connect(Environment.server.database, driver = Environment.server.driver)
         } else {
             Database.connect(hikari())
         }
@@ -45,8 +45,8 @@ class DatabaseFactory {
 
     private fun hikari(): HikariDataSource {
         val config = HikariConfig()
-        config.driverClassName = Environment.driver
-        config.jdbcUrl = Environment.database
+        config.driverClassName = Environment.server.driver
+        config.jdbcUrl = Environment.server.database
         config.maximumPoolSize = 3
         config.isAutoCommit = false
         config.transactionIsolation = "TRANSACTION_REPEATABLE_READ"

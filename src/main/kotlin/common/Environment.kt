@@ -20,24 +20,36 @@ object Environment {
         val resourceTempPath by required<String>()
     }
 
+    data class Server(val database: String = config[ServerSpec.database],
+                      val driver: String = config[ServerSpec.driver],
+                      val port: Int = config[ServerSpec.port],
+                      val resourceBasePath: String = config[ServerSpec.resourceBasePath],
+                      val resourceTempPath: String = config[ServerSpec.resourceTempPath])
+
+    private object MailSpec: ConfigSpec("mail") {
+        val enabled by required<Boolean>()
+        val server by required<String>()
+        val port by required<Int>()
+    }
+
+    data class Mail(val enabled: Boolean = config[MailSpec.enabled],
+                    val server: String = config[MailSpec.server],
+                    val port: Int = config[MailSpec.port])
+
     val mode: ConfigMode = ConfigMode.valueOf(System.getProperty("CONFIG_MODE") ?: "DEV")
 
     init {
         logger.info("Using config mode: $mode")
     }
 
-    private val config = Config { addSpec(ServerSpec)}
+    private val config = Config {
+        addSpec(ServerSpec)
+        addSpec(MailSpec)
+    }
             .withSourceFrom.json.resource("${mode.toString().toLowerCase()}.json")
             .withSourceFrom.env()
             .withSourceFrom.systemProperties()
 
-    val database = config[ServerSpec.database]
-
-    val driver = config[ServerSpec.driver]
-
-    val port = config[ServerSpec.port]
-
-    val resourceBasePath = config[ServerSpec.resourceBasePath]
-
-    val resourceTempPath = config[ServerSpec.resourceTempPath]
+    val server = Server()
+    val mail = Mail()
 }

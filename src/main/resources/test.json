@@ -4,5 +4,10 @@
         "driver": "org.h2.Driver",
         "resourceBasePath": "media/test",
         "resourceTempPath": "media/test/temp"
+    },
+    "mail": {
+        "enabled": false,
+        "server": "localhost",
+        "port": 1025
     }
 }

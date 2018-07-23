@@ -31,18 +31,17 @@ open class ServerTest {
         private var serverStarted = false
 
         private lateinit var server: ApplicationEngine
-        val baseUrl = "http://localhost:${Environment.port}"
 
         @BeforeAll
         @JvmStatic
         fun startServer() {
             if(!serverStarted) {
-                server = embeddedServer(Netty, Environment.port, watchPaths = listOf("Main"), module = Application::module)
+                server = embeddedServer(Netty, Environment.server.port, watchPaths = listOf("Main"), module = Application::module)
                 server.start()
                 serverStarted = true
 
                 RestAssured.baseURI = "http://localhost"
-                RestAssured.port = Environment.port
+                RestAssured.port = Environment.server.port
                 RestAssured.config = RestAssuredConfig.config().objectMapperConfig(objectMapperConfig()
                         .jackson2ObjectMapperFactory { _, _ -> JsonMapper.defaultMapper })
 
