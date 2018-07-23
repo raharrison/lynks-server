@@ -25,15 +25,14 @@ object EntryVersions: BaseEntries("EntryVersion") {
     override val version = integer("version").primaryKey().default(0)
 }
 
-interface Entry {
-    val id: String
+interface Entry: IdBasedEntity {
+    override val id: String
     val dateUpdated: Long
     val version: Int
     val starred: Boolean
     val props: BaseProperties
 }
 
-interface NewEntry {
-    val id: String?
+interface NewEntry: IdBasedEntity {
     val tags: List<String>
 }

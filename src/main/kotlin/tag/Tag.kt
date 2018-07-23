@@ -1,6 +1,7 @@
 package tag
 
 import common.Entries
+import common.IdBasedEntity
 import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.Table
 
@@ -17,17 +18,17 @@ object EntryTags : Table("EntryTag") {
 }
 
 data class Tag(
-        val id: String,
+        override val id: String,
         var name: String,
         var children: MutableSet<Tag>,
         var dateUpdated: Long
-) {
+): IdBasedEntity {
     override fun hashCode(): Int = id.hashCode()
     override fun equals(other: Any?): Boolean = if (other is Tag) id == other.id else false
 }
 
 data class NewTag(
-        val id: String?,
+        override val id: String?,
         val name: String,
         val parentId: String?
-)
+): IdBasedEntity

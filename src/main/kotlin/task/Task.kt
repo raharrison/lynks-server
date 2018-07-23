@@ -1,8 +1,9 @@
 package task
 
+import common.IdBasedEntity
 import kotlin.reflect.KClass
 
-abstract class Task<T: TaskContext>(val id: String, val entryId: String) {
+abstract class Task<T: TaskContext>(override val id: String, val entryId: String): IdBasedEntity {
 
     abstract suspend fun process(context: T)
 
