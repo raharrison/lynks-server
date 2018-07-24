@@ -1,7 +1,8 @@
 package comment
 
 import common.Entries
-import common.IdBasedEntity
+import common.IdBasedCreatedEntity
+import common.IdBasedNewEntity
 import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.Table
 
@@ -20,10 +21,10 @@ data class Comment(
         val plainText: String,
         val markdownText: String,
         val dateCreated: Long
-): IdBasedEntity
+): IdBasedCreatedEntity
 
 
 data class NewComment(
         override val id: String?,
         val plainText: String
-): IdBasedEntity
+): IdBasedNewEntity

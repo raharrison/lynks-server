@@ -1,7 +1,7 @@
 package resource
 
 import common.Entries
-import common.IdBasedEntity
+import common.IdBasedCreatedEntity
 import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.Table
 
@@ -25,7 +25,7 @@ data class Resource(
         val size: Long,
         val dateCreated: Long,
         val dateUpdated: Long
-): IdBasedEntity
+): IdBasedCreatedEntity
 
 enum class ResourceType {
     UPLOAD, SCREENSHOT, THUMBNAIL, DOCUMENT

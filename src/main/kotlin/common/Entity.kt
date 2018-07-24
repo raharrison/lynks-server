@@ -1,5 +1,9 @@
 package common
 
-interface IdBasedEntity {
+interface IdBasedNewEntity {
     val id: String?
+}
+
+interface IdBasedCreatedEntity {
+    val id: String
 }
