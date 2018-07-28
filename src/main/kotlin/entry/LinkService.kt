@@ -2,10 +2,8 @@ package entry
 
 import common.*
 import db.EntryRepository
-import org.jetbrains.exposed.sql.ColumnSet
-import org.jetbrains.exposed.sql.Query
-import org.jetbrains.exposed.sql.ResultRow
-import org.jetbrains.exposed.sql.select
+import db.notLike
+import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.statements.InsertStatement
 import org.jetbrains.exposed.sql.statements.UpdateBuilder
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -72,4 +70,10 @@ class LinkService(tagService: TagService, private val resourceManager: ResourceM
             update(it)
         }
     }
+
+    fun getUnread(): List<Link> = transaction {
+        Entries.select {Entries.props.isNull() or (Entries.props notLike "%\"read\":true%") }
+                .map { toModel(it) }
+    }
+
 }

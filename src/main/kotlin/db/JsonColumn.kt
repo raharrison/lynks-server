@@ -1,9 +1,7 @@
 package db
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import org.jetbrains.exposed.sql.Column
-import org.jetbrains.exposed.sql.ColumnType
-import org.jetbrains.exposed.sql.Table
+import org.jetbrains.exposed.sql.*
 import util.JsonMapper
 import java.sql.NClob
 
@@ -25,6 +23,10 @@ private class Json<out T : Any>(private val klass: Class<T>, private val jsonMap
         }
     }
 
-    override fun notNullValueToDB(value: Any): Any = jsonMapper.writeValueAsString(value)
-    override fun nonNullValueToString(value: Any): String = "'${jsonMapper.writeValueAsString(value)}'"
+    override fun notNullValueToDB(value: Any): Any = when(value) {
+        is String -> value
+        else -> jsonMapper.writeValueAsString(value)
+    }
 }
+
+infix fun<T: Any?> ExpressionWithColumnType<T>.notLike(pattern: String): Op<Boolean> = NotLikeOp(this, QueryParameter(pattern, columnType))

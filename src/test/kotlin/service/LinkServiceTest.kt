@@ -330,6 +330,19 @@ class LinkServiceTest : DatabaseTest() {
         assertThat(linkService.read("invalid", false)).isNull()
     }
 
+    @Test
+    fun testGetUnreadLinks() {
+        val added = linkService.add(newLink("n1", "google.com"))
+
+        assertThat(linkService.getUnread()).hasSize(1).extracting("id").containsOnly(added.id)
+
+        linkService.read(added.id, false)
+        assertThat(linkService.getUnread()).hasSize(1).extracting("id").containsOnly(added.id)
+
+        linkService.read(added.id, true)
+        assertThat(linkService.getUnread()).isEmpty()
+    }
+
     private fun newLink(title: String, url: String, tags: List<String> = emptyList()) = NewLink(null, title, url, tags)
     private fun newLink(id: String, title: String, url: String, tags: List<String> = emptyList()) = NewLink(id, title, url, tags)
     private fun newLink(id: String, title: String, url: String, tags: List<String> = emptyList(), process: Boolean) = NewLink(id, title, url, tags, process)
