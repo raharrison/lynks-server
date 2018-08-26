@@ -46,9 +46,9 @@ object Environment {
         addSpec(ServerSpec)
         addSpec(MailSpec)
     }
-            .withSourceFrom.json.resource("${mode.toString().toLowerCase()}.json")
-            .withSourceFrom.env()
-            .withSourceFrom.systemProperties()
+            .from.json.resource("${mode.toString().toLowerCase()}.json")
+            .from.env()
+            .from.systemProperties()
 
     val server = Server()
     val mail = Mail()
