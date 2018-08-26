@@ -111,7 +111,7 @@ class LinkResourceTest: ServerTest() {
 
     @Test
     fun testUpdateLinkReturnsNotFound() {
-        val updatedLink = NewLink("invalid", "title2", "modified", emptyList())
+        val updatedLink = NewLink("invalid", "title2", "gmail.com", emptyList())
         given()
                 .contentType(ContentType.JSON)
                 .body(updatedLink)
@@ -124,7 +124,7 @@ class LinkResourceTest: ServerTest() {
     @Test
     fun testCannotUpdateNonLink() {
         // e2 = existing note entry
-        val updatedLink = NewLink("e2", "title2", "modified", emptyList())
+        val updatedLink = NewLink("e2", "title2", "google.com", emptyList())
         given()
                 .contentType(ContentType.JSON)
                 .body(updatedLink)
@@ -168,7 +168,7 @@ class LinkResourceTest: ServerTest() {
 
     @Test
     fun testGetVersion() {
-        val newLink = NewLink(null, "title4", "content4", emptyList())
+        val newLink = NewLink(null, "title4", "gmail.com", emptyList())
         val created = given()
                 .contentType(ContentType.JSON)
                 .body(newLink)

@@ -41,6 +41,7 @@ open class ServerTest {
                 serverStarted = true
 
                 RestAssured.baseURI = "http://localhost"
+                RestAssured.basePath = "/api"
                 RestAssured.port = Environment.server.port
                 RestAssured.config = RestAssuredConfig.config().objectMapperConfig(objectMapperConfig()
                         .jackson2ObjectMapperFactory { _, _ -> JsonMapper.defaultMapper })

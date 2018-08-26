@@ -13,6 +13,7 @@ import io.ktor.features.DefaultHeaders
 import io.ktor.http.ContentType
 import io.ktor.jackson.JacksonConverter
 import io.ktor.routing.Routing
+import io.ktor.routing.route
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import io.ktor.websocket.WebSockets
@@ -59,17 +60,19 @@ fun Application.module() {
 
     install(Routing) {
         with(serviceProvider) {
-            comment(get())
-            link(get())
-            note(get())
-            entry(get(), get())
-            tag(get())
-            suggest(get())
-            resources(get())
-            task(get())
-            notify(get())
-            health()
-            schedule(get())
+            route("/api") {
+                comment(get())
+                link(get())
+                note(get())
+                entry(get(), get())
+                tag(get())
+                suggest(get())
+                resources(get())
+                task(get())
+                notify(get())
+                health()
+                schedule(get())
+            }
         }
     }
 }
