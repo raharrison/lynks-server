@@ -74,4 +74,22 @@ class URLUtilsTest {
         val uri = "http://youtube.com/?v=something%5Eelse*if%2Bsome()!%20-%20more"
         assertThat(extractQueryParams(uri)).hasSize(1).containsExactly(entry("v", "something^else*if some()! - more"))
     }
+
+    @Test
+    fun testValidEmail() {
+        assertThat(URLUtils.isValidEmail("test@example.com")).isTrue()
+        assertThat(URLUtils.isValidEmail("test@test.abc")).isTrue()
+        assertThat(URLUtils.isValidEmail("test.other.some@test.abc")).isTrue()
+        assertThat(URLUtils.isValidEmail("test@1.abc")).isTrue()
+        assertThat(URLUtils.isValidEmail("test+100@some-test.com")).isTrue()
+        assertThat(URLUtils.isValidEmail("me..2002.@example.com")).isTrue()
+    }
+
+    @Test
+    fun testInvalidEmail() {
+        assertThat(URLUtils.isValidEmail("me@.com.my")).isFalse()
+        assertThat(URLUtils.isValidEmail("me123@.com")).isFalse()
+        assertThat(URLUtils.isValidEmail("me@me@example.com")).isFalse()
+        assertThat(URLUtils.isValidEmail("me*@%*-example.other.1com")).isFalse()
+    }
 }

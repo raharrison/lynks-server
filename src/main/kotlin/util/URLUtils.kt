@@ -2,8 +2,11 @@ package util
 
 import java.net.URI
 import java.net.URLDecoder
+import javax.mail.internet.AddressException
+import javax.mail.internet.InternetAddress
 
 object URLUtils {
+
     fun extractSource(url: String): String {
         var uri = url.toLowerCase()
         if (!uri.startsWith("http://") and !uri.startsWith("https://")) {
@@ -22,9 +25,9 @@ object URLUtils {
         val params = query.split("&")
         val map = linkedMapOf<String, String?>()
         for (param in params) {
-            if(param == uri) continue
+            if (param == uri) continue
             val split = param.split("=")
-            when(split.size) {
+            when (split.size) {
                 1 -> map[param] = null
                 else -> map[split[0]] = URLDecoder.decode(split[1], "UTF-8")
             }
@@ -35,6 +38,13 @@ object URLUtils {
     fun isValidUrl(url: String): Boolean = try {
         url.contains('.') && extractSource(url).isNotEmpty()
     } catch (e: Exception) {
+        false
+    }
+
+    fun isValidEmail(email: String): Boolean = try {
+        InternetAddress(email).validate()
+        true
+    } catch (ex: AddressException) {
         false
     }
 }
