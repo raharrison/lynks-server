@@ -16,6 +16,7 @@ import resource.Resources
 import schedule.Schedules
 import tag.EntryTags
 import tag.Tags
+import user.UserPreferences
 import util.loggerFor
 
 val logger = loggerFor<DatabaseFactory>()
@@ -36,7 +37,7 @@ class DatabaseFactory {
         }
 
         transaction {
-            create(Entries, EntryVersions, Comments, Tags, EntryTags, Resources, Schedules)
+            create(Entries, EntryVersions, Comments, Tags, EntryTags, Resources, Schedules, UserPreferences)
             enableSearch()
             enableTriggers()
         }
@@ -84,5 +85,6 @@ class DatabaseFactory {
         Schedules.deleteAll()
         Entries.deleteAll()
         EntryVersions.deleteAll()
+        UserPreferences.deleteAll()
     }
 }

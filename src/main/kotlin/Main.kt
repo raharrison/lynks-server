@@ -29,6 +29,8 @@ import tag.TagService
 import tag.tag
 import task.TaskService
 import task.task
+import user.UserService
+import user.user
 import util.JsonMapper.defaultMapper
 import worker.WorkerRegistry
 
@@ -44,6 +46,7 @@ fun Application.module() {
 
     val workerRegistry = WorkerRegistry()
     val serviceProvider = ServiceProvider().apply {
+        register(UserService())
         register(ResourceManager())
         register(workerRegistry)
         register(TagService())
@@ -54,7 +57,7 @@ fun Application.module() {
         register(ScheduleService())
         register(SuggestionService(get()))
         register(TaskService(get(), this, get()))
-        register(NotifyService())
+        register(NotifyService(get()))
         workerRegistry.init(this)
     }
 
@@ -72,6 +75,7 @@ fun Application.module() {
                 notify(get())
                 health()
                 schedule(get())
+                user(get())
             }
         }
     }

@@ -5,12 +5,13 @@ import common.Environment
 import io.ktor.http.cio.websocket.Frame
 import kotlinx.coroutines.experimental.channels.SendChannel
 import org.apache.commons.mail.HtmlEmail
+import user.UserService
 import util.JsonMapper.defaultMapper
 import util.loggerFor
 
 private val logger = loggerFor<NotifyService>()
 
-class NotifyService {
+class NotifyService(private val userService: UserService) {
 
     private val notifiers = Sets.newConcurrentHashSet<SendChannel<Frame>>()
 
@@ -44,16 +45,17 @@ class NotifyService {
 
     fun sendEmail(subject: String, body: String) {
         if(!Environment.mail.enabled) return
-
-        val toMail = "user@email.com"
-        val email = HtmlEmail()
-        email.hostName = Environment.mail.server
-        email.setSmtpPort(Environment.mail.port)
-        email.setFrom("noreply@lynks.com")
-        email.addTo(toMail)
-        email.subject = subject
-        email.setHtmlMsg(body)
-        email.send()
+        val address = userService.currentUserPreferences.email
+        address?.let {
+            val email = HtmlEmail()
+            email.hostName = Environment.mail.server
+            email.setSmtpPort(Environment.mail.port)
+            email.setFrom("noreply@lynks.com")
+            email.addTo(it)
+            email.subject = subject
+            email.setHtmlMsg(body)
+            email.send()
+        }
     }
 
 }
