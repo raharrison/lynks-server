@@ -1,6 +1,7 @@
 package worker
 
 import kotlinx.coroutines.experimental.DefaultDispatcher
+import kotlinx.coroutines.experimental.Job
 import kotlinx.coroutines.experimental.channels.SendChannel
 import kotlinx.coroutines.experimental.channels.actor
 import kotlinx.coroutines.experimental.delay
@@ -30,7 +31,7 @@ abstract class Worker<T>(private val notifyService: NotifyService) {
 
     protected abstract suspend fun doWork(input: T)
 
-    protected fun launchJob(job: suspend () -> Unit) = launch(runner) {
+    protected fun launchJob(job: suspend () -> Unit): Job = launch(runner) {
         job()
     }
 

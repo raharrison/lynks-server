@@ -24,7 +24,9 @@ fun Route.user(userService: UserService, workerRegistry: WorkerRegistry) {
                 return@post
             }
         }
-        call.respond(HttpStatusCode.Accepted, userService.updateUserPreferences(preferences))
+        val updated = userService.updateUserPreferences(preferences)
+        workerRegistry.onUserPreferenceChange(updated)
+        call.respond(HttpStatusCode.Accepted, updated)
     }
 
 }

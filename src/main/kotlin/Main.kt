@@ -46,9 +46,9 @@ fun Application.module() {
 
     val workerRegistry = WorkerRegistry()
     val serviceProvider = ServiceProvider().apply {
+        register(workerRegistry)
         register(UserService())
         register(ResourceManager())
-        register(workerRegistry)
         register(TagService())
         register(EntryService(get()))
         register(LinkService(get(), get(), get()))
@@ -75,7 +75,7 @@ fun Application.module() {
                 notify(get())
                 health()
                 schedule(get())
-                user(get())
+                user(get(), get())
             }
         }
     }

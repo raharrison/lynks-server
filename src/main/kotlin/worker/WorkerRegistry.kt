@@ -6,19 +6,24 @@ import kotlinx.coroutines.experimental.channels.SendChannel
 import resource.WebResourceRetriever
 import task.Task
 import task.TaskContext
+import user.Preferences
 
 class WorkerRegistry {
 
     fun init(serviceProvider: ServiceProvider) {
-        linkWorker = LinkProcessorWorker(serviceProvider.get(), serviceProvider.get(), serviceProvider.get()).worker()
-        discussionWorker = DiscussionFinderWorker(serviceProvider.get(), serviceProvider.get(),
-                WebResourceRetriever(), serviceProvider.get()).worker()
-        taskWorker = TaskRunnerWorker(serviceProvider.get()).worker()
+        with(serviceProvider) {
+            linkWorker = LinkProcessorWorker(get(), get(), get()).worker()
+            discussionWorker = DiscussionFinderWorker(get(), get(),
+                    WebResourceRetriever(), get()).worker()
+            taskWorker = TaskRunnerWorker(get()).worker()
+            unreadDigestWorker = UnreadLinkDigestWorker(get(), get()).worker()
+        }
     }
 
     private lateinit var linkWorker: SendChannel<LinkProcessingRequest>
     private lateinit var discussionWorker: SendChannel<Link>
     private lateinit var taskWorker: SendChannel<TaskRunnerRequest>
+    private lateinit var unreadDigestWorker: SendChannel<Preferences>
 
     fun acceptLinkWork(request: LinkProcessingRequest) {
         linkWorker.offer(request)
@@ -32,7 +37,12 @@ class WorkerRegistry {
         discussionWorker.offer(link)
     }
 
+    fun onUserPreferenceChange(preferences: Preferences) {
+        unreadDigestWorker.offer(preferences)
+    }
+
     private fun startScheduledWorkers() {
         TempFileCleanupWorker().run()
     }
+
 }

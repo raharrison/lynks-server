@@ -10,11 +10,12 @@ import notify.Notification
 import notify.NotifyService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import user.UserService
 import util.JsonMapper
 
 class NotifyServiceTest {
 
-    private val notifyService = NotifyService()
+    private val notifyService = NotifyService(UserService())
 
     @Test
     fun testSendToOpen() = runBlocking {

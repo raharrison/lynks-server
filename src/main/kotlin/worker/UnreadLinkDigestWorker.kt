@@ -16,7 +16,7 @@ import java.time.temporal.TemporalAdjusters
 import java.util.*
 import java.util.concurrent.TimeUnit
 
-class UnreadLinkDigestWorker(private val linkService: LinkService, private val notifyService: NotifyService): Worker<Any?>(notifyService) {
+class UnreadLinkDigestWorker(private val linkService: LinkService, private val notifyService: NotifyService): Worker<Preferences>(notifyService) {
 
     private val random = Random()
 
