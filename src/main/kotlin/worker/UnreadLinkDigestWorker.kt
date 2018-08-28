@@ -1,10 +1,11 @@
 package worker
 
-import com.github.jknack.handlebars.Handlebars
-import com.github.jknack.handlebars.io.ClassPathTemplateLoader
 import entry.LinkService
+import kotlinx.coroutines.experimental.Job
 import kotlinx.coroutines.experimental.delay
 import notify.NotifyService
+import user.Preferences
+import util.ResourceTemplater
 import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDateTime
@@ -20,7 +21,15 @@ class UnreadLinkDigestWorker(private val linkService: LinkService, private val n
 
     private val random = Random()
 
-    override suspend fun doWork(input: Any?) {
+    private var workerJob: Job? = null
+
+    // TODO: beforeWork to start worker with initial preferences
+
+    override suspend fun doWork(input: Preferences) {
+        if(!input.digest) {
+            workerJob?.cancel()
+            return
+        }
 
         // time till next fire
         val today = LocalDateTime.now()
@@ -29,12 +38,13 @@ class UnreadLinkDigestWorker(private val linkService: LinkService, private val n
                 .withMinute(0)
         val initialDelay = today.until(fire, ChronoUnit.SECONDS)
 
-        while(true) {
-            delay(initialDelay, TimeUnit.SECONDS)
-            sendDigest()
-            delay(7, TimeUnit.DAYS)
+        workerJob = launchJob {
+            while (true) {
+                delay(initialDelay, TimeUnit.SECONDS)
+                sendDigest()
+                delay(7, TimeUnit.DAYS)
+            }
         }
-
     }
 
     private fun sendDigest() {
@@ -60,20 +70,10 @@ class UnreadLinkDigestWorker(private val linkService: LinkService, private val n
                     "date" to formatter.format(Instant.ofEpochMilli(it.dateUpdated)))
         }
 
-        val email = generateEmail(content)
+        val template = ResourceTemplater("unread-link-digest.html")
+        val email = template.apply(mapOf("entries" to content))
 
         notifyService.sendEmail("Lynks - Weekly Digest", email)
-    }
-
-    private fun generateEmail(entries: List<Map<String, String>>): String {
-        val loader = ClassPathTemplateLoader()
-        loader.prefix = "/resources/templates"
-        loader.suffix = ".html"
-        val handlebars = Handlebars(loader)
-
-        val template = handlebars.compile("unread-link-digest")
-
-        return template.apply(mapOf("entries" to entries))
     }
 
 }
