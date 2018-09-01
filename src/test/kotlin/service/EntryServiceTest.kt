@@ -2,11 +2,11 @@ package service
 
 import common.*
 import entry.EntryService
+import group.TagService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import tag.TagService
 import util.createDummyEntry
 
 class EntryServiceTest: DatabaseTest() {

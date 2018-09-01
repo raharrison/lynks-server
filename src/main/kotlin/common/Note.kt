@@ -1,6 +1,6 @@
 package common
 
-import tag.Tag
+import group.Tag
 
 data class Note(
         override val id: String,

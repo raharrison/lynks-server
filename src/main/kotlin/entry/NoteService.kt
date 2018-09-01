@@ -5,13 +5,13 @@ import common.EntryType
 import common.NewNote
 import common.Note
 import db.EntryRepository
+import group.TagService
 import org.jetbrains.exposed.sql.ColumnSet
 import org.jetbrains.exposed.sql.Query
 import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.statements.UpdateBuilder
 import resource.ResourceManager
-import tag.TagService
 import util.MarkdownUtils
 import util.RowMapper
 

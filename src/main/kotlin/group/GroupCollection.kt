@@ -1,9 +1,9 @@
-package tag
+package group
 
 import com.google.common.collect.HashMultimap
 import com.google.common.collect.Multimap
 
-class GroupCollection<T:Grouping<T>> {
+class GroupCollection<T: Grouping<T>> {
 
     // group : [children]
     private val groupTree: Multimap<T, T> = HashMultimap.create()

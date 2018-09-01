@@ -1,6 +1,6 @@
 package common
 
-import tag.Tag
+import group.Tag
 
 data class Link(
         override val id: String,

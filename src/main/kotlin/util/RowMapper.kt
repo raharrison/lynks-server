@@ -6,10 +6,10 @@ import common.BaseEntries
 import common.BaseProperties
 import common.Link
 import common.Note
+import group.Tag
 import org.jetbrains.exposed.sql.ResultRow
 import resource.Resource
 import resource.Resources
-import tag.Tag
 
 object RowMapper {
 

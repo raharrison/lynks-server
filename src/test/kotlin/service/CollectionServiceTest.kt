@@ -1,12 +1,12 @@
 package service
 
 import common.DatabaseTest
+import group.CollectionService
+import group.NewCollection
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
-import tag.CollectionService
-import tag.NewCollection
 import util.createDummyCollection
 
 class CollectionServiceTest : DatabaseTest() {

@@ -2,11 +2,11 @@ package entry
 
 import common.*
 import db.EntryRepository
+import group.TagService
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.statements.UpdateBuilder
 import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.jetbrains.exposed.sql.transactions.transaction
-import tag.TagService
 import util.RowMapper
 
 class EntryService(tagService: TagService) : EntryRepository<Entry, NewEntry>(tagService) {

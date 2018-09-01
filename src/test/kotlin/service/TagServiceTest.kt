@@ -3,12 +3,12 @@ package service
 import common.DatabaseTest
 import common.NewNote
 import entry.NoteService
+import group.NewTag
+import group.TagService
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import tag.NewTag
-import tag.TagService
 import util.createDummyTag
 
 class TagServiceTest : DatabaseTest() {

@@ -1,4 +1,4 @@
-package tag
+package group
 
 import common.IdBasedNewEntity
 import org.jetbrains.exposed.sql.*

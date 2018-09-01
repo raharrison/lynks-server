@@ -1,4 +1,4 @@
-package tag
+package group
 
 import io.ktor.application.call
 import io.ktor.http.HttpStatusCode

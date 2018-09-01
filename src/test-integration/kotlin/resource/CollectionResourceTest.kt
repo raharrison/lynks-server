@@ -1,13 +1,13 @@
 package resource
 
 import common.ServerTest
+import group.Collection
+import group.NewCollection
 import io.restassured.RestAssured.*
 import io.restassured.http.ContentType
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import tag.Collection
-import tag.NewCollection
 import util.createDummyCollection
 
 class CollectionResourceTest : ServerTest() {
@@ -102,7 +102,7 @@ class CollectionResourceTest : ServerTest() {
 
     @Test
     fun testCreateCollection() {
-        val newCollection = NewCollection(null,"col10", null)
+        val newCollection = NewCollection(null, "col10", null)
         val created = given()
                 .contentType(ContentType.JSON)
                 .body(newCollection)
@@ -121,7 +121,7 @@ class CollectionResourceTest : ServerTest() {
 
     @Test
     fun testUpdateCollection() {
-        val updatedCollection = NewCollection("c7","updated", null)
+        val updatedCollection = NewCollection("c7", "updated", null)
         val updated = given()
                 .contentType(ContentType.JSON)
                 .body(updatedCollection)
@@ -141,7 +141,7 @@ class CollectionResourceTest : ServerTest() {
 
     @Test
     fun testUpdateCollectionNoRow() {
-        val updatedCollection = NewCollection("invalid","updated")
+        val updatedCollection = NewCollection("invalid", "updated")
         given()
                 .contentType(ContentType.JSON)
                 .body(updatedCollection)

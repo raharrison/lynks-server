@@ -1,13 +1,13 @@
 package resource
 
 import common.ServerTest
+import group.NewTag
+import group.Tag
 import io.restassured.RestAssured.*
 import io.restassured.http.ContentType
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import tag.NewTag
-import tag.Tag
 import util.createDummyTag
 
 class TagResourceTest : ServerTest() {
@@ -72,7 +72,7 @@ class TagResourceTest : ServerTest() {
 
     @Test
     fun testCreateTag() {
-        val newTag = NewTag(null,"tag10")
+        val newTag = NewTag(null, "tag10")
         val created = given()
                 .contentType(ContentType.JSON)
                 .body(newTag)
@@ -90,7 +90,7 @@ class TagResourceTest : ServerTest() {
 
     @Test
     fun testUpdateTag() {
-        val updatedTag = NewTag("t2","updated")
+        val updatedTag = NewTag("t2", "updated")
         val updated = given()
                 .contentType(ContentType.JSON)
                 .body(updatedTag)
@@ -109,7 +109,7 @@ class TagResourceTest : ServerTest() {
 
     @Test
     fun testUpdateTagNoRow() {
-        val updatedTag = NewTag("invalid","updated")
+        val updatedTag = NewTag("invalid", "updated")
         given()
                 .contentType(ContentType.JSON)
                 .body(updatedTag)

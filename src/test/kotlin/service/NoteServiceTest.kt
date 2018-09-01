@@ -2,6 +2,7 @@ package service
 
 import common.*
 import entry.NoteService
+import group.TagService
 import io.mockk.every
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
@@ -9,7 +10,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import resource.ResourceManager
-import tag.TagService
 import util.createDummyTag
 import java.sql.SQLException
 

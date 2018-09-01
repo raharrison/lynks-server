@@ -5,6 +5,10 @@ import common.endpoint.health
 import common.inject.ServiceProvider
 import db.DatabaseFactory
 import entry.*
+import group.CollectionService
+import group.TagService
+import group.collection
+import group.tag
 import io.ktor.application.Application
 import io.ktor.application.install
 import io.ktor.features.CallLogging
@@ -25,10 +29,6 @@ import schedule.ScheduleService
 import schedule.schedule
 import suggest.SuggestionService
 import suggest.suggest
-import tag.CollectionService
-import tag.TagService
-import tag.collection
-import tag.tag
 import task.TaskService
 import task.task
 import user.UserService

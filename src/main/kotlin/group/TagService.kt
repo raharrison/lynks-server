@@ -1,4 +1,4 @@
-package tag
+package group
 
 import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.statements.InsertStatement

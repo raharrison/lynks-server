@@ -1,8 +1,8 @@
 package model
 
+import group.Collection
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import tag.Collection
 
 class CollectionTest {
 

@@ -7,6 +7,10 @@ import common.ConfigMode
 import common.Entries
 import common.EntryVersions
 import common.Environment
+import group.Collections
+import group.EntryCollections
+import group.EntryTags
+import group.Tags
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils.create
 import org.jetbrains.exposed.sql.deleteAll
@@ -14,10 +18,6 @@ import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.jetbrains.exposed.sql.transactions.transaction
 import resource.Resources
 import schedule.Schedules
-import tag.Collections
-import tag.EntryCollections
-import tag.EntryTags
-import tag.Tags
 import user.UserPreferences
 import util.loggerFor
 

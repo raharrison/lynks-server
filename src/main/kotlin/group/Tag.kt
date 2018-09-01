@@ -1,4 +1,4 @@
-package tag
+package group
 
 import common.Entries
 import common.IdBasedCreatedEntity

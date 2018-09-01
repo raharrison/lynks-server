@@ -2,6 +2,7 @@ package common
 
 import comment.CommentService
 import entry.LinkService
+import group.TagService
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -10,7 +11,6 @@ import resource.ResourceManager
 import resource.ResourceType
 import schedule.ScheduleService
 import schedule.ScheduleType
-import tag.TagService
 import util.createDummyComment
 import util.createDummyEntry
 import util.createDummyReminder

@@ -2,13 +2,13 @@ package service
 
 import common.*
 import entry.LinkService
+import group.TagService
 import io.mockk.*
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import resource.ResourceManager
-import tag.TagService
 import util.createDummyTag
 import worker.PersistLinkProcessingRequest
 import worker.WorkerRegistry
