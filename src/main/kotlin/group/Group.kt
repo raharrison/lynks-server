@@ -7,9 +7,6 @@ import org.jetbrains.exposed.sql.Column
 import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.Table
 
-
-
-
 abstract class Groups(name: String): Table(name) {
     val id = varchar("id", 12).primaryKey()
     val name = varchar("name", 255)
@@ -20,8 +17,6 @@ abstract class Groups(name: String): Table(name) {
 
 object Tags: Groups("Tag")
 object Collections: Groups("Collection")
-
-
 
 
 abstract class EntryGroups(name: String): Table(name) {
@@ -38,9 +33,6 @@ object EntryCollections: EntryGroups("EntryCollections") {
 }
 
 
-
-
-
 interface Grouping<T>: IdBasedCreatedEntity {
     var name: String
     var children: MutableSet<T>
@@ -49,7 +41,6 @@ interface Grouping<T>: IdBasedCreatedEntity {
 
     fun copy(): T
 }
-
 
 data class Tag(
         override val id: String,
