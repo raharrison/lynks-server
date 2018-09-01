@@ -14,6 +14,8 @@ import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.jetbrains.exposed.sql.transactions.transaction
 import resource.Resources
 import schedule.Schedules
+import tag.Collections
+import tag.EntryCollections
 import tag.EntryTags
 import tag.Tags
 import user.UserPreferences
@@ -37,7 +39,9 @@ class DatabaseFactory {
         }
 
         transaction {
-            create(Entries, EntryVersions, Comments, Tags, EntryTags, Resources, Schedules, UserPreferences)
+            create(Entries, EntryVersions,
+                    Comments, Resources, Schedules, UserPreferences,
+                    Tags, EntryTags, Collections, EntryCollections)
             enableSearch()
             enableTriggers()
         }
@@ -81,6 +85,8 @@ class DatabaseFactory {
         Resources.deleteAll()
         EntryTags.deleteAll()
         Tags.deleteAll()
+        EntryCollections.deleteAll()
+        Collections.deleteAll()
         Comments.deleteAll()
         Schedules.deleteAll()
         Entries.deleteAll()

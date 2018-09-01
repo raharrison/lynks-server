@@ -40,7 +40,7 @@ abstract class EntryRepository<T : Entry, in U : NewEntry>(private val tagServic
         return if (page.tag == null) getBaseQuery() else {
             val tags = tagService.subtree(page.tag).map { it.id }
             getBaseQuery(Entries.innerJoin(EntryTags))
-                    .combine { EntryTags.tagId.inList(tags) }
+                    .combine { EntryTags.groupId.inList(tags) }
         }.apply {
             orderBy(Entries.dateUpdated, false)
             limit(page.limit, page.offset)
@@ -106,7 +106,7 @@ abstract class EntryRepository<T : Entry, in U : NewEntry>(private val tagServic
     private fun addTagsForEntry(tags: List<String>, id: String) = transaction {
         for (tag in tags) {
             EntryTags.insert {
-                it[tagId] = tag
+                it[groupId] = tag
                 it[entryId] = id
             }
         }
@@ -119,14 +119,14 @@ abstract class EntryRepository<T : Entry, in U : NewEntry>(private val tagServic
         currentTags.filterNot { newTags.contains(it) }
                 .forEach {
                     EntryTags.deleteWhere {
-                        EntryTags.entryId eq id and (EntryTags.tagId eq it)
+                        EntryTags.entryId eq id and (EntryTags.groupId eq it)
                     }
                 }
 
         newTags.filterNot { currentTags.contains(it) }
                 .forEach { tag ->
                     EntryTags.insert {
-                        it[tagId] = tag
+                        it[groupId] = tag
                         it[entryId] = id
                     }
                 }
@@ -134,10 +134,10 @@ abstract class EntryRepository<T : Entry, in U : NewEntry>(private val tagServic
 
     // TODO: Make private
     protected fun getTagsForEntry(id: String): List<Tag> {
-        val tags = EntryTags.slice(EntryTags.tagId)
+        val tags = EntryTags.slice(EntryTags.groupId)
                 .select { EntryTags.entryId eq id }
-                .map { it[EntryTags.tagId] }
-        return tagService.getTags(tags)
+                .map { it[EntryTags.groupId] }
+        return tagService.getIn(tags)
     }
 
     protected abstract fun getBaseQuery(base: ColumnSet = Entries, where: BaseEntries = Entries): Query

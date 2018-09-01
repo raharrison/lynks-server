@@ -18,6 +18,7 @@ import util.createDummyTag
 
 class CascadingDeleteTest: DatabaseTest() {
 
+    // TODO: add collection cascading
     private val tagService = TagService()
     private val resourceManager = ResourceManager()
     private val commentService = CommentService()
@@ -27,7 +28,6 @@ class CascadingDeleteTest: DatabaseTest() {
     @BeforeEach
     fun createTags() {
         createDummyTag("t1", "tag1")
-        createDummyTag("t2", "tag2", "t1")
         createDummyEntry("id1", "link1", "link content", EntryType.LINK)
         createDummyComment("c1", "id1", "comment content")
         createDummyReminder("rem1", "id1", ScheduleType.REMINDER, System.currentTimeMillis().toString())
@@ -43,23 +43,22 @@ class CascadingDeleteTest: DatabaseTest() {
         val added = linkService.add(NewLink(null, "title", "url", listOf("t1"), false))
         assertThat(added.tags).hasSize(1)
 
-        assertThat(tagService.deleteTag("t1")).isTrue()
+        assertThat(tagService.delete("t1")).isTrue()
 
         val link = linkService.get(added.id)!!
         assertThat(link.tags).isEmpty()
 
-        assertThat(tagService.getTag("t1")).isNull()
-        assertThat(tagService.getTag("t2")).isNull()
+        assertThat(tagService.get("t1")).isNull()
     }
 
     @Test
     fun testDeletingEntryDoesntDeleteTag() {
         val added = linkService.add(NewLink(null, "title", "url", listOf("t1"), false))
 
-        assertThat(tagService.getAllTags()).hasSize(1)
+        assertThat(tagService.getAll()).hasSize(1)
 
         assertThat(linkService.delete(added.id)).isTrue()
-        assertThat(tagService.getAllTags()).hasSize(1)
+        assertThat(tagService.getAll()).hasSize(1)
     }
 
     @Test
@@ -113,7 +112,7 @@ class CascadingDeleteTest: DatabaseTest() {
     @Test
     fun testDeleteAllDoesntDeleteEntry() {
         assertThat(commentService.deleteComment("id1", "c1")).isTrue()
-        assertThat(tagService.deleteTag("t1")).isTrue()
+        assertThat(tagService.delete("t1")).isTrue()
         assertThat(scheduleService.delete("rem1")).isTrue()
         assertThat(resourceManager.delete("r1")).isTrue()
 

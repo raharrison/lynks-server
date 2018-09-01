@@ -23,7 +23,7 @@ class NoteServiceTest : DatabaseTest() {
     fun createTags() {
         createDummyTag("t1", "tag1")
         createDummyTag("t2", "tag2")
-        createDummyTag("t3", "tag3", "t2")
+        createDummyTag("t3", "tag3")
         every { resourceManager.deleteAll(any()) } returns true
     }
 
@@ -105,8 +105,8 @@ class NoteServiceTest : DatabaseTest() {
         assertThat(notes).extracting("title").containsExactlyInAnyOrder("n1", "n2")
 
         val notes2 = noteService.get(PageRequest(tag = "t2"))
-        assertThat(notes2).hasSize(2)
-        assertThat(notes2).extracting("title").containsExactlyInAnyOrder("n1", "n3")
+        assertThat(notes2).hasSize(1)
+        assertThat(notes2).extracting("title").containsExactlyInAnyOrder("n1")
 
         val notes3 = noteService.get(PageRequest(tag = "t3"))
         assertThat(notes3).hasSize(1)
@@ -121,12 +121,12 @@ class NoteServiceTest : DatabaseTest() {
         assertThat(noteService.get(added1.id)?.tags).hasSize(1).extracting("id").containsExactly("t1")
         assertThat(noteService.get(added2.id)?.tags).hasSize(2).extracting("id").containsExactly("t1", "t2")
 
-        tagService.deleteTag("t2")
+        tagService.delete("t2")
 
         assertThat(noteService.get(added1.id)?.tags).hasSize(1).extracting("id").containsExactly("t1")
         assertThat(noteService.get(added2.id)?.tags).hasSize(1).extracting("id").containsExactly("t1")
 
-        tagService.deleteTag("t1")
+        tagService.delete("t1")
 
         assertThat(noteService.get(added1.id)?.tags).isEmpty()
         assertThat(noteService.get(added2.id)?.tags).isEmpty()

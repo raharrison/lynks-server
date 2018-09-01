@@ -25,7 +25,9 @@ import schedule.ScheduleService
 import schedule.schedule
 import suggest.SuggestionService
 import suggest.suggest
+import tag.CollectionService
 import tag.TagService
+import tag.collection
 import tag.tag
 import task.TaskService
 import task.task
@@ -50,6 +52,7 @@ fun Application.module() {
         register(UserService())
         register(ResourceManager())
         register(TagService())
+        register(CollectionService())
         register(EntryService(get()))
         register(LinkService(get(), get(), get()))
         register(NoteService(get(), get()))
@@ -72,6 +75,7 @@ fun Application.module() {
                 suggest(get())
                 resources(get())
                 task(get())
+                collection(get())
                 notify(get())
                 health()
                 schedule(get())

@@ -1,77 +1,32 @@
 package tag
 
-import org.jetbrains.exposed.sql.deleteWhere
-import org.jetbrains.exposed.sql.insert
-import org.jetbrains.exposed.sql.select
-import org.jetbrains.exposed.sql.transactions.transaction
-import org.jetbrains.exposed.sql.update
-import util.RandomUtils
-import util.RowMapper.toTag
+import org.jetbrains.exposed.sql.ResultRow
+import org.jetbrains.exposed.sql.statements.InsertStatement
+import org.jetbrains.exposed.sql.statements.UpdateBuilder
 
-class TagService {
+class TagService : GroupService<Tag, NewTag, Tags>(Tags, EntryTags) {
 
-    private val tagCollection by lazy {
-        TagCollection().apply { build(queryAllTags()) }
+    override fun toInsert(eId: String, entity: NewTag): Tags.(InsertStatement<*>) -> Unit = {
+        it[Tags.id] = eId
+        it[Tags.name] = entity.name
+        it[Tags.dateCreated] = System.currentTimeMillis()
+        it[Tags.dateUpdated] = System.currentTimeMillis()
     }
 
-    private fun getTagChildren(id: String): MutableSet<Tag> = transaction {
-        Tags.select { Tags.parentId eq id }.map { toTag(it, ::getTagChildren) }.toMutableSet()
+    override fun toUpdate(entity: NewTag): Tags.(UpdateBuilder<*>) -> Unit = {
+        it[Tags.name] = entity.name
+        it[Tags.dateUpdated] = System.currentTimeMillis()
     }
 
-    private fun queryTag(id: String): Tag? = transaction {
-        Tags.select { Tags.id eq id}
-                .map { toTag(it, ::getTagChildren) }.singleOrNull()
+    override fun toModel(row: ResultRow): Tag {
+        return Tag(
+                id = row[Tags.id],
+                name = row[Tags.name],
+                dateCreated = row[Tags.dateCreated],
+                dateUpdated = row[Tags.dateUpdated]
+        )
     }
 
-    private fun queryAllTags(): List<Tag> = transaction {
-        Tags.select { Tags.parentId.isNull() }
-                .map { toTag(it, ::getTagChildren) }
-    }
+    override fun extractParentId(entity: NewTag): String? = null
 
-    fun rebuild() = tagCollection.build(queryAllTags())
-
-    fun getAllTags(): Collection<Tag> = tagCollection.rootTags().map { it.copy() }
-
-    fun getTags(ids: List<String>): List<Tag> = tagCollection.tagsIn(ids).map { it.copy() }
-
-    fun getTag(id: String): Tag? = tagCollection.tag(id)?.copy()
-
-    fun subtree(id: String): Collection<Tag> = tagCollection.subtree(id).map { it.copy() }
-
-    fun updateTag(tag: NewTag): Tag? {
-        val id = tag.id
-        return if (id == null) {
-            addTag(tag)
-        } else {
-            transaction {
-                val updated = Tags.update({ Tags.id eq id }) {
-                    it[name] = tag.name
-                    it[parentId] = tag.parentId
-                    it[dateUpdated] = System.currentTimeMillis()
-                }
-                if(updated > 0) {
-                    tagCollection.update(tag.parentId, queryTag(id)!!)
-                } else null
-            }
-        }
-    }
-
-    fun addTag(tag: NewTag): Tag = transaction {
-        val newId = RandomUtils.generateUid()
-        Tags.insert {
-            it[id] = newId
-            it[name] = tag.name
-            it[parentId] = tag.parentId
-            it[dateUpdated] = System.currentTimeMillis()
-        }
-        val created =  queryTag(newId)!!
-        tagCollection.add(created, tag.parentId)
-    }
-
-    fun deleteTag(id: String): Boolean = transaction {
-        EntryTags.deleteWhere { EntryTags.tagId eq id }
-        // delete children
-        Tags.select { Tags.parentId eq id }.forEach { deleteTag(it[Tags.id]) }
-        Tags.deleteWhere { Tags.id eq id }.also { tagCollection.delete(id) } > 0
-    }
 }

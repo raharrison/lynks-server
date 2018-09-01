@@ -7,6 +7,7 @@ import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.transactions.transaction
 import schedule.ScheduleType
 import schedule.Schedules
+import tag.Collections
 import tag.Tags
 import java.time.ZoneId
 
@@ -22,12 +23,24 @@ fun createDummyEntry(id: String, title: String, content: String, type: EntryType
     }
 }
 
-fun createDummyTag(id: String, name: String, parentId: String?=null) = transaction{
+fun createDummyTag(id: String, name: String) = transaction{
+    val time = System.currentTimeMillis()
     Tags.insert {
         it[Tags.id] = id
         it[Tags.name] = name
-        it[Tags.parentId] = parentId
-        it[dateUpdated] = System.currentTimeMillis()
+        it[dateUpdated] = time
+        it[dateCreated] = time
+    }
+}
+
+fun createDummyCollection(id: String, name: String, parentId: String?=null) = transaction {
+    val time = System.currentTimeMillis()
+    Collections.insert {
+        it[Collections.id] = id
+        it[Collections.name] = name
+        it[Collections.parentId] = parentId
+        it[dateUpdated] = time
+        it[dateCreated] = time
     }
 }
 

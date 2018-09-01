@@ -10,7 +10,6 @@ import org.jetbrains.exposed.sql.ResultRow
 import resource.Resource
 import resource.Resources
 import tag.Tag
-import tag.Tags
 
 object RowMapper {
 
@@ -49,15 +48,6 @@ object RowMapper {
                     markdownText = row[Comments.markdownText],
                     dateCreated = row[Comments.dateCreated]
             )
-
-    fun toTag(row: ResultRow, childrenResolver: (String) -> MutableSet<Tag>): Tag {
-        return Tag(
-                id = row[Tags.id],
-                name = row[Tags.name],
-                children = childrenResolver(row[Tags.id]),
-                dateUpdated = row[Tags.dateUpdated]
-        )
-    }
 
     fun toResource(row: ResultRow): Resource {
         return Resource(

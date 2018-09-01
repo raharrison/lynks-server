@@ -23,7 +23,7 @@ class LinkServiceTest : DatabaseTest() {
     fun createTags() {
         createDummyTag("t1", "tag1")
         createDummyTag("t2", "tag2")
-        createDummyTag("t3", "tag3", "t2")
+        createDummyTag("t3", "tag3")
 
         val resourceManager = mockk<ResourceManager>()
         every { resourceManager.moveTempFiles(any(), any()) } returns true
@@ -141,8 +141,8 @@ class LinkServiceTest : DatabaseTest() {
         assertThat(notes).extracting("title").containsExactlyInAnyOrder("l1", "l2")
 
         val notes2 = linkService.get(PageRequest(tag = "t2"))
-        assertThat(notes2).hasSize(2)
-        assertThat(notes2).extracting("title").containsExactlyInAnyOrder("l1", "l3")
+        assertThat(notes2).hasSize(1)
+        assertThat(notes2).extracting("title").containsExactlyInAnyOrder("l1")
 
         val notes3 = linkService.get(PageRequest(tag = "t3"))
         assertThat(notes3).hasSize(1)
@@ -157,12 +157,12 @@ class LinkServiceTest : DatabaseTest() {
         assertThat(linkService.get(added1.id)?.tags).hasSize(1).extracting("id").containsExactly("t1")
         assertThat(linkService.get(added2.id)?.tags).hasSize(2).extracting("id").containsExactly("t1", "t2")
 
-        tagService.deleteTag("t2")
+        tagService.delete("t2")
 
         assertThat(linkService.get(added1.id)?.tags).hasSize(1).extracting("id").containsExactly("t1")
         assertThat(linkService.get(added2.id)?.tags).hasSize(1).extracting("id").containsExactly("t1")
 
-        tagService.deleteTag("t1")
+        tagService.delete("t1")
 
         assertThat(linkService.get(added1.id)?.tags).isEmpty()
         assertThat(linkService.get(added2.id)?.tags).isEmpty()
