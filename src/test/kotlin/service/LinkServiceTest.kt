@@ -3,7 +3,6 @@ package service
 import common.*
 import common.exception.InvalidModelException
 import entry.LinkService
-import group.Collection
 import group.CollectionService
 import group.TagService
 import io.mockk.*
@@ -16,7 +15,6 @@ import util.createDummyCollection
 import util.createDummyTag
 import worker.PersistLinkProcessingRequest
 import worker.WorkerRegistry
-import java.sql.SQLException
 
 class LinkServiceTest : DatabaseTest() {
 
@@ -154,22 +152,31 @@ class LinkServiceTest : DatabaseTest() {
     }
 
     @Test
-    fun testGetLinksByTag() {
-        linkService.add(newLink("l1", "google.com", listOf("t1", "t2")))
+    fun testGetLinksByGroup() {
+        linkService.add(newLink("l1", "google.com", listOf("t1", "t2"), listOf("c1")))
         linkService.add(newLink("l2", "amazon.com", listOf("t1")))
-        linkService.add(newLink("l3", "netflix.com", listOf("t3")))
+        linkService.add(newLink("l3", "netflix.com", emptyList(), listOf("c2")))
+        linkService.add(newLink("l4", "fb.com"))
 
-        val notes = linkService.get(PageRequest(tag = "t1"))
-        assertThat(notes).hasSize(2)
-        assertThat(notes).extracting("title").containsExactlyInAnyOrder("l1", "l2")
+        val onlyTags = linkService.get(PageRequest(tag = "t1"))
+        assertThat(onlyTags).hasSize(2)
+        assertThat(onlyTags).extracting("title").containsExactlyInAnyOrder("l1", "l2")
 
-        val notes2 = linkService.get(PageRequest(tag = "t2"))
-        assertThat(notes2).hasSize(1)
-        assertThat(notes2).extracting("title").containsExactlyInAnyOrder("l1")
+        val onlyTags2 = linkService.get(PageRequest(tag = "t2"))
+        assertThat(onlyTags2).hasSize(1)
+        assertThat(onlyTags2).extracting("title").containsExactlyInAnyOrder("l1")
 
-        val notes3 = linkService.get(PageRequest(tag = "t3"))
-        assertThat(notes3).hasSize(1)
-        assertThat(notes3).extracting("title").containsExactlyInAnyOrder("l3")
+        val onlyCollections = linkService.get(PageRequest(collection = "c1"))
+        assertThat(onlyCollections).hasSize(1)
+        assertThat(onlyCollections).extracting("title").containsExactlyInAnyOrder("l1")
+
+        val onlyCollections2 = linkService.get(PageRequest(collection = "c2"))
+        assertThat(onlyCollections2).hasSize(1)
+        assertThat(onlyCollections2).extracting("title").containsExactlyInAnyOrder("l3")
+
+        val both = linkService.get(PageRequest(tag = "t1", collection = "c1"))
+        assertThat(both).hasSize(1)
+        assertThat(both).extracting("title").containsExactlyInAnyOrder("l1")
     }
 
     @Test

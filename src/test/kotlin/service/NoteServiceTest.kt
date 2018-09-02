@@ -14,7 +14,6 @@ import org.junit.jupiter.api.assertThrows
 import resource.ResourceManager
 import util.createDummyCollection
 import util.createDummyTag
-import java.sql.SQLException
 
 class NoteServiceTest : DatabaseTest() {
 
@@ -115,24 +114,32 @@ class NoteServiceTest : DatabaseTest() {
         assertThat(notes).extracting("title").doesNotHaveDuplicates()
     }
 
-    // TODO: implement for collections
     @Test
-    fun testGetNotesByTag() {
-        noteService.add(newNote("n1", "content1", listOf("t1", "t2")))
+    fun testGetNotesByGroup() {
+        noteService.add(newNote("n1", "content1", listOf("t1", "t2"), listOf("c1")))
         noteService.add(newNote("n2", "content2", listOf("t1")))
-        noteService.add(newNote("n3", "content3", listOf("t3")))
+        noteService.add(newNote("n3", "content3", emptyList(), listOf("c2")))
+        noteService.add(newNote("n4", "content3"))
 
-        val notes = noteService.get(PageRequest(tag = "t1"))
-        assertThat(notes).hasSize(2)
-        assertThat(notes).extracting("title").containsExactlyInAnyOrder("n1", "n2")
+        val onlyTags = noteService.get(PageRequest(tag = "t1"))
+        assertThat(onlyTags).hasSize(2)
+        assertThat(onlyTags).extracting("title").containsExactlyInAnyOrder("n1", "n2")
 
-        val notes2 = noteService.get(PageRequest(tag = "t2"))
-        assertThat(notes2).hasSize(1)
-        assertThat(notes2).extracting("title").containsExactlyInAnyOrder("n1")
+        val onlyTags2 = noteService.get(PageRequest(tag = "t2"))
+        assertThat(onlyTags2).hasSize(1)
+        assertThat(onlyTags2).extracting("title").containsExactlyInAnyOrder("n1")
 
-        val notes3 = noteService.get(PageRequest(tag = "t3"))
-        assertThat(notes3).hasSize(1)
-        assertThat(notes3).extracting("title").containsExactlyInAnyOrder("n3")
+        val onlyCollections = noteService.get(PageRequest(collection = "c1"))
+        assertThat(onlyCollections).hasSize(1)
+        assertThat(onlyCollections).extracting("title").containsExactlyInAnyOrder("n1")
+
+        val onlyCollections2 = noteService.get(PageRequest(collection = "c2"))
+        assertThat(onlyCollections2).hasSize(1)
+        assertThat(onlyCollections2).extracting("title").containsExactlyInAnyOrder("n3")
+
+        val both = noteService.get(PageRequest(tag = "t1", collection = "c1"))
+        assertThat(both).hasSize(1)
+        assertThat(both).extracting("title").containsExactlyInAnyOrder("n1")
     }
 
     @Test

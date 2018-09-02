@@ -38,11 +38,20 @@ abstract class EntryRepository<T : Entry, in U : NewEntry>(private val tagServic
     }
 
     private fun createPagedQuery(page: PageRequest): Query {
-        return if (page.tag == null) getBaseQuery() else {
+        var table: ColumnSet = Entries
+        page.tag?.let { table = table.innerJoin(EntryTags) }
+        page.collection?.let { table = table.innerJoin(EntryCollections) }
+
+        var query = getBaseQuery(table)
+        page.tag?.let { _ ->
             val tags = tagService.subtree(page.tag).map { it.id }
-            getBaseQuery(Entries.innerJoin(EntryTags))
-                    .combine { EntryTags.groupId.inList(tags) }
-        }.apply {
+            query = query.combine { EntryTags.groupId.inList(tags) }
+        }
+        page.collection?.let { _ ->
+            val collections = collectionService.subtree(page.collection).map { it.id }
+            query = query.combine { EntryCollections.groupId.inList(collections) }
+        }
+        return query.apply {
             orderBy(Entries.dateUpdated, false)
             limit(page.limit, page.offset)
         }
