@@ -40,7 +40,7 @@ class CascadingDeleteTest: DatabaseTest() {
 
     @Test
     fun testDeletingTagDoesntDeleteEntry() {
-        val added = linkService.add(NewLink(null, "title", "url", listOf("t1"), false))
+        val added = linkService.add(NewLink(null, "title", "url", listOf("t1"), emptyList(), false))
         assertThat(added.tags).hasSize(1)
 
         assertThat(tagService.delete("t1")).isTrue()
@@ -53,7 +53,7 @@ class CascadingDeleteTest: DatabaseTest() {
 
     @Test
     fun testDeletingEntryDoesntDeleteTag() {
-        val added = linkService.add(NewLink(null, "title", "url", listOf("t1"), false))
+        val added = linkService.add(NewLink(null, "title", "url", listOf("t1"), emptyList(), false))
 
         assertThat(tagService.getAll()).hasSize(1)
 

@@ -27,7 +27,7 @@ class LinkResourceTest: ServerTest() {
 
     @Test
     fun testCreateLinkNoProcess() {
-        val newLink = NewLink(null, "title4", "http://google.com/page", listOf("t1"), false)
+        val newLink = NewLink(null, "title4", "http://google.com/page", listOf("t1"), emptyList(), false)
         val created = given()
                 .contentType(ContentType.JSON)
                 .body(newLink)
@@ -92,7 +92,7 @@ class LinkResourceTest: ServerTest() {
 
     @Test
     fun testUpdateLinkNoProcess() {
-        val updatedLink = NewLink("e3", "title3", "http://gmail.com", listOf("t1"), false)
+        val updatedLink = NewLink("e3", "title3", "http://gmail.com", listOf("t1"), emptyList(), false)
         val updated = given()
                 .contentType(ContentType.JSON)
                 .body(updatedLink)
@@ -111,7 +111,7 @@ class LinkResourceTest: ServerTest() {
 
     @Test
     fun testUpdateLinkReturnsNotFound() {
-        val updatedLink = NewLink("invalid", "title2", "gmail.com", emptyList())
+        val updatedLink = NewLink("invalid", "title2", "gmail.com")
         given()
                 .contentType(ContentType.JSON)
                 .body(updatedLink)
@@ -124,7 +124,7 @@ class LinkResourceTest: ServerTest() {
     @Test
     fun testCannotUpdateNonLink() {
         // e2 = existing note entry
-        val updatedLink = NewLink("e2", "title2", "google.com", emptyList())
+        val updatedLink = NewLink("e2", "title2", "google.com")
         given()
                 .contentType(ContentType.JSON)
                 .body(updatedLink)
@@ -168,7 +168,7 @@ class LinkResourceTest: ServerTest() {
 
     @Test
     fun testGetVersion() {
-        val newLink = NewLink(null, "title4", "gmail.com", emptyList())
+        val newLink = NewLink(null, "title4", "gmail.com")
         val created = given()
                 .contentType(ContentType.JSON)
                 .body(newLink)
@@ -183,7 +183,7 @@ class LinkResourceTest: ServerTest() {
         assertThat(created.url).isEqualTo(newLink.url)
 
         // update
-        val updateLink = NewLink(created.id, "edited", "google.com", emptyList())
+        val updateLink = NewLink(created.id, "edited", "google.com")
         val updated = given()
                 .contentType(ContentType.JSON)
                 .body(updateLink)
@@ -257,14 +257,14 @@ class LinkResourceTest: ServerTest() {
     fun testCreateLinkWithInvalidUrl() {
         given()
                 .contentType(ContentType.JSON)
-                .body(NewLink(null, "title4", "http:google.com", emptyList(), false))
+                .body(NewLink(null, "title4", "http:google.com", emptyList(), emptyList(), false))
                 .When()
                 .post("/link")
                 .then()
                 .statusCode(400)
         given()
                 .contentType(ContentType.JSON)
-                .body(NewLink(null, "title5", "invalid", emptyList(), false))
+                .body(NewLink(null, "title5", "invalid", emptyList(), emptyList(), false))
                 .When()
                 .post("/link")
                 .then()

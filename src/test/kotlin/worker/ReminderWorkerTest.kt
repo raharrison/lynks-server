@@ -135,10 +135,11 @@ class ReminderWorkerTest {
 
         val until = ZonedDateTime.now().until(fireDate, ChronoUnit.MILLIS)
 
-        context.advanceTimeBy(until / 2, TimeUnit.MILLISECONDS)
+        // 100ms buffer
+        context.advanceTimeBy((until / 2) + 100, TimeUnit.MILLISECONDS)
         coVerify(exactly = 0) { notifyService.accept(any(), reminder) }
 
-        context.advanceTimeBy(until / 2, TimeUnit.MILLISECONDS)
+        context.advanceTimeBy((until / 2) + 100, TimeUnit.MILLISECONDS)
         coVerify(exactly = 1) { notifyService.accept(any(), reminder) }
 
         worker.close()

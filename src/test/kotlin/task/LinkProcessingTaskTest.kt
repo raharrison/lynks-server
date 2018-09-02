@@ -1,6 +1,5 @@
 package task
 
-import common.BaseProperties
 import common.Link
 import entry.LinkService
 import io.mockk.*
@@ -37,7 +36,7 @@ class LinkProcessingTaskTest {
     @Test
     fun testProcess() {
         val context = linkProcessingTask.createContext(emptyMap())
-        val link = Link("eid", "title", "url", "", "", 1, emptyList(), BaseProperties())
+        val link = Link("eid", "title", "url", "", "", 1)
 
         every { linkService.get("eid") } returns link
         every { workerRegistry.acceptLinkWork(any()) } just Runs

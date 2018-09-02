@@ -1,5 +1,6 @@
 package common
 
+import group.Collection
 import group.Tag
 
 data class Link(
@@ -9,10 +10,11 @@ data class Link(
         val source: String,
         var content: String?,
         override val dateUpdated: Long,
-        val tags: List<Tag>,
-        override val props: BaseProperties,
-        override val version: Int=0,
-        override val starred: Boolean=false
+        override val tags: List<Tag> = emptyList(),
+        override val collections: List<Collection> = emptyList(),
+        override val props: BaseProperties = BaseProperties(),
+        override val version: Int = 0,
+        override val starred: Boolean = false
 ) : Entry {
     @JvmField
     val type = EntryType.LINK
@@ -23,6 +25,7 @@ data class NewLink(
         override val id: String? = null,
         val title: String,
         val url: String,
-        override val tags: List<String>,
+        override val tags: List<String> = emptyList(),
+        override val collections: List<String> = emptyList(),
         val process: Boolean = true
 ) : NewEntry

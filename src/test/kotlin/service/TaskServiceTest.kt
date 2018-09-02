@@ -32,10 +32,9 @@ class TaskServiceTest {
 
     @Test
     fun testRunValidTask() {
-
         val props = BaseProperties()
         props.addTask(TaskDefinition("task1", "description", LinkProcessingTask::class.qualifiedName!!, mapOf("k1" to "v1")))
-        val entry = Link("entry1", "title", "google.com", "src", "", 1234, emptyList(), props)
+        val entry = Link("entry1", "title", "google.com", "src", "", 1234, emptyList(), emptyList(), props)
         every { entryService.get("entry1") } returns entry
         every { workerRegistry.acceptTaskWork(any(), any()) } just Runs
 
@@ -70,7 +69,7 @@ class TaskServiceTest {
     fun testNoTaskReturnsFalse() {
         val props = BaseProperties()
         props.addTask(TaskDefinition("task1", "description", LinkProcessingTask::class.qualifiedName!!, mapOf("k1" to "v1")))
-        val entry = Link("entry1", "title", "google.com", "src", "", 1234, emptyList(), props)
+        val entry = Link("entry1", "title", "google.com", "src", "", 1234, emptyList(), emptyList(), props)
         every { entryService.get("entry1") } returns entry
 
         val res = taskService.runTask("entry1", "invalid")

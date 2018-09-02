@@ -1,6 +1,5 @@
 package worker
 
-import common.BaseProperties
 import common.Link
 import common.TestCoroutineContext
 import entry.LinkService
@@ -19,7 +18,7 @@ import kotlin.coroutines.experimental.coroutineContext
 class DiscussionFinderWorkerTest {
 
     private val testUrl = "https://www.factorio.com/blog/post/fff-246"
-    private val link = Link("id1", "title", testUrl, "factorio.com", "", 100, emptyList(), BaseProperties())
+    private val link = Link("id1", "title", testUrl, "factorio.com", "", 100)
 
     private val scheduleService = mockk<ScheduleService>()
     private val linkService = mockk<LinkService>()

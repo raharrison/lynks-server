@@ -1,6 +1,5 @@
 package worker
 
-import common.BaseProperties
 import common.Link
 import common.TestCoroutineContext
 import entry.LinkService
@@ -29,7 +28,7 @@ class LinkProcessorWorkerTest {
 
     @Test
     fun testDefaultPersist() = runBlocking(TestCoroutineContext()) {
-        val link = Link("id1", "title", "google.com", "google.com", "", 100, emptyList(), BaseProperties())
+        val link = Link("id1", "title", "google.com", "google.com", "", 100)
 
         val thumb = ImageResource(byteArrayOf(1,2,3), ".jpg")
         val screen = ImageResource(byteArrayOf(4,5,6), ".png")

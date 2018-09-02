@@ -1,6 +1,8 @@
 package common
 
 import db.json
+import group.Collection
+import group.Tag
 import org.jetbrains.exposed.sql.Column
 import org.jetbrains.exposed.sql.Table
 
@@ -30,8 +32,11 @@ interface Entry: IdBasedCreatedEntity {
     val version: Int
     val starred: Boolean
     val props: BaseProperties
+    val tags: List<Tag>
+    val collections: List<Collection>
 }
 
 interface NewEntry: IdBasedNewEntity {
     val tags: List<String>
+    val collections: List<String>
 }

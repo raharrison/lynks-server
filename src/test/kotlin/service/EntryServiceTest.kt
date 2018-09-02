@@ -121,7 +121,7 @@ class EntryServiceTest: DatabaseTest() {
             entryService.update(NewLink("id", "title", "url", emptyList()))
         }
         assertThrows<NotImplementedError> {
-            entryService.update(Link("id", "title", "url", "src", "content", 1L, emptyList(), BaseProperties()))
+            entryService.update(Link("id", "title", "url", "src", "content", 1L))
         }
     }
 
