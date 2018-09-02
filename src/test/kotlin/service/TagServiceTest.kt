@@ -85,6 +85,7 @@ class TagServiceTest : DatabaseTest() {
         val retr = tagService.get(created.id)
         assertThat(retr).isNotNull
         assertThat(retr).isEqualTo(created)
+        assertThat(retr?.dateCreated).isEqualTo(retr?.dateUpdated)
     }
 
     @Test

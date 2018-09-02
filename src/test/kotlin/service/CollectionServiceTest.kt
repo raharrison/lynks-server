@@ -11,7 +11,6 @@ import util.createDummyCollection
 
 class CollectionServiceTest : DatabaseTest() {
 
-    // TODO: add date checks
     private val collectionService = CollectionService()
 
     @BeforeEach
@@ -137,6 +136,7 @@ class CollectionServiceTest : DatabaseTest() {
         val retr = collectionService.get(created.id)
         assertThat(retr).isNotNull
         assertThat(retr).isEqualTo(created)
+        assertThat(retr?.dateCreated).isEqualTo(retr?.dateUpdated)
     }
 
     @Test
@@ -156,6 +156,7 @@ class CollectionServiceTest : DatabaseTest() {
         val retr = collectionService.get(created.id)
         assertThat(retr).isNotNull
         assertThat(retr?.children).isEmpty()
+        assertThat(retr?.dateCreated).isEqualTo(retr?.dateUpdated)
     }
 
     @Test
