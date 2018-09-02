@@ -42,6 +42,7 @@ class EntryResourceTest: ServerTest() {
         assertThat(note.title).isEqualTo("changeover")
         assertThat(note.plainText).isEqualTo("other content there")
         assertThat(note.tags).isEmpty()
+        assertThat(note.collections).isEmpty()
         assertThat(note.type).isEqualTo(EntryType.NOTE)
     }
 
@@ -55,6 +56,7 @@ class EntryResourceTest: ServerTest() {
         assertThat(link.title).isEqualTo("refusal")
         assertThat(link.url).isEqualTo("http://google.co.uk/content")
         assertThat(link.tags).isEmpty()
+        assertThat(link.collections).isEmpty()
         assertThat(link.type).isEqualTo(EntryType.LINK)
     }
 

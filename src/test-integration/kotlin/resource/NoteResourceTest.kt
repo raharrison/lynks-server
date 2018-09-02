@@ -9,6 +9,7 @@ import io.restassured.http.ContentType
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import util.createDummyCollection
 import util.createDummyEntry
 import util.createDummyTag
 
@@ -22,12 +23,14 @@ class NoteResourceTest: ServerTest() {
         Thread.sleep(10)
         createDummyEntry("e3", "title3", "content3", EntryType.NOTE)
         createDummyTag("t1", "tag1")
+        createDummyCollection("c1", "col1")
         post("/tag/refresh")
+        post("/collection/refresh")
     }
 
     @Test
     fun testCreateNote() {
-        val newNote = NewNote(null, "title4", "content4", listOf("t1"))
+        val newNote = NewNote(null, "title4", "content4", listOf("t1"), listOf("c1"))
         val created = given()
                 .contentType(ContentType.JSON)
                 .body(newNote)
@@ -41,6 +44,7 @@ class NoteResourceTest: ServerTest() {
         assertThat(created.markdownText).isEqualTo("<p>content4</p>\n")
         assertThat(created.type).isEqualTo(EntryType.NOTE)
         assertThat(created.tags).hasSize(1).extracting("id").containsExactly("t1")
+        assertThat(created.collections).hasSize(1).extracting("id").containsExactly("c1")
         val retrieved = get("/note/{id}", created.id)
                 .then()
                 .extract().to<Note>()
@@ -91,7 +95,7 @@ class NoteResourceTest: ServerTest() {
 
     @Test
     fun testUpdateNote() {
-        val updatedNote = NewNote("e2", "title2", "modified", listOf("t1"))
+        val updatedNote = NewNote("e2", "title2", "modified", listOf("t1"), listOf("c1"))
         val updated = given()
                 .contentType(ContentType.JSON)
                 .body(updatedNote)
@@ -103,6 +107,7 @@ class NoteResourceTest: ServerTest() {
         assertThat(updated.plainText).isEqualTo("modified")
         assertThat(updated.markdownText).isEqualTo("<p>modified</p>\n")
         assertThat(updated.tags).hasSize(1).extracting("id").containsExactly("t1")
+        assertThat(updated.collections).hasSize(1).extracting("id").containsExactly("c1")
         val retrieved = get("/note/{id}", "e2")
                 .then().extract().to<Note>()
         assertThat(retrieved).isEqualToIgnoringGivenFields(updated, "dateUpdated", "props")

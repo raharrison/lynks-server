@@ -9,6 +9,7 @@ import io.restassured.http.ContentType
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import util.createDummyCollection
 import util.createDummyEntry
 import util.createDummyTag
 
@@ -22,12 +23,14 @@ class LinkResourceTest: ServerTest() {
         Thread.sleep(10)
         createDummyEntry("e3", "title3", "content3", EntryType.LINK)
         createDummyTag("t1", "tag1")
+        createDummyCollection("c1", "col1")
         post("/tag/refresh")
+        post("/collection/refresh")
     }
 
     @Test
     fun testCreateLinkNoProcess() {
-        val newLink = NewLink(null, "title4", "http://google.com/page", listOf("t1"), emptyList(), false)
+        val newLink = NewLink(null, "title4", "http://google.com/page", listOf("t1"), listOf("c1"), false)
         val created = given()
                 .contentType(ContentType.JSON)
                 .body(newLink)
@@ -41,6 +44,7 @@ class LinkResourceTest: ServerTest() {
         assertThat(created.source).isEqualTo("google.com")
         assertThat(created.type).isEqualTo(EntryType.LINK)
         assertThat(created.tags).hasSize(1).extracting("id").containsExactly("t1")
+        assertThat(created.collections).hasSize(1).extracting("id").containsExactly("c1")
         assertThat(created.content).isNull()
         val retrieved = get("/link/{id}", created.id)
                 .then()
@@ -92,7 +96,7 @@ class LinkResourceTest: ServerTest() {
 
     @Test
     fun testUpdateLinkNoProcess() {
-        val updatedLink = NewLink("e3", "title3", "http://gmail.com", listOf("t1"), emptyList(), false)
+        val updatedLink = NewLink("e3", "title3", "http://gmail.com", listOf("t1"), listOf("c1"), false)
         val updated = given()
                 .contentType(ContentType.JSON)
                 .body(updatedLink)
@@ -104,6 +108,7 @@ class LinkResourceTest: ServerTest() {
         assertThat(updated.url).isEqualTo(updatedLink.url)
         assertThat(updated.source).isEqualTo("gmail.com")
         assertThat(updated.tags).hasSize(1).extracting("id").containsExactly("t1")
+        assertThat(updated.collections).hasSize(1).extracting("id").containsExactly("c1")
         val retrieved = get("/link/{id}", "e3")
                 .then().extract().to<Link>()
         assertThat(retrieved).isEqualToIgnoringGivenFields(updated, "dateUpdated", "props")

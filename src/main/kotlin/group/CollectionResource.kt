@@ -38,5 +38,11 @@ fun Route.collection(collectionService: CollectionService) {
             if (removed) call.respond(HttpStatusCode.OK)
             else call.respond(HttpStatusCode.NotFound)
         }
+
+        post("/refresh") {
+            collectionService.rebuild()
+            call.respond(HttpStatusCode.OK)
+        }
+
     }
 }

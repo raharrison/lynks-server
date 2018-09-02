@@ -2,6 +2,7 @@ package service
 
 import common.*
 import entry.LinkService
+import group.Collection
 import group.CollectionService
 import group.TagService
 import io.mockk.*
@@ -10,6 +11,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import resource.ResourceManager
+import util.createDummyCollection
 import util.createDummyTag
 import worker.PersistLinkProcessingRequest
 import worker.WorkerRegistry
@@ -26,6 +28,9 @@ class LinkServiceTest : DatabaseTest() {
         createDummyTag("t1", "tag1")
         createDummyTag("t2", "tag2")
         createDummyTag("t3", "tag3")
+
+        createDummyCollection("c1", "col1")
+        createDummyCollection("c2", "col2")
 
         val resourceManager = mockk<ResourceManager>()
         every { resourceManager.moveTempFiles(any(), any()) } returns true
@@ -55,6 +60,15 @@ class LinkServiceTest : DatabaseTest() {
     }
 
     @Test
+    fun testCreateLinkWithCollections() {
+        val link = linkService.add(newLink("n1", "google.com", emptyList(), listOf("c1", "c2")))
+        assertThat(link.type).isEqualTo(EntryType.LINK)
+        assertThat(link.title).isEqualTo("n1")
+        assertThat(link.url).isEqualTo("google.com")
+        assertThat(link.collections).hasSize(2).extracting("id").containsExactly("c1", "c2")
+    }
+
+    @Test
     fun testNoExistingResourcesTriggersWorker() {
         val resourceManager = mockk<ResourceManager>()
         every { resourceManager.moveTempFiles(any(), "google.com") } returns false
@@ -77,7 +91,7 @@ class LinkServiceTest : DatabaseTest() {
         every { resourceManager.moveTempFiles(any(), any()) } returns true
         val workerRegistry = mockk<WorkerRegistry>()
         linkService = LinkService(tagService, collectionService, resourceManager, workerRegistry)
-        val link = linkService.add(newLink("n1", "google.com", "url", listOf("t1", "t2"), false))
+        val link = linkService.add(newLink("n1", "google.com", "url", listOf("t1", "t2"), listOf("c1"), false))
 
         verify(exactly = 1) { resourceManager.moveTempFiles(link.id, link.url) }
         verify(exactly = 0) { workerRegistry.acceptLinkWork(any()) }
@@ -90,12 +104,18 @@ class LinkServiceTest : DatabaseTest() {
     }
 
     @Test
+    fun testCreateLinkWithInvalidCollection() {
+        assertThrows<SQLException> { linkService.add(newLink("n1", "google.com", emptyList(), listOf("c1", "invalid"))) }
+    }
+
+    @Test
     fun testGetLinkById() {
-        linkService.add(newLink("n1", "google.com", listOf("t1", "t2")))
-        val link2 = linkService.add(newLink("n2", "google.com", listOf("t2")))
+        linkService.add(newLink("n1", "google.com", listOf("t1", "t2"), listOf("c1")))
+        val link2 = linkService.add(newLink("n2", "google.com", listOf("t2"), listOf("c2")))
         val retrieved = linkService.get(link2.id)
         assertThat(retrieved?.id).isEqualTo(link2.id)
         assertThat(retrieved?.tags).isEqualTo(link2.tags)
+        assertThat(retrieved?.collections).isEqualTo(link2.collections)
         assertThat(retrieved?.url).isEqualTo(link2.url)
     }
 
@@ -106,11 +126,11 @@ class LinkServiceTest : DatabaseTest() {
 
     @Test
     fun testGetLinksPage() {
-        linkService.add(newLink("n1", "google.com", listOf("t1", "t2")))
+        linkService.add(newLink("n1", "google.com", listOf("t1", "t2"), listOf("c1")))
         Thread.sleep(10)
-        linkService.add(newLink("n2", "amazon.com", listOf("t1", "t2")))
+        linkService.add(newLink("n2", "amazon.com", listOf("t1", "t2"), listOf("c1")))
         Thread.sleep(10)
-        linkService.add(newLink("n3", "netflix.com", listOf("t1", "t2")))
+        linkService.add(newLink("n3", "netflix.com", listOf("t1", "t2"), listOf("c1")))
 
         var links = linkService.get(PageRequest(0, 1))
         assertThat(links).hasSize(1)
@@ -171,6 +191,25 @@ class LinkServiceTest : DatabaseTest() {
     }
 
     @Test
+    fun testDeleteCollections() {
+        val added1 = linkService.add(newLink("n1", "google.com", emptyList(), listOf("c1")))
+        val added2 = linkService.add(newLink("n12", "gmail.com", emptyList(), listOf("c1", "c2")))
+
+        assertThat(linkService.get(added1.id)?.collections).hasSize(1).extracting("id").containsExactly("c1")
+        assertThat(linkService.get(added2.id)?.collections).hasSize(2).extracting("id").containsExactly("c1", "c2")
+
+        collectionService.delete("c2")
+
+        assertThat(linkService.get(added1.id)?.collections).hasSize(1).extracting("id").containsExactly("c1")
+        assertThat(linkService.get(added2.id)?.collections).hasSize(1).extracting("id").containsExactly("c1")
+
+        collectionService.delete("c1")
+
+        assertThat(linkService.get(added1.id)?.collections).isEmpty()
+        assertThat(linkService.get(added2.id)?.collections).isEmpty()
+    }
+
+    @Test
     fun testDeleteLink() {
         assertThat(linkService.delete("invalid")).isFalse()
 
@@ -194,19 +233,22 @@ class LinkServiceTest : DatabaseTest() {
         val added1 = linkService.add(newLink("n1", "google.com"))
         assertThat(linkService.get(added1.id)?.title).isEqualTo("n1")
         assertThat(linkService.get(added1.id)?.tags).isEmpty()
+        assertThat(linkService.get(added1.id)?.collections).isEmpty()
 
-        val updated = linkService.update(newLink(added1.id, "updated", "amazon.com", listOf("t1")))
+        val updated = linkService.update(newLink(added1.id, "updated", "amazon.com", listOf("t1"), listOf("c2")))
         val newLink = linkService.get(updated!!.id)
         assertThat(newLink?.id).isEqualTo(added1.id)
         assertThat(newLink?.title).isEqualTo("updated")
         assertThat(newLink?.url).isEqualTo("amazon.com")
         assertThat(newLink?.tags).hasSize(1)
+        assertThat(newLink?.collections).hasSize(1)
 
         val oldLink = linkService.get(added1.id)
         assertThat(oldLink?.id).isEqualTo(updated.id)
         assertThat(oldLink?.url).isEqualTo("amazon.com")
         assertThat(oldLink?.title).isEqualTo("updated")
-        assertThat(newLink?.tags).hasSize(1)
+        assertThat(oldLink?.tags).hasSize(1)
+        assertThat(oldLink?.collections).hasSize(1)
     }
 
     @Test
@@ -236,6 +278,22 @@ class LinkServiceTest : DatabaseTest() {
 
         linkService.update(newLink(added1.id, "n1", "google.com", listOf("t2", "t3")))
         assertThat(linkService.get(added1.id)?.tags).extracting("id").containsExactlyInAnyOrder("t2", "t3")
+    }
+
+    @Test
+    fun testUpdateLinkCollections() {
+        val added1 = linkService.add(newLink("n1", "google.com", emptyList(), listOf("c1", "c2")))
+        assertThat(linkService.get(added1.id)?.title).isEqualTo("n1")
+        assertThat(linkService.get(added1.id)?.url).isEqualTo("google.com")
+        assertThat(linkService.get(added1.id)?.collections).extracting("id").containsExactlyInAnyOrder("c1", "c2")
+
+        linkService.update(newLink(added1.id, "n1", "google.com", emptyList(), listOf("c2")))
+        assertThat(linkService.get(added1.id)?.title).isEqualTo("n1")
+        assertThat(linkService.get(added1.id)?.url).isEqualTo("google.com")
+        assertThat(linkService.get(added1.id)?.collections).extracting("id").containsExactlyInAnyOrder("c2")
+
+        linkService.update(newLink(added1.id, "n1", "google.com"))
+        assertThat(linkService.get(added1.id)?.collections).extracting("id").isEmpty()
     }
 
     @Test
@@ -345,8 +403,8 @@ class LinkServiceTest : DatabaseTest() {
         assertThat(linkService.getUnread()).isEmpty()
     }
 
-    private fun newLink(title: String, url: String, tags: List<String> = emptyList()) = NewLink(null, title, url, tags)
-    private fun newLink(id: String, title: String, url: String, tags: List<String> = emptyList()) = NewLink(id, title, url, tags)
-    private fun newLink(id: String, title: String, url: String, tags: List<String> = emptyList(), process: Boolean) = NewLink(id, title, url, tags, emptyList(), process)
+    private fun newLink(title: String, url: String, tags: List<String> = emptyList(), cols: List<String> = emptyList()) = NewLink(null, title, url, tags, cols)
+    private fun newLink(id: String, title: String, url: String, tags: List<String> = emptyList(), cols: List<String> = emptyList()) = NewLink(id, title, url, tags, cols)
+    private fun newLink(id: String, title: String, url: String, tags: List<String> = emptyList(), cols: List<String> = emptyList(), process: Boolean) = NewLink(id, title, url, tags, cols, process)
 
 }

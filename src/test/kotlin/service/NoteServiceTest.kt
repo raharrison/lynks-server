@@ -11,6 +11,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import resource.ResourceManager
+import util.createDummyCollection
 import util.createDummyTag
 import java.sql.SQLException
 
@@ -26,6 +27,8 @@ class NoteServiceTest : DatabaseTest() {
         createDummyTag("t1", "tag1")
         createDummyTag("t2", "tag2")
         createDummyTag("t3", "tag3")
+        createDummyCollection("c1", "col1")
+        createDummyCollection("c2", "col2")
         every { resourceManager.deleteAll(any()) } returns true
     }
 
@@ -54,12 +57,27 @@ class NoteServiceTest : DatabaseTest() {
     }
 
     @Test
+    fun testCreateNoteWithCollections() {
+        val note = noteService.add(newNote("n1", "content", cols = listOf("c1", "c2")))
+        assertThat(note.type).isEqualTo(EntryType.NOTE)
+        assertThat(note.title).isEqualTo("n1")
+        assertThat(note.plainText).isEqualTo("content")
+        assertThat(note.collections).hasSize(2).extracting("id").containsExactly("c1", "c2")
+    }
+
+    @Test
+    fun testCreateNoteWithInvalidCollection() {
+        assertThrows<SQLException> { noteService.add(newNote("n1", "content", cols = listOf("c1", "invalid"))) }
+    }
+
+    @Test
     fun testGetNoteById() {
-        noteService.add(newNote("n1", "content1", listOf("t1", "t2")))
-        val note2 = noteService.add(newNote("n2", "content1", listOf("t2")))
+        noteService.add(newNote("n1", "content1", listOf("t1", "t2"), listOf("c1")))
+        val note2 = noteService.add(newNote("n2", "content1", listOf("t2"), listOf("c2")))
         val retrieved = noteService.get(note2.id)
         assertThat(retrieved?.id).isEqualTo(note2.id)
         assertThat(retrieved?.tags).isEqualTo(note2.tags)
+        assertThat(retrieved?.collections).isEqualTo(note2.collections)
         assertThat(retrieved?.plainText).isEqualTo(note2.plainText)
     }
 
@@ -70,11 +88,11 @@ class NoteServiceTest : DatabaseTest() {
 
     @Test
     fun testGetNotesPage() {
-        noteService.add(newNote("n1", "content1", listOf("t1", "t2")))
+        noteService.add(newNote("n1", "content1", listOf("t1", "t2"), listOf("c1")))
         Thread.sleep(10)
-        noteService.add(newNote("n2", "content2", listOf("t1", "t2")))
+        noteService.add(newNote("n2", "content2", listOf("t1", "t2"), listOf("c1")))
         Thread.sleep(10)
-        noteService.add(newNote("n3", "content3", listOf("t1", "t2")))
+        noteService.add(newNote("n3", "content3", listOf("t1", "t2"), listOf("c1")))
 
         var notes = noteService.get(PageRequest(0, 1))
         assertThat(notes).hasSize(1)
@@ -96,6 +114,7 @@ class NoteServiceTest : DatabaseTest() {
         assertThat(notes).extracting("title").doesNotHaveDuplicates()
     }
 
+    // TODO: implement for collections
     @Test
     fun testGetNotesByTag() {
         noteService.add(newNote("n1", "content1", listOf("t1", "t2")))
@@ -135,6 +154,25 @@ class NoteServiceTest : DatabaseTest() {
     }
 
     @Test
+    fun testDeleteCollections() {
+        val added1 = noteService.add(newNote("n1", "comment content 1", emptyList(), listOf("c1")))
+        val added2 = noteService.add(newNote("n12", "comment content 2", emptyList(), listOf("c1", "c2")))
+
+        assertThat(noteService.get(added1.id)?.collections).hasSize(1).extracting("id").containsExactly("c1")
+        assertThat(noteService.get(added2.id)?.collections).hasSize(2).extracting("id").containsExactly("c1", "c2")
+
+        collectionService.delete("c2")
+
+        assertThat(noteService.get(added1.id)?.collections).hasSize(1).extracting("id").containsExactly("c1")
+        assertThat(noteService.get(added2.id)?.collections).hasSize(1).extracting("id").containsExactly("c1")
+
+        collectionService.delete("c1")
+
+        assertThat(noteService.get(added1.id)?.collections).isEmpty()
+        assertThat(noteService.get(added2.id)?.collections).isEmpty()
+    }
+
+    @Test
     fun testDeleteNote() {
         assertThat(noteService.delete("invalid")).isFalse()
 
@@ -158,19 +196,22 @@ class NoteServiceTest : DatabaseTest() {
         val added1 = noteService.add(newNote("n1", "comment content 1"))
         assertThat(noteService.get(added1.id)?.title).isEqualTo("n1")
         assertThat(noteService.get(added1.id)?.tags).isEmpty()
+        assertThat(noteService.get(added1.id)?.collections).isEmpty()
 
-        val updated = noteService.update(newNote(added1.id, "updated", "new content", listOf("t1")))
+        val updated = noteService.update(newNote(added1.id, "updated", "new content", listOf("t1"), listOf("c1")))
         val newNote = noteService.get(updated!!.id)
         assertThat(newNote?.id).isEqualTo(added1.id)
         assertThat(newNote?.title).isEqualTo("updated")
         assertThat(newNote?.plainText).isEqualTo("new content")
         assertThat(newNote?.tags).hasSize(1)
+        assertThat(newNote?.collections).hasSize(1)
 
         val oldNote = noteService.get(added1.id)
         assertThat(oldNote?.id).isEqualTo(updated.id)
         assertThat(oldNote?.plainText).isEqualTo("new content")
         assertThat(oldNote?.title).isEqualTo("updated")
-        assertThat(newNote?.tags).hasSize(1)
+        assertThat(oldNote?.tags).hasSize(1)
+        assertThat(oldNote?.collections).hasSize(1)
     }
 
     @Test
@@ -187,6 +228,22 @@ class NoteServiceTest : DatabaseTest() {
 
         noteService.update(newNote(added1.id, "n1", "content 1", listOf("t2", "t3")))
         assertThat(noteService.get(added1.id)?.tags).extracting("id").containsExactlyInAnyOrder("t2", "t3")
+    }
+
+    @Test
+    fun testUpdateNoteCollections() {
+        val added1 = noteService.add(newNote("n1", "content 1", emptyList(), listOf("c1", "c2")))
+        assertThat(noteService.get(added1.id)?.title).isEqualTo("n1")
+        assertThat(noteService.get(added1.id)?.plainText).isEqualTo("content 1")
+        assertThat(noteService.get(added1.id)?.collections).extracting("id").containsExactlyInAnyOrder("c1", "c2")
+
+        noteService.update(newNote(added1.id, "n1", "content 1", emptyList(), listOf("c2")))
+        assertThat(noteService.get(added1.id)?.title).isEqualTo("n1")
+        assertThat(noteService.get(added1.id)?.plainText).isEqualTo("content 1")
+        assertThat(noteService.get(added1.id)?.collections).extracting("id").containsExactlyInAnyOrder("c2")
+
+        noteService.update(newNote(added1.id, "n1", "content 1", emptyList(), emptyList()))
+        assertThat(noteService.get(added1.id)?.collections).extracting("id").isEmpty()
     }
 
     @Test
@@ -257,7 +314,7 @@ class NoteServiceTest : DatabaseTest() {
         assertThat(noteService.get("invalid", 0)).isNull()
     }
 
-    private fun newNote(title: String, content: String, tags: List<String> = emptyList()) = NewNote(null, title, content, tags)
-    private fun newNote(id: String, title: String, content: String, tags: List<String> = emptyList()) = NewNote(id, title, content, tags)
+    private fun newNote(title: String, content: String, tags: List<String> = emptyList(), cols: List<String> = emptyList()) = NewNote(null, title, content, tags, cols)
+    private fun newNote(id: String, title: String, content: String, tags: List<String> = emptyList(), cols: List<String> = emptyList()) = NewNote(id, title, content, tags, cols)
 
 }
