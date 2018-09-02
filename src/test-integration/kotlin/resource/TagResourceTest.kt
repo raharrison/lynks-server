@@ -18,6 +18,7 @@ class TagResourceTest : ServerTest() {
         createDummyTag("t2", "tag2")
         createDummyTag("t3", "tag3")
         createDummyTag("t4", "tag4")
+        post("/tag/refresh")
     }
 
     @Test
