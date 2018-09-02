@@ -1,6 +1,7 @@
 package service
 
 import common.*
+import common.exception.InvalidModelException
 import entry.NoteService
 import group.CollectionService
 import group.TagService
@@ -53,7 +54,7 @@ class NoteServiceTest : DatabaseTest() {
 
     @Test
     fun testCreateNoteWithInvalidTag() {
-        assertThrows<SQLException> { noteService.add(newNote("n1", "content", listOf("t1", "invalid"))) }
+        assertThrows<InvalidModelException> { noteService.add(newNote("n1", "content", listOf("t1", "invalid"))) }
     }
 
     @Test
@@ -67,7 +68,7 @@ class NoteServiceTest : DatabaseTest() {
 
     @Test
     fun testCreateNoteWithInvalidCollection() {
-        assertThrows<SQLException> { noteService.add(newNote("n1", "content", cols = listOf("c1", "invalid"))) }
+        assertThrows<InvalidModelException> { noteService.add(newNote("n1", "content", cols = listOf("c1", "invalid"))) }
     }
 
     @Test

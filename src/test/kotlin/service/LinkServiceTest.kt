@@ -1,6 +1,7 @@
 package service
 
 import common.*
+import common.exception.InvalidModelException
 import entry.LinkService
 import group.Collection
 import group.CollectionService
@@ -100,12 +101,12 @@ class LinkServiceTest : DatabaseTest() {
 
     @Test
     fun testCreateLinkWithInvalidTag() {
-        assertThrows<SQLException> { linkService.add(newLink("n1", "google.com", listOf("t1", "invalid"))) }
+        assertThrows<InvalidModelException> { linkService.add(newLink("n1", "google.com", listOf("t1", "invalid"))) }
     }
 
     @Test
     fun testCreateLinkWithInvalidCollection() {
-        assertThrows<SQLException> { linkService.add(newLink("n1", "google.com", emptyList(), listOf("c1", "invalid"))) }
+        assertThrows<InvalidModelException> { linkService.add(newLink("n1", "google.com", emptyList(), listOf("c1", "invalid"))) }
     }
 
     @Test

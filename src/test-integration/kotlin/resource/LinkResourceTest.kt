@@ -53,6 +53,25 @@ class LinkResourceTest: ServerTest() {
     }
 
     @Test
+    fun testCreateLinkWithInvalidGroups() {
+        given()
+                .contentType(ContentType.JSON)
+                .body(NewLink(null, "title4", "http://google.com/page", listOf("invalid"), process = false))
+                .When()
+                .post("/link")
+                .then()
+                .statusCode(400)
+
+        given()
+                .contentType(ContentType.JSON)
+                .body(NewLink(null, "title4", "http://google.com/page", emptyList(), listOf("invalid"), false))
+                .When()
+                .post("/link")
+                .then()
+                .statusCode(400)
+    }
+
+    @Test
     fun testGetLinkReturnsNotFound() {
         get("/link/{id}", "invalid")
                 .then()

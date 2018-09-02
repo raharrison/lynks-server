@@ -37,12 +37,12 @@ class EntryService(tagService: TagService, collectionService: CollectionService)
 
     fun search(term: String, page: PageRequest = DefaultPageRequest): List<Entry> = transaction {
         val conn = TransactionManager.current().connection
-        conn.prepareStatement("SELECT * FROM FT_SEARCH_DATA(?, 0, 0)").use {
-            it.setString(1, term)
-            it.executeQuery().use {
+        conn.prepareStatement("SELECT * FROM FT_SEARCH_DATA(?, 0, 0)").use { prep ->
+            prep.setString(1, term)
+            prep.executeQuery().use { set ->
                 val keys = mutableListOf<String>()
-                while (it.next()) {
-                    val res = it.getArray("KEYS")
+                while (set.next()) {
+                    val res = set.getArray("KEYS")
                     (res.array as Array<*>).forEach { keys.add(it.toString()) }
                 }
                 get(keys, page)

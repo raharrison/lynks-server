@@ -2,6 +2,7 @@ import comment.CommentService
 import comment.comment
 import common.Environment
 import common.endpoint.health
+import common.exception.InvalidModelException
 import common.inject.ServiceProvider
 import db.DatabaseFactory
 import entry.*
@@ -10,12 +11,16 @@ import group.TagService
 import group.collection
 import group.tag
 import io.ktor.application.Application
+import io.ktor.application.call
 import io.ktor.application.install
 import io.ktor.features.CallLogging
 import io.ktor.features.ContentNegotiation
 import io.ktor.features.DefaultHeaders
+import io.ktor.features.StatusPages
 import io.ktor.http.ContentType
+import io.ktor.http.HttpStatusCode
 import io.ktor.jackson.JacksonConverter
+import io.ktor.response.respond
 import io.ktor.routing.Routing
 import io.ktor.routing.route
 import io.ktor.server.engine.embeddedServer
@@ -43,6 +48,12 @@ fun Application.module() {
         register(ContentType.Application.Json, JacksonConverter(defaultMapper))
     }
     install(WebSockets)
+
+    install(StatusPages) {
+        exception<InvalidModelException> {
+            call.respond(HttpStatusCode.BadRequest, it.message ?: "Bad Request Format")
+        }
+    }
 
     DatabaseFactory().connect()
 

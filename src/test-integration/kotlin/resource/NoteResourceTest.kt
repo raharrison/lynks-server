@@ -52,6 +52,25 @@ class NoteResourceTest: ServerTest() {
     }
 
     @Test
+    fun testCreateNoteWithInvalidGroups() {
+        given()
+            .contentType(ContentType.JSON)
+            .body(NewNote(null, "title4", "content4", listOf("invalid")))
+            .When()
+            .post("/note")
+            .then()
+            .statusCode(400)
+
+        given()
+            .contentType(ContentType.JSON)
+            .body(NewNote(null, "title4", "content4", emptyList(), listOf("invalid")))
+            .When()
+            .post("/note")
+            .then()
+            .statusCode(400)
+    }
+
+    @Test
     fun testGetNoteReturnsNotFound() {
         get("/note/{id}", "invalid")
                 .then()

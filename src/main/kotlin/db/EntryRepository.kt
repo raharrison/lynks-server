@@ -1,6 +1,7 @@
 package db
 
 import common.*
+import common.exception.InvalidModelException
 import group.*
 import group.Collection
 import org.jetbrains.exposed.sql.*
@@ -49,6 +50,8 @@ abstract class EntryRepository<T : Entry, in U : NewEntry>(private val tagServic
 
     open fun add(entry: U): T = transaction {
         val newId = RandomUtils.generateUid()
+        validateTags(entry.tags)
+        validateCollections(entry.collections)
         Entries.insert(toInsert(newId, entry))
         for (tag in entry.tags) {
             EntryTags.insert {
@@ -70,6 +73,8 @@ abstract class EntryRepository<T : Entry, in U : NewEntry>(private val tagServic
         return if (id == null) {
             add(entry)
         } else {
+            validateTags(entry.tags)
+            validateCollections(entry.collections)
             transaction {
                 val where = getBaseQuery().combine { Entries.id eq id }.where!!
                 val updated = Entries.update({ where }, body = {
@@ -90,6 +95,8 @@ abstract class EntryRepository<T : Entry, in U : NewEntry>(private val tagServic
     }
 
     fun update(entry: T, newVersion: Boolean=false): T? = transaction {
+        validateTags(entry.tags.map { it.id })
+        validateCollections(entry.collections.map { it.id })
         val where = getBaseQuery().combine { Entries.id eq entry.id }.where!!
         val updated = Entries.update({ where }, body = {
             toUpdate(entry)(it)
@@ -173,6 +180,20 @@ abstract class EntryRepository<T : Entry, in U : NewEntry>(private val tagServic
                 .select { EntryCollections.entryId eq id }
                 .map { it[EntryCollections.groupId] }
         return collectionService.getIn(collections)
+    }
+
+    private fun validateTags(ids: List<String>) {
+        ids.forEach {
+            if(tagService.get(it) == null)
+                throw InvalidModelException("Unknown tag: $it")
+        }
+    }
+
+    private fun validateCollections(ids: List<String>) {
+        ids.forEach {
+            if(collectionService.get(it) == null)
+                throw InvalidModelException("Unknown collection: $it")
+        }
     }
 
     protected abstract fun getBaseQuery(base: ColumnSet = Entries, where: BaseEntries = Entries): Query
