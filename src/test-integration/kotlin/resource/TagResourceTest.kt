@@ -17,7 +17,7 @@ class TagResourceTest : ServerTest() {
         createDummyTag("t1", "tag1")
         createDummyTag("t2", "tag2")
         createDummyTag("t3", "tag3")
-        post("/tag/refresh")
+        createDummyTag("t4", "tag4")
     }
 
     @Test
@@ -26,7 +26,7 @@ class TagResourceTest : ServerTest() {
                 .then()
                 .extract().to<Collection<Tag>>()
         assertThat(tags).isNotEmpty
-        assertThat(tags).extracting("id").containsExactlyInAnyOrder("t1", "t2", "t3")
+        assertThat(tags).extracting("id").contains("t1", "t2", "t3")
     }
 
     @Test
@@ -44,13 +44,6 @@ class TagResourceTest : ServerTest() {
                 .extract().to<Tag>()
         assertThat(tag1.id).isEqualTo("t1")
         assertThat(tag1.name).isEqualTo("tag1")
-
-        val tag2 = get("/tag/{id}", "t2")
-                .then()
-                .statusCode(200)
-                .extract().to<Tag>()
-        assertThat(tag2.id).isEqualTo("t2")
-        assertThat(tag2.name).isEqualTo("tag2")
     }
 
     @Test
@@ -62,10 +55,10 @@ class TagResourceTest : ServerTest() {
 
     @Test
     fun testDeleteTags() {
-        delete("/tag/{id}", "t2")
+        delete("/tag/{id}", "t4")
                 .then()
                 .statusCode(200)
-        get("/tag/{id}", "t2")
+        get("/tag/{id}", "t4")
                 .then()
                 .statusCode(404)
     }

@@ -39,10 +39,5 @@ fun Route.tag(tagService: TagService) {
             else call.respond(HttpStatusCode.NotFound)
         }
 
-        post("/refresh") {
-            tagService.rebuild()
-            call.respond(HttpStatusCode.OK)
-        }
-
     }
 }
