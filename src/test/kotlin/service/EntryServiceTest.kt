@@ -45,7 +45,7 @@ class EntryServiceTest: DatabaseTest() {
 
     @Test
     fun testGetAll() {
-        val retrieved = entryService.get(PageRequest())
+        val retrieved = entryService.get()
         assertThat(retrieved).hasSize(3)
         assertThat(retrieved).extracting("id").containsExactlyInAnyOrder("id1", "id2", "id3")
         assertThat(retrieved).hasAtLeastOneElementOfType(Note::class.java)
@@ -54,7 +54,7 @@ class EntryServiceTest: DatabaseTest() {
 
     @Test
     fun testGetByIds() {
-        val retrieved = entryService.get(listOf("id2", "id3"), PageRequest())
+        val retrieved = entryService.get(listOf("id2", "id3"))
         assertThat(retrieved).hasSize(2)
         assertThat(retrieved).extracting("id").containsExactlyInAnyOrder("id2", "id3")
     }

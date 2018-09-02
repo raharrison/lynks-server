@@ -142,12 +142,12 @@ class NoteServiceTest : DatabaseTest() {
         assertThat(noteService.delete("e1")).isFalse()
         assertThat(noteService.delete(added1.id)).isTrue()
 
-        assertThat(noteService.get(PageRequest())).hasSize(1)
+        assertThat(noteService.get()).hasSize(1)
         assertThat(noteService.get(added1.id)).isNull()
 
         assertThat(noteService.delete(added2.id)).isTrue()
 
-        assertThat(noteService.get(PageRequest())).isEmpty()
+        assertThat(noteService.get()).isEmpty()
         assertThat(noteService.get(added2.id)).isNull()
     }
 

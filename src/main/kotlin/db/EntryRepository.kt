@@ -26,11 +26,11 @@ abstract class EntryRepository<T : Entry, in U : NewEntry>(private val tagServic
                 .singleOrNull()
     }
 
-    fun get(page: PageRequest): List<T> = transaction {
+    fun get(page: PageRequest = DefaultPageRequest): List<T> = transaction {
         createPagedQuery(page).map { toModel(it) }
     }
 
-    fun get(ids: List<String>, page: PageRequest): List<T> = transaction {
+    fun get(ids: List<String>, page: PageRequest = DefaultPageRequest): List<T> = transaction {
         if(ids.isEmpty()) emptyList()
         else createPagedQuery(page).combine { Entries.id inList ids }
                 .map { toModel(it) }

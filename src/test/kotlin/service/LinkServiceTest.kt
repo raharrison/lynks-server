@@ -178,12 +178,12 @@ class LinkServiceTest : DatabaseTest() {
         assertThat(linkService.delete("e1")).isFalse()
         assertThat(linkService.delete(added1.id)).isTrue()
 
-        assertThat(linkService.get(PageRequest())).hasSize(1)
+        assertThat(linkService.get()).hasSize(1)
         assertThat(linkService.get(added1.id)).isNull()
 
         assertThat(linkService.delete(added2.id)).isTrue()
 
-        assertThat(linkService.get(PageRequest())).isEmpty()
+        assertThat(linkService.get()).isEmpty()
         assertThat(linkService.get(added2.id)).isNull()
     }
 
