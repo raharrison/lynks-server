@@ -5,6 +5,7 @@ import common.EntryType
 import common.NewNote
 import common.Note
 import db.EntryRepository
+import group.CollectionService
 import group.TagService
 import org.jetbrains.exposed.sql.ColumnSet
 import org.jetbrains.exposed.sql.Query
@@ -15,10 +16,11 @@ import resource.ResourceManager
 import util.MarkdownUtils
 import util.RowMapper
 
-class NoteService(tagService: TagService, private val resourceManager: ResourceManager) : EntryRepository<Note, NewNote>(tagService) {
+class NoteService(tagService: TagService, collectionService: CollectionService,
+                  private val resourceManager: ResourceManager) : EntryRepository<Note, NewNote>(tagService, collectionService) {
 
     override fun toModel(row: ResultRow, table: BaseEntries): Note {
-        return RowMapper.toNote(table, row, ::getTagsForEntry)
+        return RowMapper.toNote(table, row, ::getTagsForEntry, ::getCollectionsForEntry)
     }
 
     override fun getBaseQuery(base: ColumnSet, where: BaseEntries): Query {

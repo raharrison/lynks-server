@@ -2,6 +2,7 @@ package entry
 
 import common.*
 import db.EntryRepository
+import group.CollectionService
 import group.TagService
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.statements.UpdateBuilder
@@ -9,12 +10,12 @@ import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.jetbrains.exposed.sql.transactions.transaction
 import util.RowMapper
 
-class EntryService(tagService: TagService) : EntryRepository<Entry, NewEntry>(tagService) {
+class EntryService(tagService: TagService, collectionService: CollectionService) : EntryRepository<Entry, NewEntry>(tagService, collectionService) {
 
     override fun toModel(row: ResultRow, table: BaseEntries): Entry {
         return when (row[table.type]) {
-            EntryType.LINK -> RowMapper.toLink(table, row, ::getTagsForEntry)
-            EntryType.NOTE -> RowMapper.toNote(table, row, ::getTagsForEntry)
+            EntryType.LINK -> RowMapper.toLink(table, row, ::getTagsForEntry, ::getCollectionsForEntry)
+            EntryType.NOTE -> RowMapper.toNote(table, row, ::getTagsForEntry, ::getCollectionsForEntry)
         }
     }
 

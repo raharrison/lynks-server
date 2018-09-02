@@ -6,6 +6,7 @@ import common.BaseEntries
 import common.BaseProperties
 import common.Link
 import common.Note
+import group.Collection
 import group.Tag
 import org.jetbrains.exposed.sql.ResultRow
 import resource.Resource
@@ -13,7 +14,7 @@ import resource.Resources
 
 object RowMapper {
 
-    fun toLink(table: BaseEntries, row: ResultRow, tagResolver: (String) -> List<Tag>): Link =
+    fun toLink(table: BaseEntries, row: ResultRow, tagResolver: (String) -> List<Tag>, collectionResolver: (String) -> List<Collection>): Link =
             Link(
                     id = row[table.id],
                     title = row[table.title],
@@ -22,12 +23,13 @@ object RowMapper {
                     content = row[table.content],
                     dateUpdated = row[table.dateUpdated],
                     tags = tagResolver(row[table.id]),
+                    collections = collectionResolver(row[table.id]),
                     props = row[table.props] ?: BaseProperties(),
                     version = row[table.version],
                     starred = row[table.starred]
             )
 
-    fun toNote(table: BaseEntries, row: ResultRow, tagResolver: (String) -> List<Tag>): Note =
+    fun toNote(table: BaseEntries, row: ResultRow, tagResolver: (String) -> List<Tag>, collectionResolver: (String) -> List<Collection>): Note =
             Note(
                     id = row[table.id],
                     title = row[table.title],
@@ -35,6 +37,7 @@ object RowMapper {
                     markdownText = row[table.content]!!,
                     dateUpdated = row[table.dateUpdated],
                     tags = tagResolver(row[table.id]),
+                    collections = collectionResolver(row[table.id]),
                     props = row[table.props] ?: BaseProperties(),
                     version = row[table.version],
                     starred = row[table.starred]

@@ -1,11 +1,14 @@
 package service
 
 import common.DatabaseTest
+import common.NewNote
+import entry.NoteService
 import group.CollectionService
 import group.NewCollection
+import group.TagService
+import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import util.createDummyCollection
 
@@ -101,15 +104,13 @@ class CollectionServiceTest : DatabaseTest() {
         assertThat(collectionService.get("c1")).isNull()
     }
 
-    @Disabled
     @Test
     fun testDeleteCollectionLinkedToEntry() {
-        // TODO
-//        val noteService = NoteService(collectionService, mockk())
-//        val note = noteService.add(NewNote(null, "n1", "content", listOf("c1")))
-//        assertThat(note.tags).hasSize(1).extracting("id").containsOnly("c1")
-//        assertThat(collectionService.delete("c1")).isTrue()
-//        assertThat(noteService.get(note.id)?.tags).isEmpty()
+        val noteService = NoteService(TagService(), collectionService, mockk())
+        val note = noteService.add(NewNote(null, "n1", "content", emptyList(), listOf("c1")))
+        assertThat(note.collections).hasSize(1).extracting("id").containsOnly("c1")
+        assertThat(collectionService.delete("c1")).isTrue()
+        assertThat(noteService.get(note.id)?.collections).isEmpty()
     }
 
     @Test

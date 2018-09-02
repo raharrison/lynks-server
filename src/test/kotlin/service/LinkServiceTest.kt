@@ -2,6 +2,7 @@ package service
 
 import common.*
 import entry.LinkService
+import group.CollectionService
 import group.TagService
 import io.mockk.*
 import org.assertj.core.api.Assertions.assertThat
@@ -17,6 +18,7 @@ import java.sql.SQLException
 class LinkServiceTest : DatabaseTest() {
 
     private val tagService = TagService()
+    private val collectionService = CollectionService()
     private lateinit var linkService: LinkService
 
     @BeforeEach
@@ -30,7 +32,7 @@ class LinkServiceTest : DatabaseTest() {
         every { resourceManager.deleteAll(any()) } returns true
         val workerRegistry = mockk<WorkerRegistry>()
         every { workerRegistry.acceptDiscussionWork(any()) } just Runs
-        linkService = LinkService(tagService, resourceManager, workerRegistry)
+        linkService = LinkService(tagService, collectionService, resourceManager, workerRegistry)
     }
 
     @Test
@@ -61,7 +63,7 @@ class LinkServiceTest : DatabaseTest() {
         every { workerRegistry.acceptLinkWork(any()) } just Runs
         every { workerRegistry.acceptDiscussionWork(any()) } just Runs
 
-        linkService = LinkService(tagService, resourceManager, workerRegistry)
+        linkService = LinkService(tagService, collectionService, resourceManager, workerRegistry)
         val link = linkService.add(newLink("n1", "google.com", listOf("t1", "t2")))
 
         verify(exactly = 1) { resourceManager.moveTempFiles(link.id, link.url) }
@@ -74,7 +76,7 @@ class LinkServiceTest : DatabaseTest() {
         val resourceManager = mockk<ResourceManager>()
         every { resourceManager.moveTempFiles(any(), any()) } returns true
         val workerRegistry = mockk<WorkerRegistry>()
-        linkService = LinkService(tagService, resourceManager, workerRegistry)
+        linkService = LinkService(tagService, collectionService, resourceManager, workerRegistry)
         val link = linkService.add(newLink("n1", "google.com", "url", listOf("t1", "t2"), false))
 
         verify(exactly = 1) { resourceManager.moveTempFiles(link.id, link.url) }

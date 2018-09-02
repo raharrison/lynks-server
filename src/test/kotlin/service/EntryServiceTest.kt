@@ -2,6 +2,7 @@ package service
 
 import common.*
 import entry.EntryService
+import group.CollectionService
 import group.TagService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -12,7 +13,8 @@ import util.createDummyEntry
 class EntryServiceTest: DatabaseTest() {
 
     private val tagService = TagService()
-    private val entryService = EntryService(tagService)
+    private val collectionService = CollectionService()
+    private val entryService = EntryService(tagService, collectionService)
 
     @BeforeEach
     fun createEntries() {

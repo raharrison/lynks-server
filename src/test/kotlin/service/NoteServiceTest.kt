@@ -2,6 +2,7 @@ package service
 
 import common.*
 import entry.NoteService
+import group.CollectionService
 import group.TagService
 import io.mockk.every
 import io.mockk.mockk
@@ -16,8 +17,9 @@ import java.sql.SQLException
 class NoteServiceTest : DatabaseTest() {
 
     private val tagService = TagService()
+    private val collectionService = CollectionService()
     private val resourceManager = mockk<ResourceManager>()
-    private val noteService = NoteService(tagService, resourceManager)
+    private val noteService = NoteService(tagService, collectionService, resourceManager)
 
     @BeforeEach
     fun createTags() {

@@ -2,6 +2,7 @@ package common
 
 import comment.CommentService
 import entry.LinkService
+import group.CollectionService
 import group.TagService
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
@@ -11,15 +12,12 @@ import resource.ResourceManager
 import resource.ResourceType
 import schedule.ScheduleService
 import schedule.ScheduleType
-import util.createDummyComment
-import util.createDummyEntry
-import util.createDummyReminder
-import util.createDummyTag
+import util.*
 
 class CascadingDeleteTest: DatabaseTest() {
 
-    // TODO: add collection cascading
     private val tagService = TagService()
+    private val collectionService = CollectionService()
     private val resourceManager = ResourceManager()
     private val commentService = CommentService()
     private val scheduleService = ScheduleService()
@@ -28,14 +26,17 @@ class CascadingDeleteTest: DatabaseTest() {
     @BeforeEach
     fun createTags() {
         createDummyTag("t1", "tag1")
+        createDummyCollection("c1", "col1")
+        createDummyCollection("c2", "col2", "c1")
         createDummyEntry("id1", "link1", "link content", EntryType.LINK)
         createDummyComment("c1", "id1", "comment content")
         createDummyReminder("rem1", "id1", ScheduleType.REMINDER, System.currentTimeMillis().toString())
 
         resourceManager.saveGeneratedResource("r1", "id1", "resource name", "jpg", ResourceType.SCREENSHOT, 11)
 
-        linkService = LinkService(tagService, resourceManager, mockk(relaxUnitFun = true))
+        linkService = LinkService(tagService, collectionService, resourceManager, mockk(relaxUnitFun = true))
         tagService.rebuild()
+        collectionService.rebuild()
     }
 
     @Test
@@ -52,6 +53,20 @@ class CascadingDeleteTest: DatabaseTest() {
     }
 
     @Test
+    fun testDeletingCollectionDoesntDeleteEntry() {
+        val added = linkService.add(NewLink(null, "title", "url", emptyList(), listOf("c2"), false))
+        assertThat(added.collections).hasSize(1)
+
+        assertThat(collectionService.delete("c1")).isTrue()
+
+        val link = linkService.get(added.id)!!
+        assertThat(link.collections).isEmpty()
+
+        assertThat(collectionService.get("c2")).isNull()
+        assertThat(collectionService.get("c1")).isNull()
+    }
+
+    @Test
     fun testDeletingEntryDoesntDeleteTag() {
         val added = linkService.add(NewLink(null, "title", "url", listOf("t1"), emptyList(), false))
 
@@ -59,6 +74,16 @@ class CascadingDeleteTest: DatabaseTest() {
 
         assertThat(linkService.delete(added.id)).isTrue()
         assertThat(tagService.getAll()).hasSize(1)
+    }
+
+    @Test
+    fun testDeletingEntryDoesntDeleteCollection() {
+        val added = linkService.add(NewLink(null, "title", "url", emptyList(), listOf("c2"), false))
+
+        assertThat(collectionService.getAll()).hasSize(1)
+
+        assertThat(linkService.delete(added.id)).isTrue()
+        assertThat(collectionService.getAll()).hasSize(1)
     }
 
     @Test
@@ -113,6 +138,7 @@ class CascadingDeleteTest: DatabaseTest() {
     fun testDeleteAllDoesntDeleteEntry() {
         assertThat(commentService.deleteComment("id1", "c1")).isTrue()
         assertThat(tagService.delete("t1")).isTrue()
+        assertThat(collectionService.delete("c1")).isTrue()
         assertThat(scheduleService.delete("rem1")).isTrue()
         assertThat(resourceManager.delete("r1")).isTrue()
 

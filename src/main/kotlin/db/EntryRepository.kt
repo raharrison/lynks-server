@@ -1,9 +1,8 @@
 package db
 
 import common.*
-import group.EntryTags
-import group.Tag
-import group.TagService
+import group.*
+import group.Collection
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.statements.InsertStatement
 import org.jetbrains.exposed.sql.statements.UpdateBuilder
@@ -11,7 +10,8 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import util.RandomUtils
 import util.combine
 
-abstract class EntryRepository<T : Entry, in U : NewEntry>(private val tagService: TagService) {
+abstract class EntryRepository<T : Entry, in U : NewEntry>(private val tagService: TagService,
+                                                           private val collectionService: CollectionService) {
 
     fun get(id: String): T? = transaction {
         getBaseQuery().combine { Entries.id eq id }
@@ -50,7 +50,18 @@ abstract class EntryRepository<T : Entry, in U : NewEntry>(private val tagServic
     open fun add(entry: U): T = transaction {
         val newId = RandomUtils.generateUid()
         Entries.insert(toInsert(newId, entry))
-        addTagsForEntry(entry.tags, newId)
+        for (tag in entry.tags) {
+            EntryTags.insert {
+                it[groupId] = tag
+                it[entryId] = newId
+            }
+        }
+        for(collection in entry.collections) {
+            EntryCollections.insert {
+                it[groupId] = collection
+                it[entryId] = newId
+            }
+        }
         get(newId)!!
     }
 
@@ -69,6 +80,7 @@ abstract class EntryRepository<T : Entry, in U : NewEntry>(private val tagServic
                 })
                 if(updated > 0) {
                     updateTagsForEntry(entry.tags, id)
+                    updateCollectionsForEntry(entry.collections, id)
                     get(id)
                 } else {
                     null
@@ -79,7 +91,7 @@ abstract class EntryRepository<T : Entry, in U : NewEntry>(private val tagServic
 
     fun update(entry: T, newVersion: Boolean=false): T? = transaction {
         val where = getBaseQuery().combine { Entries.id eq entry.id }.where!!
-        Entries.update({ where }, body = {
+        val updated = Entries.update({ where }, body = {
             toUpdate(entry)(it)
             if(newVersion) {
                 it[dateUpdated] = System.currentTimeMillis()
@@ -88,7 +100,13 @@ abstract class EntryRepository<T : Entry, in U : NewEntry>(private val tagServic
                 }
             }
         })
-        get(entry.id)
+        if(updated > 0) {
+            updateTagsForEntry(entry.tags.map { it.id }, entry.id)
+            updateCollectionsForEntry(entry.collections.map { it.id }, entry.id)
+            get(entry.id)
+        } else {
+            null
+        }
     }
 
     open fun delete(id: String): Boolean = transaction {
@@ -97,19 +115,9 @@ abstract class EntryRepository<T : Entry, in U : NewEntry>(private val tagServic
                 .singleOrNull()
 
         entry?.let {
-            EntryTags.deleteWhere { EntryTags.entryId eq id }
             return@transaction Entries.deleteWhere { Entries.id eq id } > 0
         }
         false
-    }
-
-    private fun addTagsForEntry(tags: List<String>, id: String) = transaction {
-        for (tag in tags) {
-            EntryTags.insert {
-                it[groupId] = tag
-                it[entryId] = id
-            }
-        }
     }
 
     private fun updateTagsForEntry(tags: List<String>, id: String) {
@@ -132,12 +140,39 @@ abstract class EntryRepository<T : Entry, in U : NewEntry>(private val tagServic
                 }
     }
 
+    private fun updateCollectionsForEntry(collections: List<String>, id: String) {
+        val currentCollections = getCollectionsForEntry(id).map { it.id }
+        val newCollections = collections.toSet()
+
+        currentCollections.filterNot { newCollections.contains(it) }
+                .forEach {
+                    EntryCollections.deleteWhere {
+                        EntryCollections.entryId eq id and (EntryCollections.groupId eq it)
+                    }
+                }
+
+        newCollections.filterNot { currentCollections.contains(it) }
+                .forEach { col ->
+                    EntryCollections.insert {
+                        it[groupId] = col
+                        it[entryId] = id
+                    }
+                }
+    }
+
     // TODO: Make private
     protected fun getTagsForEntry(id: String): List<Tag> {
         val tags = EntryTags.slice(EntryTags.groupId)
                 .select { EntryTags.entryId eq id }
                 .map { it[EntryTags.groupId] }
         return tagService.getIn(tags)
+    }
+
+    protected fun getCollectionsForEntry(id: String): List<Collection> {
+        val collections = EntryCollections.slice(EntryCollections.groupId)
+                .select { EntryCollections.entryId eq id }
+                .map { it[EntryCollections.groupId] }
+        return collectionService.getIn(collections)
     }
 
     protected abstract fun getBaseQuery(base: ColumnSet = Entries, where: BaseEntries = Entries): Query

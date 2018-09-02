@@ -3,6 +3,7 @@ package entry
 import common.*
 import db.EntryRepository
 import db.notLike
+import group.CollectionService
 import group.TagService
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.statements.InsertStatement
@@ -14,8 +15,8 @@ import util.URLUtils
 import worker.PersistLinkProcessingRequest
 import worker.WorkerRegistry
 
-class LinkService(tagService: TagService, private val resourceManager: ResourceManager,
-                  private val workerRegistry: WorkerRegistry) : EntryRepository<Link, NewLink>(tagService) {
+class LinkService(tagService: TagService, collectionService: CollectionService, private val resourceManager: ResourceManager,
+                  private val workerRegistry: WorkerRegistry) : EntryRepository<Link, NewLink>(tagService, collectionService) {
 
     override fun getBaseQuery(base: ColumnSet, where: BaseEntries): Query {
         return base.select { where.type eq EntryType.LINK }
@@ -38,7 +39,7 @@ class LinkService(tagService: TagService, private val resourceManager: ResourceM
     }
 
     override fun toModel(row: ResultRow, table: BaseEntries): Link {
-        return RowMapper.toLink(table, row, ::getTagsForEntry)
+        return RowMapper.toLink(table, row, ::getTagsForEntry, ::getCollectionsForEntry)
     }
 
     override fun add(entry: NewLink): Link {
