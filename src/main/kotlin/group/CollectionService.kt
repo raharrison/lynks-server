@@ -4,7 +4,7 @@ import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.statements.InsertStatement
 import org.jetbrains.exposed.sql.statements.UpdateBuilder
 
-class CollectionService : GroupService<Collection, NewCollection, Collections>(Collections, EntryCollections) {
+class CollectionService : GroupService<Collection, NewCollection, Collections>(Collections) {
 
     override fun toInsert(eId: String, entity: NewCollection): Collections.(InsertStatement<*>) -> Unit = {
         it[Collections.id] = eId

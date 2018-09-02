@@ -4,7 +4,7 @@ import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.statements.InsertStatement
 import org.jetbrains.exposed.sql.statements.UpdateBuilder
 
-class TagService : GroupService<Tag, NewTag, Tags>(Tags, EntryTags) {
+class TagService : GroupService<Tag, NewTag, Tags>(Tags) {
 
     override fun toInsert(eId: String, entity: NewTag): Tags.(InsertStatement<*>) -> Unit = {
         it[Tags.id] = eId

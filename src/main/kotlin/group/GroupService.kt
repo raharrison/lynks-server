@@ -7,7 +7,7 @@ import org.jetbrains.exposed.sql.statements.UpdateBuilder
 import org.jetbrains.exposed.sql.transactions.transaction
 import util.RandomUtils
 
-abstract class GroupService<T : Grouping<T>, in U : IdBasedNewEntity, E: Groups>(private val mainTable: E, private val joinTable: EntryGroups) {
+abstract class GroupService<T : Grouping<T>, in U : IdBasedNewEntity, E: Groups>(private val mainTable: E) {
 
     private val collection by lazy {
         GroupCollection<T>().apply { build(queryAllGroups()) }
@@ -59,9 +59,9 @@ abstract class GroupService<T : Grouping<T>, in U : IdBasedNewEntity, E: Groups>
     }
 
     fun delete(id: String): Boolean = transaction {
-        joinTable.deleteWhere { joinTable.groupId eq id }
-        // delete children
+        // delete children first
         mainTable.select { mainTable.parentId eq id }.forEach { delete(it[mainTable.id]) }
+        // delete main group
         mainTable.deleteWhere { mainTable.id eq id }.also { collection.delete(id) } > 0
     }
 
