@@ -354,15 +354,33 @@ class LinkServiceTest : DatabaseTest() {
         assertThat(added.version).isZero()
         assertThat(added).isEqualToIgnoringGivenFields(version1, "props")
 
-        val updated = linkService.update(newLink(added.id, "edited", "something"))
+        // update via new entity
+        val updated = linkService.update(newLink(added.id, "edited", "fb.com"))
         val version2 = linkService.get(added.id, 1)
         assertThat(updated?.version).isOne()
         assertThat(version2).isEqualToIgnoringGivenFields(updated, "props")
-
         assertThat(version2?.title).isEqualTo("edited")
+
+        // get original
         val first = linkService.get(added.id, 0)
         assertThat(first?.title).isEqualTo("n1")
         assertThat(first?.version).isZero()
+
+        // update directly
+        val updatedDirect = linkService.update(updated!!.copy(title = "new title"), true)
+        val version3 = linkService.get(added.id)
+        assertThat(version3?.title).isEqualTo(updatedDirect?.title)
+        assertThat(version3?.version).isEqualTo(2)
+
+        // get version before
+        val stepBack = linkService.get(added.id, 1)
+        assertThat(stepBack?.version).isEqualTo(1)
+        assertThat(stepBack?.title).isEqualTo(version2?.title)
+
+        // get current version
+        val current = linkService.get(added.id)
+        assertThat(current?.version).isEqualTo(2)
+        assertThat(current?.title).isEqualTo(version3?.title)
     }
 
     @Test

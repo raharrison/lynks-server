@@ -33,7 +33,7 @@ class PropertiesTest {
         val props = BaseProperties()
         val def = props.addTask("desc", TaskBuilder(Task::class, TaskContext()))
         val task = props.getTask(def.id)
-        assertThat(task).isNotNull()
+        assertThat(task).isNotNull
 
         val builder = TaskBuilder(Task::class, TaskContext(mapOf("1" to "one")))
         val def2 = props.addTask("desc", builder)

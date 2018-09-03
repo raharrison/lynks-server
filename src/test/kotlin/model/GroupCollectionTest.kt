@@ -48,19 +48,19 @@ class GroupCollectionTest {
     @Test
     fun testGetGroup() {
         val lookup1 = collection.group("g1")
-        assertThat(lookup1).isNotNull()
+        assertThat(lookup1).isNotNull
         assertThat(lookup1?.id).isEqualTo("g1")
         assertThat(lookup1?.name).isEqualTo("1")
         assertThat(lookup1?.children).isEmpty()
 
         val lookup2 = collection.group("g2")
-        assertThat(lookup2).isNotNull()
+        assertThat(lookup2).isNotNull
         assertThat(lookup2?.id).isEqualTo("g2")
         assertThat(lookup2?.name).isEqualTo("2")
         assertThat(lookup2?.children).hasSize(2).extracting("id").containsExactlyInAnyOrder("g3", "g4")
 
         val lookup3 = collection.group("g3")
-        assertThat(lookup3).isNotNull()
+        assertThat(lookup3).isNotNull
         assertThat(lookup3?.id).isEqualTo("g3")
         assertThat(lookup3?.name).isEqualTo("3")
         assertThat(lookup3?.children).hasSize(2).extracting("id").containsExactlyInAnyOrder("g5", "g6")

@@ -303,15 +303,33 @@ class NoteServiceTest : DatabaseTest() {
         assertThat(added.version).isZero()
         assertThat(added).isEqualToIgnoringGivenFields(version1, "props")
 
+        // update via new entity
         val updated = noteService.update(newNote(added.id, "edited", "different content"))
         val version2 = noteService.get(added.id, 1)
         assertThat(updated?.version).isOne()
         assertThat(version2).isEqualToIgnoringGivenFields(updated, "props")
-
         assertThat(version2?.title).isEqualTo("edited")
+
+        // get original
         val first = noteService.get(added.id, 0)
         assertThat(first?.title).isEqualTo("n1")
         assertThat(first?.version).isZero()
+
+        // update directly
+        val updatedDirect = noteService.update(updated!!.copy(title = "new title"), true)
+        val version3 = noteService.get(added.id)
+        assertThat(version3?.title).isEqualTo(updatedDirect?.title)
+        assertThat(version3?.version).isEqualTo(2)
+
+        // get version before
+        val stepBack = noteService.get(added.id, 1)
+        assertThat(stepBack?.version).isEqualTo(1)
+        assertThat(stepBack?.title).isEqualTo(version2?.title)
+
+        // get current version
+        val current = noteService.get(added.id)
+        assertThat(current?.version).isEqualTo(2)
+        assertThat(current?.title).isEqualTo(version3?.title)
     }
 
     @Test
