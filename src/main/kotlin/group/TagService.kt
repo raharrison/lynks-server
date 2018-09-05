@@ -7,10 +7,11 @@ import org.jetbrains.exposed.sql.statements.UpdateBuilder
 class TagService : GroupService<Tag, NewTag, Tags>(Tags) {
 
     override fun toInsert(eId: String, entity: NewTag): Tags.(InsertStatement<*>) -> Unit = {
+        val time = System.currentTimeMillis()
         it[Tags.id] = eId
         it[Tags.name] = entity.name
-        it[Tags.dateCreated] = System.currentTimeMillis()
-        it[Tags.dateUpdated] = System.currentTimeMillis()
+        it[Tags.dateCreated] = time
+        it[Tags.dateUpdated] = time
     }
 
     override fun toUpdate(entity: NewTag): Tags.(UpdateBuilder<*>) -> Unit = {

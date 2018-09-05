@@ -7,11 +7,12 @@ import org.jetbrains.exposed.sql.statements.UpdateBuilder
 class CollectionService : GroupService<Collection, NewCollection, Collections>(Collections) {
 
     override fun toInsert(eId: String, entity: NewCollection): Collections.(InsertStatement<*>) -> Unit = {
+        val time = System.currentTimeMillis()
         it[Collections.id] = eId
         it[Collections.name] = entity.name
         it[Collections.parentId] = entity.parentId
-        it[Collections.dateCreated] = System.currentTimeMillis()
-        it[Collections.dateUpdated] = System.currentTimeMillis()
+        it[Collections.dateCreated] = time
+        it[Collections.dateUpdated] = time
     }
 
     override fun toUpdate(entity: NewCollection): Collections.(UpdateBuilder<*>) -> Unit = {
