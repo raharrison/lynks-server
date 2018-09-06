@@ -13,7 +13,8 @@ class ResourceTemplater(location: String) {
 
     companion object {
         private val loader = ClassPathTemplateLoader().apply {
-            this.prefix = "/resources/templates"
+            this.prefix = "/templates"
+            this.suffix = ""
         }
 
         private val handlebars = Handlebars(loader)
