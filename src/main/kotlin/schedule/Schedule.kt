@@ -3,8 +3,6 @@ package schedule
 import common.Entries
 import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.Table
-import util.RandomUtils
-import java.time.ZoneId
 
 object Schedules : Table("Schedule") {
     val scheduleId = varchar("scheduleId", 12).primaryKey()
@@ -15,7 +13,6 @@ object Schedules : Table("Schedule") {
 }
 
 enum class ScheduleType {
-    DISCUSSION_FINDER, // long
     REMINDER, // date to long
     RECURRING, // string
 }
@@ -26,14 +23,6 @@ interface Schedule {
     val type: ScheduleType
     val spec: String
     val tz: String
-}
-
-data class IntervalJob(override val scheduleId: String=RandomUtils.generateUid(),
-                       override val entryId: String,
-                       override val type: ScheduleType,
-                       val interval: Long,
-                       override val tz: String=ZoneId.systemDefault().id) : Schedule {
-    override val spec: String = interval.toString()
 }
 
 data class Reminder(override val scheduleId: String,

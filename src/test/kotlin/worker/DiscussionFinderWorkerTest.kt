@@ -10,9 +10,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import resource.ResourceRetriever
-import schedule.IntervalJob
-import schedule.ScheduleService
-import schedule.ScheduleType
 import kotlin.coroutines.experimental.coroutineContext
 
 class DiscussionFinderWorkerTest {
@@ -20,21 +17,13 @@ class DiscussionFinderWorkerTest {
     private val testUrl = "https://www.factorio.com/blog/post/fff-246"
     private val link = Link("id1", "title", testUrl, "factorio.com", "", 100)
 
-    private val scheduleService = mockk<ScheduleService>()
     private val linkService = mockk<LinkService>()
     private val retriever = mockk<ResourceRetriever>()
     private val notifyService = mockk<NotifyService>(relaxUnitFun = true)
-    private val intervals = mutableListOf<IntervalJob>()
     private val linkSlot = slot<Link>()
-    private val schedule = slot<IntervalJob>()
 
     @BeforeEach
     fun before() {
-        every { scheduleService.getIntervalJobsByType(ScheduleType.DISCUSSION_FINDER) } returns emptyList()
-        every { scheduleService.add(capture(schedule)) } answers { schedule.captured }
-        every { scheduleService.update(capture(intervals)) } answers { intervals.last() }
-        every { scheduleService.delete(any()) } returns true
-
         every { linkService.get("id1") } answers { if(linkSlot.isCaptured) linkSlot.captured else link }
         every { linkService.update(capture(linkSlot)) } answers { link } andThen { linkSlot.captured }
 
@@ -46,17 +35,11 @@ class DiscussionFinderWorkerTest {
         coEvery { retriever.getString(match { it.contains("hn.algolia") }) } returns ""
         coEvery { retriever.getString(match { it.contains("reddit.com") }) } returns ""
 
-        val worker = DiscussionFinderWorker(linkService, scheduleService, retriever, notifyService)
+        val worker = DiscussionFinderWorker(linkService, retriever, notifyService)
                 .apply { runner = coroutineContext }.worker()
 
         worker.send(link)
         worker.close()
-
-        verify(exactly = 1) { scheduleService.getIntervalJobsByType(ScheduleType.DISCUSSION_FINDER) }
-        verify(exactly = 1) { scheduleService.add(schedule.captured) }
-        verify(exactly = 1) { scheduleService.delete(schedule.captured.scheduleId) }
-        verify(exactly = 4) { scheduleService.update(match { it.scheduleId == schedule.captured.scheduleId }) }
-        assertThat(intervals).hasSize(4).doesNotHaveDuplicates()
 
         verify(exactly = 5) { linkService.get(link.id) }
         assertThat(link.props.containsAttribute("discussions")).isFalse()
@@ -70,17 +53,11 @@ class DiscussionFinderWorkerTest {
         coEvery { retriever.getString(match { it.contains("hn.algolia") }) } returns getFile("/hacker_discussions.json")
         coEvery { retriever.getString(match { it.contains("reddit.com") }) } returns getFile("/reddit_discussions.json")
 
-        val worker = DiscussionFinderWorker(linkService, scheduleService, retriever, notifyService)
+        val worker = DiscussionFinderWorker(linkService, retriever, notifyService)
                 .apply { runner = coroutineContext }.worker()
 
         worker.send(link)
         worker.close()
-
-        verify(exactly = 1) { scheduleService.getIntervalJobsByType(ScheduleType.DISCUSSION_FINDER) }
-        verify(exactly = 1) { scheduleService.add(any()) }
-        verify(exactly = 1) { scheduleService.delete(schedule.captured.scheduleId) }
-        verify(exactly = 4) { scheduleService.update(match { it.scheduleId == schedule.captured.scheduleId }) }
-        assertThat(intervals).hasSize(4).doesNotHaveDuplicates()
 
         verify(exactly = 5) { linkService.get(link.id) }
         verify(exactly = 5) { linkService.update(ofType(Link::class)) }
@@ -98,39 +75,11 @@ class DiscussionFinderWorkerTest {
     }
 
     @Test
-    fun testInitFromSchedule() = runBlocking(TestCoroutineContext()) {
-        coEvery { retriever.getString(match { it.contains("hn.algolia") }) } returns getFile("/hacker_discussions.json")
-        coEvery { retriever.getString(match { it.contains("reddit.com") }) } returns getFile("/reddit_discussions.json")
-
-        val scheduleId = "abc123"
-        every { scheduleService.getIntervalJobsByType(ScheduleType.DISCUSSION_FINDER) } returns listOf(IntervalJob(scheduleId, link.id, ScheduleType.DISCUSSION_FINDER, 600))
-
-        val worker = DiscussionFinderWorker(linkService, scheduleService, retriever, notifyService)
-                .apply { runner = coroutineContext }.worker()
-
-        worker.close()
-
-        verify(exactly = 1) { scheduleService.getIntervalJobsByType(ScheduleType.DISCUSSION_FINDER) }
-        verify(exactly = 0) { scheduleService.add(any()) }
-        verify(exactly = 1) { scheduleService.update(match { it.scheduleId == scheduleId }) }
-        verify(exactly = 1) { scheduleService.delete(scheduleId) }
-        assertThat(intervals).hasSize(1)
-
-        verify(exactly = 2) { linkService.get(link.id) }
-        verify(exactly = 2) { linkService.update(ofType(Link::class)) }
-        assertThat(linkSlot.captured.props.containsAttribute("discussions")).isTrue()
-        assertThat(linkSlot.captured.props.getAttribute("discussions") as List<*>).hasSize(6)
-
-        coVerify(exactly = 2 * 2) { retriever.getString(any()) }
-        coVerify(exactly = 2) { notifyService.accept(any(), linkSlot.captured) }
-    }
-
-    @Test
     fun testDifferingResponses(): Unit = runBlocking(TestCoroutineContext()) {
         coEvery { retriever.getString(match { it.contains("hn.algolia") }) } returns "" andThen getFile("/hacker_discussions.json") andThen ""
         coEvery { retriever.getString(match { it.contains("reddit.com") }) } returns "" andThen getFile("/reddit_discussions.json") andThen ""
 
-        val worker = DiscussionFinderWorker(linkService, scheduleService, retriever, notifyService)
+        val worker = DiscussionFinderWorker(linkService, retriever, notifyService)
                 .apply { runner = coroutineContext }.worker()
 
         worker.send(link)
@@ -152,16 +101,11 @@ class DiscussionFinderWorkerTest {
         coEvery { retriever.getString(match { it.contains("hn.algolia") }) } returnsMany hnResponses
         coEvery { retriever.getString(match { it.contains("reddit.com") }) } returnsMany redditResponses
 
-        val worker = DiscussionFinderWorker(linkService, scheduleService, retriever, notifyService)
+        val worker = DiscussionFinderWorker(linkService, retriever, notifyService)
                 .apply { runner = coroutineContext }.worker()
 
         worker.send(link)
         worker.close()
-
-        verify(exactly = 1) { scheduleService.add(any()) }
-        verify(exactly = 1) { scheduleService.delete(schedule.captured.scheduleId) }
-        verify(exactly = 5) { scheduleService.update(match { it.scheduleId == schedule.captured.scheduleId }) }
-        assertThat(intervals).hasSize(5)
 
         verify(exactly = 6) { linkService.get(link.id) }
         verify(exactly = 2) { linkService.update(ofType(Link::class)) }

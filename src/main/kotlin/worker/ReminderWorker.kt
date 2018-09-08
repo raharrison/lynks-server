@@ -18,8 +18,8 @@ import com.github.shyiko.skedule.Schedule as Skedule
 private val logger = loggerFor<ReminderWorker>()
 
 class ReminderWorkerRequest(val reminder: Schedule, crudType: CrudType): VariableWorkerRequest(crudType) {
-    override fun hashCode(): Int = reminder.hashCode()
-    override fun equals(other: Any?): Boolean = other is ReminderWorkerRequest && this.reminder == other.reminder
+    override fun hashCode(): Int = reminder.scheduleId.hashCode()
+    override fun equals(other: Any?): Boolean = other is ReminderWorkerRequest && this.reminder.scheduleId == other.reminder.scheduleId
 }
 
 class ReminderWorker(private val scheduleService: ScheduleService,

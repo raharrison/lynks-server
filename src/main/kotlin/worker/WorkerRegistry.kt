@@ -13,7 +13,7 @@ class WorkerRegistry {
     fun init(serviceProvider: ServiceProvider) {
         with(serviceProvider) {
             linkWorker = LinkProcessorWorker(get(), get(), get()).worker()
-            discussionWorker = DiscussionFinderWorker(get(), get(),
+            discussionWorker = DiscussionFinderWorker(get(),
                     WebResourceRetriever(), get()).worker()
             taskWorker = TaskRunnerWorker(get()).worker()
             unreadDigestWorker = UnreadLinkDigestWorker(get(), get()).worker()

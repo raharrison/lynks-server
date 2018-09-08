@@ -24,19 +24,6 @@ class ScheduleServiceTest: DatabaseTest() {
     }
 
     @Test
-    fun testAddNewIntervalSchedule() {
-        val saved = scheduleService.add(intervalJob("e1", ScheduleType.DISCUSSION_FINDER, 100))
-        val res = scheduleService.getIntervalJobsByType(ScheduleType.DISCUSSION_FINDER)
-        assertThat(saved).isInstanceOf(IntervalJob::class.java)
-        assertThat(res).containsOnly(saved as IntervalJob)
-        assertThat(res).hasSize(1)
-        assertThat(res[0].entryId).isEqualTo("e1")
-        assertThat(res[0].type).isEqualTo(ScheduleType.DISCUSSION_FINDER)
-        assertThat(res[0].interval).isEqualTo(100)
-        assertThat(res[0].tz).isEqualTo(tz)
-    }
-
-    @Test
     fun testAddNewReminderDirectly() {
         val schedule = scheduleService.add(reminder("sid", "e1", ScheduleType.REMINDER, 100))
         assertThat(schedule.scheduleId).isEqualTo("sid")
@@ -96,26 +83,10 @@ class ScheduleServiceTest: DatabaseTest() {
     }
 
     @Test
-    fun testGetIntervalJobsByType() {
-        scheduleService.add(reminder("sid", "e1", ScheduleType.REMINDER, 100))
-        scheduleService.add(reminder("sid2", "e1", ScheduleType.RECURRING, 100))
-        scheduleService.add(intervalJob("e1", ScheduleType.DISCUSSION_FINDER, 100))
-        scheduleService.add(intervalJob("e2", ScheduleType.DISCUSSION_FINDER, 200))
-
-        val res = scheduleService.getIntervalJobsByType(ScheduleType.DISCUSSION_FINDER)
-        assertThat(res).hasSize(2)
-        assertThat(res.map { it.entryId }).containsExactlyInAnyOrder("e1", "e2")
-        assertThat(res.map { it.type }).containsOnly(ScheduleType.DISCUSSION_FINDER)
-        assertThat(res.map { it.interval }).containsExactlyInAnyOrder(100, 200)
-        assertThat(res.map { it.tz }).containsOnly(tz)
-    }
-
-    @Test
     fun testGetAllReminders() {
         scheduleService.add(reminder("sid", "e1", ScheduleType.REMINDER, 100))
         scheduleService.add(reminder("sid2", "e1", ScheduleType.RECURRING, 200))
         scheduleService.add(reminder("sid3", "e2", ScheduleType.RECURRING, 300))
-        scheduleService.add(intervalJob("e1", ScheduleType.DISCUSSION_FINDER, 400))
 
         val reminders = scheduleService.getAllReminders()
         assertThat(reminders).hasSize(3)
@@ -143,33 +114,8 @@ class ScheduleServiceTest: DatabaseTest() {
     fun testGetSchedulesReturnsType() {
         val s1 = scheduleService.add(reminder("sid", "e1", ScheduleType.REMINDER, 100))
         val s2 = scheduleService.add(reminder("sid3", "e2", ScheduleType.RECURRING, 300))
-        val s3 = scheduleService.add(intervalJob("e1", ScheduleType.DISCUSSION_FINDER, 400))
         assertThat(scheduleService.get(s1.scheduleId)).isInstanceOf(Reminder::class.java)
         assertThat(scheduleService.get(s2.scheduleId)).isInstanceOf(RecurringReminder::class.java)
-        assertThat(scheduleService.get(s3.scheduleId)).isInstanceOf(IntervalJob::class.java)
-    }
-
-    @Test
-    fun testUpdateIntervalSchedule() {
-        val job = intervalJob("e1", ScheduleType.DISCUSSION_FINDER, 100)
-        scheduleService.add(job)
-        val copied = job.copy(interval = 200)
-        assertThat(scheduleService.update(copied)).isEqualTo(copied)
-        assertThat(job.interval).isEqualTo(100)
-        assertThat(job.tz).isEqualTo(tz)
-        assertThat(copied.interval).isEqualTo(200)
-        assertThat(copied.tz).isEqualTo(tz)
-
-        val res = scheduleService.getIntervalJobsByType(ScheduleType.DISCUSSION_FINDER)
-        assertThat(res).hasSize(1)
-        assertThat(res[0].entryId).isEqualTo("e1")
-        assertThat(res[0].type).isEqualTo(ScheduleType.DISCUSSION_FINDER)
-        assertThat(res[0].interval).isEqualTo(200)
-    }
-
-    @Test
-    fun testUpdateScheduleNoRow() {
-        assertThat(scheduleService.update(intervalJob("e1", ScheduleType.DISCUSSION_FINDER, 200))).isNull()
     }
 
     @Test
@@ -220,19 +166,11 @@ class ScheduleServiceTest: DatabaseTest() {
     @Test
     fun testDeleteSchedule() {
         val s1 = scheduleService.add(reminder("sid", "e2", ScheduleType.RECURRING, 300))
-        val s2 = scheduleService.add(intervalJob("e1", ScheduleType.DISCUSSION_FINDER, 400))
-        assertThat(scheduleService.getIntervalJobsByType(ScheduleType.DISCUSSION_FINDER)).hasSize(1)
         assertThat(scheduleService.getAllReminders()).hasSize(1)
 
         assertThat(scheduleService.delete(s1.scheduleId)).isTrue()
         assertThat(scheduleService.get(s1.scheduleId)).isNull()
         assertThat(scheduleService.getAllReminders()).isEmpty()
-
-        assertThat(scheduleService.delete(s2.scheduleId)).isTrue()
-        assertThat(scheduleService.get(s2.scheduleId)).isNull()
-        assertThat(scheduleService.getIntervalJobsByType(ScheduleType.DISCUSSION_FINDER)).isEmpty()
-
-        assertThat(scheduleService.delete(s2.scheduleId)).isFalse()
     }
 
     @Test
@@ -245,7 +183,6 @@ class ScheduleServiceTest: DatabaseTest() {
         assertThat(scheduleService.isActive("")).isFalse()
     }
 
-    private fun intervalJob(eId: String, type: ScheduleType, interval: Long=0) = IntervalJob(entryId=eId, type=type, interval=interval)
     private fun reminder(sid: String, eId: String, type: ScheduleType, interval: Long=0) = Reminder(sid, entryId=eId, type=type, interval=interval, tz=this.tz)
 
 }

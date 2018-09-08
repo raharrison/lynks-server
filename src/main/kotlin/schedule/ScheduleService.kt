@@ -14,19 +14,6 @@ class ScheduleService {
                     type, row[Schedules.spec].toLong(), row[Schedules.tz])
             ScheduleType.RECURRING -> RecurringReminder(row[Schedules.scheduleId], row[Schedules.entryId],
                     type, row[Schedules.spec], row[Schedules.tz])
-            else -> IntervalJob(row[Schedules.scheduleId], row[Schedules.entryId],
-                    type, row[Schedules.spec].toLong(), row[Schedules.tz])
-        }
-    }
-
-    fun getIntervalJobsByType(type: ScheduleType) = transaction {
-        Schedules.select {
-            (Schedules.type eq type) and
-                    (Schedules.type neq ScheduleType.REMINDER) and
-                    (Schedules.type neq ScheduleType.RECURRING)
-        }.map {
-            IntervalJob(it[Schedules.scheduleId], it[Schedules.entryId],
-                    it[Schedules.type], it[Schedules.spec].toLong(), it[Schedules.tz])
         }
     }
 
@@ -87,15 +74,6 @@ class ScheduleService {
             }
             if(updated > 0) get(reminder.scheduleId) else null
         }
-    }
-
-    fun update(job: Schedule): Schedule? = transaction {
-        Schedules.update({ Schedules.scheduleId eq job.scheduleId }) {
-            it[Schedules.type] = job.type
-            it[Schedules.spec] = job.spec
-            it[Schedules.tz] = checkValidTimeZone(job.tz)
-        }
-        get(job.scheduleId)
     }
 
     fun delete(id: String) = transaction {
