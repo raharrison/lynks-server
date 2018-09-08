@@ -1,7 +1,6 @@
 package worker
 
 import entry.LinkService
-import kotlinx.coroutines.experimental.Job
 import kotlinx.coroutines.experimental.delay
 import notify.NotifyService
 import user.Preferences
@@ -17,17 +16,19 @@ import java.time.temporal.TemporalAdjusters
 import java.util.*
 import java.util.concurrent.TimeUnit
 
-class UnreadLinkDigestWorker(private val linkService: LinkService, private val notifyService: NotifyService): Worker<Preferences>(notifyService) {
+class UnreadLinkDigestWorkerRequest(val preferences: Preferences, crudType: CrudType): VariableWorkerRequest(crudType) {
+    override fun hashCode(): Int = 1
+    override fun equals(other: Any?): Boolean = other is UnreadLinkDigestWorkerRequest
+}
+
+class UnreadLinkDigestWorker(private val linkService: LinkService, notifyService: NotifyService): VariableChannelBasedWorker<UnreadLinkDigestWorkerRequest>(notifyService) {
 
     private val random = Random()
 
-    private var workerJob: Job? = null
-
     // TODO: beforeWork to start worker with initial preferences
 
-    override suspend fun doWork(input: Preferences) {
-        if(!input.digest) {
-            workerJob?.cancel()
+    override suspend fun doWork(input: UnreadLinkDigestWorkerRequest) {
+        if(!input.preferences.digest) {
             return
         }
 
@@ -38,12 +39,10 @@ class UnreadLinkDigestWorker(private val linkService: LinkService, private val n
                 .withMinute(0)
         val initialDelay = today.until(fire, ChronoUnit.SECONDS)
 
-        workerJob = launchJob {
-            while (true) {
-                delay(initialDelay, TimeUnit.SECONDS)
-                sendDigest()
-                delay(7, TimeUnit.DAYS)
-            }
+        while (true) {
+            delay(initialDelay, TimeUnit.SECONDS)
+            sendDigest()
+            delay(7, TimeUnit.DAYS)
         }
     }
 

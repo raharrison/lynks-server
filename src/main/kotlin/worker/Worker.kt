@@ -11,27 +11,18 @@ import notify.NotifyService
 import java.util.concurrent.TimeUnit
 import kotlin.coroutines.experimental.CoroutineContext
 
-private val workerContext = DefaultDispatcher
+abstract class Worker<T>(protected val notifyService: NotifyService) {
 
-abstract class Worker<T>(private val notifyService: NotifyService) {
-
-    var runner: CoroutineContext = workerContext
-
-    fun worker(): SendChannel<T> = actor(runner) {
-        beforeWork()
-        for(request in channel) {
-            launch(runner) {
-                doWork(request)
-            }
-        }
-    }
+    var runner: CoroutineContext = DefaultDispatcher
 
     protected open suspend fun beforeWork() {
     }
 
     protected abstract suspend fun doWork(input: T)
 
-    protected fun launchJob(job: suspend () -> Unit): Job = launch(runner) {
+    protected open fun onWorkerFinished(request: T) {}
+
+    protected inline fun launchJob(crossinline job: suspend () -> Unit): Job = launch(runner) {
         job()
     }
 
@@ -40,13 +31,15 @@ abstract class Worker<T>(private val notifyService: NotifyService) {
     }
 }
 
-abstract class ScheduledWorker(private val time: Long, private val unit: TimeUnit = TimeUnit.MILLISECONDS) {
 
+abstract class FixedIntervalWorker(notifyService: NotifyService, private val time: Long,
+                                   private val unit: TimeUnit = TimeUnit.MILLISECONDS): Worker<Boolean>(notifyService) {
     fun run() {
-        launch(workerContext) {
+        launch(runner) {
+            beforeWork()
             while(true) {
                 try {
-                    doWork()
+                    doWork(true)
                 } catch (e: Exception) {
                     // log error
                 }
@@ -56,7 +49,55 @@ abstract class ScheduledWorker(private val time: Long, private val unit: TimeUni
             }
         }
     }
+}
 
-    protected abstract fun doWork()
+abstract class ChannelBasedWorker<T>(notifyService: NotifyService): Worker<T>(notifyService) {
+
+    fun worker(): SendChannel<T> = actor(runner) {
+        beforeWork()
+        for(request in channel) {
+            onChannelReceive(request)
+        }
+    }
+
+    protected open fun onChannelReceive(request: T): Job? {
+        return launchJob {
+            try {
+                doWork(request)
+            } finally {
+                onWorkerFinished(request)
+            }
+        }
+    }
+}
+
+enum class CrudType { CREATE, UPDATE, DELETE }
+abstract class VariableWorkerRequest(val crudType: CrudType)
+
+abstract class VariableChannelBasedWorker<T : VariableWorkerRequest>(notifyService: NotifyService): ChannelBasedWorker<T>(notifyService) {
+
+    protected val jobs = mutableMapOf<T, Job?>()
+
+    private fun launch(request: T) = super.onChannelReceive(request).also {
+        jobs[request] = it
+    }
+
+    override fun onChannelReceive(request: T): Job? {
+        return when(request.crudType) {
+            CrudType.CREATE -> launch(request)
+            CrudType.UPDATE -> {
+                jobs[request]?.cancel()
+                launch(request)
+            }
+            CrudType.DELETE -> {
+                jobs[request]?.cancel()
+                null
+            }
+        }
+    }
+
+    override fun onWorkerFinished(request: T) {
+        jobs.remove(request)
+    }
 
 }

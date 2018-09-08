@@ -42,8 +42,8 @@ class ReminderWorkerTest {
         val reminder2 = Reminder("sc2", "e1", ScheduleType.REMINDER, fire2, tz.id)
 
         val worker = ReminderWorker(scheduleService, notifyService).apply { runner = context }.worker()
-        worker.send(reminder)
-        worker.send(reminder2)
+        worker.send(ReminderWorkerRequest(reminder, CrudType.CREATE))
+        worker.send(ReminderWorkerRequest(reminder2, CrudType.CREATE))
         worker.close()
 
         context.advanceTimeBy(14, TimeUnit.MINUTES)
@@ -68,8 +68,8 @@ class ReminderWorkerTest {
         val reminder2 = Reminder("sc2", "e1", ScheduleType.REMINDER, fire2, tz.id)
 
         val worker = ReminderWorker(scheduleService, notifyService).apply { runner = context }.worker()
-        worker.send(reminder)
-        worker.send(reminder2)
+        worker.send(ReminderWorkerRequest(reminder, CrudType.CREATE))
+        worker.send(ReminderWorkerRequest(reminder2, CrudType.CREATE))
         worker.close()
 
         context.advanceTimeBy(118, TimeUnit.MINUTES)
@@ -92,8 +92,8 @@ class ReminderWorkerTest {
         val reminder2 = RecurringReminder("sc1", "e1", ScheduleType.RECURRING, "every 30 minutes", tz.id)
 
         val worker = ReminderWorker(scheduleService, notifyService).apply { runner = context }.worker()
-        worker.send(reminder)
-        worker.send(reminder2)
+        worker.send(ReminderWorkerRequest(reminder, CrudType.CREATE))
+        worker.send(ReminderWorkerRequest(reminder2, CrudType.CREATE))
 
         context.advanceTimeBy(29, TimeUnit.MINUTES)
         coVerify(exactly = 0) { notifyService.accept(any(), reminder) }
@@ -125,7 +125,7 @@ class ReminderWorkerTest {
         val reminder = RecurringReminder("sc1", "e1", ScheduleType.RECURRING, "every day 06:00", tz.id)
 
         val worker = ReminderWorker(scheduleService, notifyService).apply { runner = context }.worker()
-        worker.send(reminder)
+        worker.send(ReminderWorkerRequest(reminder, CrudType.CREATE))
 
         val day = LocalDateTime.now(tz).let {
             if(it.hour > 6) it.plusDays(1)
@@ -153,7 +153,7 @@ class ReminderWorkerTest {
 
         every { scheduleService.isActive(reminder.scheduleId) } returns false
         val worker = ReminderWorker(scheduleService, notifyService).apply { runner = context }.worker()
-        worker.send(reminder)
+        worker.send(ReminderWorkerRequest(reminder, CrudType.CREATE))
         worker.close()
 
         context.advanceTimeBy(16, TimeUnit.MINUTES)
@@ -167,7 +167,7 @@ class ReminderWorkerTest {
 
         every { scheduleService.isActive(reminder.scheduleId) } returns false
         val worker = ReminderWorker(scheduleService, notifyService).apply { runner = context }.worker()
-        worker.send(reminder)
+        worker.send(ReminderWorkerRequest(reminder, CrudType.CREATE))
 
         context.advanceTimeBy(185, TimeUnit.MINUTES)
         coVerify(exactly = 0) { notifyService.accept(any(), reminder) }

@@ -20,7 +20,7 @@ private val logger = loggerFor<DiscussionFinderWorker>()
 class DiscussionFinderWorker(private val linkService: LinkService,
                              private val scheduleService: ScheduleService,
                              private val resourceRetriever: ResourceRetriever,
-                             notifyService: NotifyService) : Worker<Link>(notifyService) {
+                             notifyService: NotifyService) : ChannelBasedWorker<Link>(notifyService) {
 
     private data class Discussion(val title: String, val url: String, val score: Int, val comments: Int, val created: Long)
 

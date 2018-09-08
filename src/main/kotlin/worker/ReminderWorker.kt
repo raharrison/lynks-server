@@ -17,8 +17,13 @@ import com.github.shyiko.skedule.Schedule as Skedule
 
 private val logger = loggerFor<ReminderWorker>()
 
+class ReminderWorkerRequest(val reminder: Schedule, crudType: CrudType): VariableWorkerRequest(crudType) {
+    override fun hashCode(): Int = reminder.hashCode()
+    override fun equals(other: Any?): Boolean = other is ReminderWorkerRequest && this.reminder == other.reminder
+}
+
 class ReminderWorker(private val scheduleService: ScheduleService,
-                     notifyService: NotifyService) : Worker<Schedule>(notifyService) {
+                     notifyService: NotifyService) : VariableChannelBasedWorker<ReminderWorkerRequest>(notifyService) {
 
     override suspend fun beforeWork() {
         super.beforeWork()
@@ -30,10 +35,10 @@ class ReminderWorker(private val scheduleService: ScheduleService,
         }
     }
 
-    override suspend fun doWork(input: Schedule) {
-        when (input) {
-            is Reminder -> launchReminder(input)
-            is RecurringReminder -> launchRecurringReminder(input)
+    override suspend fun doWork(input: ReminderWorkerRequest) {
+        when (input.reminder) {
+            is Reminder -> launchReminder(input.reminder)
+            is RecurringReminder -> launchRecurringReminder(input.reminder)
         }
     }
 

@@ -6,7 +6,7 @@ import task.TaskContext
 
 class TaskRunnerRequest(val task: Task<TaskContext>, val context: TaskContext)
 
-class TaskRunnerWorker(notifyService: NotifyService): Worker<TaskRunnerRequest>(notifyService) {
+class TaskRunnerWorker(notifyService: NotifyService): ChannelBasedWorker<TaskRunnerRequest>(notifyService) {
 
     override suspend fun doWork(input: TaskRunnerRequest) {
         input.task.process(input.context)

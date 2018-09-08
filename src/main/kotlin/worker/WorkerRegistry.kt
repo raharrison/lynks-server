@@ -23,7 +23,7 @@ class WorkerRegistry {
     private lateinit var linkWorker: SendChannel<LinkProcessingRequest>
     private lateinit var discussionWorker: SendChannel<Link>
     private lateinit var taskWorker: SendChannel<TaskRunnerRequest>
-    private lateinit var unreadDigestWorker: SendChannel<Preferences>
+    private lateinit var unreadDigestWorker: SendChannel<UnreadLinkDigestWorkerRequest>
 
     fun acceptLinkWork(request: LinkProcessingRequest) {
         linkWorker.offer(request)
@@ -38,11 +38,11 @@ class WorkerRegistry {
     }
 
     fun onUserPreferenceChange(preferences: Preferences) {
-        unreadDigestWorker.offer(preferences)
+        unreadDigestWorker.offer(UnreadLinkDigestWorkerRequest(preferences, CrudType.UPDATE))
     }
 
-    private fun startScheduledWorkers() {
-        TempFileCleanupWorker().run()
+    private fun startScheduledWorkers(serviceProvider: ServiceProvider) {
+        TempFileCleanupWorker(serviceProvider.get()).run()
     }
 
 }

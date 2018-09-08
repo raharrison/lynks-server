@@ -31,7 +31,7 @@ class LinkProcessorFactory {
 
 class LinkProcessorWorker(private val resourceManager: ResourceManager,
                           private val linkService: LinkService,
-                          notifyService: NotifyService) : Worker<LinkProcessingRequest>(notifyService) {
+                          notifyService: NotifyService) : ChannelBasedWorker<LinkProcessingRequest>(notifyService) {
 
     internal var processorFactory = LinkProcessorFactory()
 
@@ -44,8 +44,8 @@ class LinkProcessorWorker(private val resourceManager: ResourceManager,
 
     private suspend fun processLinkPersist(link: Link) {
         try {
-            processorFactory.createProcessors(link.url).forEach {
-                it.use {
+            processorFactory.createProcessors(link.url).forEach { it ->
+                it.use { _ ->
                     val thumb = async(runner) { it.generateThumbnail() }
                     val screen = async(runner) { it.generateScreenshot() }
                     it.enrich(link.props)
@@ -65,8 +65,8 @@ class LinkProcessorWorker(private val resourceManager: ResourceManager,
 
     private suspend fun processLinkSuggest(url: String, deferred: CompletableDeferred<Suggestion>) {
         try {
-            processorFactory.createProcessors(url).forEach {
-                it.use {
+            processorFactory.createProcessors(url).forEach { it ->
+                it.use { _ ->
                     val thumb = async(runner) { it.generateThumbnail() }
                     val screen = async(runner) { it.generateScreenshot() }
                     val thumbPath = thumb.await()?.let { resourceManager.saveTempFile(url, it.image, ResourceType.THUMBNAIL, it.extension) }
