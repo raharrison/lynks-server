@@ -6,11 +6,11 @@ class Notification private constructor(val type: NotificationType, val message: 
 
     companion object {
 
-        fun reminder() = Notification(NotificationType.REMINDER, "Reminder Elapsed")
+        fun reminder(message: String = "Reminder Elapsed") = Notification(NotificationType.REMINDER, message)
 
-        fun processed(message: String="Processing Complete") = Notification(NotificationType.EXECUTED, message)
+        fun processed(message: String = "Processing Complete") = Notification(NotificationType.EXECUTED, message)
 
-        fun error(message: String ="An Error Occurred") = Notification(NotificationType.ERROR, message)
+        fun error(message: String = "An Error Occurred") = Notification(NotificationType.ERROR, message)
     }
 
 }
