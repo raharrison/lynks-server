@@ -37,8 +37,8 @@ class ReminderWorkerTest {
         val tz = ZoneId.systemDefault()
         val fire = Instant.now().plus(15, ChronoUnit.MINUTES).toEpochMilli()
         val fire2 = Instant.now().plus(45, ChronoUnit.MINUTES).toEpochMilli()
-        val reminder = AdhocReminder("sc1", "e1", "", fire, tz.id)
-        val reminder2 = AdhocReminder("sc2", "e1", "", fire2, tz.id)
+        val reminder = AdhocReminder("sc1", "e1", "message", fire, tz.id)
+        val reminder2 = AdhocReminder("sc2", "e1", "message", fire2, tz.id)
 
         val worker = ReminderWorker(scheduleService, notifyService).apply { runner = context }.worker()
         worker.send(ReminderWorkerRequest(reminder, CrudType.CREATE))
@@ -63,8 +63,8 @@ class ReminderWorkerTest {
         val tz = ZoneId.of("Asia/Singapore")
         val fire = Instant.now().plus(2, ChronoUnit.HOURS).toEpochMilli()
         val fire2 = Instant.now().plus(2, ChronoUnit.HOURS).plus(30, ChronoUnit.MINUTES).toEpochMilli()
-        val reminder = AdhocReminder("sc1", "e1", "", fire, tz.id)
-        val reminder2 = AdhocReminder("sc2", "e1", "", fire2, tz.id)
+        val reminder = AdhocReminder("sc1", "e1", "message", fire, tz.id)
+        val reminder2 = AdhocReminder("sc2", "e1", "message", fire2, tz.id)
 
         val worker = ReminderWorker(scheduleService, notifyService).apply { runner = context }.worker()
         worker.send(ReminderWorkerRequest(reminder, CrudType.CREATE))
@@ -87,8 +87,8 @@ class ReminderWorkerTest {
     @Test
     fun testRecurringReminderSameTimezone() = runBlocking(context) {
         val tz = ZoneId.systemDefault()
-        val reminder = RecurringReminder("sc1", "e1", "", "every 3 hours", tz.id)
-        val reminder2 = RecurringReminder("sc1", "e1", "", "every 30 minutes", tz.id)
+        val reminder = RecurringReminder("sc1", "e1", "message", "every 3 hours", tz.id)
+        val reminder2 = RecurringReminder("sc1", "e1", "message", "every 30 minutes", tz.id)
 
         val worker = ReminderWorker(scheduleService, notifyService).apply { runner = context }.worker()
         worker.send(ReminderWorkerRequest(reminder, CrudType.CREATE))
@@ -121,7 +121,7 @@ class ReminderWorkerTest {
     @Test
     fun testRecurringReminderDifferentTimezone() = runBlocking(context) {
         val tz = ZoneId.of("Asia/Singapore")
-        val reminder = RecurringReminder("sc1", "e1", "", "every day 06:00", tz.id)
+        val reminder = RecurringReminder("sc1", "e1", "message", "every day 06:00", tz.id)
 
         val worker = ReminderWorker(scheduleService, notifyService).apply { runner = context }.worker()
         worker.send(ReminderWorkerRequest(reminder, CrudType.CREATE))
@@ -148,7 +148,7 @@ class ReminderWorkerTest {
     @Test
     fun testReminderNotExecutedIfDeleted() = runBlocking(context) {
         val fire = Instant.now().plus(15, ChronoUnit.MINUTES).toEpochMilli()
-        val reminder = AdhocReminder("sc1", "e1", "", fire, ZoneId.systemDefault().id)
+        val reminder = AdhocReminder("sc1", "e1", "message", fire, ZoneId.systemDefault().id)
 
         every { scheduleService.isActive(reminder.reminderId) } returns false
         val worker = ReminderWorker(scheduleService, notifyService).apply { runner = context }.worker()
@@ -162,7 +162,7 @@ class ReminderWorkerTest {
 
     @Test
     fun testRecurringNotDeletedIfDeleted() = runBlocking(context) {
-        val reminder = RecurringReminder("sc1", "e1", "", "every 3 hours", ZoneId.systemDefault().id)
+        val reminder = RecurringReminder("sc1", "e1", "message", "every 3 hours", ZoneId.systemDefault().id)
 
         every { scheduleService.isActive(reminder.reminderId) } returns false
         val worker = ReminderWorker(scheduleService, notifyService).apply { runner = context }.worker()
@@ -180,8 +180,8 @@ class ReminderWorkerTest {
     fun testInitFromStart() = runBlocking(context) {
         val tz = ZoneId.systemDefault()
         val fire = Instant.now().plus(15, ChronoUnit.MINUTES).toEpochMilli()
-        val reminder = AdhocReminder("sc1", "e1", "", fire, tz.id)
-        val recurring = RecurringReminder("sc1", "e1", "", "every 3 hours", tz.id)
+        val reminder = AdhocReminder("sc1", "e1", "message", fire, tz.id)
+        val recurring = RecurringReminder("sc1", "e1", "message", "every 3 hours", tz.id)
 
         every { scheduleService.getAllReminders() } returns listOf(reminder, recurring)
 

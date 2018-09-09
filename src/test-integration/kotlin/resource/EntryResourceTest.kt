@@ -16,7 +16,7 @@ class EntryResourceTest: ServerTest() {
     @BeforeEach
     fun createEntries() {
         createDummyEntry("e1", "expedition", "some content here", EntryType.LINK)
-        createDummyReminder("r1", "e1", ReminderType.ADHOC, (System.currentTimeMillis() + 1.2e+6).toLong().toString())
+        createDummyReminder("r1", "e1", ReminderType.ADHOC, "message", (System.currentTimeMillis() + 1.2e+6).toLong().toString())
         Thread.sleep(10)// prevent having same creation timestamp
         createDummyEntry("e2", "changeover", "other content there", EntryType.NOTE)
         Thread.sleep(10)
@@ -160,6 +160,7 @@ class EntryResourceTest: ServerTest() {
         assertThat(reminders).extracting("reminderId").containsOnly("r1")
         assertThat(reminders).extracting("entryId").containsOnly("e1")
         assertThat(reminders).extracting("type").containsOnly(ReminderType.ADHOC.toString())
+        assertThat(reminders).extracting("message").containsOnly("message")
         assertThat(reminders).extracting("spec").isNotEmpty()
         assertThat(reminders).extracting("tz").containsOnly(ZoneId.systemDefault().id)
 

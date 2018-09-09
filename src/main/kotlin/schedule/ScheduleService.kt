@@ -68,6 +68,7 @@ class ScheduleService {
         } else {
             val updated = Reminders.update({ Reminders.reminderId eq reminder.reminderId }) {
                 it[Reminders.type] = reminder.type
+                it[Reminders.message] = reminder.message
                 it[Reminders.spec] = reminder.spec
                 it[Reminders.tz] = checkValidTimeZone(reminder.tz)
             }
