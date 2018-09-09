@@ -17,7 +17,7 @@ class ScheduleResourceTest: ServerTest() {
     @BeforeEach
     fun createEntries() {
         createDummyEntry("e1", "title1", "content1", EntryType.LINK)
-        createDummyReminder("r1", "e1", ScheduleType.REMINDER, (System.currentTimeMillis() + 1.2e+6).toLong().toString())
+        createDummyReminder("r1", "e1", ReminderType.ADHOC, (System.currentTimeMillis() + 1.2e+6).toLong().toString())
     }
 
     @Test
@@ -25,11 +25,11 @@ class ScheduleResourceTest: ServerTest() {
         val reminders = get("/reminder")
                 .then()
                 .statusCode(200)
-                .extract().to<List<Schedule>>()
+                .extract().to<List<Reminder>>()
         assertThat(reminders).hasSize(1)
-        assertThat(reminders).extracting("scheduleId").containsOnly("r1")
+        assertThat(reminders).extracting("reminderId").containsOnly("r1")
         assertThat(reminders).extracting("entryId").containsOnly("e1")
-        assertThat(reminders).extracting("type").containsOnly(ScheduleType.REMINDER.toString())
+        assertThat(reminders).extracting("type").containsOnly(ReminderType.ADHOC.toString())
     }
 
     @Test
@@ -37,10 +37,10 @@ class ScheduleResourceTest: ServerTest() {
         val reminder = get("/reminder/{id}", "r1")
                 .then()
                 .statusCode(200)
-                .extract().to<Reminder>()
-        assertThat(reminder.scheduleId).isEqualTo("r1")
+                .extract().to<AdhocReminder>()
+        assertThat(reminder.reminderId).isEqualTo("r1")
         assertThat(reminder.entryId).isEqualTo("e1")
-        assertThat(reminder.type).isEqualTo(ScheduleType.REMINDER)
+        assertThat(reminder.type).isEqualTo(ReminderType.ADHOC)
     }
 
     @Test
@@ -52,7 +52,7 @@ class ScheduleResourceTest: ServerTest() {
 
     @Test
     fun testCreateReminder() {
-        val reminder = NewReminder(null, "e1", ScheduleType.RECURRING, "every 30 minutes", ZoneId.systemDefault().id)
+        val reminder = NewReminder(null, "e1", ReminderType.RECURRING, "", "every 30 minutes", ZoneId.systemDefault().id)
         val created = given()
                 .contentType(ContentType.JSON)
                 .body(reminder)
@@ -62,13 +62,13 @@ class ScheduleResourceTest: ServerTest() {
                 .statusCode(201)
                 .extract().to<RecurringReminder>()
 
-        assertThat(created.scheduleId).isNotNull()
+        assertThat(created.reminderId).isNotNull()
         assertThat(created.entryId).isEqualTo(reminder.entryId)
         assertThat(created.type).isEqualTo(reminder.type)
         assertThat(created.spec).isEqualTo(reminder.spec)
         assertThat(created.tz).isEqualTo(reminder.tz)
 
-        val retrieved = get("/reminder/{id}", created.scheduleId)
+        val retrieved = get("/reminder/{id}", created.reminderId)
                 .then()
                 .statusCode(200)
                 .extract().to<RecurringReminder>()
@@ -83,7 +83,7 @@ class ScheduleResourceTest: ServerTest() {
 
     @Test
     fun testUpdateReminder() {
-        val reminder = NewReminder("r1", "e1", ScheduleType.RECURRING, "every 30 minutes", "Asia/Singapore")
+        val reminder = NewReminder("r1", "e1", ReminderType.RECURRING, "", "every 30 minutes", "Asia/Singapore")
         val updated = given()
                 .contentType(ContentType.JSON)
                 .body(reminder)
@@ -92,13 +92,13 @@ class ScheduleResourceTest: ServerTest() {
                 .then()
                 .statusCode(200)
                 .extract().to<RecurringReminder>()
-        assertThat(updated.scheduleId).isEqualTo(reminder.scheduleId)
+        assertThat(updated.reminderId).isEqualTo(reminder.reminderId)
         assertThat(updated.entryId).isEqualTo(reminder.entryId)
         assertThat(updated.type).isEqualTo(reminder.type)
         assertThat(updated.spec).isEqualTo(reminder.spec)
         assertThat(updated.tz).isEqualTo(reminder.tz)
 
-        val retrieved = get("/reminder/{id}", reminder.scheduleId)
+        val retrieved = get("/reminder/{id}", reminder.reminderId)
                 .then()
                 .statusCode(200)
                 .extract().to<RecurringReminder>()
@@ -107,7 +107,7 @@ class ScheduleResourceTest: ServerTest() {
 
     @Test
     fun testUpdateReminderReturnsNotFound() {
-        val reminder = NewReminder("invalid", "e1", ScheduleType.RECURRING, "every 30 minutes", ZoneId.systemDefault().id)
+        val reminder = NewReminder("invalid", "e1", ReminderType.RECURRING, "", "every 30 minutes", ZoneId.systemDefault().id)
         given()
             .contentType(ContentType.JSON)
             .body(reminder)

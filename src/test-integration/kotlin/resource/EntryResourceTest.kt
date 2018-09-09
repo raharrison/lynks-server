@@ -5,8 +5,8 @@ import io.restassured.RestAssured.*
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import schedule.Schedule
-import schedule.ScheduleType
+import schedule.Reminder
+import schedule.ReminderType
 import util.createDummyEntry
 import util.createDummyReminder
 import java.time.ZoneId
@@ -16,7 +16,7 @@ class EntryResourceTest: ServerTest() {
     @BeforeEach
     fun createEntries() {
         createDummyEntry("e1", "expedition", "some content here", EntryType.LINK)
-        createDummyReminder("r1", "e1", ScheduleType.REMINDER, (System.currentTimeMillis() + 1.2e+6).toLong().toString())
+        createDummyReminder("r1", "e1", ReminderType.ADHOC, (System.currentTimeMillis() + 1.2e+6).toLong().toString())
         Thread.sleep(10)// prevent having same creation timestamp
         createDummyEntry("e2", "changeover", "other content there", EntryType.NOTE)
         Thread.sleep(10)
@@ -155,11 +155,11 @@ class EntryResourceTest: ServerTest() {
                 .then()
                 .statusCode(200)
                 .extract()
-                .to<List<Schedule>>()
+                .to<List<Reminder>>()
         assertThat(reminders).hasSize(1)
-        assertThat(reminders).extracting("scheduleId").containsOnly("r1")
+        assertThat(reminders).extracting("reminderId").containsOnly("r1")
         assertThat(reminders).extracting("entryId").containsOnly("e1")
-        assertThat(reminders).extracting("type").containsOnly(ScheduleType.REMINDER.toString())
+        assertThat(reminders).extracting("type").containsOnly(ReminderType.ADHOC.toString())
         assertThat(reminders).extracting("spec").isNotEmpty()
         assertThat(reminders).extracting("tz").containsOnly(ZoneId.systemDefault().id)
 

@@ -7,8 +7,8 @@ import group.Collections
 import group.Tags
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.transactions.transaction
-import schedule.ScheduleType
-import schedule.Schedules
+import schedule.ReminderType
+import schedule.Reminders
 import java.time.ZoneId
 
 fun createDummyEntry(id: String, title: String, content: String, type: EntryType) = transaction {
@@ -54,12 +54,12 @@ fun createDummyComment(id: String, entryId: String, content: String) = transacti
     }
 }
 
-fun createDummyReminder(id: String, entryId: String, type: ScheduleType, spec: String, tz: String = ZoneId.systemDefault().id) = transaction {
-    Schedules.insert {
-        it[Schedules.scheduleId] = id
-        it[Schedules.entryId] = entryId
-        it[Schedules.type] = type
-        it[Schedules.spec] = spec
-        it[Schedules.tz] = tz
+fun createDummyReminder(id: String, entryId: String, type: ReminderType, spec: String, tz: String = ZoneId.systemDefault().id) = transaction {
+    Reminders.insert {
+        it[Reminders.reminderId] = id
+        it[Reminders.entryId] = entryId
+        it[Reminders.type] = type
+        it[Reminders.spec] = spec
+        it[Reminders.tz] = tz
     }
 }

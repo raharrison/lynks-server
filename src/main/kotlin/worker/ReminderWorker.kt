@@ -3,9 +3,9 @@ package worker
 import kotlinx.coroutines.experimental.delay
 import notify.Notification
 import notify.NotifyService
+import schedule.AdhocReminder
 import schedule.RecurringReminder
 import schedule.Reminder
-import schedule.Schedule
 import schedule.ScheduleService
 import util.loggerFor
 import java.time.Instant
@@ -17,9 +17,9 @@ import com.github.shyiko.skedule.Schedule as Skedule
 
 private val logger = loggerFor<ReminderWorker>()
 
-class ReminderWorkerRequest(val reminder: Schedule, crudType: CrudType): VariableWorkerRequest(crudType) {
-    override fun hashCode(): Int = reminder.scheduleId.hashCode()
-    override fun equals(other: Any?): Boolean = other is ReminderWorkerRequest && this.reminder.scheduleId == other.reminder.scheduleId
+class ReminderWorkerRequest(val reminder: Reminder, crudType: CrudType): VariableWorkerRequest(crudType) {
+    override fun hashCode(): Int = reminder.reminderId.hashCode()
+    override fun equals(other: Any?): Boolean = other is ReminderWorkerRequest && this.reminder.reminderId == other.reminder.reminderId
 }
 
 class ReminderWorker(private val scheduleService: ScheduleService,
@@ -29,7 +29,7 @@ class ReminderWorker(private val scheduleService: ScheduleService,
         super.beforeWork()
         scheduleService.getAllReminders().forEach {
             when (it) {
-                is Reminder -> launchJob({ launchReminder(it) })
+                is AdhocReminder -> launchJob({ launchReminder(it) })
                 is RecurringReminder -> launchJob({ launchRecurringReminder(it) })
             }
         }
@@ -37,18 +37,18 @@ class ReminderWorker(private val scheduleService: ScheduleService,
 
     override suspend fun doWork(input: ReminderWorkerRequest) {
         when (input.reminder) {
-            is Reminder -> launchReminder(input.reminder)
+            is AdhocReminder -> launchReminder(input.reminder)
             is RecurringReminder -> launchRecurringReminder(input.reminder)
         }
     }
 
-    private suspend fun launchReminder(reminder: Reminder) {
+    private suspend fun launchReminder(reminder: AdhocReminder) {
         logger.info("Reminder = $reminder")
         val fireDate = ZonedDateTime.ofInstant(Instant.ofEpochMilli(reminder.interval), ZoneId.of(reminder.tz))
         val sleep = calcDelay(fireDate)
         logger.info("Sleeping for ${sleep}ms")
         delay(sleep, TimeUnit.MILLISECONDS)
-        if (scheduleService.isActive(reminder.scheduleId))
+        if (scheduleService.isActive(reminder.reminderId))
             reminderElapsed(reminder)
     }
 
@@ -61,12 +61,12 @@ class ReminderWorker(private val scheduleService: ScheduleService,
             val sleep = calcDelay(next)
             logger.info("Sleeping for ${sleep}ms")
             delay(sleep, TimeUnit.MILLISECONDS)
-            if (scheduleService.isActive(reminder.scheduleId)) reminderElapsed(reminder)
+            if (scheduleService.isActive(reminder.reminderId)) reminderElapsed(reminder)
             else break
         }
     }
 
-    private suspend fun reminderElapsed(reminder: Schedule) {
+    private suspend fun reminderElapsed(reminder: Reminder) {
         sendNotification(Notification.reminder(), reminder)
     }
 

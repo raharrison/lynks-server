@@ -7,10 +7,9 @@ import notify.NotifyService
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import schedule.AdhocReminder
 import schedule.RecurringReminder
-import schedule.Reminder
 import schedule.ScheduleService
-import schedule.ScheduleType
 import java.time.*
 import java.time.temporal.ChronoUnit
 import java.util.concurrent.TimeUnit
@@ -38,8 +37,8 @@ class ReminderWorkerTest {
         val tz = ZoneId.systemDefault()
         val fire = Instant.now().plus(15, ChronoUnit.MINUTES).toEpochMilli()
         val fire2 = Instant.now().plus(45, ChronoUnit.MINUTES).toEpochMilli()
-        val reminder = Reminder("sc1", "e1", ScheduleType.REMINDER, fire, tz.id)
-        val reminder2 = Reminder("sc2", "e1", ScheduleType.REMINDER, fire2, tz.id)
+        val reminder = AdhocReminder("sc1", "e1", "", fire, tz.id)
+        val reminder2 = AdhocReminder("sc2", "e1", "", fire2, tz.id)
 
         val worker = ReminderWorker(scheduleService, notifyService).apply { runner = context }.worker()
         worker.send(ReminderWorkerRequest(reminder, CrudType.CREATE))
@@ -64,8 +63,8 @@ class ReminderWorkerTest {
         val tz = ZoneId.of("Asia/Singapore")
         val fire = Instant.now().plus(2, ChronoUnit.HOURS).toEpochMilli()
         val fire2 = Instant.now().plus(2, ChronoUnit.HOURS).plus(30, ChronoUnit.MINUTES).toEpochMilli()
-        val reminder = Reminder("sc1", "e1", ScheduleType.REMINDER, fire, tz.id)
-        val reminder2 = Reminder("sc2", "e1", ScheduleType.REMINDER, fire2, tz.id)
+        val reminder = AdhocReminder("sc1", "e1", "", fire, tz.id)
+        val reminder2 = AdhocReminder("sc2", "e1", "", fire2, tz.id)
 
         val worker = ReminderWorker(scheduleService, notifyService).apply { runner = context }.worker()
         worker.send(ReminderWorkerRequest(reminder, CrudType.CREATE))
@@ -88,8 +87,8 @@ class ReminderWorkerTest {
     @Test
     fun testRecurringReminderSameTimezone() = runBlocking(context) {
         val tz = ZoneId.systemDefault()
-        val reminder = RecurringReminder("sc1", "e1", ScheduleType.RECURRING, "every 3 hours", tz.id)
-        val reminder2 = RecurringReminder("sc1", "e1", ScheduleType.RECURRING, "every 30 minutes", tz.id)
+        val reminder = RecurringReminder("sc1", "e1", "", "every 3 hours", tz.id)
+        val reminder2 = RecurringReminder("sc1", "e1", "", "every 30 minutes", tz.id)
 
         val worker = ReminderWorker(scheduleService, notifyService).apply { runner = context }.worker()
         worker.send(ReminderWorkerRequest(reminder, CrudType.CREATE))
@@ -122,7 +121,7 @@ class ReminderWorkerTest {
     @Test
     fun testRecurringReminderDifferentTimezone() = runBlocking(context) {
         val tz = ZoneId.of("Asia/Singapore")
-        val reminder = RecurringReminder("sc1", "e1", ScheduleType.RECURRING, "every day 06:00", tz.id)
+        val reminder = RecurringReminder("sc1", "e1", "", "every day 06:00", tz.id)
 
         val worker = ReminderWorker(scheduleService, notifyService).apply { runner = context }.worker()
         worker.send(ReminderWorkerRequest(reminder, CrudType.CREATE))
@@ -149,29 +148,29 @@ class ReminderWorkerTest {
     @Test
     fun testReminderNotExecutedIfDeleted() = runBlocking(context) {
         val fire = Instant.now().plus(15, ChronoUnit.MINUTES).toEpochMilli()
-        val reminder = Reminder("sc1", "e1", ScheduleType.REMINDER, fire, ZoneId.systemDefault().id)
+        val reminder = AdhocReminder("sc1", "e1", "", fire, ZoneId.systemDefault().id)
 
-        every { scheduleService.isActive(reminder.scheduleId) } returns false
+        every { scheduleService.isActive(reminder.reminderId) } returns false
         val worker = ReminderWorker(scheduleService, notifyService).apply { runner = context }.worker()
         worker.send(ReminderWorkerRequest(reminder, CrudType.CREATE))
         worker.close()
 
         context.advanceTimeBy(16, TimeUnit.MINUTES)
         coVerify(exactly = 0) { notifyService.accept(any(), reminder) }
-        verify(exactly = 1) { scheduleService.isActive(reminder.scheduleId) }
+        verify(exactly = 1) { scheduleService.isActive(reminder.reminderId) }
     }
 
     @Test
     fun testRecurringNotDeletedIfDeleted() = runBlocking(context) {
-        val reminder = RecurringReminder("sc1", "e1", ScheduleType.RECURRING, "every 3 hours", ZoneId.systemDefault().id)
+        val reminder = RecurringReminder("sc1", "e1", "", "every 3 hours", ZoneId.systemDefault().id)
 
-        every { scheduleService.isActive(reminder.scheduleId) } returns false
+        every { scheduleService.isActive(reminder.reminderId) } returns false
         val worker = ReminderWorker(scheduleService, notifyService).apply { runner = context }.worker()
         worker.send(ReminderWorkerRequest(reminder, CrudType.CREATE))
 
         context.advanceTimeBy(185, TimeUnit.MINUTES)
         coVerify(exactly = 0) { notifyService.accept(any(), reminder) }
-        verify(exactly = 1) { scheduleService.isActive(reminder.scheduleId) }
+        verify(exactly = 1) { scheduleService.isActive(reminder.reminderId) }
 
         worker.close()
         Unit
@@ -181,8 +180,8 @@ class ReminderWorkerTest {
     fun testInitFromStart() = runBlocking(context) {
         val tz = ZoneId.systemDefault()
         val fire = Instant.now().plus(15, ChronoUnit.MINUTES).toEpochMilli()
-        val reminder = Reminder("sc1", "e1", ScheduleType.REMINDER, fire, tz.id)
-        val recurring = RecurringReminder("sc1", "e1", ScheduleType.RECURRING, "every 3 hours", tz.id)
+        val reminder = AdhocReminder("sc1", "e1", "", fire, tz.id)
+        val recurring = RecurringReminder("sc1", "e1", "", "every 3 hours", tz.id)
 
         every { scheduleService.getAllReminders() } returns listOf(reminder, recurring)
 
@@ -191,7 +190,7 @@ class ReminderWorkerTest {
         context.advanceTimeBy(185, TimeUnit.MINUTES)
         coVerify(exactly = 1) { notifyService.accept(any(), reminder) }
         coVerify(exactly = 1) { notifyService.accept(any(), recurring) }
-        verify(exactly = 2) { scheduleService.isActive(reminder.scheduleId) }
+        verify(exactly = 2) { scheduleService.isActive(reminder.reminderId) }
 
         worker.close()
         Unit

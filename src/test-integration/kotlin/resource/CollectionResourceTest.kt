@@ -123,6 +123,7 @@ class CollectionResourceTest : ServerTest() {
     @Test
     fun testUpdateCollection() {
         val updatedCollection = NewCollection("c7", "updated", null)
+        Thread.sleep(10)
         val updated = given()
                 .contentType(ContentType.JSON)
                 .body(updatedCollection)

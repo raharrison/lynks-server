@@ -7,84 +7,83 @@ import java.time.ZoneId
 
 class ScheduleService {
 
-    private fun toModel(row: ResultRow): Schedule {
-        val type = row[Schedules.type]
+    private fun toModel(row: ResultRow): Reminder {
+        val type = row[Reminders.type]
         return when (type) {
-            ScheduleType.REMINDER -> Reminder(row[Schedules.scheduleId], row[Schedules.entryId],
-                    type, row[Schedules.spec].toLong(), row[Schedules.tz])
-            ScheduleType.RECURRING -> RecurringReminder(row[Schedules.scheduleId], row[Schedules.entryId],
-                    type, row[Schedules.spec], row[Schedules.tz])
+            ReminderType.ADHOC -> AdhocReminder(row[Reminders.reminderId], row[Reminders.entryId],
+                    row[Reminders.message], row[Reminders.spec].toLong(), row[Reminders.tz])
+            ReminderType.RECURRING -> RecurringReminder(row[Reminders.reminderId], row[Reminders.entryId],
+                    row[Reminders.message], row[Reminders.spec], row[Reminders.tz])
         }
     }
 
     fun getRemindersForEntry(eId: String) = transaction {
-        Schedules.select {
-            (Schedules.entryId eq eId) and ((Schedules.type eq ScheduleType.RECURRING) or
-                    (Schedules.type eq ScheduleType.REMINDER))
-        }
+        Reminders.select { Reminders.entryId eq eId }
                 .map { toModel(it) }
     }
 
     fun getAllReminders() = transaction {
-        Schedules.select { (Schedules.type eq ScheduleType.RECURRING) or (Schedules.type eq ScheduleType.REMINDER) }
+        Reminders.selectAll()
                 .map { toModel(it) }
     }
 
-    fun get(id: String): Schedule? = transaction {
-        Schedules.select { Schedules.scheduleId eq id }
+    fun get(id: String): Reminder? = transaction {
+        Reminders.select { Reminders.reminderId eq id }
                 .mapNotNull { toModel(it) }.singleOrNull()
     }
 
     fun isActive(id: String): Boolean = transaction {
-        Schedules.slice(Schedules.scheduleId)
-                .select { Schedules.scheduleId eq id }.count() > 0
+        Reminders.slice(Reminders.reminderId)
+                .select { Reminders.reminderId eq id }.count() > 0
     }
 
-    fun add(job: Schedule) = transaction {
-        Schedules.insert {
-            it[Schedules.scheduleId] = job.scheduleId
-            it[Schedules.entryId] = job.entryId
-            it[Schedules.type] = job.type
-            it[Schedules.spec] = job.spec
-            it[Schedules.tz] = checkValidTimeZone(job.tz)
+    fun add(job: Reminder) = transaction {
+        Reminders.insert {
+            it[Reminders.reminderId] = job.reminderId
+            it[Reminders.entryId] = job.entryId
+            it[Reminders.type] = job.type
+            it[Reminders.message] = job.message
+            it[Reminders.spec] = job.spec
+            it[Reminders.tz] = checkValidTimeZone(job.tz)
         }
-        get(job.scheduleId)!!
+        get(job.reminderId)!!
     }
 
-    fun addReminder(reminder: NewReminder): Schedule = transaction {
+    fun addReminder(reminder: NewReminder): Reminder = transaction {
         val id = RandomUtils.generateUid()
-        Schedules.insert {
-            it[Schedules.scheduleId] = id
-            it[Schedules.entryId] = reminder.entryId
-            it[Schedules.type] = reminder.type
-            it[Schedules.spec] = reminder.spec
-            it[Schedules.tz] = checkValidTimeZone(reminder.tz)
+        Reminders.insert {
+            it[Reminders.reminderId] = id
+            it[Reminders.entryId] = reminder.entryId
+            it[Reminders.type] = reminder.type
+            it[Reminders.message] = reminder.message
+            it[Reminders.spec] = reminder.spec
+            it[Reminders.tz] = checkValidTimeZone(reminder.tz)
         }
         get(id)!!
     }
 
-    fun updateReminder(reminder: NewReminder): Schedule? = transaction {
-        if (reminder.scheduleId == null) {
+    fun updateReminder(reminder: NewReminder): Reminder? = transaction {
+        if (reminder.reminderId == null) {
             addReminder(reminder)
         } else {
-            val updated = Schedules.update({ Schedules.scheduleId eq reminder.scheduleId }) {
-                it[Schedules.type] = reminder.type
-                it[Schedules.spec] = reminder.spec
-                it[Schedules.tz] = checkValidTimeZone(reminder.tz)
+            val updated = Reminders.update({ Reminders.reminderId eq reminder.reminderId }) {
+                it[Reminders.type] = reminder.type
+                it[Reminders.spec] = reminder.spec
+                it[Reminders.tz] = checkValidTimeZone(reminder.tz)
             }
-            if(updated > 0) get(reminder.scheduleId) else null
+            if (updated > 0) get(reminder.reminderId) else null
         }
     }
 
     fun delete(id: String) = transaction {
-        Schedules.deleteWhere { Schedules.scheduleId eq id } > 0
+        Reminders.deleteWhere { Reminders.reminderId eq id } > 0
     }
 
     private fun checkValidTimeZone(tz: String): String {
         try {
             ZoneId.of(tz)
             return tz
-        } catch(e: Exception) {
+        } catch (e: Exception) {
             throw IllegalArgumentException("Invalid timezone code: $tz")
         }
     }
