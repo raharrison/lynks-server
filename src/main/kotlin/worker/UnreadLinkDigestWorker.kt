@@ -4,6 +4,7 @@ import entry.LinkService
 import kotlinx.coroutines.experimental.delay
 import notify.NotifyService
 import user.Preferences
+import user.UserService
 import util.ResourceTemplater
 import java.time.DayOfWeek
 import java.time.Instant
@@ -21,11 +22,15 @@ class UnreadLinkDigestWorkerRequest(val preferences: Preferences, crudType: Crud
     override fun equals(other: Any?): Boolean = other is UnreadLinkDigestWorkerRequest
 }
 
-class UnreadLinkDigestWorker(private val linkService: LinkService, notifyService: NotifyService): VariableChannelBasedWorker<UnreadLinkDigestWorkerRequest>(notifyService) {
+class UnreadLinkDigestWorker(private val linkService: LinkService, private val userService: UserService,
+                             notifyService: NotifyService): VariableChannelBasedWorker<UnreadLinkDigestWorkerRequest>(notifyService) {
 
     private val random = Random()
 
-    // TODO: beforeWork to start worker with initial preferences
+    override suspend fun beforeWork() {
+        val preferences = userService.currentUserPreferences
+        this.onChannelReceive(UnreadLinkDigestWorkerRequest(preferences, CrudType.CREATE))
+    }
 
     override suspend fun doWork(input: UnreadLinkDigestWorkerRequest) {
         if(!input.preferences.digest) {

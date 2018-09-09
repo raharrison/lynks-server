@@ -16,7 +16,7 @@ class WorkerRegistry {
             discussionWorker = DiscussionFinderWorker(get(),
                     WebResourceRetriever(), get()).worker()
             taskWorker = TaskRunnerWorker(get()).worker()
-            unreadDigestWorker = UnreadLinkDigestWorker(get(), get()).worker()
+            unreadDigestWorker = UnreadLinkDigestWorker(get(), get(), get()).worker()
         }
     }
 
