@@ -5,7 +5,7 @@ import group.Tag
 
 data class Note(
         override val id: String,
-        val title: String,
+        override val title: String,
         val plainText: String,
         val markdownText: String,
         override val dateUpdated: Long,

@@ -5,7 +5,7 @@ import group.Tag
 
 data class Link(
         override val id: String,
-        val title: String,
+        override val title: String,
         val url: String,
         val source: String,
         var content: String?,

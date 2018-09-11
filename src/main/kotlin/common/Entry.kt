@@ -28,6 +28,7 @@ object EntryVersions: BaseEntries("EntryVersion") {
 }
 
 interface Entry: IdBasedCreatedEntity {
+    val title: String
     val dateUpdated: Long
     val version: Int
     val starred: Boolean
