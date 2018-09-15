@@ -1,5 +1,6 @@
 package worker
 
+import entry.EntryService
 import kotlinx.coroutines.experimental.delay
 import notify.Notification
 import notify.NotifyService
@@ -7,6 +8,7 @@ import schedule.AdhocReminder
 import schedule.RecurringReminder
 import schedule.Reminder
 import schedule.ScheduleService
+import util.ResourceTemplater
 import util.loggerFor
 import java.time.Instant
 import java.time.ZoneId
@@ -22,7 +24,7 @@ class ReminderWorkerRequest(val reminder: Reminder, crudType: CrudType): Variabl
     override fun equals(other: Any?): Boolean = other is ReminderWorkerRequest && this.reminder.reminderId == other.reminder.reminderId
 }
 
-class ReminderWorker(private val scheduleService: ScheduleService,
+class ReminderWorker(private val scheduleService: ScheduleService, private val entryService: EntryService,
                      notifyService: NotifyService) : VariableChannelBasedWorker<ReminderWorkerRequest>(notifyService) {
 
     override suspend fun beforeWork() {
@@ -67,10 +69,24 @@ class ReminderWorker(private val scheduleService: ScheduleService,
     }
 
     private suspend fun reminderElapsed(reminder: Reminder) {
-        if(reminder.message == null)
+        // send notification
+        if(reminder.message == null) {
             sendNotification(Notification.reminder(), reminder)
-        else
+        }
+        else {
             sendNotification(Notification.reminder(reminder.message!!), reminder)
+        }
+
+        // send email
+        val entry = entryService.get(reminder.entryId)
+        val content = mapOf("title" to entry?.title,
+                    "spec" to reminder.spec,
+                    "message" to reminder.message)
+
+        val template = ResourceTemplater("reminder.html")
+        val email = template.apply(content)
+
+        notifyService.sendEmail("Lynks - Reminder Elapsed", email)
     }
 
     private fun calcDelay(date: ZonedDateTime): Long {

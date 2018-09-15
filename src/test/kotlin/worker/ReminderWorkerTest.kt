@@ -1,5 +1,6 @@
 package worker
 
+import entry.EntryService
 import io.mockk.*
 import kotlinx.coroutines.experimental.runBlocking
 import kotlinx.coroutines.experimental.test.TestCoroutineContext
@@ -18,12 +19,15 @@ class ReminderWorkerTest {
 
     private val scheduleService = mockk<ScheduleService>()
     private val notifyService = mockk<NotifyService>()
+    private val entryService = mockk<EntryService>()
     private val context = TestCoroutineContext()
 
     @BeforeEach
     fun before() {
         every { scheduleService.getAllReminders() } returns emptyList()
+        every { entryService.get("e1") } returns null
         coEvery { notifyService.accept(any(), any()) } just Runs
+        coEvery { notifyService.sendEmail(any(), any())} just Runs
         every { scheduleService.isActive(any()) } returns true
     }
 
@@ -40,7 +44,7 @@ class ReminderWorkerTest {
         val reminder = AdhocReminder("sc1", "e1", "message", fire, tz.id)
         val reminder2 = AdhocReminder("sc2", "e1", "message", fire2, tz.id)
 
-        val worker = ReminderWorker(scheduleService, notifyService).apply { runner = context }.worker()
+        val worker = createWorker().worker()
         worker.send(ReminderWorkerRequest(reminder, CrudType.CREATE))
         worker.send(ReminderWorkerRequest(reminder2, CrudType.CREATE))
         worker.close()
@@ -66,7 +70,7 @@ class ReminderWorkerTest {
         val reminder = AdhocReminder("sc1", "e1", "message", fire, tz.id)
         val reminder2 = AdhocReminder("sc2", "e1", "message", fire2, tz.id)
 
-        val worker = ReminderWorker(scheduleService, notifyService).apply { runner = context }.worker()
+        val worker = createWorker().worker()
         worker.send(ReminderWorkerRequest(reminder, CrudType.CREATE))
         worker.send(ReminderWorkerRequest(reminder2, CrudType.CREATE))
         worker.close()
@@ -90,7 +94,7 @@ class ReminderWorkerTest {
         val reminder = RecurringReminder("sc1", "e1", "message", "every 3 hours", tz.id)
         val reminder2 = RecurringReminder("sc1", "e1", "message", "every 30 minutes", tz.id)
 
-        val worker = ReminderWorker(scheduleService, notifyService).apply { runner = context }.worker()
+        val worker = createWorker().worker()
         worker.send(ReminderWorkerRequest(reminder, CrudType.CREATE))
         worker.send(ReminderWorkerRequest(reminder2, CrudType.CREATE))
 
@@ -123,7 +127,7 @@ class ReminderWorkerTest {
         val tz = ZoneId.of("Asia/Singapore")
         val reminder = RecurringReminder("sc1", "e1", "message", "every day 06:00", tz.id)
 
-        val worker = ReminderWorker(scheduleService, notifyService).apply { runner = context }.worker()
+        val worker = createWorker().worker()
         worker.send(ReminderWorkerRequest(reminder, CrudType.CREATE))
 
         val day = LocalDateTime.now(tz).let {
@@ -151,7 +155,7 @@ class ReminderWorkerTest {
         val reminder = AdhocReminder("sc1", "e1", "message", fire, ZoneId.systemDefault().id)
 
         every { scheduleService.isActive(reminder.reminderId) } returns false
-        val worker = ReminderWorker(scheduleService, notifyService).apply { runner = context }.worker()
+        val worker = createWorker().worker()
         worker.send(ReminderWorkerRequest(reminder, CrudType.CREATE))
         worker.close()
 
@@ -165,7 +169,7 @@ class ReminderWorkerTest {
         val reminder = RecurringReminder("sc1", "e1", "message", "every 3 hours", ZoneId.systemDefault().id)
 
         every { scheduleService.isActive(reminder.reminderId) } returns false
-        val worker = ReminderWorker(scheduleService, notifyService).apply { runner = context }.worker()
+        val worker = createWorker().worker()
         worker.send(ReminderWorkerRequest(reminder, CrudType.CREATE))
 
         context.advanceTimeBy(185, TimeUnit.MINUTES)
@@ -185,7 +189,7 @@ class ReminderWorkerTest {
 
         every { scheduleService.getAllReminders() } returns listOf(reminder, recurring)
 
-        val worker = ReminderWorker(scheduleService, notifyService).apply { runner = context }.worker()
+        val worker = createWorker().worker()
 
         context.advanceTimeBy(185, TimeUnit.MINUTES)
         coVerify(exactly = 1) { notifyService.accept(any(), reminder) }
@@ -195,4 +199,6 @@ class ReminderWorkerTest {
         worker.close()
         Unit
     }
+
+    private fun createWorker() = ReminderWorker(scheduleService, entryService, notifyService).apply { runner = context }
 }
