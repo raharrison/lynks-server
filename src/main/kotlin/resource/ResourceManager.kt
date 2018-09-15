@@ -45,7 +45,7 @@ class ResourceManager {
         if(Files.exists(tempPath)) {
             val target = Paths.get(Environment.server.resourceBasePath, entryId)
             Files.move(tempPath, target)
-            Files.list(target).use {
+            Files.list(target).use { it ->
                 it.forEach {
                     val id = RandomUtils.generateUid()
                     val size = Files.size(it)

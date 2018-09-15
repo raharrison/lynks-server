@@ -16,7 +16,7 @@ class TaskService(private val entryService: EntryService,
                   private val workerRegistry: WorkerRegistry) {
 
     fun runTask(eid: String, taskId: String): Boolean {
-        entryService.get(eid)?.let {
+        entryService.get(eid)?.let { it ->
             it.props.getTask(taskId)?.let {
                 val task = convertToConcreteTask(taskId, eid, it)
                 workerRegistry.acceptTaskWork(task, task.createContext(it.input))
