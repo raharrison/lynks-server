@@ -8,9 +8,9 @@ import notify.NotifyService
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import schedule.AdhocReminder
-import schedule.RecurringReminder
-import schedule.ReminderService
+import reminder.AdhocReminder
+import reminder.RecurringReminder
+import reminder.ReminderService
 import java.time.*
 import java.time.temporal.ChronoUnit
 import java.util.concurrent.TimeUnit

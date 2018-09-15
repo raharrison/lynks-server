@@ -1,4 +1,4 @@
-package schedule
+package reminder
 
 import io.ktor.application.call
 import io.ktor.http.HttpStatusCode

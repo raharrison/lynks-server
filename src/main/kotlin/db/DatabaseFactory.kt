@@ -16,8 +16,8 @@ import org.jetbrains.exposed.sql.SchemaUtils.create
 import org.jetbrains.exposed.sql.deleteAll
 import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.jetbrains.exposed.sql.transactions.transaction
+import reminder.Reminders
 import resource.Resources
-import schedule.Reminders
 import user.UserPreferences
 import util.loggerFor
 

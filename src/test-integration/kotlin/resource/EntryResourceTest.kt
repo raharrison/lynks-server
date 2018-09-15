@@ -5,8 +5,8 @@ import io.restassured.RestAssured.*
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import schedule.Reminder
-import schedule.ReminderType
+import reminder.Reminder
+import reminder.ReminderType
 import util.createDummyEntry
 import util.createDummyReminder
 import java.time.ZoneId

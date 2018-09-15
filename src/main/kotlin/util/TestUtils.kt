@@ -7,8 +7,8 @@ import group.Collections
 import group.Tags
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.transactions.transaction
-import schedule.ReminderType
-import schedule.Reminders
+import reminder.ReminderType
+import reminder.Reminders
 import java.time.ZoneId
 
 fun createDummyEntry(id: String, title: String, content: String, type: EntryType) = transaction {

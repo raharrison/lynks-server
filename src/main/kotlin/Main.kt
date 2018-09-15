@@ -28,10 +28,10 @@ import io.ktor.server.netty.Netty
 import io.ktor.websocket.WebSockets
 import notify.NotifyService
 import notify.notify
+import reminder.ReminderService
+import reminder.reminder
 import resource.ResourceManager
 import resource.resources
-import schedule.ReminderService
-import schedule.reminder
 import suggest.SuggestionService
 import suggest.suggest
 import task.TaskService

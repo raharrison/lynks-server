@@ -6,7 +6,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import schedule.*
+import reminder.*
 import util.createDummyEntry
 import java.sql.SQLException
 import java.time.ZoneId
@@ -25,13 +25,13 @@ class ReminderServiceTest : DatabaseTest() {
 
     @Test
     fun testAddNewReminderDirectly() {
-        val schedule = reminderService.add(reminder("sid", "e1", ReminderType.ADHOC, "message", 100))
-        assertThat(schedule.reminderId).isEqualTo("sid")
-        assertThat(schedule.entryId).isEqualTo("e1")
-        assertThat(schedule.spec).isEqualTo("100")
-        assertThat(schedule.message).isEqualTo("message")
-        val retrieved = reminderService.get(schedule.reminderId)
-        assertThat(retrieved).isEqualTo(schedule)
+        val reminder = reminderService.add(reminder("sid", "e1", ReminderType.ADHOC, "message", 100))
+        assertThat(reminder.reminderId).isEqualTo("sid")
+        assertThat(reminder.entryId).isEqualTo("e1")
+        assertThat(reminder.spec).isEqualTo("100")
+        assertThat(reminder.message).isEqualTo("message")
+        val retrieved = reminderService.get(reminder.reminderId)
+        assertThat(retrieved).isEqualTo(reminder)
     }
 
     @Test
@@ -77,7 +77,7 @@ class ReminderServiceTest : DatabaseTest() {
     }
 
     @Test
-    fun testAddScheduleNoEntry() {
+    fun testAddReminderNoEntry() {
         assertThrows<SQLException> {
             reminderService.add(reminder("sid", "nothing", ReminderType.ADHOC, "message", 100))
         }
@@ -116,7 +116,7 @@ class ReminderServiceTest : DatabaseTest() {
     }
 
     @Test
-    fun testGetSchedulesReturnsType() {
+    fun testGetRemindersReturnsType() {
         val s1 = reminderService.add(reminder("sid", "e1", ReminderType.ADHOC, "message", 100))
         val s2 = reminderService.add(reminder("sid3", "e2", ReminderType.RECURRING, "message", 300))
         assertThat(reminderService.get(s1.reminderId)).isInstanceOf(Reminder::class.java)
@@ -172,7 +172,7 @@ class ReminderServiceTest : DatabaseTest() {
     }
 
     @Test
-    fun testDeleteSchedule() {
+    fun testDeleteReminder() {
         val s1 = reminderService.add(reminder("sid", "e2", ReminderType.RECURRING, "message", 300))
         assertThat(reminderService.getAllReminders()).hasSize(1)
 

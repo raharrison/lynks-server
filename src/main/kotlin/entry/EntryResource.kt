@@ -7,7 +7,7 @@ import io.ktor.routing.Route
 import io.ktor.routing.get
 import io.ktor.routing.post
 import io.ktor.routing.route
-import schedule.ReminderService
+import reminder.ReminderService
 import util.pageRequest
 
 fun Route.entry(entryService: EntryService, reminderService: ReminderService) {

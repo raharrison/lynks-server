@@ -7,12 +7,12 @@ import io.restassured.http.ContentType
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import schedule.*
+import reminder.*
 import util.createDummyEntry
 import util.createDummyReminder
 import java.time.ZoneId
 
-class ScheduleResourceTest: ServerTest() {
+class ReminderResourceTest: ServerTest() {
 
     @BeforeEach
     fun createEntries() {

@@ -1,4 +1,4 @@
-package schedule
+package reminder
 
 import common.Entries
 import org.jetbrains.exposed.sql.ReferenceOption

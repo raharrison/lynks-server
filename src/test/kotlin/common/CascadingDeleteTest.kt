@@ -8,10 +8,10 @@ import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import reminder.ReminderService
+import reminder.ReminderType
 import resource.ResourceManager
 import resource.ResourceType
-import schedule.ReminderService
-import schedule.ReminderType
 import util.*
 
 class CascadingDeleteTest: DatabaseTest() {

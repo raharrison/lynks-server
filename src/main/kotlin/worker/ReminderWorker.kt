@@ -4,10 +4,10 @@ import entry.EntryService
 import kotlinx.coroutines.experimental.delay
 import notify.Notification
 import notify.NotifyService
-import schedule.AdhocReminder
-import schedule.RecurringReminder
-import schedule.Reminder
-import schedule.ReminderService
+import reminder.AdhocReminder
+import reminder.RecurringReminder
+import reminder.Reminder
+import reminder.ReminderService
 import util.ResourceTemplater
 import util.loggerFor
 import java.time.Instant
