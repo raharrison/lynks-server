@@ -11,6 +11,7 @@ import io.webfolder.cdp.type.page.ResourceType
 import resource.JPG
 import resource.PDF
 import resource.PNG
+import task.DiscussionFinderTask
 import task.LinkProcessingTask
 import java.awt.Color
 import java.awt.Image
@@ -48,6 +49,7 @@ interface LinkProcessor : AutoCloseable {
 
     suspend fun enrich(props: BaseProperties) {
         props.addTask("Process Link", LinkProcessingTask.build())
+        props.addTask("Find Discussions", DiscussionFinderTask.build())
     }
 
     val html: String?
