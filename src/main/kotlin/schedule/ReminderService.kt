@@ -5,7 +5,7 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import util.RandomUtils
 import java.time.ZoneId
 
-class ScheduleService {
+class ReminderService {
 
     private fun toModel(row: ResultRow): Reminder {
         val type = row[Reminders.type]

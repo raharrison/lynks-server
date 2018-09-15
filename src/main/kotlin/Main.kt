@@ -30,8 +30,8 @@ import notify.NotifyService
 import notify.notify
 import resource.ResourceManager
 import resource.resources
-import schedule.ScheduleService
-import schedule.schedule
+import schedule.ReminderService
+import schedule.reminder
 import suggest.SuggestionService
 import suggest.suggest
 import task.TaskService
@@ -68,7 +68,7 @@ fun Application.module() {
         register(LinkService(get(), get(), get(), get()))
         register(NoteService(get(), get(), get()))
         register(CommentService())
-        register(ScheduleService())
+        register(ReminderService())
         register(SuggestionService(get()))
         register(TaskService(get(), this, get()))
         register(NotifyService(get()))
@@ -89,7 +89,7 @@ fun Application.module() {
                 collection(get())
                 notify(get())
                 health()
-                schedule(get())
+                reminder(get())
                 user(get(), get())
             }
         }

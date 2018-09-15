@@ -7,7 +7,7 @@ import notify.NotifyService
 import schedule.AdhocReminder
 import schedule.RecurringReminder
 import schedule.Reminder
-import schedule.ScheduleService
+import schedule.ReminderService
 import util.ResourceTemplater
 import util.loggerFor
 import java.time.Instant
@@ -24,12 +24,12 @@ class ReminderWorkerRequest(val reminder: Reminder, crudType: CrudType): Variabl
     override fun equals(other: Any?): Boolean = other is ReminderWorkerRequest && this.reminder.reminderId == other.reminder.reminderId
 }
 
-class ReminderWorker(private val scheduleService: ScheduleService, private val entryService: EntryService,
+class ReminderWorker(private val reminderService: ReminderService, private val entryService: EntryService,
                      notifyService: NotifyService) : VariableChannelBasedWorker<ReminderWorkerRequest>(notifyService) {
 
     override suspend fun beforeWork() {
         super.beforeWork()
-        scheduleService.getAllReminders().forEach {
+        reminderService.getAllReminders().forEach {
             when (it) {
                 is AdhocReminder -> launchJob({ launchReminder(it) })
                 is RecurringReminder -> launchJob({ launchRecurringReminder(it) })
@@ -50,7 +50,7 @@ class ReminderWorker(private val scheduleService: ScheduleService, private val e
         val sleep = calcDelay(fireDate)
         logger.info("Sleeping for ${sleep}ms")
         delay(sleep, TimeUnit.MILLISECONDS)
-        if (scheduleService.isActive(reminder.reminderId))
+        if (reminderService.isActive(reminder.reminderId))
             reminderElapsed(reminder)
     }
 
@@ -63,7 +63,7 @@ class ReminderWorker(private val scheduleService: ScheduleService, private val e
             val sleep = calcDelay(next)
             logger.info("Sleeping for ${sleep}ms")
             delay(sleep, TimeUnit.MILLISECONDS)
-            if (scheduleService.isActive(reminder.reminderId)) reminderElapsed(reminder)
+            if (reminderService.isActive(reminder.reminderId)) reminderElapsed(reminder)
             else break
         }
     }

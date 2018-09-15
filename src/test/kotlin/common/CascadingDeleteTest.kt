@@ -10,8 +10,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import resource.ResourceManager
 import resource.ResourceType
+import schedule.ReminderService
 import schedule.ReminderType
-import schedule.ScheduleService
 import util.*
 
 class CascadingDeleteTest: DatabaseTest() {
@@ -20,7 +20,7 @@ class CascadingDeleteTest: DatabaseTest() {
     private val collectionService = CollectionService()
     private val resourceManager = ResourceManager()
     private val commentService = CommentService()
-    private val scheduleService = ScheduleService()
+    private val reminderService = ReminderService()
     private lateinit var linkService: LinkService
 
     @BeforeEach
@@ -120,17 +120,17 @@ class CascadingDeleteTest: DatabaseTest() {
 
     @Test
     fun testDeletingScheduleDoesntDeleteEntry() {
-        assertThat(scheduleService.getRemindersForEntry("id1")).hasSize(1)
-        assertThat(scheduleService.delete("rem1")).isTrue()
-        assertThat(scheduleService.getRemindersForEntry("id1")).isEmpty()
+        assertThat(reminderService.getRemindersForEntry("id1")).hasSize(1)
+        assertThat(reminderService.delete("rem1")).isTrue()
+        assertThat(reminderService.getRemindersForEntry("id1")).isEmpty()
         assertThat(linkService.get("id1")).isNotNull
     }
 
     @Test
     fun testDeletingEntryDeletesSchedules() {
-        assertThat(scheduleService.getRemindersForEntry("id1")).hasSize(1)
+        assertThat(reminderService.getRemindersForEntry("id1")).hasSize(1)
         assertThat(linkService.delete("id1")).isTrue()
-        assertThat(scheduleService.getRemindersForEntry("id1")).isEmpty()
+        assertThat(reminderService.getRemindersForEntry("id1")).isEmpty()
         assertThat(linkService.get("id1")).isNull()
     }
 
@@ -139,7 +139,7 @@ class CascadingDeleteTest: DatabaseTest() {
         assertThat(commentService.deleteComment("id1", "c1")).isTrue()
         assertThat(tagService.delete("t1")).isTrue()
         assertThat(collectionService.delete("c1")).isTrue()
-        assertThat(scheduleService.delete("rem1")).isTrue()
+        assertThat(reminderService.delete("rem1")).isTrue()
         assertThat(resourceManager.delete("r1")).isTrue()
 
         assertThat(linkService.get("id1")).isNotNull
