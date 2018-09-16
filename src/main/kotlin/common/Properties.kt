@@ -16,6 +16,8 @@ open class BaseProperties {
 
     fun containsAttribute(key: String) = attributes.contains(key)
 
+    fun removeAttribute(key: String) = attributes.remove(key)
+
     fun addTask(task: TaskDefinition) {
         val index = tasks.indexOfFirst { it.description == task.description }
         if(index > -1)

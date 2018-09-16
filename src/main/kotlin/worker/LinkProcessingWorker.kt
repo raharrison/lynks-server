@@ -55,9 +55,14 @@ class LinkProcessorWorker(private val resourceManager: ResourceManager,
                     it.html?.let { resourceManager.saveGeneratedResource(link.id, ResourceType.DOCUMENT, HTML, it.toByteArray()) }
                 }
             }
+            link.props.removeAttribute("dead")
             linkService.update(link)
             sendNotification(body=link)
         } catch (e: Exception) {
+            // mark as dead if processing failed
+            link.props.addAttribute("dead", System.currentTimeMillis())
+            linkService.update(link)
+
             sendNotification(Notification.error("Error occurred processing link"))
             // log and reschedule
         }

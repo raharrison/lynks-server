@@ -41,4 +41,18 @@ class PropertiesTest {
         assertThat(task2?.description).isEqualTo("desc")
         assertThat(task2?.input).hasSize(1).isEqualTo(builder.context.input)
     }
+
+    @Test
+    fun testAttributes() {
+        val props = BaseProperties()
+        assertThat(props.getAttribute("invalid")).isNull()
+
+        props.addAttribute("attr", "val")
+        assertThat(props.containsAttribute("attr")).isTrue()
+        assertThat(props.getAttribute("attr")).isEqualTo("val")
+
+        props.removeAttribute("attr")
+        assertThat(props.containsAttribute("attr")).isFalse()
+        assertThat(props.getAttribute("attr")).isNull()
+    }
 }

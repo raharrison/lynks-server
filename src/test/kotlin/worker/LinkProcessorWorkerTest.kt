@@ -69,6 +69,30 @@ class LinkProcessorWorkerTest {
     }
 
     @Test
+    fun testDefaultPersistCompletedExceptionally() = runBlocking(TestCoroutineContext()) {
+        val link = Link("id1", "title", "google.com", "google.com", "", 100)
+
+        val processor = mockk<LinkProcessor>()
+        coEvery { notifyService.accept(any(), null) } just Runs
+        every { processor.close() } just Runs
+
+        coEvery { processorFactory.createProcessors(link.url) } returns listOf(processor)
+        every { linkService.update(link) } returns link
+
+        val channel = worker.apply { runner = coroutineContext }.worker()
+        channel.send(PersistLinkProcessingRequest(link))
+        channel.close()
+
+        coVerify(exactly = 1) { processorFactory.createProcessors(link.url) }
+        verify(exactly = 1) { processor.close() }
+        verify(exactly = 1) { linkService.update(link) }
+        coVerify(exactly = 1) { notifyService.accept(any(), null) }
+        assertThat(link.props.containsAttribute("dead")).isTrue()
+
+        Unit
+    }
+
+    @Test
     fun testDefaultSuggest() = runBlocking(TestCoroutineContext()) {
         val url = "google.com"
 
