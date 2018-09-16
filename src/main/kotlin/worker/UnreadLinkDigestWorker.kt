@@ -17,7 +17,7 @@ import java.time.temporal.TemporalAdjusters
 import java.util.*
 import java.util.concurrent.TimeUnit
 
-class UnreadLinkDigestWorkerRequest(val preferences: Preferences, crudType: CrudType): VariableWorkerRequest(crudType) {
+class UnreadLinkDigestWorkerRequest(val preferences: Preferences, crudType: CrudType = CrudType.UPDATE): VariableWorkerRequest(crudType) {
     override fun hashCode(): Int = 1
     override fun equals(other: Any?): Boolean = other is UnreadLinkDigestWorkerRequest
 }

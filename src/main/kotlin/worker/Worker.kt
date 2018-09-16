@@ -4,11 +4,9 @@ import kotlinx.coroutines.experimental.DefaultDispatcher
 import kotlinx.coroutines.experimental.Job
 import kotlinx.coroutines.experimental.channels.SendChannel
 import kotlinx.coroutines.experimental.channels.actor
-import kotlinx.coroutines.experimental.delay
 import kotlinx.coroutines.experimental.launch
 import notify.Notification
 import notify.NotifyService
-import java.util.concurrent.TimeUnit
 import kotlin.coroutines.experimental.CoroutineContext
 
 abstract class Worker<T>(protected val notifyService: NotifyService) {
@@ -28,26 +26,6 @@ abstract class Worker<T>(protected val notifyService: NotifyService) {
 
     protected suspend fun sendNotification(notification: Notification = Notification.processed(), body: Any?=null) {
         notifyService.accept(notification, body)
-    }
-}
-
-
-abstract class FixedIntervalWorker(notifyService: NotifyService, private val time: Long,
-                                   private val unit: TimeUnit = TimeUnit.MILLISECONDS): Worker<Boolean>(notifyService) {
-    fun run() {
-        launch(runner) {
-            beforeWork()
-            while(true) {
-                try {
-                    doWork(true)
-                } catch (e: Exception) {
-                    // log error
-                }
-                finally {
-                    delay(time, unit)
-                }
-            }
-        }
     }
 }
 

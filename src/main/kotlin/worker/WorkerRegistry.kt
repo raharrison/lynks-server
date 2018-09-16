@@ -17,6 +17,7 @@ class WorkerRegistry {
                     WebResourceRetriever(), get()).worker()
             taskWorker = TaskRunnerWorker(get()).worker()
             unreadDigestWorker = UnreadLinkDigestWorker(get(), get(), get()).worker()
+            fileCleanupWorker = TempFileCleanupWorker(get(), get()).worker()
         }
     }
 
@@ -24,6 +25,7 @@ class WorkerRegistry {
     private lateinit var discussionWorker: SendChannel<Link>
     private lateinit var taskWorker: SendChannel<TaskRunnerRequest>
     private lateinit var unreadDigestWorker: SendChannel<UnreadLinkDigestWorkerRequest>
+    private lateinit var fileCleanupWorker: SendChannel<TempFileCleanupWorkerRequest>
 
     fun acceptLinkWork(request: LinkProcessingRequest) {
         linkWorker.offer(request)
@@ -38,11 +40,7 @@ class WorkerRegistry {
     }
 
     fun onUserPreferenceChange(preferences: Preferences) {
-        unreadDigestWorker.offer(UnreadLinkDigestWorkerRequest(preferences, CrudType.UPDATE))
+        unreadDigestWorker.offer(UnreadLinkDigestWorkerRequest(preferences))
+        fileCleanupWorker.offer(TempFileCleanupWorkerRequest(preferences))
     }
-
-    private fun startScheduledWorkers(serviceProvider: ServiceProvider) {
-        TempFileCleanupWorker(serviceProvider.get()).run()
-    }
-
 }
