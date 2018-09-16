@@ -1,10 +1,24 @@
 buildscript {
     ext.kotlin_version = '1.2.70'
     ext.ktor_version = '0.9.3'
+
     ext.exposed_version = '0.10.4'
     ext.h2_version = '1.4.197'
+    ext.hikari_version = '3.2.0'
+
     ext.flexmark_version = '0.34.0'
     ext.fuel_version = '1.15.0'
+    ext.handlebars_version = '4.1.0'
+    ext.commons_email_version = '1.5'
+
+    ext.logback_version = '1.2.3'
+    ext.konf_version = '0.11'
+    ext.guava_version = '26.0-jre'
+
+    ext.rest_assured_version = '3.1.0'
+    ext.junit_version = '5.2.0'
+    ext.assertj_version = '3.10.0'
+    ext.mockk_version = '1.8.6'
 
     repositories {
         mavenCentral()
@@ -82,7 +96,7 @@ dependencies {
 
     compile "com.h2database:h2:$h2_version"
     compile "org.jetbrains.exposed:exposed:$exposed_version"
-    compile "com.zaxxer:HikariCP:3.2.0"
+    compile "com.zaxxer:HikariCP:$hikari_version"
 
     compile "com.vladsch.flexmark:flexmark:$flexmark_version"
     compile "com.vladsch.flexmark:flexmark-ext-gfm-strikethrough:$flexmark_version"
@@ -92,18 +106,18 @@ dependencies {
 
     compile "io.webfolder:cdp4j:3.0.0"
     compile "com.github.chimbori:crux:2.0.1"
-    compile "com.google.guava:guava:26.0-jre"
     compile 'com.github.shyiko.skedule:skedule:0.3.0'
+    compile "com.google.guava:guava:$guava_version"
     compile "com.github.kittinunf.fuel:fuel:$fuel_version"
     compile "com.github.kittinunf.fuel:fuel-coroutines:$fuel_version"
-    compile "com.github.jknack:handlebars:4.1.0"
-    compile "org.apache.commons:commons-email:1.5"
+    compile "com.github.jknack:handlebars:$handlebars_version"
+    compile "org.apache.commons:commons-email:$commons_email_version"
 
-    compile "ch.qos.logback:logback-classic:1.2.3"
-    compile "com.uchuhimo:konf:0.11"
+    compile "ch.qos.logback:logback-classic:$logback_version"
+    compile "com.uchuhimo:konf:$konf_version"
 
-    testCompile "io.rest-assured:rest-assured:3.1.0"
-    testCompile "org.junit.jupiter:junit-jupiter-api:5.2.0"
-    testCompile "org.assertj:assertj-core:3.10.0"
-    testCompile "io.mockk:mockk:1.8.6"
+    testCompile "io.rest-assured:rest-assured:$rest_assured_version"
+    testCompile "org.junit.jupiter:junit-jupiter-api:$junit_version"
+    testCompile "org.assertj:assertj-core:$assertj_version"
+    testCompile "io.mockk:mockk:$mockk_version"
 }
