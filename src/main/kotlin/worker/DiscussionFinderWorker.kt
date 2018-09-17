@@ -1,6 +1,5 @@
 package worker
 
-import common.Link
 import entry.LinkService
 import kotlinx.coroutines.experimental.delay
 import notify.Notification
@@ -14,15 +13,17 @@ import java.util.concurrent.TimeUnit
 
 private val logger = loggerFor<DiscussionFinderWorker>()
 
+data class DiscussionFinderWorkerRequest(val linkId: String)
+
 class DiscussionFinderWorker(private val linkService: LinkService,
                              private val resourceRetriever: ResourceRetriever,
-                             notifyService: NotifyService) : ChannelBasedWorker<Link>(notifyService) {
+                             notifyService: NotifyService) : ChannelBasedWorker<DiscussionFinderWorkerRequest>(notifyService) {
 
     private data class Discussion(val title: String, val url: String, val score: Int, val comments: Int, val created: Long)
 
-    override suspend fun doWork(input: Link) {
-        logger.info("Launching discussion finder for entry ${input.id}")
-        findDiscussions(input.id, -1)
+    override suspend fun doWork(input: DiscussionFinderWorkerRequest) {
+        logger.info("Launching discussion finder for entry ${input.linkId}")
+        findDiscussions(input.linkId, -1)
     }
 
     private val intervals = listOf<Long>(60, 60 * 4, 60 * 10, 60 * 24)

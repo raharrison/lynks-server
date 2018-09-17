@@ -38,7 +38,7 @@ class DiscussionFinderWorkerTest {
         val worker = DiscussionFinderWorker(linkService, retriever, notifyService)
                 .apply { runner = coroutineContext }.worker()
 
-        worker.send(link)
+        worker.send(DiscussionFinderWorkerRequest(link.id))
         worker.close()
 
         verify(exactly = 5) { linkService.get(link.id) }
@@ -56,7 +56,7 @@ class DiscussionFinderWorkerTest {
         val worker = DiscussionFinderWorker(linkService, retriever, notifyService)
                 .apply { runner = coroutineContext }.worker()
 
-        worker.send(link)
+        worker.send(DiscussionFinderWorkerRequest(link.id))
         worker.close()
 
         verify(exactly = 5) { linkService.get(link.id) }
@@ -82,7 +82,7 @@ class DiscussionFinderWorkerTest {
         val worker = DiscussionFinderWorker(linkService, retriever, notifyService)
                 .apply { runner = coroutineContext }.worker()
 
-        worker.send(link)
+        worker.send(DiscussionFinderWorkerRequest(link.id))
         worker.close()
 
         // ensure items not removed
@@ -104,7 +104,7 @@ class DiscussionFinderWorkerTest {
         val worker = DiscussionFinderWorker(linkService, retriever, notifyService)
                 .apply { runner = coroutineContext }.worker()
 
-        worker.send(link)
+        worker.send(DiscussionFinderWorkerRequest(link.id))
         worker.close()
 
         verify(exactly = 6) { linkService.get(link.id) }

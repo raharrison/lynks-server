@@ -81,7 +81,7 @@ class LinkServiceTest : DatabaseTest() {
 
         verify(exactly = 1) { resourceManager.moveTempFiles(link.id, link.url) }
         verify(exactly = 1) { workerRegistry.acceptLinkWork(ofType(PersistLinkProcessingRequest::class)) }
-        verify(exactly = 1) { workerRegistry.acceptDiscussionWork(link) }
+        verify(exactly = 1) { workerRegistry.acceptDiscussionWork(link.id) }
     }
 
     @Test
@@ -94,7 +94,7 @@ class LinkServiceTest : DatabaseTest() {
 
         verify(exactly = 1) { resourceManager.moveTempFiles(link.id, link.url) }
         verify(exactly = 0) { workerRegistry.acceptLinkWork(any()) }
-        verify(exactly = 0) { workerRegistry.acceptDiscussionWork(link) }
+        verify(exactly = 0) { workerRegistry.acceptDiscussionWork(link.id) }
     }
 
     @Test

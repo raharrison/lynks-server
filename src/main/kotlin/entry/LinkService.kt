@@ -49,7 +49,7 @@ class LinkService(tagService: TagService, collectionService: CollectionService, 
                 workerRegistry.acceptLinkWork(PersistLinkProcessingRequest(link))
         }
         if(entry.process)
-            workerRegistry.acceptDiscussionWork(link)
+            workerRegistry.acceptDiscussionWork(link.id)
         return link
     }
 

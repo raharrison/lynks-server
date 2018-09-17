@@ -45,7 +45,7 @@ class DiscussionFinderTaskTest {
         }
 
         verify(exactly = 1) { linkService.get("eid") }
-        verify(exactly = 1) { workerRegistry.acceptDiscussionWork(link) }
+        verify(exactly = 1) { workerRegistry.acceptDiscussionWork(link.id) }
     }
 
     @Test

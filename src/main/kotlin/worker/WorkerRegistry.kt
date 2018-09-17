@@ -1,6 +1,5 @@
 package worker
 
-import common.Link
 import common.inject.ServiceProvider
 import kotlinx.coroutines.experimental.channels.SendChannel
 import resource.WebResourceRetriever
@@ -22,7 +21,7 @@ class WorkerRegistry {
     }
 
     private lateinit var linkWorker: SendChannel<LinkProcessingRequest>
-    private lateinit var discussionWorker: SendChannel<Link>
+    private lateinit var discussionWorker: SendChannel<DiscussionFinderWorkerRequest>
     private lateinit var taskWorker: SendChannel<TaskRunnerRequest>
     private lateinit var unreadDigestWorker: SendChannel<UnreadLinkDigestWorkerRequest>
     private lateinit var fileCleanupWorker: SendChannel<TempFileCleanupWorkerRequest>
@@ -35,8 +34,8 @@ class WorkerRegistry {
         taskWorker.offer(TaskRunnerRequest(task, context))
     }
 
-    fun acceptDiscussionWork(link: Link) {
-        discussionWorker.offer(link)
+    fun acceptDiscussionWork(linkId: String) {
+        discussionWorker.offer(DiscussionFinderWorkerRequest(linkId))
     }
 
     fun onUserPreferenceChange(preferences: Preferences) {

@@ -14,7 +14,7 @@ class DiscussionFinderTask(id: String, entryId: String) : Task<TaskContext>(id, 
 
     override suspend fun process(context: TaskContext) {
         linkService.get(entryId)?.let {
-            workerRegistry.acceptDiscussionWork(it)
+            workerRegistry.acceptDiscussionWork(it.id)
         }
     }
 
