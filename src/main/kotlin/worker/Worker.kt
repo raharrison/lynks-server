@@ -7,6 +7,12 @@ import kotlinx.coroutines.experimental.channels.actor
 import kotlinx.coroutines.experimental.launch
 import notify.Notification
 import notify.NotifyService
+import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.deleteWhere
+import org.jetbrains.exposed.sql.insert
+import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.transactions.transaction
+import util.JsonMapper.defaultMapper
 import kotlin.coroutines.experimental.CoroutineContext
 
 abstract class Worker<T>(protected val notifyService: NotifyService) {
@@ -50,11 +56,11 @@ abstract class ChannelBasedWorker<T>(notifyService: NotifyService): Worker<T>(no
 }
 
 enum class CrudType { CREATE, UPDATE, DELETE }
-abstract class VariableWorkerRequest(val crudType: CrudType)
+abstract class VariableWorkerRequest(val crudType: CrudType = CrudType.UPDATE)
 
 abstract class VariableChannelBasedWorker<T : VariableWorkerRequest>(notifyService: NotifyService): ChannelBasedWorker<T>(notifyService) {
 
-    protected val jobs = mutableMapOf<T, Job?>()
+    private val jobs = mutableMapOf<T, Job?>()
 
     private fun launch(request: T) = super.onChannelReceive(request).also {
         jobs[request] = it
@@ -77,5 +83,63 @@ abstract class VariableChannelBasedWorker<T : VariableWorkerRequest>(notifyServi
     override fun onWorkerFinished(request: T) {
         jobs.remove(request)
     }
+}
+
+abstract class PersistVariableWorkerRequest(crudType: CrudType = CrudType.UPDATE) : VariableWorkerRequest(crudType) {
+    abstract val key: String
+}
+
+abstract class PersistedVariableChannelBasedWorker<T : PersistVariableWorkerRequest>(notifyService: NotifyService): VariableChannelBasedWorker<T>(notifyService) {
+
+    private val workerName = javaClass.simpleName
+    abstract val requestClass: Class<T>
+
+    override suspend fun beforeWork() {
+        super.beforeWork()
+        transaction {
+            WorkerSchedules.select { WorkerSchedules.worker eq workerName }.map {
+                val request: T = defaultMapper.readValue(it[WorkerSchedules.request], requestClass)
+                onChannelReceive(request)
+            }
+        }
+    }
+
+    override fun onChannelReceive(request: T): Job? {
+        return super.onChannelReceive(request).also {
+            deleteSchedule(request) // delete initially
+            if(request.crudType != CrudType.DELETE) {
+                addSchedule(request) // add back if create/update
+            }
+        }
+    }
+
+    override fun onWorkerFinished(request: T) {
+        super.onWorkerFinished(request)
+        deleteSchedule(request)
+    }
+
+    private fun addSchedule(request: T) = transaction {
+        WorkerSchedules.insert {
+            it[WorkerSchedules.worker] = workerName
+            it[WorkerSchedules.key] = request.key
+            it[WorkerSchedules.request] = defaultMapper.writeValueAsString(request)
+        }
+    }
+
+    private fun deleteSchedule(request: T) = transaction {
+        WorkerSchedules.deleteWhere { (WorkerSchedules.worker eq workerName) and (WorkerSchedules.key eq request.key) }
+    }
 
 }
+
+
+
+
+
+
+
+
+
+
+
+
