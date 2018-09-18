@@ -1,5 +1,6 @@
 package worker
 
+import common.DatabaseTest
 import common.Link
 import common.TestCoroutineContext
 import entry.LinkService
@@ -12,7 +13,7 @@ import org.junit.jupiter.api.Test
 import resource.ResourceRetriever
 import kotlin.coroutines.experimental.coroutineContext
 
-class DiscussionFinderWorkerTest {
+class DiscussionFinderWorkerTest: DatabaseTest() {
 
     private val testUrl = "https://www.factorio.com/blog/post/fff-246"
     private val link = Link("id1", "title", testUrl, "factorio.com", "", 100)
@@ -23,7 +24,7 @@ class DiscussionFinderWorkerTest {
     private val linkSlot = slot<Link>()
 
     @BeforeEach
-    fun before() {
+    fun setup() {
         every { linkService.get("id1") } answers { if(linkSlot.isCaptured) linkSlot.captured else link }
         every { linkService.update(capture(linkSlot)) } answers { link } andThen { linkSlot.captured }
 

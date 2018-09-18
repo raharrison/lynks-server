@@ -20,6 +20,7 @@ import reminder.Reminders
 import resource.Resources
 import user.UserPreferences
 import util.loggerFor
+import worker.WorkerSchedules
 
 val logger = loggerFor<DatabaseFactory>()
 
@@ -41,7 +42,7 @@ class DatabaseFactory {
         transaction {
             create(Entries, EntryVersions,
                     Comments, Resources, Reminders, UserPreferences,
-                    Tags, EntryTags, Collections, EntryCollections)
+                    Tags, EntryTags, Collections, EntryCollections, WorkerSchedules)
             enableSearch()
             enableTriggers()
         }
@@ -81,6 +82,8 @@ class DatabaseFactory {
         }
     }
 
+    // TODO: tables as list and loop over
+
     fun resetAll(): Unit = transaction {
         Resources.deleteAll()
         EntryTags.deleteAll()
@@ -92,5 +95,6 @@ class DatabaseFactory {
         Entries.deleteAll()
         EntryVersions.deleteAll()
         UserPreferences.deleteAll()
+        WorkerSchedules.deleteAll()
     }
 }

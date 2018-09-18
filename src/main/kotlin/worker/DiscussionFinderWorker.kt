@@ -13,11 +13,13 @@ import java.util.concurrent.TimeUnit
 
 private val logger = loggerFor<DiscussionFinderWorker>()
 
-data class DiscussionFinderWorkerRequest(val linkId: String)
+data class DiscussionFinderWorkerRequest(val linkId: String, val intervalIndex: Long = -1): PersistVariableWorkerRequest() {
+    override val key = linkId
+}
 
 class DiscussionFinderWorker(private val linkService: LinkService,
                              private val resourceRetriever: ResourceRetriever,
-                             notifyService: NotifyService) : ChannelBasedWorker<DiscussionFinderWorkerRequest>(notifyService) {
+                             notifyService: NotifyService) : PersistedVariableChannelBasedWorker<DiscussionFinderWorkerRequest>(notifyService) {
 
     private data class Discussion(val title: String, val url: String, val score: Int, val comments: Int, val created: Long)
 
@@ -27,6 +29,8 @@ class DiscussionFinderWorker(private val linkService: LinkService,
     }
 
     private val intervals = listOf<Long>(60, 60 * 4, 60 * 10, 60 * 24)
+
+    override val requestClass = DiscussionFinderWorkerRequest::class.java
 
     private suspend fun findDiscussions(linkId: String, initialIntervalIndex: Int) {
         var intervalIndex = initialIntervalIndex
