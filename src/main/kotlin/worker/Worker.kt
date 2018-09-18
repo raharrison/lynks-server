@@ -7,10 +7,7 @@ import kotlinx.coroutines.experimental.channels.actor
 import kotlinx.coroutines.experimental.launch
 import notify.Notification
 import notify.NotifyService
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.deleteWhere
-import org.jetbrains.exposed.sql.insert
-import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 import util.JsonMapper.defaultMapper
 import kotlin.coroutines.experimental.CoroutineContext
@@ -126,20 +123,15 @@ abstract class PersistedVariableChannelBasedWorker<T : PersistVariableWorkerRequ
         }
     }
 
+    private fun updateSchedule(request: T): Int = transaction {
+        WorkerSchedules.update({ (WorkerSchedules.worker eq workerName) and (WorkerSchedules.key eq request.key) }) {
+            it[WorkerSchedules.key] = request.key
+            it[WorkerSchedules.request] = defaultMapper.writeValueAsString(request)
+        }
+    }
+
     private fun deleteSchedule(request: T) = transaction {
         WorkerSchedules.deleteWhere { (WorkerSchedules.worker eq workerName) and (WorkerSchedules.key eq request.key) }
     }
 
 }
-
-
-
-
-
-
-
-
-
-
-
-
