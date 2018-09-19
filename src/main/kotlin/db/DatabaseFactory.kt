@@ -29,6 +29,10 @@ class DatabaseFactory {
     var connected: Boolean = false
         private set
 
+    private val tables = listOf(Entries, EntryVersions,
+            Comments, Resources, Reminders, UserPreferences,
+            Tags, EntryTags, Collections, EntryCollections, WorkerSchedules)
+
     fun connect() {
         logger.info("Initialising database")
 
@@ -40,9 +44,7 @@ class DatabaseFactory {
         }
 
         transaction {
-            create(Entries, EntryVersions,
-                    Comments, Resources, Reminders, UserPreferences,
-                    Tags, EntryTags, Collections, EntryCollections, WorkerSchedules)
+            create(*tables.toTypedArray())
             enableSearch()
             enableTriggers()
         }
@@ -82,19 +84,9 @@ class DatabaseFactory {
         }
     }
 
-    // TODO: tables as list and loop over
-
     fun resetAll(): Unit = transaction {
-        Resources.deleteAll()
-        EntryTags.deleteAll()
-        Tags.deleteAll()
-        EntryCollections.deleteAll()
-        Collections.deleteAll()
-        Comments.deleteAll()
-        Reminders.deleteAll()
-        Entries.deleteAll()
-        EntryVersions.deleteAll()
-        UserPreferences.deleteAll()
-        WorkerSchedules.deleteAll()
+        tables.forEach {
+            it.deleteAll()
+        }
     }
 }
