@@ -7,7 +7,7 @@ import org.jetbrains.exposed.sql.Table
 object Reminders : Table("Reminder") {
     val reminderId = varchar("reminderId", 12).primaryKey()
     val entryId = (varchar("entryId", 12).references(Entries.id, ReferenceOption.CASCADE))
-    val type = enumeration("type", ReminderType::class.java)
+    val type = enumeration("type", ReminderType::class)
     val message = varchar("message", 255).nullable()
     val spec = varchar("spec", 32)
     val tz = varchar("tz", 32)

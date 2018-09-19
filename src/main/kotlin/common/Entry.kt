@@ -12,7 +12,7 @@ abstract class BaseEntries(name: String): Table(name) {
     val plainContent = text("plainContent").nullable()
     val content = text("content").nullable()
     val src = varchar("source", 255)
-    val type = enumeration("type", EntryType::class.java)
+    val type = enumeration("type", EntryType::class)
     val dateUpdated = long("dateUpdated")
     val props = json("props", BaseProperties::class.java).nullable()
     abstract val version: Column<Int>

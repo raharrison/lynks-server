@@ -10,7 +10,7 @@ object Resources : Table("Resource") {
     val entryId = (varchar("entryId", 12).references(Entries.id, ReferenceOption.CASCADE)).index()
     val fileName = varchar("filename", 255)
     val extension = varchar("extension", 4)
-    val type = enumeration("type", ResourceType::class.java)
+    val type = enumeration("type", ResourceType::class)
     val size = long("size")
     val dateCreated = long("dateCreated")
     val dateUpdated = long("dateUpdated")
