@@ -13,7 +13,7 @@ import java.util.concurrent.TimeUnit
 
 private val logger = loggerFor<DiscussionFinderWorker>()
 
-data class DiscussionFinderWorkerRequest(val linkId: String, val intervalIndex: Long = -1): PersistVariableWorkerRequest() {
+data class DiscussionFinderWorkerRequest(val linkId: String, val intervalIndex: Int = -1): PersistVariableWorkerRequest() {
     override val key = linkId
 }
 
@@ -65,6 +65,8 @@ class DiscussionFinderWorker(private val linkService: LinkService,
                 }
             }
 
+            // update schedule
+            updateSchedule(DiscussionFinderWorkerRequest(linkId, intervalIndex))
             val interval = intervals[intervalIndex]
             logger.info("Discussion finder for entry ${link.id} sleeping for $interval minutes")
 

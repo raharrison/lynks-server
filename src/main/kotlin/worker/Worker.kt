@@ -123,7 +123,7 @@ abstract class PersistedVariableChannelBasedWorker<T : PersistVariableWorkerRequ
         }
     }
 
-    private fun updateSchedule(request: T): Int = transaction {
+    protected fun updateSchedule(request: T): Int = transaction {
         WorkerSchedules.update({ (WorkerSchedules.worker eq workerName) and (WorkerSchedules.key eq request.key) }) {
             it[WorkerSchedules.key] = request.key
             it[WorkerSchedules.request] = defaultMapper.writeValueAsString(request)
