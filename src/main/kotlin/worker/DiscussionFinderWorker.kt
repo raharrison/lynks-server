@@ -25,7 +25,7 @@ class DiscussionFinderWorker(private val linkService: LinkService,
 
     override suspend fun doWork(input: DiscussionFinderWorkerRequest) {
         logger.info("Launching discussion finder for entry ${input.linkId}")
-        findDiscussions(input.linkId, -1)
+        findDiscussions(input.linkId, input.intervalIndex)
     }
 
     private val intervals = listOf<Long>(60, 60 * 4, 60 * 10, 60 * 24)

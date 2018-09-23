@@ -11,6 +11,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import resource.ResourceRetriever
+import util.createDummyWorkerSchedule
 import kotlin.coroutines.experimental.coroutineContext
 
 class DiscussionFinderWorkerTest: DatabaseTest() {
@@ -73,6 +74,27 @@ class DiscussionFinderWorkerTest: DatabaseTest() {
 
         coVerify(exactly = 5 * 2) { retriever.getString(any()) }
         coVerify(exactly = 5) { notifyService.accept(any(), linkSlot.captured) }
+    }
+
+    @Test
+    fun testInitFromSchedule() = runBlocking(TestCoroutineContext()) {
+        coEvery { retriever.getString(match { it.contains("hn.algolia") }) } returns getFile("/hacker_discussions.json")
+        coEvery { retriever.getString(match { it.contains("reddit.com") }) } returns getFile("/reddit_discussions.json")
+
+        createDummyWorkerSchedule(DiscussionFinderWorker::class.java.simpleName, "key", DiscussionFinderWorkerRequest(link.id, 2))
+
+        val worker = DiscussionFinderWorker(linkService, retriever, notifyService)
+                .apply { runner = coroutineContext }.worker()
+
+        worker.close()
+
+        verify(exactly = 2) { linkService.get(link.id) }
+        verify(exactly = 2) { linkService.update(ofType(Link::class)) }
+        assertThat(linkSlot.captured.props.containsAttribute("discussions")).isTrue()
+        assertThat(linkSlot.captured.props.getAttribute("discussions") as List<*>).hasSize(6)
+
+        coVerify(exactly = 2 * 2) { retriever.getString(any()) }
+        coVerify(exactly = 2) { notifyService.accept(any(), linkSlot.captured) }
     }
 
     @Test

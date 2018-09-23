@@ -9,6 +9,7 @@ import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.transactions.transaction
 import reminder.ReminderType
 import reminder.Reminders
+import worker.WorkerSchedules
 import java.time.ZoneId
 
 fun createDummyEntry(id: String, title: String, content: String, type: EntryType) = transaction {
@@ -62,5 +63,13 @@ fun createDummyReminder(id: String, entryId: String, type: ReminderType, message
         it[Reminders.message] = message
         it[Reminders.spec] = spec
         it[Reminders.tz] = tz
+    }
+}
+
+fun createDummyWorkerSchedule(worker: String, key: String, request: Any) = transaction {
+    WorkerSchedules.insert {
+        it[WorkerSchedules.worker] = worker
+        it[WorkerSchedules.key] = key
+        it[WorkerSchedules.request] = JsonMapper.defaultMapper.writeValueAsString(request)
     }
 }
