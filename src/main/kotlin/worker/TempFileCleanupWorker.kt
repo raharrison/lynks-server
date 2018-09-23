@@ -27,7 +27,7 @@ class TempFileCleanupWorker(private val userService: UserService, notifyService:
                 val dirs = FileUtils.directoriesOlderThan(Paths.get(Environment.server.resourceTempPath), 2)
                 FileUtils.deleteDirectories(dirs)
             } finally {
-                delay(6, TimeUnit.HOURS)
+                delay(input.preferences.tempFileCleanInterval, TimeUnit.HOURS)
             }
         }
     }

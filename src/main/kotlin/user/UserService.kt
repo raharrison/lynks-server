@@ -22,7 +22,9 @@ class UserService {
 
     private fun getUserPreferences(): Preferences = transaction {
         (UserPreferences.selectAll().mapNotNull {
-            Preferences(it[UserPreferences.email], it[UserPreferences.digest])
+            Preferences(it[UserPreferences.email],
+                    it[UserPreferences.digest],
+                    it[UserPreferences.tempFileCleanInterval])
         }.singleOrNull() ?: insertUserPreferences(defaultUserId, defaultPreferences))
                 .also {
                     userPrefsCache = it
@@ -33,6 +35,7 @@ class UserService {
         val updated = UserPreferences.update({ UserPreferences.id eq defaultUserId }) {
             it[UserPreferences.email] = preferences.email
             it[UserPreferences.digest] = preferences.digest
+            it[UserPreferences.tempFileCleanInterval] = preferences.tempFileCleanInterval
         } > 0
 
         if(!updated) insertUserPreferences(defaultUserId, preferences)
@@ -44,6 +47,7 @@ class UserService {
             it[UserPreferences.id] = id
             it[UserPreferences.email] = preferences.email
             it[UserPreferences.digest] = preferences.digest
+            it[UserPreferences.tempFileCleanInterval] = preferences.tempFileCleanInterval
         }
         preferences
     }

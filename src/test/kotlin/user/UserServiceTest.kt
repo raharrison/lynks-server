@@ -13,6 +13,7 @@ class UserServiceTest: DatabaseTest() {
         val preferences = userService.currentUserPreferences
         assertThat(preferences.email).isNull()
         assertThat(preferences.digest).isFalse()
+        assertThat(preferences.tempFileCleanInterval).isEqualTo(6)
     }
 
     @Test
@@ -26,7 +27,7 @@ class UserServiceTest: DatabaseTest() {
     @Test
     fun testRetrieveThenUpdate() {
         userService.currentUserPreferences
-        val prefs = Preferences("email.com", true)
+        val prefs = Preferences("email.com", true, 12)
         val updated = userService.updateUserPreferences(prefs)
         assertThat(prefs).isEqualTo(updated)
         assertThat(userService.currentUserPreferences).isEqualTo(updated)
