@@ -5,7 +5,7 @@ import org.jetbrains.exposed.sql.Table
 object WorkerSchedules: Table("WorkerSchedule") {
 
     val worker = varchar("worker", 50).index()
-    val key = varchar("key", 10).nullable()
+    val key = varchar("key", 20).nullable()
     val request = varchar("request", 255)
 }
 
