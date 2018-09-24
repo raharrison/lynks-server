@@ -14,6 +14,8 @@ class TempFileCleanupWorkerRequest(val preferences: Preferences, crudType: CrudT
     override fun equals(other: Any?): Boolean = other is TempFileCleanupWorkerRequest
 }
 
+private const val MAX_FILE_AGE = 14L // days
+
 class TempFileCleanupWorker(private val userService: UserService, notifyService: NotifyService) : VariableChannelBasedWorker<TempFileCleanupWorkerRequest>(notifyService) {
 
     override suspend fun beforeWork() {
@@ -24,7 +26,7 @@ class TempFileCleanupWorker(private val userService: UserService, notifyService:
     override suspend fun doWork(input: TempFileCleanupWorkerRequest) {
         while(true) {
             try {
-                val dirs = FileUtils.directoriesOlderThan(Paths.get(Environment.server.resourceTempPath), 2)
+                val dirs = FileUtils.directoriesOlderThan(Paths.get(Environment.server.resourceTempPath), MAX_FILE_AGE)
                 FileUtils.deleteDirectories(dirs)
             } finally {
                 delay(input.preferences.tempFileCleanInterval, TimeUnit.HOURS)
