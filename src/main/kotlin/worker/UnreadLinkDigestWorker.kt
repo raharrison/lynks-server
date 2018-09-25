@@ -57,7 +57,7 @@ class UnreadLinkDigestWorker(private val linkService: LinkService, private val u
 
         val indexes = mutableSetOf<Int>()
         val limit = Math.min(5, links.size)
-        while(indexes.size <= limit) {
+        while(indexes.size < limit) {
             indexes += random.nextInt(links.size)
         }
 
