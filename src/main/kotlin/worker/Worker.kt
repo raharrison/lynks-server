@@ -68,10 +68,12 @@ abstract class VariableChannelBasedWorker<T : VariableWorkerRequest>(notifyServi
             CrudType.CREATE -> launch(request)
             CrudType.UPDATE -> {
                 jobs[request]?.cancel()
+                jobs.remove(request)
                 launch(request)
             }
             CrudType.DELETE -> {
                 jobs[request]?.cancel()
+                jobs.remove(request)
                 null
             }
         }
