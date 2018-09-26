@@ -15,7 +15,9 @@ class UserService {
     val currentUserPreferences: Preferences
         get() {
             if (userPrefsCache == null) {
-                userPrefsCache = getUserPreferences()
+                synchronized(this) {
+                    userPrefsCache = getUserPreferences()
+                }
             }
             return userPrefsCache!!
         }
