@@ -18,7 +18,7 @@ buildscript {
     ext.rest_assured_version = '3.1.0'
     ext.junit_version = '5.2.0'
     ext.assertj_version = '3.10.0'
-    ext.mockk_version = '1.8.6'
+    ext.mockk_version = '1.8.8'
 
     repositories {
         mavenCentral()
