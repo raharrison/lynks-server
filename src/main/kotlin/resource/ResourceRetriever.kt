@@ -1,9 +1,10 @@
 package resource
 
-import awaitByteArrayResult
-import awaitStringResult
-import com.github.kittinunf.fuel.httpGet
-import com.github.kittinunf.result.Result
+import kotlinx.coroutines.experimental.future.await
+import java.net.URI
+import java.net.http.HttpClient
+import java.net.http.HttpRequest
+import java.net.http.HttpResponse
 
 interface ResourceRetriever {
 
@@ -15,24 +16,36 @@ interface ResourceRetriever {
 
 class WebResourceRetriever : ResourceRetriever {
 
-    override suspend fun getString(location: String): String? = try {
-        val result = location.httpGet().awaitStringResult()
-        when (result) {
-            is Result.Success -> result.get()
-            else -> null
+    override suspend fun getFile(location: String): ByteArray? = try {
+        val request = createRequest(location)
+        val future = client.sendAsync(request, HttpResponse.BodyHandlers.ofByteArray())
+        future.await().let { it ->
+            if (it.statusCode() == 200) it.body()
+            else null
         }
     } catch (e: Exception) {
         null
     }
 
-    override suspend fun getFile(location: String): ByteArray? = try {
-        val result = location.httpGet().awaitByteArrayResult()
-        when (result) {
-            is Result.Success -> result.get()
-            else -> null
+    override suspend fun getString(location: String): String? = try {
+        val request = createRequest(location)
+        val future = client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+        future.await().let { it ->
+            if (it.statusCode() == 200) it.body()
+            else null
         }
     } catch (e: Exception) {
         null
+    }
+
+    private fun createRequest(location: String): HttpRequest {
+        return HttpRequest.newBuilder(URI.create(location))
+                .GET()
+                .build()
+    }
+
+    companion object {
+        private val client = HttpClient.newHttpClient()
     }
 
 }
