@@ -200,5 +200,44 @@ class ReminderWorkerTest {
         Unit
     }
 
+    @Test
+    fun testUpdateReminder() = runBlocking(context) {
+        val tz = ZoneId.systemDefault()
+        val fire = Instant.now().plus(2, ChronoUnit.HOURS).toEpochMilli()
+        val reminder = AdhocReminder("sc1", "e1", "message", fire, tz.id)
+
+        val worker = createWorker().worker()
+        worker.send(ReminderWorkerRequest(reminder, CrudType.CREATE))
+
+        val updatedReminder = reminder.copy(interval = reminder.interval + 1800000) // + 30 mins
+
+        worker.send(ReminderWorkerRequest(updatedReminder, CrudType.UPDATE))
+
+        worker.close()
+
+        context.advanceTimeBy(125, TimeUnit.MINUTES)
+        coVerify(exactly = 0) { notifyService.accept(any(), reminder) }
+
+        context.advanceTimeBy(30, TimeUnit.MINUTES)
+        coVerify(exactly = 1) { notifyService.accept(any(), updatedReminder) }
+    }
+
+    @Test
+    fun testDeleteReminder() = runBlocking(context) {
+        val tz = ZoneId.systemDefault()
+        val fire = Instant.now().plus(2, ChronoUnit.HOURS).toEpochMilli()
+        val reminder = AdhocReminder("sc1", "e1", "message", fire, tz.id)
+
+        val worker = createWorker().worker()
+        worker.send(ReminderWorkerRequest(reminder, CrudType.CREATE))
+
+        worker.send(ReminderWorkerRequest(reminder, CrudType.DELETE))
+
+        worker.close()
+
+        context.advanceTimeBy(125, TimeUnit.MINUTES)
+        coVerify(exactly = 0) { notifyService.accept(any(), reminder) }
+    }
+
     private fun createWorker() = ReminderWorker(reminderService, entryService, notifyService).apply { runner = context }
 }
