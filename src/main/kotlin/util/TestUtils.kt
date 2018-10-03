@@ -1,6 +1,7 @@
 package util
 
 import comment.Comments
+import common.BaseProperties
 import common.Entries
 import common.EntryType
 import group.Collections
@@ -12,7 +13,7 @@ import reminder.Reminders
 import worker.WorkerSchedules
 import java.time.ZoneId
 
-fun createDummyEntry(id: String, title: String, content: String, type: EntryType) = transaction {
+fun createDummyEntry(id: String, title: String, content: String, type: EntryType, prop: BaseProperties? = null) = transaction {
     Entries.insert {
         it[Entries.id] = id
         it[Entries.title] = title
@@ -21,6 +22,7 @@ fun createDummyEntry(id: String, title: String, content: String, type: EntryType
         it[src] = "src"
         it[Entries.type] = type
         it[dateUpdated] = System.currentTimeMillis()
+        it[props] = prop
     }
 }
 
