@@ -2,8 +2,8 @@ package worker
 
 import entry.EntryService
 import io.mockk.*
-import kotlinx.coroutines.experimental.runBlocking
-import kotlinx.coroutines.experimental.test.TestCoroutineContext
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.TestCoroutineContext
 import notify.NotifyService
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach

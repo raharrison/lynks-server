@@ -2,10 +2,9 @@ package service
 
 import com.fasterxml.jackson.module.kotlin.readValue
 import io.ktor.http.cio.websocket.Frame
-import io.ktor.util.decodeString
 import io.mockk.*
-import kotlinx.coroutines.experimental.channels.SendChannel
-import kotlinx.coroutines.experimental.runBlocking
+import kotlinx.coroutines.channels.SendChannel
+import kotlinx.coroutines.runBlocking
 import notify.Notification
 import notify.NotifyService
 import org.assertj.core.api.Assertions.assertThat
@@ -76,7 +75,7 @@ class NotifyServiceTest {
         notifyService.join(channel)
         notifyService.accept(Notification.processed("finished"), "body")
 
-        val got = notification.captured.buffer.decodeString()
+        val got = Charsets.UTF_8.decode(notification.captured.buffer).toString()
         val retrieved = JsonMapper.defaultMapper.readValue<Map<String, Any>>(got)
 
         assertThat(retrieved["entity"]).isEqualTo("String")

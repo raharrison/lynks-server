@@ -43,11 +43,11 @@ abstract class EntryRepository<T : Entry, in U : NewEntry>(private val tagServic
         page.collection?.let { table = table.innerJoin(EntryCollections) }
 
         var query = getBaseQuery(table)
-        page.tag?.let { _ ->
+        page.tag?.let {
             val tags = tagService.subtree(page.tag).map { it.id }
             query = query.combine { EntryTags.groupId.inList(tags) }
         }
-        page.collection?.let { _ ->
+        page.collection?.let {
             val collections = collectionService.subtree(page.collection).map { it.id }
             query = query.combine { EntryCollections.groupId.inList(collections) }
         }

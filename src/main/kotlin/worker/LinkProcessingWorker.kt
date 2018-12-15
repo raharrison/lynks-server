@@ -2,8 +2,9 @@ package worker
 
 import common.Link
 import entry.LinkService
-import kotlinx.coroutines.experimental.CompletableDeferred
-import kotlinx.coroutines.experimental.async
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import link.DefaultLinkProcessor
 import link.LinkProcessor
 import link.YoutubeLinkProcessor
@@ -45,14 +46,16 @@ class LinkProcessorWorker(private val resourceManager: ResourceManager,
     private suspend fun processLinkPersist(link: Link) {
         try {
             processorFactory.createProcessors(link.url).forEach { it ->
-                it.use { _ ->
-                    val thumb = async(runner) { it.generateThumbnail() }
-                    val screen = async(runner) { it.generateScreenshot() }
-                    it.enrich(link.props)
-                    link.content = it.content
-                    thumb.await()?.let { resourceManager.saveGeneratedResource(link.id, ResourceType.THUMBNAIL, it.extension, it.image) }
-                    screen.await()?.let { resourceManager.saveGeneratedResource(link.id, ResourceType.SCREENSHOT, it.extension, it.image) }
-                    it.html?.let { resourceManager.saveGeneratedResource(link.id, ResourceType.DOCUMENT, HTML, it.toByteArray()) }
+                it.use { proc ->
+                    coroutineScope {
+                        val thumb = async(runner) { proc.generateThumbnail() }
+                        val screen = async(runner) { proc.generateScreenshot() }
+                        proc.enrich(link.props)
+                        link.content = proc.content
+                        thumb.await()?.let { resourceManager.saveGeneratedResource(link.id, ResourceType.THUMBNAIL, it.extension, it.image) }
+                        screen.await()?.let { resourceManager.saveGeneratedResource(link.id, ResourceType.SCREENSHOT, it.extension, it.image) }
+                        proc.html?.let { resourceManager.saveGeneratedResource(link.id, ResourceType.DOCUMENT, HTML, it.toByteArray()) }
+                    }
                 }
             }
             link.props.removeAttribute("dead")
@@ -71,13 +74,15 @@ class LinkProcessorWorker(private val resourceManager: ResourceManager,
     private suspend fun processLinkSuggest(url: String, deferred: CompletableDeferred<Suggestion>) {
         try {
             processorFactory.createProcessors(url).forEach { it ->
-                it.use { _ ->
-                    val thumb = async(runner) { it.generateThumbnail() }
-                    val screen = async(runner) { it.generateScreenshot() }
-                    val thumbPath = thumb.await()?.let { resourceManager.saveTempFile(url, it.image, ResourceType.THUMBNAIL, it.extension) }
-                    val screenPath = screen.await()?.let { resourceManager.saveTempFile(url, it.image, ResourceType.SCREENSHOT, it.extension) }
-                    it.html?.let { resourceManager.saveTempFile(url, it.toByteArray(), ResourceType.DOCUMENT, HTML) }
-                    deferred.complete(Suggestion(it.resolvedUrl, it.title, thumbPath, screenPath))
+                it.use { proc ->
+                    coroutineScope {
+                        val thumb = async(runner) { proc.generateThumbnail() }
+                        val screen = async(runner) { proc.generateScreenshot() }
+                        val thumbPath = thumb.await()?.let { resourceManager.saveTempFile(url, it.image, ResourceType.THUMBNAIL, it.extension) }
+                        val screenPath = screen.await()?.let { resourceManager.saveTempFile(url, it.image, ResourceType.SCREENSHOT, it.extension) }
+                        proc.html?.let { resourceManager.saveTempFile(url, it.toByteArray(), ResourceType.DOCUMENT, HTML) }
+                        deferred.complete(Suggestion(proc.resolvedUrl, proc.title, thumbPath, screenPath))
+                    }
                 }
             }
         } catch (e: Exception) {

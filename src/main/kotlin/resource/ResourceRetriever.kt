@@ -1,6 +1,6 @@
 package resource
 
-import kotlinx.coroutines.experimental.future.await
+import kotlinx.coroutines.future.await
 import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest

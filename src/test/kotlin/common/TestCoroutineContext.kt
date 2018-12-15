@@ -1,14 +1,21 @@
 package common
 
-import kotlinx.coroutines.experimental.CancellableContinuation
-import kotlinx.coroutines.experimental.CoroutineDispatcher
-import kotlinx.coroutines.experimental.Delay
-import java.util.concurrent.TimeUnit
-import kotlin.coroutines.experimental.CoroutineContext
+import kotlinx.coroutines.*
+import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.resume
 
 // delay calls will be run immediately
+@UseExperimental(InternalCoroutinesApi::class)
 class TestCoroutineContext : CoroutineDispatcher(), Delay {
-    override fun scheduleResumeAfterDelay(time: Long, unit: TimeUnit, continuation: CancellableContinuation<Unit>) {
+
+    override fun dispatchYield(context: CoroutineContext, block: Runnable) {
+        block.run()
+    }
+
+    override suspend fun delay(time: Long) {
+    }
+
+    override fun scheduleResumeAfterDelay(timeMillis: Long, continuation: CancellableContinuation<Unit>) {
         continuation.resume(Unit)
     }
 

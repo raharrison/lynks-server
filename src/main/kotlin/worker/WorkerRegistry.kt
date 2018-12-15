@@ -1,7 +1,7 @@
 package worker
 
 import common.inject.ServiceProvider
-import kotlinx.coroutines.experimental.channels.SendChannel
+import kotlinx.coroutines.channels.SendChannel
 import resource.WebResourceRetriever
 import task.Task
 import task.TaskContext

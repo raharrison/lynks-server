@@ -1,15 +1,15 @@
 package worker
 
 import entry.LinkService
-import kotlinx.coroutines.experimental.delay
+import kotlinx.coroutines.time.delay
 import notify.Notification
 import notify.NotifyService
 import resource.ResourceRetriever
 import util.JsonMapper.defaultMapper
 import util.loggerFor
 import java.net.URLEncoder
+import java.time.Duration
 import java.time.Instant
-import java.util.concurrent.TimeUnit
 
 private val logger = loggerFor<DiscussionFinderWorker>()
 
@@ -70,7 +70,7 @@ class DiscussionFinderWorker(private val linkService: LinkService,
             val interval = intervals[intervalIndex]
             logger.info("Discussion finder for entry ${link.id} sleeping for $interval minutes")
 
-            delay(interval, TimeUnit.MINUTES)
+            delay(Duration.ofMinutes(interval))
         }
     }
 

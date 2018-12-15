@@ -2,7 +2,7 @@ package task
 
 import com.github.kittinunf.result.Result
 import io.mockk.*
-import kotlinx.coroutines.experimental.runBlocking
+import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.entry
 import org.junit.jupiter.api.Test

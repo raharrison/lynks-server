@@ -1,13 +1,13 @@
 package worker
 
 import common.Environment
-import kotlinx.coroutines.experimental.delay
+import kotlinx.coroutines.time.delay
 import notify.NotifyService
 import user.Preferences
 import user.UserService
 import util.FileUtils
 import java.nio.file.Paths
-import java.util.concurrent.TimeUnit
+import java.time.Duration
 
 class TempFileCleanupWorkerRequest(val preferences: Preferences, crudType: CrudType = CrudType.UPDATE): VariableWorkerRequest(crudType) {
     override fun hashCode(): Int = 1
@@ -29,7 +29,7 @@ class TempFileCleanupWorker(private val userService: UserService, notifyService:
                 val dirs = FileUtils.directoriesOlderThan(Paths.get(Environment.server.resourceTempPath), MAX_FILE_AGE)
                 FileUtils.deleteDirectories(dirs)
             } finally {
-                delay(input.preferences.tempFileCleanInterval, TimeUnit.HOURS)
+                delay(Duration.ofHours(input.preferences.tempFileCleanInterval))
             }
         }
     }

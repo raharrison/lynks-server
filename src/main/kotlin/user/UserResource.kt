@@ -16,10 +16,10 @@ fun Route.user(userService: UserService, workerRegistry: WorkerRegistry) {
         call.respond(userService.currentUserPreferences)
     }
 
-    post("/user/preferences") { _ ->
+    post("/user/preferences") {
         val preferences = call.receive<Preferences>()
-        preferences.email?.let {
-            if (!URLUtils.isValidEmail(it)) {
+        preferences.email?.let { email ->
+            if (!URLUtils.isValidEmail(email)) {
                 call.respond(HttpStatusCode.BadRequest, "Invalid email address")
                 return@post
             }

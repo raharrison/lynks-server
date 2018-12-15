@@ -1,7 +1,7 @@
 package worker
 
 import entry.EntryService
-import kotlinx.coroutines.experimental.delay
+import kotlinx.coroutines.delay
 import notify.Notification
 import notify.NotifyService
 import reminder.AdhocReminder
@@ -14,7 +14,6 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
-import java.util.concurrent.TimeUnit
 import com.github.shyiko.skedule.Schedule as Skedule
 
 private val logger = loggerFor<ReminderWorker>()
@@ -31,8 +30,8 @@ class ReminderWorker(private val reminderService: ReminderService, private val e
         super.beforeWork()
         reminderService.getAllReminders().forEach {
             when (it) {
-                is AdhocReminder -> launchJob({ launchReminder(it) })
-                is RecurringReminder -> launchJob({ launchRecurringReminder(it) })
+                is AdhocReminder -> launchJob { launchReminder(it) }
+                is RecurringReminder -> launchJob { launchRecurringReminder(it) }
             }
         }
     }
@@ -49,7 +48,7 @@ class ReminderWorker(private val reminderService: ReminderService, private val e
         val fireDate = ZonedDateTime.ofInstant(Instant.ofEpochMilli(reminder.interval), ZoneId.of(reminder.tz))
         val sleep = calcDelay(fireDate)
         logger.info("Sleeping for ${sleep}ms")
-        delay(sleep, TimeUnit.MILLISECONDS)
+        delay(sleep)
         if (reminderService.isActive(reminder.reminderId))
             reminderElapsed(reminder)
     }
@@ -62,7 +61,7 @@ class ReminderWorker(private val reminderService: ReminderService, private val e
             val next = schedule.next(ZonedDateTime.now(tz))
             val sleep = calcDelay(next)
             logger.info("Sleeping for ${sleep}ms")
-            delay(sleep, TimeUnit.MILLISECONDS)
+            delay(sleep)
             if (reminderService.isActive(reminder.reminderId)) reminderElapsed(reminder)
             else break
         }

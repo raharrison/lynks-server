@@ -1,21 +1,17 @@
 package worker
 
 import entry.LinkService
-import kotlinx.coroutines.experimental.delay
+import kotlinx.coroutines.time.delay
 import notify.NotifyService
 import user.Preferences
 import user.UserService
 import util.ResourceTemplater
-import java.time.DayOfWeek
-import java.time.Instant
-import java.time.LocalDateTime
-import java.time.ZoneId
+import java.time.*
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.time.temporal.ChronoUnit
 import java.time.temporal.TemporalAdjusters
 import java.util.*
-import java.util.concurrent.TimeUnit
 
 class UnreadLinkDigestWorkerRequest(val preferences: Preferences, crudType: CrudType = CrudType.UPDATE): VariableWorkerRequest(crudType) {
     override fun hashCode(): Int = 1
@@ -45,9 +41,9 @@ class UnreadLinkDigestWorker(private val linkService: LinkService, private val u
         val initialDelay = today.until(fire, ChronoUnit.SECONDS)
 
         while (true) {
-            delay(initialDelay, TimeUnit.SECONDS)
+            delay(Duration.ofSeconds(initialDelay))
             sendDigest()
-            delay(7, TimeUnit.DAYS)
+            delay(Duration.ofDays(7))
         }
     }
 

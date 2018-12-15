@@ -4,8 +4,8 @@ import common.Link
 import common.TestCoroutineContext
 import entry.LinkService
 import io.mockk.*
-import kotlinx.coroutines.experimental.CompletableDeferred
-import kotlinx.coroutines.experimental.runBlocking
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.runBlocking
 import link.ImageResource
 import link.LinkProcessor
 import notify.NotifyService
@@ -16,7 +16,6 @@ import resource.Resource
 import resource.ResourceManager
 import resource.ResourceType
 import suggest.Suggestion
-import kotlin.coroutines.experimental.coroutineContext
 
 class LinkProcessorWorkerTest {
 
@@ -48,7 +47,7 @@ class LinkProcessorWorkerTest {
         every { resourceManager.saveGeneratedResource(link.id, any(), any(), any()) } returns Resource("rid", "eid", "file1.txt", "txt", ResourceType.UPLOAD, 12L, 12L, 12L)
         every { linkService.update(link) } returns link
 
-        val channel = worker.apply { runner = coroutineContext }.worker()
+        val channel = worker.apply { runner = this@runBlocking.coroutineContext }.worker()
         channel.send(PersistLinkProcessingRequest(link))
         channel.close()
 
@@ -72,14 +71,17 @@ class LinkProcessorWorkerTest {
     fun testDefaultPersistCompletedExceptionally() = runBlocking(TestCoroutineContext()) {
         val link = Link("id1", "title", "google.com", "google.com", "", 100)
 
+        val exception = RuntimeException("error during computation")
         val processor = mockk<LinkProcessor>()
         coEvery { notifyService.accept(any(), null) } just Runs
+        coEvery { processor.generateThumbnail() } throws exception
+        coEvery{ processor.generateScreenshot()} returns null
         every { processor.close() } just Runs
 
         coEvery { processorFactory.createProcessors(link.url) } returns listOf(processor)
         every { linkService.update(link) } returns link
 
-        val channel = worker.apply { runner = coroutineContext }.worker()
+        val channel = worker.apply { runner = this@runBlocking.coroutineContext }.worker()
         channel.send(PersistLinkProcessingRequest(link))
         channel.close()
 
@@ -119,7 +121,7 @@ class LinkProcessorWorkerTest {
         every { resourceManager.saveTempFile(url, html.toByteArray(), ResourceType.DOCUMENT, HTML) } returns screenPath
 
         val deferred = CompletableDeferred<Suggestion>()
-        val channel = worker.apply { runner = coroutineContext }.worker()
+        val channel = worker.apply { runner = this@runBlocking.coroutineContext }.worker()
         channel.send(SuggestLinkProcessingRequest(url, deferred))
         channel.close()
 
@@ -149,16 +151,16 @@ class LinkProcessorWorkerTest {
 
         val exception = RuntimeException("error during computation")
         coEvery { processor.generateThumbnail() } throws exception
+        coEvery{ processor.generateScreenshot()} returns null
         every { processor.close() } just Runs
 
         coEvery { processorFactory.createProcessors(url) } returns listOf(processor)
 
         val deferred = CompletableDeferred<Suggestion>()
-        val channel = worker.apply { runner = coroutineContext }.worker()
+        val channel = worker.apply { runner = this@runBlocking.coroutineContext }.worker()
         channel.send(SuggestLinkProcessingRequest(url, deferred))
         channel.close()
 
-        assertThat(deferred.isCompletedExceptionally).isTrue()
         assertThat(deferred.getCompletionExceptionOrNull()).isEqualTo(exception)
 
         coVerify(exactly = 1) { processorFactory.createProcessors(url) }

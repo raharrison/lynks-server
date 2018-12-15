@@ -1,20 +1,19 @@
 package worker
 
-import kotlinx.coroutines.experimental.DefaultDispatcher
-import kotlinx.coroutines.experimental.Job
-import kotlinx.coroutines.experimental.channels.SendChannel
-import kotlinx.coroutines.experimental.channels.actor
-import kotlinx.coroutines.experimental.launch
+import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.SendChannel
+import kotlinx.coroutines.channels.actor
 import notify.Notification
 import notify.NotifyService
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 import util.JsonMapper.defaultMapper
-import kotlin.coroutines.experimental.CoroutineContext
+import kotlin.coroutines.CoroutineContext
 
-abstract class Worker<T>(protected val notifyService: NotifyService) {
+abstract class Worker<T>(protected val notifyService: NotifyService) : CoroutineScope {
 
-    var runner: CoroutineContext = DefaultDispatcher
+    var runner: CoroutineContext = Dispatchers.Default
+    private val supervisor = SupervisorJob()
 
     protected open suspend fun beforeWork() {
     }
@@ -23,13 +22,16 @@ abstract class Worker<T>(protected val notifyService: NotifyService) {
 
     protected open fun onWorkerFinished(request: T) {}
 
-    protected inline fun launchJob(crossinline job: suspend () -> Unit): Job = launch(runner) {
+    protected inline fun launchJob(crossinline job: suspend () -> Unit): Job = launch(coroutineContext) {
         job()
     }
 
     protected suspend fun sendNotification(notification: Notification = Notification.processed(), body: Any?=null) {
         notifyService.accept(notification, body)
     }
+
+    override val coroutineContext: CoroutineContext
+        get() = runner + supervisor
 }
 
 abstract class ChannelBasedWorker<T>(notifyService: NotifyService): Worker<T>(notifyService) {

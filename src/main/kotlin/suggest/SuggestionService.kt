@@ -1,6 +1,6 @@
 package suggest
 
-import kotlinx.coroutines.experimental.CompletableDeferred
+import kotlinx.coroutines.CompletableDeferred
 import worker.SuggestLinkProcessingRequest
 import worker.WorkerRegistry
 

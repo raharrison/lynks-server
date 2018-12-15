@@ -3,7 +3,7 @@ package task
 import common.Link
 import entry.LinkService
 import io.mockk.*
-import kotlinx.coroutines.experimental.runBlocking
+import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import worker.WorkerRegistry

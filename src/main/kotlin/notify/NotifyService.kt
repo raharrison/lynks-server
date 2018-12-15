@@ -3,7 +3,7 @@ package notify
 import com.google.common.collect.Sets
 import common.Environment
 import io.ktor.http.cio.websocket.Frame
-import kotlinx.coroutines.experimental.channels.SendChannel
+import kotlinx.coroutines.channels.SendChannel
 import org.apache.commons.mail.HtmlEmail
 import user.UserService
 import util.JsonMapper.defaultMapper

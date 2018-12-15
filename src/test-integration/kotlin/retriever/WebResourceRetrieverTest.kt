@@ -2,7 +2,7 @@ package retriever
 
 import common.ServerTest
 import io.restassured.RestAssured
-import kotlinx.coroutines.experimental.runBlocking
+import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import resource.WebResourceRetriever

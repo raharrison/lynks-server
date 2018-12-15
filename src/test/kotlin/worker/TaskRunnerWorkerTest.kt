@@ -2,12 +2,11 @@ package worker
 
 import common.TestCoroutineContext
 import io.mockk.*
-import kotlinx.coroutines.experimental.runBlocking
+import kotlinx.coroutines.runBlocking
 import notify.NotifyService
 import org.junit.jupiter.api.Test
 import task.Task
 import task.TaskContext
-import kotlin.coroutines.experimental.coroutineContext
 
 class TaskRunnerWorkerTest {
 
@@ -21,7 +20,7 @@ class TaskRunnerWorkerTest {
         val notifyService = mockk<NotifyService>(relaxUnitFun = true)
         coEvery { notifyService.accept(any(), null) } just Runs
 
-        val taskRunnerWorker = TaskRunnerWorker(notifyService).apply { runner = coroutineContext }.worker()
+        val taskRunnerWorker = TaskRunnerWorker(notifyService).apply { runner = this@runBlocking.coroutineContext }.worker()
         val request = TaskRunnerRequest(task, context)
         taskRunnerWorker.send(request)
         taskRunnerWorker.close()

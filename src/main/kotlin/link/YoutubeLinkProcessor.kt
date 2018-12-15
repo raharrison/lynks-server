@@ -1,7 +1,7 @@
 package link
 
 import common.BaseProperties
-import kotlinx.coroutines.experimental.runBlocking
+import kotlinx.coroutines.runBlocking
 import resource.JPG
 import resource.ResourceRetriever
 import task.YoutubeDlTask

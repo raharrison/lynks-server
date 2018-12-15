@@ -5,14 +5,13 @@ import common.Link
 import common.TestCoroutineContext
 import entry.LinkService
 import io.mockk.*
-import kotlinx.coroutines.experimental.runBlocking
+import kotlinx.coroutines.runBlocking
 import notify.NotifyService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import resource.ResourceRetriever
 import util.createDummyWorkerSchedule
-import kotlin.coroutines.experimental.coroutineContext
 
 class DiscussionFinderWorkerTest: DatabaseTest() {
 
@@ -38,7 +37,7 @@ class DiscussionFinderWorkerTest: DatabaseTest() {
         coEvery { retriever.getString(match { it.contains("reddit.com") }) } returns ""
 
         val worker = DiscussionFinderWorker(linkService, retriever, notifyService)
-                .apply { runner = coroutineContext }.worker()
+                .apply { runner = this@runBlocking.coroutineContext }.worker()
 
         worker.send(DiscussionFinderWorkerRequest(link.id))
         worker.close()
@@ -56,7 +55,7 @@ class DiscussionFinderWorkerTest: DatabaseTest() {
         coEvery { retriever.getString(match { it.contains("reddit.com") }) } returns getFile("/reddit_discussions.json")
 
         val worker = DiscussionFinderWorker(linkService, retriever, notifyService)
-                .apply { runner = coroutineContext }.worker()
+                .apply { runner = this@runBlocking.coroutineContext }.worker()
 
         worker.send(DiscussionFinderWorkerRequest(link.id))
         worker.close()
@@ -84,7 +83,7 @@ class DiscussionFinderWorkerTest: DatabaseTest() {
         createDummyWorkerSchedule(DiscussionFinderWorker::class.java.simpleName, "key", DiscussionFinderWorkerRequest(link.id, 2))
 
         val worker = DiscussionFinderWorker(linkService, retriever, notifyService)
-                .apply { runner = coroutineContext }.worker()
+                .apply { runner = this@runBlocking.coroutineContext }.worker()
 
         worker.close()
 
@@ -103,7 +102,7 @@ class DiscussionFinderWorkerTest: DatabaseTest() {
         coEvery { retriever.getString(match { it.contains("reddit.com") }) } returns "" andThen getFile("/reddit_discussions.json") andThen ""
 
         val worker = DiscussionFinderWorker(linkService, retriever, notifyService)
-                .apply { runner = coroutineContext }.worker()
+                .apply { runner = this@runBlocking.coroutineContext }.worker()
 
         worker.send(DiscussionFinderWorkerRequest(link.id))
         worker.close()
@@ -125,7 +124,7 @@ class DiscussionFinderWorkerTest: DatabaseTest() {
         coEvery { retriever.getString(match { it.contains("reddit.com") }) } returnsMany redditResponses
 
         val worker = DiscussionFinderWorker(linkService, retriever, notifyService)
-                .apply { runner = coroutineContext }.worker()
+                .apply { runner = this@runBlocking.coroutineContext }.worker()
 
         worker.send(DiscussionFinderWorkerRequest(link.id))
         worker.close()

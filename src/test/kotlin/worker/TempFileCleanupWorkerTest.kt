@@ -3,8 +3,8 @@ package worker
 import common.Environment
 import io.mockk.every
 import io.mockk.mockk
-import kotlinx.coroutines.experimental.runBlocking
-import kotlinx.coroutines.experimental.test.TestCoroutineContext
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.TestCoroutineContext
 import notify.NotifyService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
