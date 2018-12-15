@@ -151,7 +151,6 @@ class LinkProcessorWorkerTest {
 
         val exception = RuntimeException("error during computation")
         coEvery { processor.generateThumbnail() } throws exception
-        coEvery{ processor.generateScreenshot()} returns null
         every { processor.close() } just Runs
 
         coEvery { processorFactory.createProcessors(url) } returns listOf(processor)
@@ -167,7 +166,6 @@ class LinkProcessorWorkerTest {
         verify(exactly = 1) { processor.close() }
 
         coVerify(exactly = 1) { processor.generateThumbnail() }
-        coVerify(exactly = 1) { processor.generateScreenshot() }
         coVerify(exactly = 0) { processor.html }
         verify(exactly = 0) { resourceManager.saveTempFile(any(), any(), any(), any()) }
     }

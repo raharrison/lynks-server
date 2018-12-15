@@ -48,8 +48,8 @@ class LinkProcessorWorker(private val resourceManager: ResourceManager,
             processorFactory.createProcessors(link.url).forEach { it ->
                 it.use { proc ->
                     coroutineScope {
-                        val thumb = async(runner) { proc.generateThumbnail() }
-                        val screen = async(runner) { proc.generateScreenshot() }
+                        val thumb = async { proc.generateThumbnail() }
+                        val screen = async { proc.generateScreenshot() }
                         proc.enrich(link.props)
                         link.content = proc.content
                         thumb.await()?.let { resourceManager.saveGeneratedResource(link.id, ResourceType.THUMBNAIL, it.extension, it.image) }
@@ -76,8 +76,8 @@ class LinkProcessorWorker(private val resourceManager: ResourceManager,
             processorFactory.createProcessors(url).forEach { it ->
                 it.use { proc ->
                     coroutineScope {
-                        val thumb = async(runner) { proc.generateThumbnail() }
-                        val screen = async(runner) { proc.generateScreenshot() }
+                        val thumb = async { proc.generateThumbnail() }
+                        val screen = async { proc.generateScreenshot() }
                         val thumbPath = thumb.await()?.let { resourceManager.saveTempFile(url, it.image, ResourceType.THUMBNAIL, it.extension) }
                         val screenPath = screen.await()?.let { resourceManager.saveTempFile(url, it.image, ResourceType.SCREENSHOT, it.extension) }
                         proc.html?.let { resourceManager.saveTempFile(url, it.toByteArray(), ResourceType.DOCUMENT, HTML) }
