@@ -36,7 +36,7 @@ abstract class Worker<T>(protected val notifyService: NotifyService) : Coroutine
 
 abstract class ChannelBasedWorker<T>(notifyService: NotifyService): Worker<T>(notifyService) {
 
-    fun worker(): SendChannel<T> = actor(runner) {
+    fun worker(): SendChannel<T> = actor {
         beforeWork()
         for(request in channel) {
             onChannelReceive(request)
