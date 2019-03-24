@@ -1,8 +1,8 @@
 package notify
 
-private enum class NotificationType { EXECUTED, ERROR, REMINDER }
+internal enum class NotificationType { EXECUTED, ERROR, REMINDER }
 
-class Notification private constructor(val type: NotificationType, val message: String = "") {
+class Notification private constructor(internal val type: NotificationType, val message: String = "") {
 
     companion object {
 

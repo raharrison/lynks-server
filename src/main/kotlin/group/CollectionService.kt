@@ -4,30 +4,31 @@ import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.statements.InsertStatement
 import org.jetbrains.exposed.sql.statements.UpdateBuilder
 
-class CollectionService : GroupService<Collection, NewCollection, Collections>(Collections) {
+class CollectionService : GroupService<Collection, NewCollection>(GroupType.COLLECTION) {
 
-    override fun toInsert(eId: String, entity: NewCollection): Collections.(InsertStatement<*>) -> Unit = {
+    override fun toInsert(eId: String, entity: NewCollection): Groups.(InsertStatement<*>) -> Unit = {
         val time = System.currentTimeMillis()
-        it[Collections.id] = eId
-        it[Collections.name] = entity.name
-        it[Collections.parentId] = entity.parentId
-        it[Collections.dateCreated] = time
-        it[Collections.dateUpdated] = time
+        it[Groups.id] = eId
+        it[Groups.name] = entity.name
+        it[Groups.type] = GroupType.COLLECTION
+        it[Groups.parentId] = entity.parentId
+        it[Groups.dateCreated] = time
+        it[Groups.dateUpdated] = time
     }
 
-    override fun toUpdate(entity: NewCollection): Collections.(UpdateBuilder<*>) -> Unit = {
-        it[Collections.name] = entity.name
-        it[Collections.parentId] = entity.parentId
-        it[Collections.dateUpdated] = System.currentTimeMillis()
+    override fun toUpdate(entity: NewCollection): Groups.(UpdateBuilder<*>) -> Unit = {
+        it[Groups.name] = entity.name
+        it[Groups.parentId] = entity.parentId
+        it[Groups.dateUpdated] = System.currentTimeMillis()
     }
 
     override fun toModel(row: ResultRow): Collection {
         return Collection(
-                id = row[Collections.id],
-                name = row[Collections.name],
-                children = getGroupChildren(row[Collections.id]),
-                dateCreated = row[Collections.dateCreated],
-                dateUpdated = row[Collections.dateUpdated]
+                id = row[Groups.id],
+                name = row[Groups.name],
+                children = getGroupChildren(row[Groups.id]),
+                dateCreated = row[Groups.dateCreated],
+                dateUpdated = row[Groups.dateUpdated]
         )
     }
 

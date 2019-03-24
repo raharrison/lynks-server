@@ -14,8 +14,8 @@ class EntryService(tagService: TagService, collectionService: CollectionService)
 
     override fun toModel(row: ResultRow, table: BaseEntries): Entry {
         return when (row[table.type]) {
-            EntryType.LINK -> RowMapper.toLink(table, row, ::getTagsForEntry, ::getCollectionsForEntry)
-            EntryType.NOTE -> RowMapper.toNote(table, row, ::getTagsForEntry, ::getCollectionsForEntry)
+            EntryType.LINK -> RowMapper.toLink(table, row, ::getGroupsForEntry)
+            EntryType.NOTE -> RowMapper.toNote(table, row, ::getGroupsForEntry)
         }
     }
 

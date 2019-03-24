@@ -39,7 +39,7 @@ class LinkService(tagService: TagService, collectionService: CollectionService, 
     }
 
     override fun toModel(row: ResultRow, table: BaseEntries): Link {
-        return RowMapper.toLink(table, row, ::getTagsForEntry, ::getCollectionsForEntry)
+        return RowMapper.toLink(table, row, ::getGroupsForEntry)
     }
 
     override fun add(entry: NewLink): Link {

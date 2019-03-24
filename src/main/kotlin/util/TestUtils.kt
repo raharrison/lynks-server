@@ -4,8 +4,8 @@ import comment.Comments
 import common.BaseProperties
 import common.Entries
 import common.EntryType
-import group.Collections
-import group.Tags
+import group.GroupType
+import group.Groups
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.transactions.transaction
 import reminder.ReminderType
@@ -28,9 +28,10 @@ fun createDummyEntry(id: String, title: String, content: String, type: EntryType
 
 fun createDummyTag(id: String, name: String) = transaction{
     val time = System.currentTimeMillis()
-    Tags.insert {
-        it[Tags.id] = id
-        it[Tags.name] = name
+    Groups.insert {
+        it[Groups.id] = id
+        it[Groups.name] = name
+        it[Groups.type] = GroupType.TAG
         it[dateUpdated] = time
         it[dateCreated] = time
     }
@@ -38,10 +39,11 @@ fun createDummyTag(id: String, name: String) = transaction{
 
 fun createDummyCollection(id: String, name: String, parentId: String?=null) = transaction {
     val time = System.currentTimeMillis()
-    Collections.insert {
-        it[Collections.id] = id
-        it[Collections.name] = name
-        it[Collections.parentId] = parentId
+    Groups.insert {
+        it[Groups.id] = id
+        it[Groups.name] = name
+        it[Groups.type] = GroupType.COLLECTION
+        it[Groups.parentId] = parentId
         it[dateUpdated] = time
         it[dateCreated] = time
     }

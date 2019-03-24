@@ -14,34 +14,38 @@ import resource.Resources
 
 object RowMapper {
 
-    fun toLink(table: BaseEntries, row: ResultRow, tagResolver: (String) -> List<Tag>, collectionResolver: (String) -> List<Collection>): Link =
-            Link(
-                    id = row[table.id],
-                    title = row[table.title],
-                    url = row[table.plainContent]!!,
-                    source = row[table.src],
-                    content = row[table.content],
-                    dateUpdated = row[table.dateUpdated],
-                    tags = tagResolver(row[table.id]),
-                    collections = collectionResolver(row[table.id]),
-                    props = row[table.props] ?: BaseProperties(),
-                    version = row[table.version],
-                    starred = row[table.starred]
-            )
+    fun toLink(table: BaseEntries, row: ResultRow, groupResolver: (String) -> Pair<List<Tag>, List<Collection>>): Link {
+        val groups = groupResolver(row[table.id])
+        return Link(
+            id = row[table.id],
+            title = row[table.title],
+            url = row[table.plainContent]!!,
+            source = row[table.src],
+            content = row[table.content],
+            dateUpdated = row[table.dateUpdated],
+            tags = groups.first,
+            collections = groups.second,
+            props = row[table.props] ?: BaseProperties(),
+            version = row[table.version],
+            starred = row[table.starred]
+        )
+    }
 
-    fun toNote(table: BaseEntries, row: ResultRow, tagResolver: (String) -> List<Tag>, collectionResolver: (String) -> List<Collection>): Note =
-            Note(
-                    id = row[table.id],
-                    title = row[table.title],
-                    plainText = row[table.plainContent]!!,
-                    markdownText = row[table.content]!!,
-                    dateUpdated = row[table.dateUpdated],
-                    tags = tagResolver(row[table.id]),
-                    collections = collectionResolver(row[table.id]),
-                    props = row[table.props] ?: BaseProperties(),
-                    version = row[table.version],
-                    starred = row[table.starred]
-            )
+    fun toNote(table: BaseEntries, row: ResultRow, groupResolver: (String) -> Pair<List<Tag>, List<Collection>>): Note {
+        val groups = groupResolver(row[table.id])
+        return Note(
+            id = row[table.id],
+            title = row[table.title],
+            plainText = row[table.plainContent]!!,
+            markdownText = row[table.content]!!,
+            dateUpdated = row[table.dateUpdated],
+            tags = groups.first,
+            collections = groups.second,
+            props = row[table.props] ?: BaseProperties(),
+            version = row[table.version],
+            starred = row[table.starred]
+        )
+    }
 
     fun toComment(row: ResultRow): Comment =
             Comment(

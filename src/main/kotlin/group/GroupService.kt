@@ -7,23 +7,23 @@ import org.jetbrains.exposed.sql.statements.UpdateBuilder
 import org.jetbrains.exposed.sql.transactions.transaction
 import util.RandomUtils
 
-abstract class GroupService<T : Grouping<T>, in U : IdBasedNewEntity, E: Groups>(private val mainTable: E) {
+abstract class GroupService<T : Grouping<T>, in U : IdBasedNewEntity>(private val groupType: GroupType) {
 
     private val collection by lazy {
         GroupCollection<T>().apply { build(queryAllGroups()) }
     }
 
     protected fun getGroupChildren(id: String): MutableSet<T> = transaction {
-        mainTable.select { mainTable.parentId eq id }.map { toModel(it) }.toMutableSet()
+        Groups.select { (Groups.parentId eq id) and (Groups.type eq groupType) }.map { toModel(it) }.toMutableSet()
     }
 
     private fun queryGroup(id: String): T? = transaction {
-        mainTable.select { mainTable.id eq id}
+        Groups.select { Groups.id eq id and (Groups.type eq groupType) }
                 .map { toModel(it) }.singleOrNull()
     }
 
     private fun queryAllGroups(): List<T> = transaction {
-        mainTable.select { mainTable.parentId.isNull() }
+        Groups.select { Groups.parentId.isNull() and (Groups.type eq groupType) }
                 .map { toModel(it) }
     }
 
@@ -39,7 +39,7 @@ abstract class GroupService<T : Grouping<T>, in U : IdBasedNewEntity, E: Groups>
 
     fun add(group: U): T = transaction {
         val newId = RandomUtils.generateUid()
-        mainTable.insert(toInsert(newId, group))
+        Groups.insert(toInsert(newId, group))
         val created =  queryGroup(newId)!!
         collection.add(created, extractParentId(group))
     }
@@ -50,7 +50,7 @@ abstract class GroupService<T : Grouping<T>, in U : IdBasedNewEntity, E: Groups>
             add(group)
         } else {
             transaction {
-                val updated = mainTable.update({ mainTable.id eq id }, body = toUpdate(group))
+                val updated = Groups.update({ Groups.id eq id }, body = toUpdate(group))
                 if(updated > 0) {
                     collection.update(queryGroup(id)!!, extractParentId(group))
                 } else null
@@ -60,16 +60,16 @@ abstract class GroupService<T : Grouping<T>, in U : IdBasedNewEntity, E: Groups>
 
     fun delete(id: String): Boolean = transaction {
         // delete children first
-        mainTable.select { mainTable.parentId eq id }.forEach { delete(it[mainTable.id]) }
+        Groups.select { Groups.parentId eq id and (Groups.type eq groupType) }.forEach { delete(it[Groups.id]) }
         // delete main group
-        mainTable.deleteWhere { mainTable.id eq id }.also { collection.delete(id) } > 0
+        Groups.deleteWhere { Groups.id eq id }.also { collection.delete(id) } > 0
     }
 
     protected abstract fun toModel(row: ResultRow): T
 
-    protected abstract fun toInsert(eId: String, entity: U): E.(InsertStatement<*>) -> Unit
+    protected abstract fun toInsert(eId: String, entity: U): Groups.(InsertStatement<*>) -> Unit
 
-    protected abstract fun toUpdate(entity: U): E.(UpdateBuilder<*>) -> Unit
+    protected abstract fun toUpdate(entity: U): Groups.(UpdateBuilder<*>) -> Unit
 
     protected abstract fun extractParentId(entity: U): String?
 

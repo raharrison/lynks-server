@@ -7,10 +7,8 @@ import common.ConfigMode
 import common.Entries
 import common.EntryVersions
 import common.Environment
-import group.Collections
-import group.EntryCollections
-import group.EntryTags
-import group.Tags
+import group.EntryGroups
+import group.Groups
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils.create
 import org.jetbrains.exposed.sql.deleteAll
@@ -31,7 +29,7 @@ class DatabaseFactory {
 
     private val tables = listOf(Entries, EntryVersions,
             Comments, Resources, Reminders, UserPreferences,
-            Tags, EntryTags, Collections, EntryCollections, WorkerSchedules)
+            Groups, EntryGroups, WorkerSchedules)
 
     fun connect() {
         logger.info("Initialising database")

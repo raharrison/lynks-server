@@ -1,16 +1,11 @@
 package worker
 
-import entry.EntryService
 import io.mockk.*
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.TestCoroutineContext
-import notify.NotifyService
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import reminder.AdhocReminder
-import reminder.RecurringReminder
-import reminder.ReminderService
 import java.time.*
 import java.time.temporal.ChronoUnit
 import java.util.concurrent.TimeUnit
@@ -131,7 +126,7 @@ class ReminderWorkerTest {
         worker.send(ReminderWorkerRequest(reminder, CrudType.CREATE))
 
         val day = LocalDateTime.now(tz).let {
-            if(it.hour > 6) it.plusDays(1)
+            if(it.hour >= 6) it.plusDays(1)
             else it
         }
         val fireDate = ZonedDateTime.of(day.toLocalDate(), LocalTime.of(6, 0), tz)

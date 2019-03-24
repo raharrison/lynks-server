@@ -39,18 +39,28 @@ abstract class EntryRepository<T : Entry, in U : NewEntry>(private val tagServic
 
     private fun createPagedQuery(page: PageRequest): Query {
         var table: ColumnSet = Entries
-        page.tag?.let { table = table.innerJoin(EntryTags) }
-        page.collection?.let { table = table.innerJoin(EntryCollections) }
+
+        val tagTable = EntryGroups.alias("tags")
+        val collectionTable = EntryGroups.alias("collections")
+        if(page.tag != null) {
+            table = table.innerJoin(tagTable, { Entries.id }, { tagTable[EntryGroups.entryId] } )
+        }
+        if(page.collection != null) {
+            table = table.innerJoin(collectionTable, { Entries.id }, { collectionTable[EntryGroups.entryId] } )
+        }
 
         var query = getBaseQuery(table)
+
         page.tag?.let {
             val tags = tagService.subtree(page.tag).map { it.id }
-            query = query.combine { EntryTags.groupId.inList(tags) }
+            query = query.combine { tagTable[EntryGroups.groupId].inList(tags) }
         }
+
         page.collection?.let {
             val collections = collectionService.subtree(page.collection).map { it.id }
-            query = query.combine { EntryCollections.groupId.inList(collections) }
+            query = query.combine { collectionTable[EntryGroups.groupId].inList(collections) }
         }
+
         return query.apply {
             orderBy(Entries.dateUpdated, false)
             limit(page.limit, page.offset)
@@ -62,15 +72,9 @@ abstract class EntryRepository<T : Entry, in U : NewEntry>(private val tagServic
         validateTags(entry.tags)
         validateCollections(entry.collections)
         Entries.insert(toInsert(newId, entry))
-        for (tag in entry.tags) {
-            EntryTags.insert {
-                it[groupId] = tag
-                it[entryId] = newId
-            }
-        }
-        for(collection in entry.collections) {
-            EntryCollections.insert {
-                it[groupId] = collection
+        for (group in entry.tags + entry.collections) {
+            EntryGroups.insert {
+                it[groupId] = group
                 it[entryId] = newId
             }
         }
@@ -93,8 +97,7 @@ abstract class EntryRepository<T : Entry, in U : NewEntry>(private val tagServic
                     }
                 })
                 if(updated > 0) {
-                    updateTagsForEntry(entry.tags, id)
-                    updateCollectionsForEntry(entry.collections, id)
+                    updateGroupsForEntry(entry.tags + entry.collections, id)
                     get(id)
                 } else {
                     null
@@ -117,8 +120,7 @@ abstract class EntryRepository<T : Entry, in U : NewEntry>(private val tagServic
             }
         })
         if(updated > 0) {
-            updateTagsForEntry(entry.tags.map { it.id }, entry.id)
-            updateCollectionsForEntry(entry.collections.map { it.id }, entry.id)
+            updateGroupsForEntry(entry.tags.map { it.id } + entry.collections.map { it.id }, entry.id)
             get(entry.id)
         } else {
             null
@@ -136,59 +138,31 @@ abstract class EntryRepository<T : Entry, in U : NewEntry>(private val tagServic
         false
     }
 
-    private fun updateTagsForEntry(tags: List<String>, id: String) {
-        val currentTags = getTagsForEntry(id).map { it.id }
-        val newTags = tags.toSet()
+    private fun updateGroupsForEntry(groups: List<String>, id: String) {
+        val currentGroups = getGroupsForEntry(id).run { first.map { it.id } + second.map { it.id } }
+        val newGroups = groups.toSet()
 
-        currentTags.filterNot { newTags.contains(it) }
+        currentGroups.filterNot { newGroups.contains(it) }
                 .forEach {
-                    EntryTags.deleteWhere {
-                        EntryTags.entryId eq id and (EntryTags.groupId eq it)
+                    EntryGroups.deleteWhere {
+                        EntryGroups.entryId eq id and (EntryGroups.groupId eq it)
                     }
                 }
 
-        newTags.filterNot { currentTags.contains(it) }
-                .forEach { tag ->
-                    EntryTags.insert {
-                        it[groupId] = tag
+        newGroups.filterNot { currentGroups.contains(it) }
+                .forEach { group ->
+                    EntryGroups.insert {
+                        it[groupId] = group
                         it[entryId] = id
                     }
                 }
     }
 
-    private fun updateCollectionsForEntry(collections: List<String>, id: String) {
-        val currentCollections = getCollectionsForEntry(id).map { it.id }
-        val newCollections = collections.toSet()
-
-        currentCollections.filterNot { newCollections.contains(it) }
-                .forEach {
-                    EntryCollections.deleteWhere {
-                        EntryCollections.entryId eq id and (EntryCollections.groupId eq it)
-                    }
-                }
-
-        newCollections.filterNot { currentCollections.contains(it) }
-                .forEach { col ->
-                    EntryCollections.insert {
-                        it[groupId] = col
-                        it[entryId] = id
-                    }
-                }
-    }
-
-    // TODO: Make private
-    protected fun getTagsForEntry(id: String): List<Tag> {
-        val tags = EntryTags.slice(EntryTags.groupId)
-                .select { EntryTags.entryId eq id }
-                .map { it[EntryTags.groupId] }
-        return tagService.getIn(tags)
-    }
-
-    protected fun getCollectionsForEntry(id: String): List<Collection> {
-        val collections = EntryCollections.slice(EntryCollections.groupId)
-                .select { EntryCollections.entryId eq id }
-                .map { it[EntryCollections.groupId] }
-        return collectionService.getIn(collections)
+    protected fun getGroupsForEntry(id: String): Pair<List<Tag>, List<Collection>> {
+        val groupIds = EntryGroups.slice(EntryGroups.groupId)
+            .select { EntryGroups.entryId eq id }
+            .map { it[EntryGroups.groupId] }
+        return Pair(tagService.getIn(groupIds), collectionService.getIn(groupIds))
     }
 
     private fun validateTags(ids: List<String>) {
