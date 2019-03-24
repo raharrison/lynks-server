@@ -1,23 +1,23 @@
 buildscript {
-    ext.kotlin_version = '1.3.11'
-    ext.ktor_version = '1.0.1'
+    ext.kotlin_version = '1.3.21'
+    ext.ktor_version = '1.1.3'
 
-    ext.exposed_version = '0.11.2'
+    ext.exposed_version = '0.13.5'
     ext.h2_version = '1.4.197'
-    ext.hikari_version = '3.2.0'
+    ext.hikari_version = '3.3.1'
 
-    ext.flexmark_version = '0.34.0'
-    ext.handlebars_version = '4.1.0'
+    ext.flexmark_version = '0.40.24'
+    ext.handlebars_version = '4.1.1'
     ext.commons_email_version = '1.5'
 
     ext.logback_version = '1.2.3'
-    ext.konf_version = '0.12'
+    ext.konf_version = '0.13.2'
     ext.guava_version = '27.0.1-jre'
 
-    ext.rest_assured_version = '3.2.0'
-    ext.junit_version = '5.3.2'
+    ext.rest_assured_version = '3.3.0'
+    ext.junit_version = '5.4.1'
     ext.assertj_version = '3.11.1'
-    ext.mockk_version = '1.8.13.kotlin13'
+    ext.mockk_version = '1.9.2'
 
     repositories {
         mavenCentral()
@@ -71,10 +71,12 @@ compileTestIntegrationKotlin {
 }
 
 repositories {
-    mavenCentral()
     jcenter()
-    maven { url = "https://dl.bintray.com/kotlin/ktor" }
     maven { url = "https://jitpack.io" }
+}
+
+test {
+    useJUnitPlatform()
 }
 
 dependencies {
@@ -96,8 +98,8 @@ dependencies {
     compile "com.vladsch.flexmark:flexmark-ext-superscript:$flexmark_version"
 
     compile "io.webfolder:cdp4j:3.0.0"
-    compile "com.github.chimbori:crux:2.0.1"
-    compile 'com.github.shyiko.skedule:skedule:0.3.0'
+    compile "com.github.chimbori:crux:2.0.2"
+    compile 'com.github.shyiko.skedule:skedule:0.4.0'
     compile "com.google.guava:guava:$guava_version"
     compile "com.github.jknack:handlebars:$handlebars_version"
     compile "org.apache.commons:commons-email:$commons_email_version"

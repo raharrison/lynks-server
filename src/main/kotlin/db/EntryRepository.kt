@@ -62,7 +62,7 @@ abstract class EntryRepository<T : Entry, in U : NewEntry>(private val tagServic
         }
 
         return query.apply {
-            orderBy(Entries.dateUpdated, false)
+            orderBy(Entries.dateUpdated, SortOrder.DESC)
             limit(page.limit, page.offset)
         }
     }

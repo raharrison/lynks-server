@@ -160,7 +160,7 @@ class LinkProcessorWorkerTest {
         channel.send(SuggestLinkProcessingRequest(url, deferred))
         channel.close()
 
-        assertThat(deferred.getCompletionExceptionOrNull()).isEqualTo(exception)
+        assertThat(deferred.getCompletionExceptionOrNull()?.message).isEqualTo(exception.message)
 
         coVerify(exactly = 1) { processorFactory.createProcessors(url) }
         verify(exactly = 1) { processor.close() }

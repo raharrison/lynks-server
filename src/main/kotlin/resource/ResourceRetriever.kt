@@ -19,7 +19,7 @@ class WebResourceRetriever : ResourceRetriever {
     override suspend fun getFile(location: String): ByteArray? = try {
         val request = createRequest(location)
         val future = client.sendAsync(request, HttpResponse.BodyHandlers.ofByteArray())
-        future.await().let { it ->
+        future.await().let {
             if (it.statusCode() == 200) it.body()
             else null
         }
@@ -30,7 +30,7 @@ class WebResourceRetriever : ResourceRetriever {
     override suspend fun getString(location: String): String? = try {
         val request = createRequest(location)
         val future = client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
-        future.await().let { it ->
+        future.await().let {
             if (it.statusCode() == 200) it.body()
             else null
         }

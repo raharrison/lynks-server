@@ -18,7 +18,7 @@ class CommentService {
 
     fun getCommentsFor(id: String, pageRequest: PageRequest = DefaultPageRequest): List<Comment> = transaction {
         Comments.select { Comments.entryId eq id }
-                .orderBy(Comments.dateCreated, false)
+                .orderBy(Comments.dateCreated, SortOrder.DESC)
                 .limit(pageRequest.limit, pageRequest.offset)
                 .map { toComment(it) }
     }
