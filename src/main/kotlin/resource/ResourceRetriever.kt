@@ -45,7 +45,7 @@ class WebResourceRetriever : ResourceRetriever {
     }
 
     companion object {
-        private val client = HttpClient.newHttpClient()
+        private val client = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build()
     }
 
 }

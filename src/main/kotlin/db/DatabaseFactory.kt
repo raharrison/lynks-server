@@ -71,13 +71,13 @@ class DatabaseFactory {
     }
 
     private fun enableSearch() {
-        // test mode uses in-memory db
+        // execute if db file doesn't already exist, otherwise test mode uses in-memory db
         if (Environment.mode == ConfigMode.TEST) {
             val conn = TransactionManager.current().connection
             conn.createStatement().use {
                 it.execute("CREATE ALIAS IF NOT EXISTS FT_INIT FOR \"org.h2.fulltext.FullText.init\";")
                 it.execute("CALL FT_INIT()")
-                it.execute("CALL FT_CREATE_INDEX('PUBLIC', 'ENTRY', 'TITLE,PLAINCONTENT');")
+                it.execute("CALL FT_CREATE_INDEX('PUBLIC', 'ENTRY', 'TITLE,plainContent');")
             }
         }
     }

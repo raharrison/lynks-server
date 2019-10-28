@@ -5,7 +5,9 @@ import kotlinx.coroutines.runBlocking
 import resource.JPG
 import resource.ResourceRetriever
 import task.YoutubeDlTask
+import util.JsonMapper
 import util.URLUtils
+import java.net.URLEncoder
 
 class YoutubeLinkProcessor(private val retriever: ResourceRetriever) : LinkProcessor {
 
@@ -23,7 +25,14 @@ class YoutubeLinkProcessor(private val retriever: ResourceRetriever) : LinkProce
     override val title: String get() = runBlocking {
         downloadVideoInfo()?.let {
             val params = URLUtils.extractQueryParams(it)
-            return@runBlocking params["title"] ?: ""
+            if(params.containsKey("player_response")) {
+                val playerResponse = params["player_response"]
+                val playerResponseJson = JsonMapper.defaultMapper.readTree(playerResponse)
+                if ("error".equals(playerResponseJson["playabilityStatus"]["status"].asText("error"), true)) {
+                    return@runBlocking ""
+                }
+                return@runBlocking playerResponseJson["videoDetails"]["title"].asText()
+            } else ""
         }
         ""
     }
@@ -37,17 +46,18 @@ class YoutubeLinkProcessor(private val retriever: ResourceRetriever) : LinkProce
     private fun embedUrl(): String = "https://www.youtube.com/embed/$videoId"
 
     private suspend fun downloadVideoInfo(): String? {
-        val dl = "http://www.youtube.com/get_video_info?video_id=$videoId&asv=3&el=detailpage&hl=en_US"
-        return retriever.getString(dl)
+        val eurl = URLEncoder.encode("https://youtube.googleapis.com/v/$videoId", "UTF-8")
+        val url = "https://youtube.com/get_video_info?video_id=$videoId&el=embedded&eurl=$eurl&hl=en"
+        return retriever.getString(url)
     }
 
     override suspend fun generateThumbnail(): ImageResource? {
-        val dl = "http://img.youtube.com/vi/$videoId/0.jpg"
+        val dl = "https://img.youtube.com/vi/$videoId/0.jpg"
         return retriever.getFile(dl)?.let { ImageResource(it, JPG) }
     }
 
     override suspend fun generateScreenshot(): ImageResource? {
-        val dl = "http://img.youtube.com/vi/$videoId/maxresdefault.jpg"
+        val dl = "https://img.youtube.com/vi/$videoId/maxresdefault.jpg"
         return retriever.getFile(dl)?.let { ImageResource(it, JPG) }
     }
 

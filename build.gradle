@@ -1,23 +1,23 @@
 buildscript {
-    ext.kotlin_version = '1.3.21'
-    ext.ktor_version = '1.1.3'
+    ext.kotlin_version = '1.3.50'
+    ext.ktor_version = '1.2.5'
 
-    ext.exposed_version = '0.13.5'
-    ext.h2_version = '1.4.197'
-    ext.hikari_version = '3.3.1'
+    ext.exposed_version = '0.17.6'
+    ext.h2_version = '1.4.199'
+    ext.hikari_version = '3.4.1'
 
-    ext.flexmark_version = '0.40.24'
+    ext.flexmark_version = '0.50.42'
     ext.handlebars_version = '4.1.1'
     ext.commons_email_version = '1.5'
 
     ext.logback_version = '1.2.3'
-    ext.konf_version = '0.13.2'
-    ext.guava_version = '27.0.1-jre'
+    ext.konf_version = '0.20.0'
+    ext.guava_version = '28.1-jre'
 
-    ext.rest_assured_version = '3.3.0'
+    ext.rest_assured_version = '4.1.2'
     ext.junit_version = '5.4.1'
-    ext.assertj_version = '3.11.1'
-    ext.mockk_version = '1.9.2'
+    ext.assertj_version = '3.14.0'
+    ext.mockk_version = '1.9.3'
 
     repositories {
         mavenCentral()
@@ -41,9 +41,7 @@ sourceSets {
     }
 }
 configurations {
-    provided
-    testCompile.extendsFrom provided
-    testIntegrationCompile.extendsFrom testCompile
+    testIntegrationImplementation.extendsFrom testImplementation
     testIntegrationRuntime.extendsFrom testRuntime
 }
 task testIntegration(type: Test) {
@@ -80,36 +78,40 @@ test {
 }
 
 dependencies {
-    compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
-    compile "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+    implementation "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
 
-    compile "io.ktor:ktor-server-netty:$ktor_version"
-    compile "io.ktor:ktor-jackson:$ktor_version"
-    compile "io.ktor:ktor-websockets:$ktor_version"
+    implementation "io.ktor:ktor-server-netty:$ktor_version"
+    implementation "io.ktor:ktor-jackson:$ktor_version"
+    implementation "io.ktor:ktor-websockets:$ktor_version"
 
-    compile "com.h2database:h2:$h2_version"
-    compile "org.jetbrains.exposed:exposed:$exposed_version"
-    compile "com.zaxxer:HikariCP:$hikari_version"
+    implementation "com.h2database:h2:$h2_version"
+    implementation "org.jetbrains.exposed:exposed:$exposed_version"
+    implementation "com.zaxxer:HikariCP:$hikari_version"
 
-    compile "com.vladsch.flexmark:flexmark:$flexmark_version"
-    compile "com.vladsch.flexmark:flexmark-ext-gfm-strikethrough:$flexmark_version"
-    compile "com.vladsch.flexmark:flexmark-ext-tables:$flexmark_version"
-    compile "com.vladsch.flexmark:flexmark-ext-autolink:$flexmark_version"
-    compile "com.vladsch.flexmark:flexmark-ext-superscript:$flexmark_version"
+    implementation "com.vladsch.flexmark:flexmark:$flexmark_version"
+    implementation "com.vladsch.flexmark:flexmark-ext-gfm-strikethrough:$flexmark_version"
+    implementation "com.vladsch.flexmark:flexmark-ext-tables:$flexmark_version"
+    implementation "com.vladsch.flexmark:flexmark-ext-autolink:$flexmark_version"
+    implementation "com.vladsch.flexmark:flexmark-ext-superscript:$flexmark_version"
 
-    compile "io.webfolder:cdp4j:3.0.0"
-    compile "com.github.chimbori:crux:2.0.2"
-    compile 'com.github.shyiko.skedule:skedule:0.4.0'
-    compile "com.google.guava:guava:$guava_version"
-    compile "com.github.jknack:handlebars:$handlebars_version"
-    compile "org.apache.commons:commons-email:$commons_email_version"
+    implementation "io.webfolder:cdp4j:3.0.0"
 
-    compile "ch.qos.logback:logback-classic:$logback_version"
-    compile "com.uchuhimo:konf:$konf_version"
-    compile "com.github.kittinunf.result:result:1.5.0"
+    implementation "com.github.chimbori:crux:2.2.0"
+    implementation "org.apache.commons:commons-lang3:3.9"
+    implementation "org.jsoup:jsoup:1.9.2"
 
-    testCompile "io.rest-assured:rest-assured:$rest_assured_version"
-    testCompile "org.junit.jupiter:junit-jupiter-api:$junit_version"
-    testCompile "org.assertj:assertj-core:$assertj_version"
-    testCompile "io.mockk:mockk:$mockk_version"
+    implementation 'com.github.shyiko.skedule:skedule:0.4.0'
+    implementation "com.google.guava:guava:$guava_version"
+    implementation "com.github.jknack:handlebars:$handlebars_version"
+    implementation "org.apache.commons:commons-email:$commons_email_version"
+
+    implementation "ch.qos.logback:logback-classic:$logback_version"
+    implementation "com.uchuhimo:konf-core:$konf_version"
+    implementation "com.github.kittinunf.result:result:2.2.0"
+
+    testImplementation "io.rest-assured:rest-assured:$rest_assured_version"
+    testImplementation "org.junit.jupiter:junit-jupiter-api:$junit_version"
+    testImplementation "org.assertj:assertj-core:$assertj_version"
+    testImplementation "io.mockk:mockk:$mockk_version"
 }
