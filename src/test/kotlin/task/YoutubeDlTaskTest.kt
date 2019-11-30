@@ -1,6 +1,5 @@
 package task
 
-import com.github.kittinunf.result.Result
 import io.mockk.*
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
@@ -11,6 +10,7 @@ import resource.ResourceManager
 import resource.ResourceType
 import util.ExecException
 import util.ExecUtils
+import util.Result
 import java.nio.file.Paths
 
 class YoutubeDlTaskTest {

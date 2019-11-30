@@ -1,13 +1,16 @@
 package task
 
-import com.github.kittinunf.result.Result
 import common.inject.Inject
+import org.slf4j.LoggerFactory
 import resource.ResourceManager
 import resource.ResourceType
 import util.ExecUtils
+import util.Result
 import java.io.File
 
 class YoutubeDlTask(id: String, entryId: String) : Task<YoutubeDlTask.YoutubeDlTaskContext>(id, entryId) {
+
+    private val logger = LoggerFactory.getLogger(YoutubeDlTask::class.java)
 
     @Inject
     lateinit var resourceManager: ResourceManager
@@ -34,14 +37,22 @@ class YoutubeDlTask(id: String, entryId: String) : Task<YoutubeDlTask.YoutubeDlT
                 if (filename != null) {
                     val file = File(filename.removePrefix(prefix).trim())
                     resourceManager.saveGeneratedResource(
-                            entryId = entryId,
-                            name = file.name,
-                            format = file.extension,
-                            size = file.length(),
-                            type = ResourceType.UPLOAD)
+                        entryId = entryId,
+                        name = file.name,
+                        format = file.extension,
+                        size = file.length(),
+                        type = ResourceType.UPLOAD
+                    )
                 }
             }
-            else -> { /* error reporting */ }
+            is Result.Failure -> {
+                logger.error(
+                    "Error running YoutubeDl task: {} return code: error:",
+                    context.toString(),
+                    result.reason.code,
+                    result.reason.message
+                )
+            }
         }
     }
 
@@ -51,7 +62,7 @@ class YoutubeDlTask(id: String, entryId: String) : Task<YoutubeDlTask.YoutubeDlT
 
     companion object {
         fun build(url: String, type: YoutubeDlDownload): TaskBuilder {
-            return TaskBuilder(YoutubeDlTask::class, YoutubeDlTask.YoutubeDlTaskContext(url, type))
+            return TaskBuilder(YoutubeDlTask::class, YoutubeDlTaskContext(url, type))
         }
     }
 

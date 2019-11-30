@@ -12,6 +12,7 @@ import group.Groups
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils.create
 import org.jetbrains.exposed.sql.deleteAll
+import org.jetbrains.exposed.sql.statements.jdbc.JdbcConnectionImpl
 import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.jetbrains.exposed.sql.transactions.transaction
 import reminder.Reminders
@@ -61,7 +62,7 @@ class DatabaseFactory {
     }
 
     private fun enableTriggers() {
-        val conn = TransactionManager.current().connection
+        val conn = (TransactionManager.current().connection as JdbcConnectionImpl).connection
         conn.createStatement().use {
             it.execute("CREATE TRIGGER IF NOT EXISTS ENTRY_VERS_INS AFTER INSERT ON ENTRY " +
                     "FOR EACH ROW CALL \"${EntryVersionTrigger::class.qualifiedName}\"")
@@ -73,7 +74,7 @@ class DatabaseFactory {
     private fun enableSearch() {
         // execute if db file doesn't already exist, otherwise test mode uses in-memory db
         if (Environment.mode == ConfigMode.TEST) {
-            val conn = TransactionManager.current().connection
+            val conn = (TransactionManager.current().connection as JdbcConnectionImpl).connection
             conn.createStatement().use {
                 it.execute("CREATE ALIAS IF NOT EXISTS FT_INIT FOR \"org.h2.fulltext.FullText.init\";")
                 it.execute("CALL FT_INIT()")

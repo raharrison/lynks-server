@@ -1,6 +1,5 @@
 package util
 
-import com.github.kittinunf.result.Result
 import org.apache.commons.lang3.SystemUtils
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -24,7 +23,7 @@ class ExecUtilsTest {
         val result = ExecUtils.executeCommand(command)
         when(result) {
             is Result.Failure -> {
-                assertThat(result.getException().code).isNotEqualTo(0)
+                assertThat(result.reason.code).isNotEqualTo(0)
             }
             else -> fail("Command execution didn't fail")
         }

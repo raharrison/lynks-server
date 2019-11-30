@@ -6,6 +6,7 @@ import group.CollectionService
 import group.TagService
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.statements.UpdateBuilder
+import org.jetbrains.exposed.sql.statements.jdbc.JdbcConnectionImpl
 import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.jetbrains.exposed.sql.transactions.transaction
 import util.RowMapper
@@ -36,7 +37,7 @@ class EntryService(tagService: TagService, collectionService: CollectionService)
     }
 
     fun search(term: String, page: PageRequest = DefaultPageRequest): List<Entry> = transaction {
-        val conn = TransactionManager.current().connection
+        val conn = (TransactionManager.current().connection as JdbcConnectionImpl).connection
         conn.prepareStatement("SELECT * FROM FT_SEARCH_DATA(?, 0, 0)").use { prep ->
             prep.setString(1, term)
             prep.executeQuery().use { set ->
