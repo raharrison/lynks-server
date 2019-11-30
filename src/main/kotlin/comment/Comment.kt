@@ -6,12 +6,12 @@ import common.IdBasedNewEntity
 import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.Table
 
-object Comments : Table("Comment") {
-    val id = varchar("id", 12).primaryKey()
-    val entryId = (varchar("entryId", 12).references(Entries.id, ReferenceOption.CASCADE)).index()
-    val plainText = text("plainText")
-    val markdownText = text("markdownText")
-    val dateCreated = long("dateCreated")
+object Comments : Table("COMMENT") {
+    val id = varchar("ID", 12).primaryKey()
+    val entryId = (varchar("ENTRY_ID", 12).references(Entries.id, ReferenceOption.CASCADE)).index()
+    val plainText = text("PLAIN_TEXT")
+    val markdownText = text("MARKDOWN_TEXT")
+    val dateCreated = long("DATE_CREATED")
 }
 
 

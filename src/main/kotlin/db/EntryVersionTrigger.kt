@@ -15,7 +15,7 @@ class EntryVersionTrigger: TriggerAdapter() {
 
     private fun findVersionColumn(): Int {
         return EntryVersions.columns.indexOfFirst {
-            it.name == "version"
+            it == EntryVersions.version
         }
     }
 

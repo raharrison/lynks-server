@@ -5,15 +5,15 @@ import common.IdBasedCreatedEntity
 import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.Table
 
-object Resources : Table("Resource") {
-    val id = varchar("id", 12).primaryKey()
-    val entryId = (varchar("entryId", 12).references(Entries.id, ReferenceOption.CASCADE)).index()
-    val fileName = varchar("filename", 255)
-    val extension = varchar("extension", 4)
-    val type = enumeration("type", ResourceType::class)
-    val size = long("size")
-    val dateCreated = long("dateCreated")
-    val dateUpdated = long("dateUpdated")
+object Resources : Table("RESOURCE") {
+    val id = varchar("ID", 12).primaryKey()
+    val entryId = (varchar("ENTRY_ID", 12).references(Entries.id, ReferenceOption.CASCADE)).index()
+    val fileName = varchar("FILENAME", 255)
+    val extension = varchar("EXTENSION", 4)
+    val type = enumeration("TYPE", ResourceType::class)
+    val size = long("SIZE")
+    val dateCreated = long("DATE_CREATED")
+    val dateUpdated = long("DATE_UPDATED")
 }
 
 data class Resource(

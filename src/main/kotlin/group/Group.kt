@@ -6,18 +6,18 @@ import common.IdBasedNewEntity
 import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.Table
 
-object Groups: Table("Group") {
-    val id = varchar("id", 12).primaryKey()
-    val type = enumeration("type", GroupType::class)
-    val name = varchar("name", 255)
-    val parentId = (varchar("parentId", 12) references id).nullable()
-    val dateCreated = long("dateCreated")
-    val dateUpdated = long("dateUpdated")
+object Groups: Table("GROUP") {
+    val id = varchar("ID", 12).primaryKey()
+    val type = enumeration("TYPE", GroupType::class)
+    val name = varchar("NAME", 255)
+    val parentId = (varchar("PARENT_ID", 12) references id).nullable()
+    val dateCreated = long("DATE_CREATED")
+    val dateUpdated = long("DATE_UPDATED")
 }
 
-object EntryGroups: Table("EntryGroups") {
-    val groupId = (varchar("groupId", 12).references(Groups.id, ReferenceOption.CASCADE)).primaryKey()
-    val entryId = (varchar("entryId", 12).references(Entries.id, ReferenceOption.CASCADE)).primaryKey()
+object EntryGroups: Table("ENTRY_GROUP") {
+    val groupId = (varchar("GROUP_ID", 12).references(Groups.id, ReferenceOption.CASCADE)).primaryKey()
+    val entryId = (varchar("ENTRY_ID", 12).references(Entries.id, ReferenceOption.CASCADE)).primaryKey()
 }
 
 

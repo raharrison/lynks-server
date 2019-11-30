@@ -7,24 +7,24 @@ import org.jetbrains.exposed.sql.Column
 import org.jetbrains.exposed.sql.Table
 
 abstract class BaseEntries(name: String): Table(name) {
-    val id = varchar("id", 12).primaryKey()
-    val title = varchar("title", 255)
-    val plainContent = text("plainContent").nullable()
-    val content = text("content").nullable()
-    val src = varchar("source", 255)
-    val type = enumeration("type", EntryType::class)
-    val dateUpdated = long("dateUpdated")
-    val props = json("props", BaseProperties::class.java).nullable()
+    val id = varchar("ID", 12).primaryKey()
+    val title = varchar("TITLE", 255)
+    val plainContent = text("PLAIN_CONTENT").nullable()
+    val content = text("CONTENT").nullable()
+    val src = varchar("SOURCE", 255)
+    val type = enumeration("TYPE", EntryType::class)
+    val dateUpdated = long("DATE_UPDATED")
+    val props = json("PROPS", BaseProperties::class.java).nullable()
     abstract val version: Column<Int>
-    val starred = bool("starred").default(false)
+    val starred = bool("STARRED").default(false)
 }
 
-object Entries : BaseEntries("Entry") {
-    override val version = integer("version").default(0)
+object Entries : BaseEntries("ENTRY") {
+    override val version = integer("VERSION").default(0)
 }
 
-object EntryVersions: BaseEntries("EntryVersion") {
-    override val version = integer("version").primaryKey().default(0)
+object EntryVersions: BaseEntries("ENTRY_VERSION") {
+    override val version = integer("VERSION").primaryKey().default(0)
 }
 
 interface Entry: IdBasedCreatedEntity {

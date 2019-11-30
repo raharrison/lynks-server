@@ -2,11 +2,11 @@ package worker
 
 import org.jetbrains.exposed.sql.Table
 
-object WorkerSchedules: Table("WorkerSchedule") {
+object WorkerSchedules: Table("WORKER_SCHEDULE") {
 
-    val worker = varchar("worker", 50).index()
-    val key = varchar("key", 20).nullable()
-    val request = varchar("request", 255)
+    val worker = varchar("WORKER", 50).index()
+    val key = varchar("KEY", 20).nullable()
+    val request = varchar("REQUEST", 255)
 }
 
 
