@@ -7,7 +7,7 @@ import io.webfolder.cdp.Launcher
 import io.webfolder.cdp.event.Events
 import io.webfolder.cdp.event.network.ResponseReceived
 import io.webfolder.cdp.session.Session
-import io.webfolder.cdp.type.page.ResourceType
+import io.webfolder.cdp.type.network.ResourceType
 import resource.JPG
 import resource.PDF
 import resource.PNG
