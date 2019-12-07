@@ -14,8 +14,7 @@ import resource.Resources
 
 object RowMapper {
 
-    fun toLink(table: BaseEntries, row: ResultRow, groupResolver: (String) -> Pair<List<Tag>, List<Collection>>): Link {
-        val groups = groupResolver(row[table.id])
+    fun toLink(table: BaseEntries, row: ResultRow, tags: List<Tag>, collections: List<Collection>): Link {
         return Link(
             id = row[table.id],
             title = row[table.title],
@@ -23,24 +22,23 @@ object RowMapper {
             source = row[table.src],
             content = row[table.content],
             dateUpdated = row[table.dateUpdated],
-            tags = groups.first,
-            collections = groups.second,
+            tags = tags,
+            collections = collections,
             props = row[table.props] ?: BaseProperties(),
             version = row[table.version],
             starred = row[table.starred]
         )
     }
 
-    fun toNote(table: BaseEntries, row: ResultRow, groupResolver: (String) -> Pair<List<Tag>, List<Collection>>): Note {
-        val groups = groupResolver(row[table.id])
+    fun toNote(table: BaseEntries, row: ResultRow, tags: List<Tag>, collections: List<Collection>): Note {
         return Note(
             id = row[table.id],
             title = row[table.title],
             plainText = row[table.plainContent]!!,
             markdownText = row[table.content]!!,
             dateUpdated = row[table.dateUpdated],
-            tags = groups.first,
-            collections = groups.second,
+            tags = tags,
+            collections = collections,
             props = row[table.props] ?: BaseProperties(),
             version = row[table.version],
             starred = row[table.starred]

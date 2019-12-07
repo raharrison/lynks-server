@@ -38,6 +38,7 @@ class CollectionResourceTest : ServerTest() {
         createDummyCollection("c6", "col6", "c3")
         createDummyCollection("c7", "col7", "c4")
         createDummyCollection("c8", "col8", "c5")
+        post("/collection/refresh")
     }
 
     @Test

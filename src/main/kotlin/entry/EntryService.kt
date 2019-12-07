@@ -11,12 +11,13 @@ import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.jetbrains.exposed.sql.transactions.transaction
 import util.RowMapper
 
-class EntryService(tagService: TagService, collectionService: CollectionService) : EntryRepository<Entry, NewEntry>(tagService, collectionService) {
+class EntryService(tagService: TagService, collectionService: CollectionService) :
+    EntryRepository<Entry, NewEntry>(tagService, collectionService) {
 
-    override fun toModel(row: ResultRow, table: BaseEntries): Entry {
+    override fun toModel(row: ResultRow, groups: GroupSet, table: BaseEntries): Entry {
         return when (row[table.type]) {
-            EntryType.LINK -> RowMapper.toLink(table, row, ::getGroupsForEntry)
-            EntryType.NOTE -> RowMapper.toNote(table, row, ::getGroupsForEntry)
+            EntryType.LINK -> RowMapper.toLink(table, row, groups.tags, groups.collections)
+            EntryType.NOTE -> RowMapper.toNote(table, row, groups.tags, groups.collections)
         }
     }
 
@@ -52,7 +53,7 @@ class EntryService(tagService: TagService, collectionService: CollectionService)
     }
 
     fun star(id: String, starred: Boolean): Entry? = transaction {
-        Entries.update({Entries.id eq id}) {
+        Entries.update({ Entries.id eq id }) {
             it[Entries.starred] = starred
         }
         get(id)

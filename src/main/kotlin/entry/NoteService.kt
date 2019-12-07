@@ -19,8 +19,8 @@ import util.RowMapper
 class NoteService(tagService: TagService, collectionService: CollectionService,
                   private val resourceManager: ResourceManager) : EntryRepository<Note, NewNote>(tagService, collectionService) {
 
-    override fun toModel(row: ResultRow, table: BaseEntries): Note {
-        return RowMapper.toNote(table, row, ::getGroupsForEntry)
+    override fun toModel(row: ResultRow, groups: GroupSet, table: BaseEntries): Note {
+        return RowMapper.toNote(table, row, groups.tags, groups.collections)
     }
 
     override fun getBaseQuery(base: ColumnSet, where: BaseEntries): Query {

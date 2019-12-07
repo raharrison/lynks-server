@@ -15,8 +15,10 @@ import util.URLUtils
 import worker.PersistLinkProcessingRequest
 import worker.WorkerRegistry
 
-class LinkService(tagService: TagService, collectionService: CollectionService, private val resourceManager: ResourceManager,
-                  private val workerRegistry: WorkerRegistry) : EntryRepository<Link, NewLink>(tagService, collectionService) {
+class LinkService(
+    tagService: TagService, collectionService: CollectionService, private val resourceManager: ResourceManager,
+    private val workerRegistry: WorkerRegistry
+) : EntryRepository<Link, NewLink>(tagService, collectionService) {
 
     override fun getBaseQuery(base: ColumnSet, where: BaseEntries): Query {
         return base.select { where.type eq EntryType.LINK }
@@ -38,17 +40,17 @@ class LinkService(tagService: TagService, collectionService: CollectionService, 
         it[dateUpdated] = System.currentTimeMillis()
     }
 
-    override fun toModel(row: ResultRow, table: BaseEntries): Link {
-        return RowMapper.toLink(table, row, ::getGroupsForEntry)
+    override fun toModel(row: ResultRow, groups: GroupSet, table: BaseEntries): Link {
+        return RowMapper.toLink(table, row, groups.tags, groups.collections)
     }
 
     override fun add(entry: NewLink): Link {
         val link = super.add(entry)
-        if(!resourceManager.moveTempFiles(link.id, link.url)) {
-            if(entry.process)
+        if (!resourceManager.moveTempFiles(link.id, link.url)) {
+            if (entry.process)
                 workerRegistry.acceptLinkWork(PersistLinkProcessingRequest(link))
         }
-        if(entry.process)
+        if (entry.process)
             workerRegistry.acceptDiscussionWork(link.id)
         return link
     }
@@ -73,8 +75,8 @@ class LinkService(tagService: TagService, collectionService: CollectionService, 
     }
 
     fun getUnread(): List<Link> = transaction {
-        Entries.select {Entries.props.isNull() or (Entries.props notLike "%\"read\":true%") }
-                .map { toModel(it) }
+        Entries.select { Entries.props.isNull() or (Entries.props notLike "%\"read\":true%") }
+            .map { toModel(it) }
     }
 
 }
