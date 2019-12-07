@@ -1,6 +1,6 @@
 {
     "server": {
-        "database": "jdbc:h2:./lynksdb",
+        "database": "jdbc:h2:./lynksdb;AUTO_SERVER=TRUE",
         "driver": "org.h2.Driver",
         "resourceBasePath": "media",
         "resourceTempPath": "media/temp"
