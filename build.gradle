@@ -2,12 +2,12 @@ buildscript {
     ext.kotlin_version = '1.3.60'
     ext.ktor_version = '1.2.6'
 
-    ext.exposed_version = '0.18.1'
+    ext.exposed_version = '0.19.1'
     ext.h2_version = '1.4.199'
     ext.hikari_version = '3.4.1'
 
     ext.flexmark_version = '0.50.42'
-    ext.handlebars_version = '4.1.1'
+    ext.handlebars_version = '4.1.2'
     ext.commons_email_version = '1.5'
 
     ext.logback_version = '1.2.3'
@@ -15,7 +15,7 @@ buildscript {
     ext.guava_version = '28.1-jre'
 
     ext.rest_assured_version = '4.1.2'
-    ext.junit_version = '5.4.1'
+    ext.junit_version = '5.5.2'
     ext.assertj_version = '3.14.0'
     ext.mockk_version = '1.9.3'
 
