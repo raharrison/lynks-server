@@ -7,6 +7,7 @@ object WorkerSchedules: Table("WORKER_SCHEDULE") {
     val worker = varchar("WORKER", 50).index()
     val key = varchar("KEY", 20).nullable()
     val request = varchar("REQUEST", 255)
+    override val primaryKey = PrimaryKey(worker, key)
 }
 
 

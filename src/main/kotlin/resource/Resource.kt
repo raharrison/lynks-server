@@ -6,7 +6,7 @@ import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.Table
 
 object Resources : Table("RESOURCE") {
-    val id = varchar("ID", 12).primaryKey()
+    val id = varchar("ID", 12)
     val entryId = (varchar("ENTRY_ID", 12).references(Entries.id, ReferenceOption.CASCADE)).index()
     val fileName = varchar("FILENAME", 255)
     val extension = varchar("EXTENSION", 4)
@@ -14,6 +14,7 @@ object Resources : Table("RESOURCE") {
     val size = long("SIZE")
     val dateCreated = long("DATE_CREATED")
     val dateUpdated = long("DATE_UPDATED")
+    override val primaryKey = PrimaryKey(id)
 }
 
 data class Resource(

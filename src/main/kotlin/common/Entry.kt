@@ -7,7 +7,7 @@ import org.jetbrains.exposed.sql.Column
 import org.jetbrains.exposed.sql.Table
 
 abstract class BaseEntries(name: String): Table(name) {
-    val id = varchar("ID", 12).primaryKey()
+    val id = varchar("ID", 12)
     val title = varchar("TITLE", 255)
     val plainContent = text("PLAIN_CONTENT").nullable()
     val content = text("CONTENT").nullable()
@@ -21,10 +21,12 @@ abstract class BaseEntries(name: String): Table(name) {
 
 object Entries : BaseEntries("ENTRY") {
     override val version = integer("VERSION").default(0)
+    override val primaryKey = PrimaryKey(id)
 }
 
 object EntryVersions: BaseEntries("ENTRY_VERSION") {
-    override val version = integer("VERSION").primaryKey().default(0)
+    override val version = integer("VERSION").default(0)
+    override val primaryKey = PrimaryKey(id, version)
 }
 
 interface Entry: IdBasedCreatedEntity {
