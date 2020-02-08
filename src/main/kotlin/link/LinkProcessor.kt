@@ -100,7 +100,7 @@ open class DefaultLinkProcessor : LinkProcessor {
     companion object {
         private val launcher: Launcher = Launcher()
         private val sessionFactory = lazy {
-            launcher.launch(listOf("--headless", "--disable-gpu"))
+            launcher.launch(listOf("--headless", "--disable-gpu", "--hide-scrollbars", "--window-size=1280,720"))
         }
 
         init {
@@ -117,11 +117,11 @@ open class DefaultLinkProcessor : LinkProcessor {
 
     override fun matches(url: String): Boolean = true
 
-    override suspend fun generateThumbnail(): ImageResource {
+    override suspend fun generateThumbnail(): ImageResource = synchronized(session){
         val screen = session.command.page.captureScreenshot()
         val img = ImageIO.read(ByteArrayInputStream(screen))
-        val scaledImage = img.getScaledInstance(360, 270, Image.SCALE_SMOOTH)
-        val imageBuff = BufferedImage(360, 270, BufferedImage.TYPE_INT_RGB)
+        val scaledImage = img.getScaledInstance(640, 360, Image.SCALE_SMOOTH)
+        val imageBuff = BufferedImage(640, 360, BufferedImage.TYPE_INT_RGB)
         imageBuff.graphics.drawImage(scaledImage, 0, 0, Color.BLACK, null)
         imageBuff.graphics.dispose()
         val buffer = ByteArrayOutputStream()
@@ -129,7 +129,9 @@ open class DefaultLinkProcessor : LinkProcessor {
         return ImageResource(buffer.toByteArray(), JPG)
     }
 
-    override suspend fun generateScreenshot(): ImageResource = ImageResource(session.captureScreenshot(), PNG)
+    override suspend fun generateScreenshot(): ImageResource = synchronized(session){
+        return ImageResource(session.captureScreenshot(true), PNG)
+    }
 
     override suspend fun printPage(): ImageResource? {
         return ImageResource(session.command.page.printToPDF(true, false, true,
