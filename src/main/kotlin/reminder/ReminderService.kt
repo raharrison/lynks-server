@@ -3,81 +3,101 @@ package reminder
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 import util.RandomUtils
+import worker.CrudType
+import worker.ReminderWorkerRequest
+import worker.WorkerRegistry
 import java.time.ZoneId
 
-class ReminderService {
+class ReminderService(private val workerRegistry: WorkerRegistry) {
 
     private fun toModel(row: ResultRow): Reminder {
-        val type = row[Reminders.type]
-        return when (type) {
-            ReminderType.ADHOC -> AdhocReminder(row[Reminders.reminderId], row[Reminders.entryId],
-                    row[Reminders.message], row[Reminders.spec].toLong(), row[Reminders.tz])
-            ReminderType.RECURRING -> RecurringReminder(row[Reminders.reminderId], row[Reminders.entryId],
-                    row[Reminders.message], row[Reminders.spec], row[Reminders.tz])
+        return when (row[Reminders.type]) {
+            ReminderType.ADHOC -> AdhocReminder(
+                row[Reminders.reminderId], row[Reminders.entryId],
+                row[Reminders.message], row[Reminders.spec].toLong(), row[Reminders.tz]
+            )
+            ReminderType.RECURRING -> RecurringReminder(
+                row[Reminders.reminderId], row[Reminders.entryId],
+                row[Reminders.message], row[Reminders.spec], row[Reminders.tz]
+            )
         }
     }
 
     fun getRemindersForEntry(eId: String) = transaction {
         Reminders.select { Reminders.entryId eq eId }
-                .map { toModel(it) }
+            .map { toModel(it) }
     }
 
     fun getAllReminders() = transaction {
         Reminders.selectAll()
-                .map { toModel(it) }
+            .map { toModel(it) }
     }
 
     fun get(id: String): Reminder? = transaction {
         Reminders.select { Reminders.reminderId eq id }
-                .mapNotNull { toModel(it) }.singleOrNull()
+            .mapNotNull { toModel(it) }.singleOrNull()
     }
 
     fun isActive(id: String): Boolean = transaction {
         Reminders.slice(Reminders.reminderId)
-                .select { Reminders.reminderId eq id }.count() > 0
+            .select { Reminders.reminderId eq id }.count() > 0
     }
 
-    fun add(job: Reminder) = transaction {
+    fun add(job: Reminder): Reminder = transaction {
         Reminders.insert {
-            it[Reminders.reminderId] = job.reminderId
-            it[Reminders.entryId] = job.entryId
-            it[Reminders.type] = job.type
-            it[Reminders.message] = job.message
-            it[Reminders.spec] = job.spec
-            it[Reminders.tz] = checkValidTimeZone(job.tz)
+            it[reminderId] = job.reminderId
+            it[entryId] = job.entryId
+            it[type] = job.type
+            it[message] = job.message
+            it[spec] = job.spec
+            it[tz] = checkValidTimeZone(job.tz)
         }
-        get(job.reminderId)!!
+        get(job.reminderId)!!.also {
+            workerRegistry.acceptReminderWork(ReminderWorkerRequest(it, CrudType.CREATE))
+        }
     }
 
     fun addReminder(reminder: NewReminder): Reminder = transaction {
         val id = RandomUtils.generateUid()
         Reminders.insert {
-            it[Reminders.reminderId] = id
-            it[Reminders.entryId] = reminder.entryId
-            it[Reminders.type] = reminder.type
-            it[Reminders.message] = reminder.message
-            it[Reminders.spec] = reminder.spec
-            it[Reminders.tz] = checkValidTimeZone(reminder.tz)
+            it[reminderId] = id
+            it[entryId] = reminder.entryId
+            it[type] = reminder.type
+            it[message] = reminder.message
+            it[spec] = reminder.spec
+            it[tz] = checkValidTimeZone(reminder.tz)
         }
-        get(id)!!
+        get(id)!!.also {
+            workerRegistry.acceptReminderWork(ReminderWorkerRequest(it, CrudType.CREATE))
+        }
     }
 
     fun updateReminder(reminder: NewReminder): Reminder? = transaction {
         if (reminder.reminderId == null) {
             addReminder(reminder)
         } else {
-            val updated = Reminders.update({ Reminders.reminderId eq reminder.reminderId }) {
-                it[Reminders.type] = reminder.type
-                it[Reminders.message] = reminder.message
-                it[Reminders.spec] = reminder.spec
-                it[Reminders.tz] = checkValidTimeZone(reminder.tz)
+            val updatedCount = Reminders.update({ Reminders.reminderId eq reminder.reminderId }) {
+                it[type] = reminder.type
+                it[message] = reminder.message
+                it[spec] = reminder.spec
+                it[tz] = checkValidTimeZone(reminder.tz)
             }
-            if (updated > 0) get(reminder.reminderId) else null
+            if (updatedCount > 0) {
+                get(reminder.reminderId)?.also {
+                    workerRegistry.acceptReminderWork(ReminderWorkerRequest(it, CrudType.UPDATE))
+                }
+            } else null
         }
     }
 
-    fun delete(id: String) = transaction {
-        Reminders.deleteWhere { Reminders.reminderId eq id } > 0
+    fun delete(id: String): Boolean = transaction {
+        val reminder = get(id)
+        if (reminder != null) {
+            Reminders.deleteWhere { Reminders.reminderId eq id }
+            workerRegistry.acceptReminderWork(ReminderWorkerRequest(reminder, CrudType.DELETE))
+            return@transaction true
+        }
+        false
     }
 
     private fun checkValidTimeZone(tz: String): String {

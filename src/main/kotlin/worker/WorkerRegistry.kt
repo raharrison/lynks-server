@@ -17,6 +17,7 @@ class WorkerRegistry {
             taskWorker = TaskRunnerWorker(get()).worker()
             unreadDigestWorker = UnreadLinkDigestWorker(get(), get(), get()).worker()
             fileCleanupWorker = TempFileCleanupWorker(get(), get()).worker()
+            reminderWorker = ReminderWorker(get(), get(), get()).worker()
         }
     }
 
@@ -25,6 +26,7 @@ class WorkerRegistry {
     private lateinit var taskWorker: SendChannel<TaskRunnerRequest>
     private lateinit var unreadDigestWorker: SendChannel<UnreadLinkDigestWorkerRequest>
     private lateinit var fileCleanupWorker: SendChannel<TempFileCleanupWorkerRequest>
+    private lateinit var reminderWorker: SendChannel<ReminderWorkerRequest>
 
     fun acceptLinkWork(request: LinkProcessingRequest) {
         linkWorker.offer(request)
@@ -36,6 +38,10 @@ class WorkerRegistry {
 
     fun acceptDiscussionWork(linkId: String) {
         discussionWorker.offer(DiscussionFinderWorkerRequest(linkId))
+    }
+
+    fun acceptReminderWork(request: ReminderWorkerRequest) {
+        reminderWorker.offer(request)
     }
 
     fun onUserPreferenceChange(preferences: Preferences) {

@@ -2,18 +2,22 @@ package service
 
 import common.DatabaseTest
 import common.EntryType
+import io.mockk.mockk
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import reminder.*
 import util.createDummyEntry
+import worker.WorkerRegistry
 import java.sql.SQLException
 import java.time.ZoneId
 
 class ReminderServiceTest : DatabaseTest() {
 
-    private val reminderService = ReminderService()
+    private val workerRegistry = mockk<WorkerRegistry>(relaxUnitFun = true)
+    private val reminderService = ReminderService(workerRegistry)
     private val tz = ZoneId.systemDefault().id
 
     @BeforeEach
@@ -32,6 +36,7 @@ class ReminderServiceTest : DatabaseTest() {
         assertThat(reminder.message).isEqualTo("message")
         val retrieved = reminderService.get(reminder.reminderId)
         assertThat(retrieved).isEqualTo(reminder)
+        verify(exactly = 1) { workerRegistry.acceptReminderWork(any()) }
     }
 
     @Test
@@ -52,6 +57,7 @@ class ReminderServiceTest : DatabaseTest() {
         assertThat(retrieved2?.spec).isEqualTo(reminder2.spec)
         assertThat(retrieved?.message).isEqualTo(reminder1.message)
         assertThat(retrieved2?.message).isEqualTo(reminder2.message)
+        verify(exactly = 2) { workerRegistry.acceptReminderWork(any()) }
     }
 
     @Test
@@ -74,6 +80,7 @@ class ReminderServiceTest : DatabaseTest() {
         assertThat(reminderService.getAllReminders()).hasSize(2)
         assertThat(reminderService.get(res.reminderId)).isEqualTo(res)
         assertThat(reminderService.get(rem.reminderId)).isEqualTo(rem)
+        verify(exactly = 2) { workerRegistry.acceptReminderWork(any()) }
     }
 
     @Test
@@ -126,6 +133,7 @@ class ReminderServiceTest : DatabaseTest() {
     @Test
     fun testUpdateReminderNoRow() {
         assertThat(reminderService.updateReminder(NewReminder("invalid", "e1", ReminderType.ADHOC, "message", "300", tz))).isNull()
+        verify(exactly = 0) { workerRegistry.acceptReminderWork(any()) }
     }
 
     @Test
@@ -138,6 +146,7 @@ class ReminderServiceTest : DatabaseTest() {
         assertThat(res?.spec).isEqualTo("300")
         assertThat(reminderService.get(res!!.reminderId)).isEqualTo(res)
         assertThat(reminderService.getAllReminders()).hasSize(1)
+        verify(exactly = 1) { workerRegistry.acceptReminderWork(any()) }
     }
 
     @Test
@@ -161,6 +170,8 @@ class ReminderServiceTest : DatabaseTest() {
         assertThat(updated2?.spec).isEqualTo("800")
         assertThat(updated2?.tz).isEqualTo("America/New_York")
         assertThat(reminderService.get(res2.reminderId)).isEqualTo(updated2)
+
+        verify(exactly = 4) { workerRegistry.acceptReminderWork(any()) }
     }
 
     @Test
@@ -179,6 +190,7 @@ class ReminderServiceTest : DatabaseTest() {
         assertThat(reminderService.delete(s1.reminderId)).isTrue()
         assertThat(reminderService.get(s1.reminderId)).isNull()
         assertThat(reminderService.getAllReminders()).isEmpty()
+        verify(exactly = 2) { workerRegistry.acceptReminderWork(any()) }
     }
 
     @Test

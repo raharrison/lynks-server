@@ -20,7 +20,7 @@ class CascadingDeleteTest: DatabaseTest() {
     private val collectionService = CollectionService()
     private val resourceManager = ResourceManager()
     private val commentService = CommentService()
-    private val reminderService = ReminderService()
+    private val reminderService = ReminderService(mockk(relaxUnitFun = true))
     private lateinit var linkService: LinkService
 
     @BeforeEach
