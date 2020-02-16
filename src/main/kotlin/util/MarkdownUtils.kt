@@ -7,7 +7,6 @@ import com.vladsch.flexmark.html.HtmlRenderer
 import com.vladsch.flexmark.parser.Parser
 import com.vladsch.flexmark.superscript.SuperscriptExtension
 import com.vladsch.flexmark.util.data.MutableDataSet
-import java.util.*
 
 object MarkdownUtils {
 
@@ -20,10 +19,19 @@ object MarkdownUtils {
 
     init {
         val options = MutableDataSet()
-        options.set(Parser.EXTENSIONS, Arrays.asList(TablesExtension.create(),
-                StrikethroughExtension.create(),
-                SuperscriptExtension.create(),
-                AutolinkExtension.create()))
+            .set(HtmlRenderer.SOFT_BREAK, "<br />\n")
+            .set(TablesExtension.COLUMN_SPANS, false)
+            .set(TablesExtension.APPEND_MISSING_COLUMNS, true)
+            .set(TablesExtension.DISCARD_EXTRA_COLUMNS, true)
+            .set(TablesExtension.HEADER_SEPARATOR_COLUMN_MATCH, true)
+            .set(
+                Parser.EXTENSIONS, listOf(
+                    TablesExtension.create(),
+                    StrikethroughExtension.create(),
+                    SuperscriptExtension.create(),
+                    AutolinkExtension.create()
+                )
+            ).toImmutable()
         parser = Parser.builder(options).build()
         renderer = HtmlRenderer.builder(options).build()
     }
