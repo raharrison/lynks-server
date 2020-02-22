@@ -89,7 +89,7 @@ class CommentServiceTest : DatabaseTest() {
 
         var comments = commentService.getCommentsFor("e1", PageRequest(0, 1))
         assertThat(comments).hasSize(1)
-        assertThat(comments).extracting("plainText").containsOnly("comment content 3")
+        assertThat(comments).extracting("plainText").containsOnly("comment content 1")
 
         comments = commentService.getCommentsFor("e1", PageRequest(1, 1))
         assertThat(comments).hasSize(1)

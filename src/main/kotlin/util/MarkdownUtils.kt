@@ -14,8 +14,8 @@ object MarkdownUtils {
         return renderer.render(parser.parse(text))
     }
 
-    private var parser: Parser
-    private var renderer: HtmlRenderer
+    private val parser: Parser
+    private val renderer: HtmlRenderer
 
     init {
         val options = MutableDataSet()

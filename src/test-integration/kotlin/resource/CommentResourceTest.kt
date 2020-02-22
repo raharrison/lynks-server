@@ -139,7 +139,7 @@ class CommentResourceTest: ServerTest() {
                 .statusCode(200)
                 .extract().to<List<Comment>>()
         // newest comment first
-        assertThat(comments).hasSize(1).extracting("id").containsExactly("c1")
+        assertThat(comments).hasSize(1).extracting("id").containsExactly("c3")
     }
 
 
