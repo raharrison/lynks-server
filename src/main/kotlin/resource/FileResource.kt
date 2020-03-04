@@ -26,8 +26,8 @@ fun Route.resources(resourceManager: ResourceManager) {
         get("/{id}") {
             val res = resourceManager.getResourceAsFile(call.parameters["id"]!!)
             if (res != null) {
-                call.response.header("Content-Disposition", "attachment; filename=\"${res.name}\"")
-                call.respondFile(res)
+                call.response.header("Content-Disposition", "inline; filename=\"${res.first.name}\"")
+                call.respondFile(res.second)
             }
             else call.respond(HttpStatusCode.NotFound)
         }

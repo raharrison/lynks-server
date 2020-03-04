@@ -219,20 +219,21 @@ class ResourceManagerTest: DatabaseTest() {
         assertFileCount(resourceManager.constructPath(entryId, "").toString(), 2)
         assertFileContents(resourceManager.constructPath(entryId, resource.name).toString(), data)
 
-        val file = resourceManager.getResourceAsFile(resource.id)
-        assertThat(file?.readBytes()).isEqualTo(data)
-        assertThat(file?.name).isEqualTo("${resource.id}.$extension")
+        val res = resourceManager.getResourceAsFile(resource.id)
+        assertThat(res?.first).isEqualTo(resource)
+        assertThat(res?.second?.readBytes()).isEqualTo(data)
+        assertThat(res?.second?.name).isEqualTo("${resource.id}.$extension")
         assertThat(resourceManager.getResource(resource.id)).isEqualTo(resource)
-        assertThat(file?.toPath()?.toUrlString()).startsWith(Environment.server.resourceBasePath)
+        assertThat(res?.second?.toPath()?.toUrlString()).startsWith(Environment.server.resourceBasePath)
     }
 
     @Test
     fun testGetResourceAsFile() {
         val data = byteArrayOf(1,2,3,4,5)
         val resource = resourceManager.saveGeneratedResource("eid", ResourceType.SCREENSHOT, JPG, data)
-        val file = resourceManager.getResourceAsFile(resource.id)
-        assertThat(file?.readBytes()).isEqualTo(data)
-        assertThat(file?.name).isEqualTo("${resource.id}.$JPG")
+        val res = resourceManager.getResourceAsFile(resource.id)
+        assertThat(res?.second?.readBytes()).isEqualTo(data)
+        assertThat(res?.second?.name).isEqualTo("${resource.id}.$JPG")
     }
 
     @Test
@@ -250,10 +251,11 @@ class ResourceManagerTest: DatabaseTest() {
 
         assertThat(resourceManager.getResource(resource.id)).isEqualTo(resource)
 
-        val file = resourceManager.getResourceAsFile(resource.id)
-        assertThat(file?.readBytes()).isEqualTo(data)
-        assertThat(file?.name).isEqualTo(name)
-        assertThat(file?.toPath()?.toUrlString()).startsWith(Environment.server.resourceBasePath)
+        val res = resourceManager.getResourceAsFile(resource.id)
+        assertThat(res?.first).isEqualTo(resource)
+        assertThat(res?.second?.readBytes()).isEqualTo(data)
+        assertThat(res?.second?.name).isEqualTo("${resource.id}.${resource.extension}")
+        assertThat(res?.second?.toPath()?.toUrlString()).startsWith(Environment.server.resourceBasePath)
     }
 
     @Test

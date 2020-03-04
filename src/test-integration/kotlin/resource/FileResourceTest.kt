@@ -83,7 +83,7 @@ class FileResourceTest : ServerTest() {
         val resource = get("/entry/{entryId}/resources/{id}", generated.entryId, generated.id)
                 .then()
                 .statusCode(200)
-                .header("Content-Disposition", "attachment; filename=\"$filename\"")
+                .header("Content-Disposition", "inline; filename=\"$filename\"")
                 .extract().asByteArray()
         assertThat(resource).isEqualTo(content)
     }
