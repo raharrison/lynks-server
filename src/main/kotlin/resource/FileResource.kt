@@ -2,8 +2,10 @@ package resource
 
 import common.Environment
 import io.ktor.application.call
+import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.*
+import io.ktor.http.defaultForFilePath
 import io.ktor.request.receiveMultipart
 import io.ktor.response.header
 import io.ktor.response.respond
@@ -16,11 +18,26 @@ fun Route.resources(resourceManager: ResourceManager) {
         files(Environment.server.resourceTempPath)
     }
 
+    fun deriveMimeType(filename: String): String {
+        val contentType = ContentType.defaultForFilePath(filename)
+        return contentType.toString()
+    }
+
     route("/entry/{entryId}/resources") {
 
         get("/") {
             val id = call.parameters["entryId"]!!
             call.respond(resourceManager.getResourcesFor(id))
+        }
+
+        get("/{id}/info") {
+            val id = call.parameters["id"]!!
+            val resource = resourceManager.getResource(id)
+            if (resource == null) call.respond(HttpStatusCode.NotFound)
+            else {
+                call.response.header("X-Resource-Mime-Type", deriveMimeType(resource.name))
+                call.respond(resource)
+            }
         }
 
         get("/{id}") {

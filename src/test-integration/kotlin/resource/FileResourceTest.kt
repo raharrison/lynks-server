@@ -75,7 +75,7 @@ class FileResourceTest : ServerTest() {
     }
 
     @Test
-    fun testGetResource() {
+    fun testGetResourceFile() {
         val filename = "attachment.txt"
         val content = byteArrayOf(1,2,3,4)
         val generated = uploadResource(filename, content)
@@ -83,16 +83,41 @@ class FileResourceTest : ServerTest() {
         val resource = get("/entry/{entryId}/resources/{id}", generated.entryId, generated.id)
                 .then()
                 .statusCode(200)
-                .header("Content-Disposition", "inline; filename=\"$filename\"")
+                .header("Content-Disposition", "attachment; filename=\"$filename\"")
                 .extract().asByteArray()
         assertThat(resource).isEqualTo(content)
     }
 
     @Test
-    fun testGetInvalidResource() {
+    fun testGetInvalidResourceFile() {
         get("/entry/{entryId}/resources/{id}", "e1", "invalid")
                 .then()
                 .statusCode(404)
+    }
+
+    @Test
+    fun testGetResource() {
+        val filename = "attachment.txt"
+        val content = byteArrayOf(1,2,3,4)
+        val generated = uploadResource(filename, content)
+
+        val resource = get("/entry/{entryId}/resources/{id}/info", generated.entryId, generated.id)
+            .then()
+            .statusCode(200)
+            .header("X-Resource-Mime-Type", "text/plain")
+            .extract().`as`(Resource::class.java)
+        assertThat(resource.name).isEqualTo(filename)
+        assertThat(resource.type).isEqualTo(ResourceType.UPLOAD)
+        assertThat(resource.size).isEqualTo(content.size.toLong())
+        assertThat(resource.extension).isEqualTo("txt")
+        assertThat(resource.entryId).isEqualTo("e1")
+    }
+
+    @Test
+    fun testGetInvalidResource() {
+        get("/entry/{entryId}/resources/{id}/info", "e1", "invalid")
+            .then()
+            .statusCode(404)
     }
 
     @Test

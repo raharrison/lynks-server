@@ -48,6 +48,7 @@ fun Application.module() {
     install(Compression) {
         gzip()
     }
+    install(PartialContent)
     install(StatusPages) {
         exception<InvalidModelException> {
             call.respond(HttpStatusCode.BadRequest, it.message ?: "Bad Request Format")
