@@ -29,13 +29,12 @@ buildscript {
 
 apply plugin: 'java'
 apply plugin: 'kotlin'
-apply plugin: 'idea'
 
 sourceSets {
     testIntegration {
-        java.srcDir 'src/test-integration/java'
-        kotlin.srcDir 'src/test-integration/kotlin'
-        resources.srcDir 'src/test-integration/resources'
+        java.srcDir 'src/testIntegration/java'
+        kotlin.srcDir 'src/testIntegration/kotlin'
+        resources.srcDir 'src/testIntegration/resources'
         compileClasspath += main.output
         runtimeClasspath += main.output
     }
@@ -47,14 +46,6 @@ configurations {
 task testIntegration(type: Test) {
     testClassesDirs = sourceSets.testIntegration.output.classesDirs
     classpath = sourceSets.testIntegration.runtimeClasspath
-}
-
-idea {
-    module {
-        testSourceDirs += project.sourceSets.testIntegration.java.srcDirs
-        testSourceDirs += project.sourceSets.testIntegration.kotlin.srcDirs
-        testSourceDirs += project.sourceSets.testIntegration.resources.srcDirs
-    }
 }
 
 sourceCompatibility = 1.8
