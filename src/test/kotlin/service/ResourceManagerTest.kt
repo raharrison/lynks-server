@@ -259,6 +259,49 @@ class ResourceManagerTest: DatabaseTest() {
     }
 
     @Test
+    fun testUpdateResource() {
+        val entryId = "eid"
+        val name = "content.txt"
+        val data = byteArrayOf(1,2,3,4,5)
+        val resource = resourceManager.saveUploadedResource(entryId, name, data.inputStream())
+        assertThat(resourceManager.getResource(resource.id)).isNotNull
+        assertThat(resource.name).isEqualTo("content.txt")
+        assertThat(resource.extension).isEqualTo("txt")
+        assertFileCount(resourceManager.constructPath(entryId, "").toString(), 1)
+        val originalResourceAsFile = resourceManager.getResourceAsFile(resource.id)
+        assertThat(originalResourceAsFile?.second?.name).endsWith("${resource.id}.txt")
+        assertFileContents(originalResourceAsFile?.second.toString(), data)
+
+        val updateResourceRequest = resource.copy(name="updated.xml")
+        val updatedResource = resourceManager.updateResource(updateResourceRequest)
+        assertThat(updatedResource).isNotNull()
+        assertThat(updatedResource?.id).isEqualTo(resource.id)
+        assertThat(updatedResource?.entryId).isEqualTo(entryId)
+        assertThat(updatedResource?.name).isEqualTo("updated.xml")
+        assertThat(updatedResource?.extension).isEqualTo("xml")
+        assertThat(updatedResource?.size).isEqualTo(data.size.toLong())
+        assertThat(updatedResource?.dateUpdated).isNotEqualTo(updatedResource?.dateCreated)
+        assertThat(updatedResource?.type).isEqualTo(ResourceType.UPLOAD)
+
+        val retrievedResource = resourceManager.getResource(resource.id)
+        assertThat(retrievedResource).isEqualTo(updatedResource)
+        assertFileCount(resourceManager.constructPath(entryId, "").toString(), 1)
+
+        val resourceAsFile = resourceManager.getResourceAsFile(resource.id)
+        assertThat(resourceAsFile?.second?.name).endsWith("${resource.id}.xml")
+        assertThat(resourceAsFile?.second?.exists()).isTrue()
+        assertFileContents(resourceAsFile?.second.toString(), data)
+        assertThat(originalResourceAsFile?.second?.exists()).isFalse()
+    }
+
+    @Test
+    fun testUpdateResourceDoesntExist() {
+        val resource = Resource("invalid", "eid", "file1.txt", "txt", ResourceType.UPLOAD, 12L, 1234, 12345)
+        val updated = resourceManager.updateResource(resource)
+        assertThat(updated).isNull()
+    }
+
+    @Test
     fun testDeleteResourceDoesntExist() {
         assertThat(resourceManager.delete("nothing")).isFalse()
     }

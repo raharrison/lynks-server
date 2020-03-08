@@ -6,6 +6,7 @@ import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.sql.update
 import util.FileUtils
 import util.RandomUtils
 import util.RowMapper.toResource
@@ -44,7 +45,7 @@ class ResourceManager {
 
     fun moveTempFiles(entryId: String, src: String): Boolean {
         val tempPath = constructTempPath(src)
-        if(Files.exists(tempPath)) {
+        if (Files.exists(tempPath)) {
             val target = Paths.get(Environment.server.resourceBasePath, entryId)
             Files.move(tempPath, target)
             Files.list(target).use { it ->
@@ -101,19 +102,42 @@ class ResourceManager {
 
     fun constructPath(entryId: String, id: String): Path = Paths.get(Environment.server.resourceBasePath, entryId, id)
 
-    private fun constructPath(entryId: String, id: String, extension: String): Path = constructPath(entryId, "$id.$extension")
+    private fun constructPath(entryId: String, id: String, extension: String): Path {
+        val resId = if (extension.isNotEmpty()) "$id.$extension" else id
+        return constructPath(entryId, resId)
+    }
 
     private fun constructTempPath(name: String, type: ResourceType, extension: String) =
         Paths.get(Environment.server.resourceTempPath, FileUtils.createTempFileName(name), "${type.toString().toLowerCase()}.$extension")
 
     private fun constructTempPath(name: String) = Paths.get(Environment.server.resourceTempPath, FileUtils.createTempFileName(name))
 
+    fun updateResource(resource: Resource): Resource? {
+        val id = resource.id
+        return getResource(id)?.let { originalResource ->
+            val resourceName = resource.name
+            val format = FileUtils.getExtension(resourceName)
+            transaction {
+                Resources.update({ Resources.id eq id }) {
+                    it[fileName] = resourceName
+                    it[extension] = format
+                    it[dateUpdated] = System.currentTimeMillis()
+                }
+                val updatedResource = getResource(id)!!
+                val oldPath = constructPath(updatedResource.entryId, id, originalResource.extension)
+                val newPath = constructPath(updatedResource.entryId, id, updatedResource.extension)
+                Files.move(oldPath, newPath)
+                updatedResource
+            }
+        }
+    }
+
     fun delete(id: String): Boolean = transaction {
         val res = getResource(id)
         res?.let {
             Resources.deleteWhere { Resources.id eq id }
             val path = constructPath(res.entryId, res.id, res.extension).toFile()
-            if(path.exists())
+            if (path.exists())
                 return@transaction path.delete()
             return@transaction true
         }
@@ -124,7 +148,7 @@ class ResourceManager {
         Resources.deleteWhere { Resources.entryId eq entryId }
         val path = constructPath(entryId, "", "")
         path.toFile().let {
-            if(it.exists()) it.deleteRecursively() else true
+            if (it.exists()) it.deleteRecursively() else true
         }
     }
 }

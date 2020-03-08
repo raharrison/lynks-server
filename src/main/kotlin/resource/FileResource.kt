@@ -6,6 +6,7 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.*
 import io.ktor.http.defaultForFilePath
+import io.ktor.request.receive
 import io.ktor.request.receiveMultipart
 import io.ktor.response.header
 import io.ktor.response.respond
@@ -20,7 +21,7 @@ fun Route.resources(resourceManager: ResourceManager) {
 
     fun deriveMimeType(filename: String): String {
         val contentType = ContentType.defaultForFilePath(filename)
-        return contentType.toString()
+        return contentType.withoutParameters().toString()
     }
 
     route("/entry/{entryId}/resources") {
@@ -62,6 +63,13 @@ fun Route.resources(resourceManager: ResourceManager) {
             }
             if(res == null) call.respond(HttpStatusCode.BadRequest)
             else call.respond(HttpStatusCode.Created, res!!)
+        }
+
+        put("/") {
+            val resource = call.receive<Resource>()
+            val updated = resourceManager.updateResource(resource)
+            if(updated == null) call.respond(HttpStatusCode.NotFound)
+            else call.respond(HttpStatusCode.OK, updated)
         }
 
         delete("/{id}") {

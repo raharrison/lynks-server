@@ -3,6 +3,7 @@ package resource
 import common.EntryType
 import common.ServerTest
 import io.restassured.RestAssured.*
+import io.restassured.http.ContentType
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -83,7 +84,7 @@ class FileResourceTest : ServerTest() {
         val resource = get("/entry/{entryId}/resources/{id}", generated.entryId, generated.id)
                 .then()
                 .statusCode(200)
-                .header("Content-Disposition", "attachment; filename=\"$filename\"")
+                .header("Content-Disposition", "inline; filename=\"$filename\"")
                 .extract().asByteArray()
         assertThat(resource).isEqualTo(content)
     }
@@ -116,6 +117,62 @@ class FileResourceTest : ServerTest() {
     @Test
     fun testGetInvalidResource() {
         get("/entry/{entryId}/resources/{id}/info", "e1", "invalid")
+            .then()
+            .statusCode(404)
+    }
+
+    @Test
+    fun testUpdateResource() {
+        val data = byteArrayOf(1, 2, 3, 4, 5)
+        val generated = uploadResource("content.txt", data)
+        val originalResource = get("/entry/{entryId}/resources/{id}/info", generated.entryId, generated.id)
+            .then()
+            .statusCode(200)
+            .extract().`as`(Resource::class.java)
+        assertThat(originalResource.name).isEqualTo("content.txt")
+        assertThat(originalResource.type).isEqualTo(ResourceType.UPLOAD)
+        assertThat(originalResource.size).isEqualTo(data.size.toLong())
+        assertThat(originalResource.extension).isEqualTo("txt")
+        assertThat(originalResource.entryId).isEqualTo("e1")
+
+        val updateResourceRequest = originalResource.copy(name="updated.xml")
+        val updatedResource = given()
+            .contentType(ContentType.JSON)
+            .body(updateResourceRequest)
+            .When()
+            .put("/entry/{entryId}/resources", generated.entryId)
+            .then()
+            .statusCode(200)
+            .extract().to<Resource>()
+        assertThat(updatedResource.name).isEqualTo("updated.xml")
+        assertThat(updatedResource.type).isEqualTo(ResourceType.UPLOAD)
+        assertThat(updatedResource.size).isEqualTo(data.size.toLong())
+        assertThat(updatedResource.dateCreated).isNotEqualTo(updatedResource.dateUpdated)
+        assertThat(updatedResource.extension).isEqualTo("xml")
+        assertThat(updatedResource.entryId).isEqualTo(generated.entryId)
+
+        val updatedResourceRetrieval = get("/entry/{entryId}/resources/{id}/info", generated.entryId, generated.id)
+            .then()
+            .statusCode(200)
+            .extract().`as`(Resource::class.java)
+        assertThat(updatedResourceRetrieval).isEqualTo(updatedResource)
+
+        val resourceContents = get("/entry/{entryId}/resources/{id}", generated.entryId, generated.id)
+            .then()
+            .statusCode(200)
+            .extract().asByteArray()
+        assertThat(resourceContents).isEqualTo(data)
+    }
+
+    @Test
+    fun testUpdateInvalidResource() {
+        val invalid = Resource("invalid", "eid", "file1.txt", "txt", ResourceType.UPLOAD,
+            12L, 1234, 12345)
+        given()
+            .contentType(ContentType.JSON)
+            .body(invalid)
+            .When()
+            .put("/entry/{entryId}/resources", invalid.entryId)
             .then()
             .statusCode(404)
     }

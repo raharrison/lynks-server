@@ -15,6 +15,7 @@ import io.ktor.application.call
 import io.ktor.application.install
 import io.ktor.features.*
 import io.ktor.http.ContentType
+import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.jackson.JacksonConverter
 import io.ktor.response.respond
@@ -47,6 +48,12 @@ fun Application.module() {
     install(WebSockets)
     install(Compression) {
         gzip()
+    }
+    install(CORS) {
+        method(HttpMethod.Put)
+        method(HttpMethod.Delete)
+        anyHost()
+        allowNonSimpleContentTypes = true
     }
     install(PartialContent)
     install(StatusPages) {
