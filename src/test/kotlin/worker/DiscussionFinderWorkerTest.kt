@@ -1,5 +1,6 @@
 package worker
 
+import common.BaseProperties
 import common.DatabaseTest
 import common.Link
 import common.TestCoroutineContext
@@ -21,12 +22,12 @@ class DiscussionFinderWorkerTest: DatabaseTest() {
     private val linkService = mockk<LinkService>()
     private val retriever = mockk<ResourceRetriever>()
     private val notifyService = mockk<NotifyService>(relaxUnitFun = true)
-    private val linkSlot = slot<Link>()
+    private val propsSlot = slot<BaseProperties>()
 
     @BeforeEach
     fun setup() {
-        every { linkService.get("id1") } answers { if(linkSlot.isCaptured) linkSlot.captured else link }
-        every { linkService.update(capture(linkSlot)) } answers { link } andThen { linkSlot.captured }
+        every { linkService.get("id1") } returns link
+        every { linkService.mergeProps(eq(link.id), capture(propsSlot)) } just Runs
 
         coEvery { notifyService.accept(any(), ofType(Link::class)) } just Runs
     }
@@ -61,9 +62,9 @@ class DiscussionFinderWorkerTest: DatabaseTest() {
         worker.close()
 
         verify(exactly = 5) { linkService.get(link.id) }
-        verify(exactly = 5) { linkService.update(ofType(Link::class)) }
-        assertThat(linkSlot.captured.props.containsAttribute("discussions")).isTrue()
-        val discussions = linkSlot.captured.props.getAttribute("discussions") as List<Any?>
+        verify(exactly = 5) { linkService.mergeProps(eq(link.id), ofType(BaseProperties::class)) }
+        assertThat(propsSlot.captured.containsAttribute("discussions")).isTrue()
+        val discussions = propsSlot.captured.getAttribute("discussions") as List<Any?>
         assertThat(discussions).hasSize(6)
 
         assertThat(discussions).extracting("title")
@@ -72,7 +73,7 @@ class DiscussionFinderWorkerTest: DatabaseTest() {
         assertThat(discussions).extracting("url").doesNotHaveDuplicates()
 
         coVerify(exactly = 5 * 2) { retriever.getString(any()) }
-        coVerify(exactly = 5) { notifyService.accept(any(), linkSlot.captured) }
+        coVerify(exactly = 5) { notifyService.accept(any(), link) }
     }
 
     @Test
@@ -88,12 +89,12 @@ class DiscussionFinderWorkerTest: DatabaseTest() {
         worker.close()
 
         verify(exactly = 2) { linkService.get(link.id) }
-        verify(exactly = 2) { linkService.update(ofType(Link::class)) }
-        assertThat(linkSlot.captured.props.containsAttribute("discussions")).isTrue()
-        assertThat(linkSlot.captured.props.getAttribute("discussions") as List<*>).hasSize(6)
+        verify(exactly = 2) { linkService.mergeProps(eq(link.id), ofType(BaseProperties::class)) }
+        assertThat(propsSlot.captured.containsAttribute("discussions")).isTrue()
+        assertThat(propsSlot.captured.getAttribute("discussions") as List<*>).hasSize(6)
 
         coVerify(exactly = 2 * 2) { retriever.getString(any()) }
-        coVerify(exactly = 2) { notifyService.accept(any(), linkSlot.captured) }
+        coVerify(exactly = 2) { notifyService.accept(any(), link) }
     }
 
     @Test
@@ -108,12 +109,12 @@ class DiscussionFinderWorkerTest: DatabaseTest() {
         worker.close()
 
         // ensure items not removed
-        val discussions = linkSlot.captured.props.getAttribute("discussions") as List<Any?>
+        val discussions = propsSlot.captured.getAttribute("discussions") as List<Any?>
         assertThat(discussions).hasSize(6)
         assertThat(discussions).extracting("url").doesNotHaveDuplicates()
 
         coVerify(exactly = 5 * 2) { retriever.getString(any()) }
-        coVerify(exactly = 1) { notifyService.accept(any(), linkSlot.captured) }
+        coVerify(exactly = 1) { notifyService.accept(any(), link) }
     }
 
     @Test
@@ -130,12 +131,12 @@ class DiscussionFinderWorkerTest: DatabaseTest() {
         worker.close()
 
         verify(exactly = 6) { linkService.get(link.id) }
-        verify(exactly = 2) { linkService.update(ofType(Link::class)) }
-        val discussions = linkSlot.captured.props.getAttribute("discussions") as List<Any?>
+        verify(exactly = 2) { linkService.mergeProps(eq(link.id), ofType(BaseProperties::class)) }
+        val discussions = propsSlot.captured.getAttribute("discussions") as List<Any?>
         assertThat(discussions).hasSize(6)
 
         coVerify(exactly = 6 * 2) { retriever.getString(any()) }
-        coVerify(exactly = 2) { notifyService.accept(any(), linkSlot.captured) }
+        coVerify(exactly = 2) { notifyService.accept(any(), link) }
     }
 
     private fun getFile(name: String) = this.javaClass.getResource(name).readText()
