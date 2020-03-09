@@ -64,14 +64,14 @@ class LinkService(
         it[Entries.plainContent] = entry.url
         it[Entries.content] = entry.content
         it[Entries.src] = URLUtils.extractSource(entry.url)
-        it[Entries.props] = entry.props
+        // explicitly not updating props to prevent overriding
     }
 
-    fun read(id: String, read: Boolean): Link? = transaction {
-        get(id)?.let {
-            it.props.addAttribute("read", read)
-            update(it)
-        }
+    fun read(id: String, read: Boolean): Link? {
+        val newProps = BaseProperties()
+        newProps.addAttribute("read", read)
+        mergeProps(id, newProps)
+        return get(id)
     }
 
     fun getUnread(): List<Link> = transaction {

@@ -8,6 +8,7 @@ import group.TagService
 import io.mockk.every
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.data.MapEntry.entry
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -294,6 +295,34 @@ class NoteServiceTest : DatabaseTest() {
         val updated = noteService.get(added.id)
         assertThat(updated?.props?.getTask("t1")).isEqualTo(task)
         assertThat(updated?.props?.getAttribute("t3")).isNull()
+    }
+
+    @Test
+    fun testMergeProps() {
+        val added = noteService.add(newNote("n1", "comment content 1"))
+        added.props.addAttribute("key1", "attribute1")
+        added.props.addAttribute("key2", "attribute2")
+        val task = TaskDefinition("t1", "description", "className", mapOf("a1" to "v1"))
+        added.props.addTask(task)
+        noteService.update(added)
+
+        val updatedProps = BaseProperties()
+        updatedProps.addAttribute("key2", "updated")
+        updatedProps.addAttribute("key3", "attribute3")
+        val updatedTask = TaskDefinition("t1", "updatedDesc", "className", mapOf("b1" to "c1"))
+        updatedProps.addTask(updatedTask)
+
+        noteService.mergeProps(added.id, updatedProps)
+
+        val updated = noteService.get(added.id)
+        assertThat(updated?.props?.attributes).hasSize(3)
+        assertThat(updated?.props?.getAttribute("key1")).isEqualTo("attribute1")
+        assertThat(updated?.props?.getAttribute("key2")).isEqualTo("updated")
+        assertThat(updated?.props?.getAttribute("key3")).isEqualTo("attribute3")
+
+        assertThat(updated?.props?.tasks).hasSize(1)
+        assertThat(updated?.props?.getTask("t1")?.description).isEqualTo("updatedDesc")
+        assertThat(updated?.props?.getTask("t1")?.input).containsOnly(entry("b1", "c1"))
     }
 
     @Test

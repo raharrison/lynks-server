@@ -52,7 +52,7 @@ class YoutubeLinkProcessor(private val retriever: ResourceRetriever) : LinkProce
     }
 
     override suspend fun generateThumbnail(): ImageResource? {
-        val dl = "https://img.youtube.com/vi/$videoId/0.jpg"
+        val dl = "https://img.youtube.com/vi/$videoId/mqdefault.jpg"
         return retriever.getFile(dl)?.let { ImageResource(it, JPG) }
     }
 

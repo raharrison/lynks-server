@@ -5,8 +5,15 @@ import util.RandomUtils
 
 open class BaseProperties {
 
-    val attributes = mutableMapOf<String, Any>()
-    val tasks = mutableListOf<TaskDefinition>()
+    val attributes: MutableMap<String, Any>
+    val tasks: MutableList<TaskDefinition>
+
+    constructor(): this(mutableMapOf(), mutableListOf())
+
+    private constructor(attrs: MutableMap<String, Any>, tasks: MutableList<TaskDefinition>) {
+        this.attributes = attrs
+        this.tasks = tasks
+    }
 
     fun addAttribute(key: String, value: Any) {
         attributes[key] = value
@@ -33,4 +40,10 @@ open class BaseProperties {
     }
 
     fun getTask(id: String): TaskDefinition? = tasks.find { it.id == id }
+
+    fun merge(newProps: BaseProperties): BaseProperties {
+        val mergedAttributes = this.attributes.toMutableMap() + newProps.attributes
+        val mergedTasks = this.tasks.associateBy { it.id } + newProps.tasks.associateBy { it.id }
+        return BaseProperties(mergedAttributes.toMutableMap(), mergedTasks.values.toMutableList())
+    }
 }

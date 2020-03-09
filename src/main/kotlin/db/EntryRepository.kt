@@ -139,6 +139,20 @@ abstract class EntryRepository<T : Entry, in U : NewEntry>(
         }
     }
 
+    fun mergeProps(id: String, props: BaseProperties): Unit = transaction {
+        val row = getBaseQuery().adjustSlice { slice(Entries.props) }
+            .combine { Entries.id eq id }
+            .singleOrNull()
+        row?.also {
+            val where = getBaseQuery().combine { Entries.id eq id }.where!!
+            val originalProps = row[Entries.props] ?: BaseProperties()
+            val newProps = originalProps.merge(props)
+            Entries.update({ where }) {
+                it[Entries.props] = newProps
+            }
+        }
+    }
+
     open fun delete(id: String): Boolean = transaction {
         val entry = getBaseQuery().adjustSlice { this.slice(Entries.type) }
             .combine { Entries.id eq id }

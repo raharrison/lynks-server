@@ -55,4 +55,28 @@ class PropertiesTest {
         assertThat(props.containsAttribute("attr")).isFalse()
         assertThat(props.getAttribute("attr")).isNull()
     }
+
+    @Test
+    fun testMerge() {
+        val props1 = BaseProperties()
+        props1.addAttribute("attr1", "val1")
+        props1.addAttribute("attr2", "val2")
+        val t1 = props1.addTask("desc1", TaskBuilder(Task::class, TaskContext(mapOf("1" to "one"))))
+
+        val props2 = BaseProperties()
+        props2.addAttribute("attr2", "updated")
+        props2.addAttribute("attr3", "val3")
+        val t2 = props2.addTask("desc2", TaskBuilder(Task::class, TaskContext(mapOf("2" to "two"))))
+
+        val merged = props1.merge(props2)
+        assertThat(merged.getAttribute("attr1")).isEqualTo("val1")
+        assertThat(merged.getAttribute("attr2")).isEqualTo("updated")
+        assertThat(merged.getAttribute("attr3")).isEqualTo("val3")
+
+        assertThat(merged.attributes).hasSize(3)
+        assertThat(merged.tasks).hasSize(2)
+
+        assertThat(merged.getTask(t1.id)?.description).isEqualTo("desc1")
+        assertThat(merged.getTask(t2.id)?.description).isEqualTo("desc2")
+    }
 }

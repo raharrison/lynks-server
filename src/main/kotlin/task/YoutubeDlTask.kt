@@ -47,7 +47,7 @@ class YoutubeDlTask(id: String, entryId: String) : Task<YoutubeDlTask.YoutubeDlT
             }
             is Result.Failure -> {
                 logger.error(
-                    "Error running YoutubeDl task: {} return code: error:",
+                    "Error running YoutubeDl task: {} return code: {} error: {}",
                     context.toString(),
                     result.reason.code,
                     result.reason.message

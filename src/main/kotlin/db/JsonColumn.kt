@@ -19,7 +19,7 @@ private class Json<out T : Any>(private val klass: Class<T>, private val jsonMap
         return try {
             jsonMapper.readValue(str, klass)
         } catch (e: Exception) {
-            throw RuntimeException("Can't parse JSON: $value")
+            throw RuntimeException("Can't parse JSON: $str", e)
         }
     }
 

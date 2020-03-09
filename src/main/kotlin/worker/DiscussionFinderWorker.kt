@@ -49,7 +49,7 @@ class DiscussionFinderWorker(private val linkService: LinkService,
 
             if(discussions.isNotEmpty()) {
                 link.props.addAttribute("discussions", discussions)
-                linkService.update(link)
+                linkService.mergeProps(link.id, link.props)
                 sendNotification(Notification.processed("Discussions found"), link)
             }
 

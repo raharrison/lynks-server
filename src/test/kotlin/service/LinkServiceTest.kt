@@ -7,6 +7,7 @@ import group.CollectionService
 import group.TagService
 import io.mockk.*
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.data.MapEntry
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -318,7 +319,7 @@ class LinkServiceTest : DatabaseTest() {
     }
 
     @Test
-    fun testUpdatePropsAttributes() {
+    fun testUpdatePropsAttributesDoesntUpdate() {
         val added = linkService.add(newLink("n1", "google.com"))
         added.props.addAttribute("key1", "attribute1")
         added.props.addAttribute("key2", "attribute2")
@@ -326,16 +327,13 @@ class LinkServiceTest : DatabaseTest() {
         linkService.update(added)
 
         val updated = linkService.get(added.id)
-        assertThat(updated?.props?.containsAttribute("key1")).isTrue()
-        assertThat(updated?.props?.containsAttribute("key2")).isTrue()
+        assertThat(updated?.props?.containsAttribute("key1")).isFalse()
+        assertThat(updated?.props?.containsAttribute("key2")).isFalse()
         assertThat(updated?.props?.containsAttribute("key3")).isFalse()
-        assertThat(updated?.props?.getAttribute("key1")).isEqualTo("attribute1")
-        assertThat(updated?.props?.getAttribute("key2")).isEqualTo("attribute2")
-        assertThat(updated?.props?.getAttribute("key3")).isNull()
     }
 
     @Test
-    fun testUpdatePropsTasks() {
+    fun testUpdatePropsTasksDoesntUpdate() {
         val added = linkService.add(newLink("n1", "google.com"))
         val task = TaskDefinition("t1", "description", "className", mapOf("a1" to "v1"))
         added.props.addTask(task)
@@ -343,8 +341,35 @@ class LinkServiceTest : DatabaseTest() {
         linkService.update(added)
 
         val updated = linkService.get(added.id)
-        assertThat(updated?.props?.getTask("t1")).isEqualTo(task)
+        assertThat(updated?.props?.getTask("t1")).isNull()
         assertThat(updated?.props?.getAttribute("t3")).isNull()
+    }
+    @Test
+    fun testMergeProps() {
+        val added = linkService.add(newLink("n1", "google.com"))
+        added.props.addAttribute("key1", "attribute1")
+        added.props.addAttribute("key2", "attribute2")
+        val task = TaskDefinition("t1", "description", "className", mapOf("a1" to "v1"))
+        added.props.addTask(task)
+        linkService.mergeProps(added.id, added.props)
+
+        val updatedProps = BaseProperties()
+        updatedProps.addAttribute("key2", "updated")
+        updatedProps.addAttribute("key3", "attribute3")
+        val updatedTask = TaskDefinition("t1", "updatedDesc", "className", mapOf("b1" to "c1"))
+        updatedProps.addTask(updatedTask)
+
+        linkService.mergeProps(added.id, updatedProps)
+
+        val updated = linkService.get(added.id)
+        assertThat(updated?.props?.attributes).hasSize(3)
+        assertThat(updated?.props?.getAttribute("key1")).isEqualTo("attribute1")
+        assertThat(updated?.props?.getAttribute("key2")).isEqualTo("updated")
+        assertThat(updated?.props?.getAttribute("key3")).isEqualTo("attribute3")
+
+        assertThat(updated?.props?.tasks).hasSize(1)
+        assertThat(updated?.props?.getTask("t1")?.description).isEqualTo("updatedDesc")
+        assertThat(updated?.props?.getTask("t1")?.input).containsOnly(MapEntry.entry("b1", "c1"))
     }
 
     @Test

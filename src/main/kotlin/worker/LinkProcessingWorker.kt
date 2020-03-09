@@ -58,13 +58,15 @@ class LinkProcessorWorker(private val resourceManager: ResourceManager,
                     }
                 }
             }
-            link.props.removeAttribute("dead")
-            linkService.update(link)
-            sendNotification(body=link)
+            link.props.addAttribute("dead", false)
+            linkService.mergeProps(link.id, link.props)
+
+            val updatedLink = linkService.update(link)
+            sendNotification(body=updatedLink)
         } catch (e: Exception) {
             // mark as dead if processing failed
             link.props.addAttribute("dead", System.currentTimeMillis())
-            linkService.update(link)
+            linkService.mergeProps(link.id, link.props)
 
             sendNotification(Notification.error("Error occurred processing link"))
             // log and reschedule

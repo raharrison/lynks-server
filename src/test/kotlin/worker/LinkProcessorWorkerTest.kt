@@ -46,6 +46,7 @@ class LinkProcessorWorkerTest {
         coEvery { processorFactory.createProcessors(link.url) } returns listOf(processor)
         every { resourceManager.saveGeneratedResource(link.id, any(), any(), any()) } returns Resource("rid", "eid", "file1.txt", "txt", ResourceType.UPLOAD, 12L, 12L, 12L)
         every { linkService.update(link) } returns link
+        every { linkService.mergeProps(eq("id1"), any()) } just Runs
 
         val channel = worker.apply { runner = this@runBlocking.coroutineContext }.worker()
         channel.send(PersistLinkProcessingRequest(link))
@@ -53,6 +54,7 @@ class LinkProcessorWorkerTest {
 
         coVerify(exactly = 1) { processorFactory.createProcessors(link.url) }
         verify(exactly = 1) { processor.close() }
+        verify(exactly = 1) { linkService.mergeProps(eq("id1"), any()) }
         verify(exactly = 1) { linkService.update(link) }
         coVerify(exactly = 1) { notifyService.accept(any(), ofType(Link::class)) }
         assertThat(link.content).isEqualTo(content)
@@ -80,6 +82,7 @@ class LinkProcessorWorkerTest {
 
         coEvery { processorFactory.createProcessors(link.url) } returns listOf(processor)
         every { linkService.update(link) } returns link
+        every { linkService.mergeProps(eq("id1"), any()) } just Runs
 
         val channel = worker.apply { runner = this@runBlocking.coroutineContext }.worker()
         channel.send(PersistLinkProcessingRequest(link))
@@ -87,7 +90,8 @@ class LinkProcessorWorkerTest {
 
         coVerify(exactly = 1) { processorFactory.createProcessors(link.url) }
         verify(exactly = 1) { processor.close() }
-        verify(exactly = 1) { linkService.update(link) }
+        verify(exactly = 0) { linkService.update(link) }
+        verify(exactly = 1) { linkService.mergeProps(eq("id1"), any()) }
         coVerify(exactly = 1) { notifyService.accept(any(), null) }
         assertThat(link.props.containsAttribute("dead")).isTrue()
 
