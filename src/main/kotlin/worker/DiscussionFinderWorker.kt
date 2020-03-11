@@ -50,7 +50,8 @@ class DiscussionFinderWorker(private val linkService: LinkService,
             if(discussions.isNotEmpty()) {
                 link.props.addAttribute("discussions", discussions)
                 linkService.mergeProps(link.id, link.props)
-                sendNotification(Notification.processed("Discussions found"), link)
+                val message = "${discussions.size} Discussions Found"
+                sendNotification(Notification.discussions(message), link)
             }
 
             intervalIndex++
