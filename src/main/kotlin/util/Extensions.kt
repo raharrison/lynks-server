@@ -15,7 +15,7 @@ fun Query.combine(block: SqlExpressionBuilder.() -> Op<Boolean>): Query {
 }
 
 fun ApplicationCall.pageRequest(): PageRequest {
-    val offset: Int = request.queryParameters["offset"]?.toInt() ?: 0
+    val offset: Long = request.queryParameters["offset"]?.toLong() ?: 0
     val limit: Int = request.queryParameters["limit"]?.toInt() ?: 25
     val tag: String? = request.queryParameters["tag"]
     return PageRequest(offset, limit, tag)
