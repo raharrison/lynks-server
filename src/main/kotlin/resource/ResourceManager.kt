@@ -63,6 +63,7 @@ class ResourceManager {
         return false
     }
 
+    // TODO: override file name, don't take id
     fun saveGeneratedResource(id: String = RandomUtils.generateUid(), entryId: String, name: String, format: String, type: ResourceType, size: Long): Resource {
         val time = System.currentTimeMillis()
         return transaction {
