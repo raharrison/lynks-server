@@ -21,7 +21,11 @@ class DiscussionFinderWorker(private val linkService: LinkService,
                              private val resourceRetriever: ResourceRetriever,
                              notifyService: NotifyService) : PersistedVariableChannelBasedWorker<DiscussionFinderWorkerRequest>(notifyService) {
 
-    private data class Discussion(val title: String, val url: String, val score: Int, val comments: Int, val created: Long)
+    private data class Discussion(val source: DiscussionSource, val title: String, val url: String, val score: Int, val comments: Int, val created: Long)
+
+    private enum class DiscussionSource {
+        REDDIT, HACKER_NEWS;
+    }
 
     override suspend fun doWork(input: DiscussionFinderWorkerRequest) {
         logger.info("Launching discussion finder for entry ${input.linkId}")
@@ -92,7 +96,8 @@ class DiscussionFinderWorker(private val linkService: LinkService,
                 val comments = hit.get("num_comments").intValue()
                 val createdStamp = hit.get("created_at").textValue()
                 val instant = Instant.parse(createdStamp)
-                discussions.add(Discussion(title, link, score, comments, instant.epochSecond))
+                discussions.add(Discussion(DiscussionSource.HACKER_NEWS, title, link, score,
+                    comments, instant.toEpochMilli()))
             }
         }
         return discussions.sortedWith(compareByDescending(Discussion::created)
@@ -113,12 +118,12 @@ class DiscussionFinderWorker(private val linkService: LinkService,
                 for (child in children) {
                     if (child.get("kind").textValue() == "t3") {
                         val site = child.get("data")
-                        val sub = site.get("subreddit_name_prefixed").textValue()
+                        val sub = "/" + site.get("subreddit_name_prefixed").textValue()
                         val link = site.get("permalink").textValue()
                         val score = site.get("score").intValue()
                         val comments = site.get("num_comments").intValue()
-                        val created = site.get("created_utc").longValue()
-                        discussions.add(Discussion(sub, link, score, comments, created))
+                        val created = site.get("created_utc").longValue() * 1000
+                        discussions.add(Discussion(DiscussionSource.REDDIT, sub, link, score, comments, created))
                     }
                 }
             }

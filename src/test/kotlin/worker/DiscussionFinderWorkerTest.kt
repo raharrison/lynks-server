@@ -68,8 +68,8 @@ class DiscussionFinderWorkerTest: DatabaseTest() {
         assertThat(discussions).hasSize(6)
 
         assertThat(discussions).extracting("title")
-                .containsExactlyInAnyOrder("Ok-Cancel versus Cancel-Ok", "r/techgeeks", "r/programming",
-                        "r/hackernews", "r/bprogramming", "r/factorio")
+                .containsExactlyInAnyOrder("Ok-Cancel versus Cancel-Ok", "/r/techgeeks", "/r/programming",
+                        "/r/hackernews", "/r/bprogramming", "/r/factorio")
         assertThat(discussions).extracting("url").doesNotHaveDuplicates()
 
         coVerify(exactly = 5 * 2) { retriever.getString(any()) }
