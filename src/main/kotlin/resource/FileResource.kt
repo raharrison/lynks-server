@@ -24,7 +24,7 @@ fun Route.resources(resourceManager: ResourceManager) {
         return contentType.withoutParameters().toString()
     }
 
-    route("/entry/{entryId}/resources") {
+    route("/entry/{entryId}/resource") {
 
         get("/") {
             val id = call.parameters["entryId"]!!

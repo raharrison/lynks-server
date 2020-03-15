@@ -34,14 +34,14 @@ class FileResourceTest : ServerTest() {
         given()
                 .multiPart("file", "body", "text/plain")
                 .When()
-                .post("/entry/{entryId}/resources", "e1")
+                .post("/entry/{entryId}/resource", "e1")
                 .then()
                 .statusCode(400)
     }
 
     @Test
     fun testCreateResourceNoMultipart() {
-        post("/entry/{entryId}/resources", "e1")
+        post("/entry/{entryId}/resource", "e1")
                 .then()
                 .statusCode(500)
     }
@@ -51,7 +51,7 @@ class FileResourceTest : ServerTest() {
         val filename = "attachment.txt"
         val content = byteArrayOf(1,2,3,4)
         val generated = uploadResource(filename, content)
-        val resources = get("/entry/{entryId}/resources", generated.entryId)
+        val resources = get("/entry/{entryId}/resource", generated.entryId)
                 .then()
                 .statusCode(200)
                 .extract().`as`(Array<Resource>::class.java)
@@ -68,7 +68,7 @@ class FileResourceTest : ServerTest() {
 
     @Test
     fun testGetResourcesForEntryDoesntExist() {
-        val resources = get("/entry/{entryId}/resources", "invalid")
+        val resources = get("/entry/{entryId}/resource", "invalid")
                 .then()
                 .statusCode(200)
                 .extract().to<List<Resource>>()
@@ -81,7 +81,7 @@ class FileResourceTest : ServerTest() {
         val content = byteArrayOf(1,2,3,4)
         val generated = uploadResource(filename, content)
 
-        val resource = get("/entry/{entryId}/resources/{id}", generated.entryId, generated.id)
+        val resource = get("/entry/{entryId}/resource/{id}", generated.entryId, generated.id)
                 .then()
                 .statusCode(200)
                 .header("Content-Disposition", "inline; filename=\"$filename\"")
@@ -91,7 +91,7 @@ class FileResourceTest : ServerTest() {
 
     @Test
     fun testGetInvalidResourceFile() {
-        get("/entry/{entryId}/resources/{id}", "e1", "invalid")
+        get("/entry/{entryId}/resource/{id}", "e1", "invalid")
                 .then()
                 .statusCode(404)
     }
@@ -102,7 +102,7 @@ class FileResourceTest : ServerTest() {
         val content = byteArrayOf(1,2,3,4)
         val generated = uploadResource(filename, content)
 
-        val resource = get("/entry/{entryId}/resources/{id}/info", generated.entryId, generated.id)
+        val resource = get("/entry/{entryId}/resource/{id}/info", generated.entryId, generated.id)
             .then()
             .statusCode(200)
             .header("X-Resource-Mime-Type", "text/plain")
@@ -116,7 +116,7 @@ class FileResourceTest : ServerTest() {
 
     @Test
     fun testGetInvalidResource() {
-        get("/entry/{entryId}/resources/{id}/info", "e1", "invalid")
+        get("/entry/{entryId}/resource/{id}/info", "e1", "invalid")
             .then()
             .statusCode(404)
     }
@@ -125,7 +125,7 @@ class FileResourceTest : ServerTest() {
     fun testUpdateResource() {
         val data = byteArrayOf(1, 2, 3, 4, 5)
         val generated = uploadResource("content.txt", data)
-        val originalResource = get("/entry/{entryId}/resources/{id}/info", generated.entryId, generated.id)
+        val originalResource = get("/entry/{entryId}/resource/{id}/info", generated.entryId, generated.id)
             .then()
             .statusCode(200)
             .extract().`as`(Resource::class.java)
@@ -140,7 +140,7 @@ class FileResourceTest : ServerTest() {
             .contentType(ContentType.JSON)
             .body(updateResourceRequest)
             .When()
-            .put("/entry/{entryId}/resources", generated.entryId)
+            .put("/entry/{entryId}/resource", generated.entryId)
             .then()
             .statusCode(200)
             .extract().to<Resource>()
@@ -151,13 +151,13 @@ class FileResourceTest : ServerTest() {
         assertThat(updatedResource.extension).isEqualTo("xml")
         assertThat(updatedResource.entryId).isEqualTo(generated.entryId)
 
-        val updatedResourceRetrieval = get("/entry/{entryId}/resources/{id}/info", generated.entryId, generated.id)
+        val updatedResourceRetrieval = get("/entry/{entryId}/resource/{id}/info", generated.entryId, generated.id)
             .then()
             .statusCode(200)
             .extract().`as`(Resource::class.java)
         assertThat(updatedResourceRetrieval).isEqualTo(updatedResource)
 
-        val resourceContents = get("/entry/{entryId}/resources/{id}", generated.entryId, generated.id)
+        val resourceContents = get("/entry/{entryId}/resource/{id}", generated.entryId, generated.id)
             .then()
             .statusCode(200)
             .extract().asByteArray()
@@ -172,7 +172,7 @@ class FileResourceTest : ServerTest() {
             .contentType(ContentType.JSON)
             .body(invalid)
             .When()
-            .put("/entry/{entryId}/resources", invalid.entryId)
+            .put("/entry/{entryId}/resource", invalid.entryId)
             .then()
             .statusCode(404)
     }
@@ -180,17 +180,17 @@ class FileResourceTest : ServerTest() {
     @Test
     fun testDeleteResource() {
         val generated = uploadResource("attachment.txt", byteArrayOf(1,2,3,4,5))
-        delete("/entry/{entryId}/resources/{id}", generated.entryId, generated.id)
+        delete("/entry/{entryId}/resource/{id}", generated.entryId, generated.id)
                 .then()
                 .statusCode(200)
-        get("/entry/{entryId}/resources/{id}", generated.entryId, generated.id)
+        get("/entry/{entryId}/resource/{id}", generated.entryId, generated.id)
                 .then()
                 .statusCode(404)
     }
 
     @Test
     fun testDeleteInvalidResource() {
-        delete("/entry/{entryId}/resources/{id}", "e1", "invalid")
+        delete("/entry/{entryId}/resource/{id}", "e1", "invalid")
                 .then()
                 .statusCode(404)
     }
@@ -199,7 +199,7 @@ class FileResourceTest : ServerTest() {
         return given()
                 .multiPart("file", filename, content)
                 .When()
-                .post("/entry/{entryId}/resources", "e1")
+                .post("/entry/{entryId}/resource", "e1")
                 .then()
                 .statusCode(201)
                 .extract().to()

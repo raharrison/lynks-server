@@ -8,8 +8,7 @@ import io.ktor.routing.post
 
 fun Route.task(taskService: TaskService) {
 
-    // TODO: update url
-    post("/entry/{entryId}/tasks/{id}") {
+    post("/entry/{entryId}/task/{id}") {
         val entryId = call.parameters["entryId"]
         val taskId = call.parameters["id"]
         if(entryId != null && taskId != null) {
