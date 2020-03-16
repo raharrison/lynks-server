@@ -5,7 +5,6 @@ import org.slf4j.LoggerFactory
 import resource.ResourceManager
 import resource.ResourceType
 import util.ExecUtils
-import util.RandomUtils
 import util.Result
 import java.io.File
 
@@ -17,8 +16,7 @@ class YoutubeDlTask(id: String, entryId: String) : Task<YoutubeDlTask.YoutubeDlT
     lateinit var resourceManager: ResourceManager
 
     override suspend fun process(context: YoutubeDlTaskContext) {
-        val id = RandomUtils.generateUid()
-        val outputTemplate = "-o \"${resourceManager.constructPath(entryId, "$id.%(ext)s")}\""
+        val outputTemplate = "-o \"${resourceManager.constructPath(entryId, "%(name)s.%(ext)s")}\""
 
         val command = when (context.type) {
             YoutubeDlDownload.BEST_AUDIO -> "youtube-dl -f bestaudio/best $outputTemplate ${context.url}"
@@ -39,12 +37,9 @@ class YoutubeDlTask(id: String, entryId: String) : Task<YoutubeDlTask.YoutubeDlT
                 if (filename != null) {
                     val file = File(filename.removePrefix(prefix).trim())
                     resourceManager.saveGeneratedResource(
-                        id = id,
-                        entryId = entryId,
-                        name = file.name,
-                        format = file.extension,
-                        size = file.length(),
-                        type = ResourceType.UPLOAD
+                            entryId = entryId,
+                            type = ResourceType.GENERATED,
+                            path = file.toPath()
                     )
                 }
             }

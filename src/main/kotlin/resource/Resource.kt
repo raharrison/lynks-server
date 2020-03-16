@@ -29,7 +29,7 @@ data class Resource(
 ): IdBasedCreatedEntity
 
 enum class ResourceType {
-    UPLOAD, SCREENSHOT, THUMBNAIL, DOCUMENT
+    UPLOAD, SCREENSHOT, THUMBNAIL, DOCUMENT, GENERATED
 }
 
 // files/{entryId}/{id}

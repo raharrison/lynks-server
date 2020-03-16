@@ -52,9 +52,9 @@ class LinkProcessorWorker(private val resourceManager: ResourceManager,
                         val screen = async { proc.generateScreenshot() }
                         proc.enrich(link.props)
                         link.content = proc.content
-                        thumb.await()?.let { resourceManager.saveGeneratedResource(link.id, ResourceType.THUMBNAIL, it.extension, it.image) }
-                        screen.await()?.let { resourceManager.saveGeneratedResource(link.id, ResourceType.SCREENSHOT, it.extension, it.image) }
-                        proc.html?.let { resourceManager.saveGeneratedResource(link.id, ResourceType.DOCUMENT, HTML, it.toByteArray()) }
+                        thumb.await()?.let { resourceManager.saveGeneratedResource(link.id, "thumbnail.${it.extension}", ResourceType.THUMBNAIL, it.image) }
+                        screen.await()?.let { resourceManager.saveGeneratedResource(link.id, "screenshot.${it.extension}", ResourceType.SCREENSHOT, it.image) }
+                        proc.html?.let { resourceManager.saveGeneratedResource(link.id, "document.$HTML", ResourceType.DOCUMENT, it.toByteArray()) }
                     }
                 }
             }

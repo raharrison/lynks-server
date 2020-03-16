@@ -52,15 +52,13 @@ class YoutubeDlTaskTest {
             after line
             """.trimIndent()
 
-        every { resourceManager.constructPath("eid", any()) } returns Paths.get(name)
+        val path = Paths.get(name)
+        every { resourceManager.constructPath("eid", any()) } returns path
 
         every { resourceManager.saveGeneratedResource(
-                any(),
                 entryId = "eid",
-                name = name,
-                format = "webm",
-                size = any(),
-                type = ResourceType.UPLOAD) } returns
+                type = ResourceType.GENERATED,
+                path = path) } returns
                 Resource("rid", "eid", name, "", ResourceType.UPLOAD, 1, 1, 1)
 
         mockkObject(ExecUtils)
@@ -79,12 +77,9 @@ class YoutubeDlTaskTest {
 
         verify(exactly = 1) {
             resourceManager.saveGeneratedResource(
-                    any(),
                     entryId = "eid",
-                    name = name,
-                    format = "webm",
-                    size = any(),
-                    type = ResourceType.UPLOAD)
+                    type = ResourceType.GENERATED,
+                    path = path)
         }
 
         verify(exactly = 1) { resourceManager.constructPath("eid", any()) }

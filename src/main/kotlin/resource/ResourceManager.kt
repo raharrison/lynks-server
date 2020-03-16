@@ -63,15 +63,14 @@ class ResourceManager {
         return false
     }
 
-    // TODO: override file name, don't take id
-    fun saveGeneratedResource(id: String = RandomUtils.generateUid(), entryId: String, name: String, format: String, type: ResourceType, size: Long): Resource {
+    fun saveGeneratedResource(id: String = RandomUtils.generateUid(), entryId: String, name: String, extension: String, type: ResourceType, size: Long): Resource {
         val time = System.currentTimeMillis()
         return transaction {
             Resources.insert {
                 it[Resources.id] = id
                 it[Resources.entryId] = entryId
                 it[fileName] = name
-                it[extension] = format
+                it[Resources.extension] = extension
                 it[Resources.type] = type
                 it[Resources.size] = size
                 it[dateCreated] = time
@@ -81,12 +80,27 @@ class ResourceManager {
         }
     }
 
-    fun saveGeneratedResource(entryId: String, type: ResourceType, extension: String, file: ByteArray): Resource {
-        val id = RandomUtils.generateUid()
-        return saveGeneratedResource(id, entryId, "$id.$extension", extension, type, file.size.toLong()).also {
-            val path = constructPath(entryId, id, extension)
+    fun saveGeneratedResource(entryId: String, name: String, type: ResourceType, file: ByteArray): Resource {
+        val extension = FileUtils.getExtension(name)
+        return saveGeneratedResource(
+                entryId = entryId,
+                name = name,
+                extension = extension,
+                type = type,
+                size = file.size.toLong()).also {
+            val path = constructPath(entryId, it.id, it.extension)
             FileUtils.writeToFile(path, file)
         }
+    }
+
+    fun saveGeneratedResource(entryId: String, type: ResourceType, path: Path): Resource {
+        val id = RandomUtils.generateUid()
+        val name = path.fileName.toString()
+        val extension = FileUtils.getExtension(name)
+        val target = constructPath(entryId, id, extension)
+        val size = Files.size(path)
+        Files.move(path, target)
+        return saveGeneratedResource(id, entryId, name, extension, type, size)
     }
 
     fun saveUploadedResource(entryId: String, name: String, input: InputStream): Resource {
@@ -101,7 +115,7 @@ class ResourceManager {
         return saveGeneratedResource(id, entryId, name, ext, ResourceType.UPLOAD, file.length())
     }
 
-    fun constructPath(entryId: String, id: String): Path = Paths.get(Environment.server.resourceBasePath, entryId, id)
+    fun constructPath(entryId: String, id: String = RandomUtils.generateUid()): Path = Paths.get(Environment.server.resourceBasePath, entryId, id)
 
     private fun constructPath(entryId: String, id: String, extension: String): Path {
         val resId = if (extension.isNotEmpty()) "$id.$extension" else id

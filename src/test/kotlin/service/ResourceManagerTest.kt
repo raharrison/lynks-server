@@ -160,7 +160,7 @@ class ResourceManagerTest: DatabaseTest() {
         val resource = resourceManager.saveGeneratedResource(
                 entryId = "eid",
                 name = filename,
-                format = extension,
+                extension = extension,
                 size = length,
                 type = ResourceType.UPLOAD)
         assertThat(resource.entryId).isEqualTo("eid")
@@ -206,18 +206,18 @@ class ResourceManagerTest: DatabaseTest() {
         val entryId = "eid"
         val extension = JPG
         val data = byteArrayOf(1,2,3,4,5)
-        val resource = resourceManager.saveGeneratedResource(entryId, ResourceType.SCREENSHOT, extension, data)
+        val resource = resourceManager.saveGeneratedResource(entryId, "res1.jpg", ResourceType.SCREENSHOT, data)
         assertThat(resource.entryId).isEqualTo(entryId)
         assertThat(resource.extension).isEqualTo(extension)
         assertThat(resource.size).isEqualTo(data.size.toLong())
         assertThat(resource.dateUpdated).isEqualTo(resource.dateCreated)
         assertThat(resource.type).isEqualTo(ResourceType.SCREENSHOT)
-        assertThat(resource.name).isEqualTo("${resource.id}.$extension")
+        assertThat(resource.name).isEqualTo("res1.jpg")
 
-        assertFileContents(resourceManager.constructPath(entryId, resource.name).toString(), data)
-        resourceManager.saveGeneratedResource(entryId, ResourceType.THUMBNAIL, extension, data)
+        assertFileContents(resourceManager.constructPath(entryId, "${resource.id}.${resource.extension}").toString(), data)
+        resourceManager.saveGeneratedResource(entryId, "res2.jpg", ResourceType.THUMBNAIL, data)
         assertFileCount(resourceManager.constructPath(entryId, "").toString(), 2)
-        assertFileContents(resourceManager.constructPath(entryId, resource.name).toString(), data)
+        assertFileContents(resourceManager.constructPath(entryId, "${resource.id}.${resource.extension}").toString(), data)
 
         val res = resourceManager.getResourceAsFile(resource.id)
         assertThat(res?.first).isEqualTo(resource)
@@ -228,9 +228,37 @@ class ResourceManagerTest: DatabaseTest() {
     }
 
     @Test
+    fun testSaveGeneratedResourceFromFile() {
+        val entryId = "eid"
+        val data = byteArrayOf(1,2,3,4,5)
+        val path = resourceManager.constructPath(entryId, "res1.jpg")
+        path.toFile().apply {
+            parentFile.mkdirs()
+            createNewFile()
+        }
+        Files.write(path, data)
+        assertFileCount(resourceManager.constructPath(entryId, "").toString(), 1)
+        assertFileContents(path.toString(), data)
+
+        val resource = resourceManager.saveGeneratedResource("eid", ResourceType.GENERATED, path)
+        assertThat(resource.entryId).isEqualTo(entryId)
+        assertThat(resource.extension).isEqualTo(JPG)
+        assertThat(resource.size).isEqualTo(data.size.toLong())
+        assertThat(resource.dateUpdated).isEqualTo(resource.dateCreated)
+        assertThat(resource.type).isEqualTo(ResourceType.GENERATED)
+        assertThat(resource.name).isEqualTo("res1.jpg")
+
+        assertThat(path.toFile().exists()).isFalse()
+        val newPath = resourceManager.constructPath(entryId, "${resource.id}.${resource.extension}")
+        assertThat(newPath.toFile().exists()).isTrue()
+        assertFileCount(resourceManager.constructPath(entryId, "").toString(), 1)
+        assertFileContents(newPath.toString(), data)
+    }
+
+    @Test
     fun testGetResourceAsFile() {
         val data = byteArrayOf(1,2,3,4,5)
-        val resource = resourceManager.saveGeneratedResource("eid", ResourceType.SCREENSHOT, JPG, data)
+        val resource = resourceManager.saveGeneratedResource("eid", "res.jpg", ResourceType.SCREENSHOT, data)
         val res = resourceManager.getResourceAsFile(resource.id)
         assertThat(res?.second?.readBytes()).isEqualTo(data)
         assertThat(res?.second?.name).isEqualTo("${resource.id}.$JPG")
@@ -316,7 +344,7 @@ class ResourceManagerTest: DatabaseTest() {
     fun testDeleteResource() {
         val entryId = "eid"
         val data = byteArrayOf(1,2,3,4,5)
-        val resource = resourceManager.saveGeneratedResource(entryId, ResourceType.SCREENSHOT, JPG, data)
+        val resource = resourceManager.saveGeneratedResource(entryId, "res.jpg", ResourceType.SCREENSHOT, data)
         assertThat(resourceManager.getResource(resource.id)).isNotNull
         assertFileCount(resourceManager.constructPath(entryId, "").toString(), 1)
         assertThat(resourceManager.delete(resource.id)).isTrue()
@@ -329,8 +357,8 @@ class ResourceManagerTest: DatabaseTest() {
         val entryId = "eid"
         val data = byteArrayOf(1,2,3,4,5)
         val data2 = byteArrayOf(5,6,7,8,9)
-        val resource = resourceManager.saveGeneratedResource(entryId, ResourceType.THUMBNAIL, JPG, data)
-        val resource2 = resourceManager.saveGeneratedResource(entryId, ResourceType.SCREENSHOT, PNG, data2)
+        val resource = resourceManager.saveGeneratedResource(entryId, "res1.jpg", ResourceType.THUMBNAIL, data)
+        val resource2 = resourceManager.saveGeneratedResource(entryId, "res2.png", ResourceType.SCREENSHOT, data2)
 
         assertThat(resourceManager.getResource(resource.id)).isNotNull
         assertThat(resourceManager.getResource(resource2.id)).isNotNull

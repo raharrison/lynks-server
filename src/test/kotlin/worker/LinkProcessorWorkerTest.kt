@@ -29,8 +29,8 @@ class LinkProcessorWorkerTest {
     fun testDefaultPersist() = runBlocking(TestCoroutineContext()) {
         val link = Link("id1", "title", "google.com", "google.com", "", 100)
 
-        val thumb = ImageResource(byteArrayOf(1,2,3), ".jpg")
-        val screen = ImageResource(byteArrayOf(4,5,6), ".png")
+        val thumb = ImageResource(byteArrayOf(1,2,3), "jpg")
+        val screen = ImageResource(byteArrayOf(4,5,6), "png")
         val html = "<html>"
         val content = "article content"
         val processor = mockk<LinkProcessor>()
@@ -64,9 +64,9 @@ class LinkProcessorWorkerTest {
         coVerify(exactly = 1) { processor.html }
         coVerify(exactly = 1) { processor.content }
 
-        verify(exactly = 1) { resourceManager.saveGeneratedResource(link.id, ResourceType.THUMBNAIL, thumb.extension, thumb.image) }
-        verify(exactly = 1) { resourceManager.saveGeneratedResource(link.id, ResourceType.SCREENSHOT, screen.extension, screen.image) }
-        verify(exactly = 1) { resourceManager.saveGeneratedResource(link.id, ResourceType.DOCUMENT, HTML, html.toByteArray()) }
+        verify(exactly = 1) { resourceManager.saveGeneratedResource(link.id, "thumbnail.jpg", ResourceType.THUMBNAIL, thumb.image) }
+        verify(exactly = 1) { resourceManager.saveGeneratedResource(link.id, "screenshot.png", ResourceType.SCREENSHOT, screen.image) }
+        verify(exactly = 1) { resourceManager.saveGeneratedResource(link.id, "document.html", ResourceType.DOCUMENT, html.toByteArray()) }
     }
 
     @Test
@@ -102,8 +102,8 @@ class LinkProcessorWorkerTest {
     fun testDefaultSuggest() = runBlocking(TestCoroutineContext()) {
         val url = "google.com"
 
-        val thumb = ImageResource(byteArrayOf(1,2,3), ".jpg")
-        val screen = ImageResource(byteArrayOf(4,5,6), ".png")
+        val thumb = ImageResource(byteArrayOf(1,2,3), "jpg")
+        val screen = ImageResource(byteArrayOf(4,5,6), "png")
         val html = "<html>"
         val processor = mockk<LinkProcessor>()
 
