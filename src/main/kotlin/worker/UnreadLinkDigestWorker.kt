@@ -12,14 +12,15 @@ import java.time.format.FormatStyle
 import java.time.temporal.ChronoUnit
 import java.time.temporal.TemporalAdjusters
 import java.util.*
+import kotlin.math.min
 
-class UnreadLinkDigestWorkerRequest(val preferences: Preferences, crudType: CrudType = CrudType.UPDATE): VariableWorkerRequest(crudType) {
+class UnreadLinkDigestWorkerRequest(val preferences: Preferences, crudType: CrudType = CrudType.UPDATE) : VariableWorkerRequest(crudType) {
     override fun hashCode(): Int = 1
     override fun equals(other: Any?): Boolean = other is UnreadLinkDigestWorkerRequest
 }
 
 class UnreadLinkDigestWorker(private val linkService: LinkService, private val userService: UserService,
-                             notifyService: NotifyService): VariableChannelBasedWorker<UnreadLinkDigestWorkerRequest>(notifyService) {
+                             notifyService: NotifyService) : VariableChannelBasedWorker<UnreadLinkDigestWorkerRequest>(notifyService) {
 
     private val random = Random()
 
@@ -29,7 +30,8 @@ class UnreadLinkDigestWorker(private val linkService: LinkService, private val u
     }
 
     override suspend fun doWork(input: UnreadLinkDigestWorkerRequest) {
-        if(!input.preferences.digest) {
+        if (!input.preferences.digest) {
+            log.debug("User does not have link digests enabled, exiting worker")
             return
         }
 
@@ -41,19 +43,24 @@ class UnreadLinkDigestWorker(private val linkService: LinkService, private val u
         val initialDelay = today.until(fire, ChronoUnit.SECONDS)
 
         while (true) {
+            log.info("Link digest worker sleeping for {} seconds until initial fire", initialDelay)
             delay(Duration.ofSeconds(initialDelay))
             sendDigest()
+            log.info("Link digest worker sleeping for 7 days")
             delay(Duration.ofDays(7))
         }
     }
 
     private fun sendDigest() {
         val links = linkService.getUnread()
-        if(links.isEmpty()) return
+        if (links.isEmpty()) {
+            log.info("Link digest worker found no unread links")
+            return
+        }
 
         val indexes = mutableSetOf<Int>()
-        val limit = Math.min(5, links.size)
-        while(indexes.size < limit) {
+        val limit = min(5, links.size)
+        while (indexes.size < limit) {
             indexes += random.nextInt(links.size)
         }
 
@@ -73,6 +80,7 @@ class UnreadLinkDigestWorker(private val linkService: LinkService, private val u
         val template = ResourceTemplater("unread-link-digest.html")
         val email = template.apply(mapOf("entries" to content))
 
+        log.info("Link digest worker sending unread link digest email")
         notifyService.sendEmail("Lynks - Weekly Digest", email)
     }
 

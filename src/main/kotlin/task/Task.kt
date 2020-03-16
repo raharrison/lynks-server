@@ -12,7 +12,7 @@ abstract class Task<T: TaskContext>(override val id: String, val entryId: String
 
 open class TaskContext(internal val input: Map<String, String> = emptyMap()) {
 
-    protected fun param(field: String) = input[field]!!
+    protected fun param(field: String) = input[field] ?: error("Could not find param with key: $field")
 
     protected fun optParam(field: String) = input[field]
 

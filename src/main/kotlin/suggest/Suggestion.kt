@@ -5,7 +5,4 @@ data class Suggestion(
         val title: String? = null,
         val thumbnail: String? = null,
         val screenshot: String? = null
-// other
 )
-
-// https://github.com/chimbori/crux

@@ -9,7 +9,7 @@ import util.FileUtils
 import java.nio.file.Paths
 import java.time.Duration
 
-class TempFileCleanupWorkerRequest(val preferences: Preferences, crudType: CrudType = CrudType.UPDATE): VariableWorkerRequest(crudType) {
+class TempFileCleanupWorkerRequest(val preferences: Preferences, crudType: CrudType = CrudType.UPDATE) : VariableWorkerRequest(crudType) {
     override fun hashCode(): Int = 1
     override fun equals(other: Any?): Boolean = other is TempFileCleanupWorkerRequest
 }
@@ -24,12 +24,15 @@ class TempFileCleanupWorker(private val userService: UserService, notifyService:
     }
 
     override suspend fun doWork(input: TempFileCleanupWorkerRequest) {
-        while(true) {
+        while (true) {
             try {
                 val dirs = FileUtils.directoriesOlderThan(Paths.get(Environment.server.resourceTempPath), MAX_FILE_AGE)
+                log.info("Temp file cleanup worker removing {} dirs: {}", dirs.size, dirs)
                 FileUtils.deleteDirectories(dirs)
             } finally {
-                delay(Duration.ofHours(input.preferences.tempFileCleanInterval))
+                val sleep = input.preferences.tempFileCleanInterval
+                log.info("Temp file cleanup worker sleeping for {} hours", sleep)
+                delay(Duration.ofHours(sleep))
             }
         }
     }

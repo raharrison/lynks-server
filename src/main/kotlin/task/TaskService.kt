@@ -4,6 +4,7 @@ import common.TaskDefinition
 import common.inject.Inject
 import common.inject.ServiceProvider
 import entry.EntryService
+import util.loggerFor
 import worker.WorkerRegistry
 import kotlin.reflect.KMutableProperty1
 import kotlin.reflect.full.findAnnotation
@@ -15,14 +16,18 @@ class TaskService(private val entryService: EntryService,
                   private val serviceProvider: ServiceProvider,
                   private val workerRegistry: WorkerRegistry) {
 
+    private val log = loggerFor<TaskService>()
+
     fun runTask(eid: String, taskId: String): Boolean {
         entryService.get(eid)?.let { it ->
             it.props.getTask(taskId)?.let {
                 val task = convertToConcreteTask(taskId, eid, it)
+                log.info("Submitting task work request for entry={} task={}", eid, taskId)
                 workerRegistry.acceptTaskWork(task, task.createContext(it.input))
                 return true
             }
         }
+        log.info("Could not run task as either entry or task not found entry={} task={}", eid, taskId)
         return false
     }
 

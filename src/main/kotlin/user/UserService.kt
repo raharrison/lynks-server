@@ -4,8 +4,11 @@ import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.update
+import util.loggerFor
 
 class UserService {
+
+    private val log = loggerFor<UserService>()
 
     private val defaultUserId = 0
     private val defaultPreferences = Preferences()
@@ -40,7 +43,10 @@ class UserService {
             it[tempFileCleanInterval] = preferences.tempFileCleanInterval
         } > 0
 
-        if(!updated) insertUserPreferences(defaultUserId, preferences)
+        if (!updated) {
+            log.info("No user preferences found, inserting defaults")
+            insertUserPreferences(defaultUserId, preferences)
+        }
         getUserPreferences()
     }
 

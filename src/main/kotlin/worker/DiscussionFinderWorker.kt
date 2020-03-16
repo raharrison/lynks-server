@@ -6,14 +6,11 @@ import notify.Notification
 import notify.NotifyService
 import resource.ResourceRetriever
 import util.JsonMapper.defaultMapper
-import util.loggerFor
 import java.net.URLEncoder
 import java.time.Duration
 import java.time.Instant
 
-private val log = loggerFor<DiscussionFinderWorker>()
-
-data class DiscussionFinderWorkerRequest(val linkId: String, val intervalIndex: Int = -1): PersistVariableWorkerRequest() {
+data class DiscussionFinderWorkerRequest(val linkId: String, val intervalIndex: Int = -1) : PersistVariableWorkerRequest() {
     override val key = linkId
 }
 
@@ -28,7 +25,7 @@ class DiscussionFinderWorker(private val linkService: LinkService,
     }
 
     override suspend fun doWork(input: DiscussionFinderWorkerRequest) {
-        log.info("Launching discussion finder for entry ${input.linkId}")
+        log.info("Launching discussion finder for entry={}", input.linkId)
         findDiscussions(input.linkId, input.intervalIndex)
     }
 
@@ -40,21 +37,22 @@ class DiscussionFinderWorker(private val linkService: LinkService,
         var intervalIndex = initialIntervalIndex
         while (true) {
             val link = linkService.get(linkId) ?: break
-            log.info("Finding discussions for entry ${link.id}")
+            log.info("Finding discussions for entry={}", link.id)
             val discussions = mutableListOf<Discussion>().apply {
                 addAll(hackerNewsDiscussions(link.url))
                 addAll(redditDiscussions(link.url))
             }
-            log.info("Found ${discussions.size} discussions for entry ${link.id}")
+            log.info("Found {} discussion for entry={}", discussions.size, link.id)
 
             val current = if (link.props.containsAttribute("discussions"))
                 link.props.getAttribute("discussions") as List<*>
             else emptyList<Any>()
 
-            if(discussions.isNotEmpty()) {
+            if (discussions.isNotEmpty()) {
                 link.props.addAttribute("discussions", discussions)
                 linkService.mergeProps(link.id, link.props)
                 val message = "${discussions.size} Discussions Found"
+                log.info("Discussion finder worker sending notification entry={}", link.id)
                 sendNotification(Notification.discussions(message), link)
             }
 
@@ -62,10 +60,10 @@ class DiscussionFinderWorker(private val linkService: LinkService,
             if (intervalIndex >= intervals.size) {
                 // would break but more discussions found
                 if (current.size != discussions.size && discussions.isNotEmpty()) {
-                    log.info("Discussion finder for entry ${link.id} remaining active")
+                    log.info("Discussion finder for entry={} remaining active as more discussions found", link.id)
                     intervalIndex--
                 } else {
-                    log.info("Discussion finder for entry ${link.id} ending")
+                    log.info("Discussion worker ending for entry={}", link.id)
                     break
                 }
             }
@@ -73,7 +71,7 @@ class DiscussionFinderWorker(private val linkService: LinkService,
             // update schedule
             updateSchedule(DiscussionFinderWorkerRequest(linkId, intervalIndex))
             val interval = intervals[intervalIndex]
-            log.info("Discussion finder for entry ${link.id} sleeping for $interval minutes")
+            log.info("Discussion finder worker sleeping for {}mins entry={}", interval, link.id)
 
             delay(Duration.ofMinutes(interval))
         }
@@ -85,7 +83,7 @@ class DiscussionFinderWorker(private val linkService: LinkService,
         val base = "http://hn.algolia.com/api/v1/search?query=%s&restrictSearchableAttributes=url"
         val response = resourceRetriever.getString(base.format(encode(url)))
         val discussions = mutableListOf<Discussion>()
-        if(response == null || response.isBlank()) return discussions
+        if (response == null || response.isBlank()) return discussions
         val node = defaultMapper.readTree(response)
 
         if (node.has("hits")) {
@@ -97,7 +95,7 @@ class DiscussionFinderWorker(private val linkService: LinkService,
                 val createdStamp = hit.get("created_at").textValue()
                 val instant = Instant.parse(createdStamp)
                 discussions.add(Discussion(DiscussionSource.HACKER_NEWS, title, link, score,
-                    comments, instant.toEpochMilli()))
+                        comments, instant.toEpochMilli()))
             }
         }
         return discussions.sortedWith(compareByDescending(Discussion::created)
@@ -108,7 +106,7 @@ class DiscussionFinderWorker(private val linkService: LinkService,
         val base = "https://www.reddit.com/api/info.json?url=%s"
         val response = resourceRetriever.getString(base.format(encode(url)))
         val discussions = mutableListOf<Discussion>()
-        if(response == null || response.isBlank()) return discussions
+        if (response == null || response.isBlank()) return discussions
         val node = defaultMapper.readTree(response)
 
         if (node.has("data")) {

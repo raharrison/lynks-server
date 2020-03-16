@@ -62,12 +62,14 @@ class LinkProcessorWorker(private val resourceManager: ResourceManager,
             linkService.mergeProps(link.id, link.props)
 
             val updatedLink = linkService.update(link)
-            sendNotification(body=updatedLink)
+            log.info("Link processing worker request complete, sending notification entry={}", link.id)
+            sendNotification(body = updatedLink)
         } catch (e: Exception) {
+            log.error("Link processing worker failed for entry={}", link.id, e)
             // mark as dead if processing failed
             link.props.addAttribute("dead", System.currentTimeMillis())
             linkService.mergeProps(link.id, link.props)
-
+            log.info("Link processing worker marked link as dead after failure, sending notification entry={}", link.id)
             sendNotification(Notification.error("Error occurred processing link"))
             // log and reschedule
         }
@@ -75,6 +77,7 @@ class LinkProcessorWorker(private val resourceManager: ResourceManager,
 
     private suspend fun processLinkSuggest(url: String, deferred: CompletableDeferred<Suggestion>) {
         try {
+            log.info("Link processing worker executing suggestion request for url={}", url)
             processorFactory.createProcessors(url).forEach { it ->
                 it.use { proc ->
                     coroutineScope {
@@ -83,11 +86,13 @@ class LinkProcessorWorker(private val resourceManager: ResourceManager,
                         val thumbPath = thumb.await()?.let { resourceManager.saveTempFile(url, it.image, ResourceType.THUMBNAIL, it.extension) }
                         val screenPath = screen.await()?.let { resourceManager.saveTempFile(url, it.image, ResourceType.SCREENSHOT, it.extension) }
                         proc.html?.let { resourceManager.saveTempFile(url, it.toByteArray(), ResourceType.DOCUMENT, HTML) }
+                        log.info("Link processing worker completing suggestion request for url={}", url)
                         deferred.complete(Suggestion(proc.resolvedUrl, proc.title, thumbPath, screenPath))
                     }
                 }
             }
         } catch (e: Exception) {
+            log.error("Link processing worker failed generating suggestion for url={}", url, e)
             deferred.completeExceptionally(e)
         }
     }

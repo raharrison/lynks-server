@@ -7,10 +7,14 @@ import notify.Notification
 import notify.NotifyService
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import util.JsonMapper.defaultMapper
 import kotlin.coroutines.CoroutineContext
 
 abstract class Worker<T>(protected val notifyService: NotifyService) : CoroutineScope {
+
+    protected val log: Logger = LoggerFactory.getLogger(this::class.java)
 
     var runner: CoroutineContext = Dispatchers.Default
     private val supervisor = SupervisorJob()

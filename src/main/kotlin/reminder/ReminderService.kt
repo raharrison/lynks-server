@@ -3,6 +3,7 @@ package reminder
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 import util.RandomUtils
+import util.loggerFor
 import worker.CrudType
 import worker.ReminderWorkerRequest
 import worker.WorkerRegistry
@@ -10,37 +11,39 @@ import java.time.ZoneId
 
 class ReminderService(private val workerRegistry: WorkerRegistry) {
 
+    private val log = loggerFor<ReminderService>()
+
     private fun toModel(row: ResultRow): Reminder {
         return when (row[Reminders.type]) {
             ReminderType.ADHOC -> AdhocReminder(
-                row[Reminders.reminderId], row[Reminders.entryId],
-                row[Reminders.message], row[Reminders.spec].toLong(), row[Reminders.tz]
+                    row[Reminders.reminderId], row[Reminders.entryId],
+                    row[Reminders.message], row[Reminders.spec].toLong(), row[Reminders.tz]
             )
             ReminderType.RECURRING -> RecurringReminder(
-                row[Reminders.reminderId], row[Reminders.entryId],
-                row[Reminders.message], row[Reminders.spec], row[Reminders.tz]
+                    row[Reminders.reminderId], row[Reminders.entryId],
+                    row[Reminders.message], row[Reminders.spec], row[Reminders.tz]
             )
         }
     }
 
     fun getRemindersForEntry(eId: String) = transaction {
         Reminders.select { Reminders.entryId eq eId }
-            .map { toModel(it) }
+                .map { toModel(it) }
     }
 
     fun getAllReminders() = transaction {
         Reminders.selectAll()
-            .map { toModel(it) }
+                .map { toModel(it) }
     }
 
     fun get(id: String): Reminder? = transaction {
         Reminders.select { Reminders.reminderId eq id }
-            .mapNotNull { toModel(it) }.singleOrNull()
+                .mapNotNull { toModel(it) }.singleOrNull()
     }
 
     fun isActive(id: String): Boolean = transaction {
         Reminders.slice(Reminders.reminderId)
-            .select { Reminders.reminderId eq id }.count() > 0
+                .select { Reminders.reminderId eq id }.count() > 0
     }
 
     fun add(job: Reminder): Reminder = transaction {
@@ -53,6 +56,7 @@ class ReminderService(private val workerRegistry: WorkerRegistry) {
             it[tz] = checkValidTimeZone(job.tz)
         }
         get(job.reminderId)!!.also {
+            log.info("Created reminder, submitting worker request id={}", job.reminderId)
             workerRegistry.acceptReminderWork(ReminderWorkerRequest(it, CrudType.CREATE))
         }
     }
@@ -68,12 +72,14 @@ class ReminderService(private val workerRegistry: WorkerRegistry) {
             it[tz] = checkValidTimeZone(reminder.tz)
         }
         get(id)!!.also {
+            log.info("Created reminder, submitting worker request id={}", id)
             workerRegistry.acceptReminderWork(ReminderWorkerRequest(it, CrudType.CREATE))
         }
     }
 
     fun updateReminder(reminder: NewReminder): Reminder? = transaction {
         if (reminder.reminderId == null) {
+            log.info("No reminder id found, defaulting to adding new reminder")
             addReminder(reminder)
         } else {
             val updatedCount = Reminders.update({ Reminders.reminderId eq reminder.reminderId }) {
@@ -84,9 +90,13 @@ class ReminderService(private val workerRegistry: WorkerRegistry) {
             }
             if (updatedCount > 0) {
                 get(reminder.reminderId)?.also {
+                    log.info("Updated reminder, submitting worker request id={}", id)
                     workerRegistry.acceptReminderWork(ReminderWorkerRequest(it, CrudType.UPDATE))
                 }
-            } else null
+            } else {
+                log.info("No rows modified when updating reminder id={}", reminder.reminderId)
+                null
+            }
         }
     }
 
@@ -97,6 +107,7 @@ class ReminderService(private val workerRegistry: WorkerRegistry) {
             workerRegistry.acceptReminderWork(ReminderWorkerRequest(reminder, CrudType.DELETE))
             return@transaction true
         }
+        log.info("No reminder found with id={}", id)
         false
     }
 

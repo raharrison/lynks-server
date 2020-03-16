@@ -18,15 +18,14 @@ class YoutubeDlTask(id: String, entryId: String) : Task<YoutubeDlTask.YoutubeDlT
     override suspend fun process(context: YoutubeDlTaskContext) {
         val outputTemplate = "-o \"${resourceManager.constructPath(entryId, "%(name)s.%(ext)s")}\""
 
+        log.info("Executing YoutubeDl task entry={} type={}", entryId, context.type)
         val command = when (context.type) {
             YoutubeDlDownload.BEST_AUDIO -> "youtube-dl -f bestaudio/best $outputTemplate ${context.url}"
             YoutubeDlDownload.BEST_VIDEO -> "youtube-dl -f best $outputTemplate ${context.url}"
             YoutubeDlDownload.BEST_VIDEO_TRANSCODE -> "youtube-dl -f bestvideo[height<=?1080]+bestaudio/best $outputTemplate ${context.url}"
         }
 
-        val result = ExecUtils.executeCommand(command)
-
-        when (result) {
+        when (val result = ExecUtils.executeCommand(command)) {
             is Result.Success -> {
                 // find destination
                 val prefix = "[download] Destination:"
@@ -35,12 +34,15 @@ class YoutubeDlTask(id: String, entryId: String) : Task<YoutubeDlTask.YoutubeDlT
                 }
                 // error or file already exists
                 if (filename != null) {
+                    log.debug("YoutubeDl task found destination filename={}", filename)
                     val file = File(filename.removePrefix(prefix).trim())
                     resourceManager.saveGeneratedResource(
                             entryId = entryId,
                             type = ResourceType.GENERATED,
                             path = file.toPath()
                     )
+                } else {
+                    log.error("No filename found in YoutubeDl output - command likely failed")
                 }
             }
             is Result.Failure -> {

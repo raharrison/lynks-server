@@ -34,6 +34,7 @@ object ExecUtils {
 
         val process = pb.start()
         val result = collectOutput(process.inputStream, listener)
+        log.debug("Collected {} lines of output from command execution", result.length)
         val errors = process.errorStream.bufferedReader().use { it.readText() }
         process.outputStream.close()
 
@@ -43,6 +44,7 @@ object ExecUtils {
             log.info("Failed to execute command {}.\nstderr: {}\nstdout: {}", pb.command(), errors, result)
             return Result.Failure(ExecException(res, errors))
         }
+        log.info("Command executed successfully")
         return Result.Success(result)
     }
 
