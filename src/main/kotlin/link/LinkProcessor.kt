@@ -8,6 +8,7 @@ import io.webfolder.cdp.event.Events
 import io.webfolder.cdp.event.network.ResponseReceived
 import io.webfolder.cdp.session.Session
 import io.webfolder.cdp.type.network.ResourceType
+import org.slf4j.LoggerFactory
 import resource.JPG
 import resource.PDF
 import resource.PNG
@@ -24,7 +25,7 @@ import javax.imageio.ImageIO
 data class ImageResource(val image: ByteArray, val extension: String) {
 
     override fun equals(other: Any?): Boolean {
-        if(other != null && other is ImageResource) {
+        if (other != null && other is ImageResource) {
             return image contentEquals other.image && extension == other.extension
         }
         return false
@@ -62,6 +63,7 @@ interface LinkProcessor : AutoCloseable {
 
 }
 
+private val log = LoggerFactory.getLogger(DefaultLinkProcessor::class.java)
 
 open class DefaultLinkProcessor : LinkProcessor {
 
@@ -80,18 +82,20 @@ open class DefaultLinkProcessor : LinkProcessor {
         session.addEventListener { event, value ->
             if (Events.NetworkResponseReceived == event) {
                 val rr = value as ResponseReceived
-                if(rr.type == ResourceType.Document) {
+                if (rr.type == ResourceType.Document) {
                     statuses.add(rr.response.status)
                 }
             }
         }
+        log.info("Navigating headless browser to url={}", url)
         session.navigate(url)
         session.waitDocumentReady()
         session.wait(1000)
         session.activate()
-        if(statuses.size > 0 && statuses.first() == 200)
+        if (statuses.size > 0 && statuses.first() == 200)
             return session
         else {
+            log.error("Unable to navigate to url={} response statuses={}", url, statuses)
             session.close()
             throw IllegalArgumentException("Could not navigate to $url")
         }
@@ -106,7 +110,7 @@ open class DefaultLinkProcessor : LinkProcessor {
         init {
             launcher.processManager = AdaptiveProcessManager()
             Runtime.getRuntime().addShutdownHook(Thread {
-                if(sessionFactory.isInitialized())
+                if (sessionFactory.isInitialized())
                     sessionFactory.value.close()
                 launcher.processManager.kill()
             })
@@ -117,7 +121,8 @@ open class DefaultLinkProcessor : LinkProcessor {
 
     override fun matches(url: String): Boolean = true
 
-    override suspend fun generateThumbnail(): ImageResource = synchronized(session){
+    override suspend fun generateThumbnail(): ImageResource = synchronized(session) {
+        log.info("Capturing thumbnail for url={}", resolvedUrl)
         val screen = session.command.page.captureScreenshot()
         val img = ImageIO.read(ByteArrayInputStream(screen))
         val scaledImage = img.getScaledInstance(640, 360, Image.SCALE_SMOOTH)
@@ -129,11 +134,13 @@ open class DefaultLinkProcessor : LinkProcessor {
         return ImageResource(buffer.toByteArray(), JPG)
     }
 
-    override suspend fun generateScreenshot(): ImageResource = synchronized(session){
+    override suspend fun generateScreenshot(): ImageResource = synchronized(session) {
+        log.info("Capturing full page screenshot for url={}", resolvedUrl)
         return ImageResource(session.captureScreenshot(true), PNG)
     }
 
     override suspend fun printPage(): ImageResource? {
+        log.info("Capturing pdf for url={}", resolvedUrl)
         return ImageResource(session.command.page.printToPDF(true, false, true,
                 0.9, 11.7, 16.5,
                 0.1, 0.1, 0.1, 0.1,
@@ -144,6 +151,7 @@ open class DefaultLinkProcessor : LinkProcessor {
 
     override val content: String?
         get() {
+            log.info("Performing article extraction for url={}", resolvedUrl)
             val article = ArticleExtractor.with(resolvedUrl, html)
                     .extractMetadata()
                     .extractContent()

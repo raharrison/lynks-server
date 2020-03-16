@@ -8,16 +8,16 @@ class TagService : GroupService<Tag, NewTag>(GroupType.TAG) {
 
     override fun toInsert(eId: String, entity: NewTag): Groups.(InsertStatement<*>) -> Unit = {
         val time = System.currentTimeMillis()
-        it[Groups.id] = eId
-        it[Groups.name] = entity.name
-        it[Groups.type] = GroupType.TAG
-        it[Groups.dateCreated] = time
-        it[Groups.dateUpdated] = time
+        it[id] = eId
+        it[name] = entity.name
+        it[type] = GroupType.TAG
+        it[dateCreated] = time
+        it[dateUpdated] = time
     }
 
     override fun toUpdate(entity: NewTag): Groups.(UpdateBuilder<*>) -> Unit = {
-        it[Groups.name] = entity.name
-        it[Groups.dateUpdated] = System.currentTimeMillis()
+        it[name] = entity.name
+        it[dateUpdated] = System.currentTimeMillis()
     }
 
     override fun toModel(row: ResultRow): Tag {

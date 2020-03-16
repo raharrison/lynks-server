@@ -21,7 +21,7 @@ class PersistLinkProcessingRequest(val link: Link) : LinkProcessingRequest()
 class SuggestLinkProcessingRequest(val url: String, val response: CompletableDeferred<Suggestion>) : LinkProcessingRequest()
 
 class LinkProcessorFactory {
-    private val processors = listOf<() -> LinkProcessor>({ YoutubeLinkProcessor(WebResourceRetriever()) })
+    private val processors = listOf<() -> LinkProcessor> { YoutubeLinkProcessor(WebResourceRetriever()) }
 
     suspend fun createProcessors(url: String): List<LinkProcessor> {
         val procs = processors.asSequence().map { it() }.filter { it.matches(url) }.toList()

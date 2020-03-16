@@ -7,6 +7,7 @@ import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.update
+import org.slf4j.LoggerFactory
 import util.FileUtils
 import util.RandomUtils
 import util.RowMapper.toResource
@@ -16,6 +17,8 @@ import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
+
+private val log = LoggerFactory.getLogger(ResourceManager::class.java)
 
 class ResourceManager {
 
@@ -40,15 +43,18 @@ class ResourceManager {
     fun saveTempFile(src: String, data: ByteArray, type: ResourceType, extension: String): String {
         val path = constructTempPath(src, type, extension)
         FileUtils.writeToFile(path, data)
+        log.info("Temporary resource saved at {} src={} type={}", path.toString(), src, type)
         return Paths.get(Environment.server.resourceTempPath).relativize(path).toUrlString()
     }
 
     fun moveTempFiles(entryId: String, src: String): Boolean {
         val tempPath = constructTempPath(src)
         if (Files.exists(tempPath)) {
+            log.info("Moving temporary files for entry={} src={}", entryId, src)
             val target = Paths.get(Environment.server.resourceBasePath, entryId)
             Files.move(tempPath, target)
             Files.list(target).use { it ->
+                var count = 0
                 it.forEach {
                     val id = RandomUtils.generateUid()
                     val size = Files.size(it)
@@ -56,10 +62,13 @@ class ResourceManager {
                     Files.move(it, constructPath(entryId, id, extension))
                     val filename = FileUtils.removeExtension(it.fileName.toString())
                     saveGeneratedResource(id, entryId, "$id.$extension", extension, ResourceType.valueOf(filename.toUpperCase()), size)
+                    count += 1
                 }
+                log.info("{} temp files moved for entry={}", count, entryId)
             }
             return true
         }
+        log.debug("No temporary files to move for entry={}", entryId)
         return false
     }
 
@@ -89,6 +98,7 @@ class ResourceManager {
                 type = type,
                 size = file.size.toLong()).also {
             val path = constructPath(entryId, it.id, it.extension)
+            log.info("Saving generated resource to {} entry={}", path.toString(), entryId)
             FileUtils.writeToFile(path, file)
         }
     }
@@ -99,6 +109,7 @@ class ResourceManager {
         val extension = FileUtils.getExtension(name)
         val target = constructPath(entryId, id, extension)
         val size = Files.size(path)
+        log.info("Moving {} resource from={} to={} entry={}", type.name.toLowerCase(), path.toString(), target.toString(), entryId)
         Files.move(path, target)
         return saveGeneratedResource(id, entryId, name, extension, type, size)
     }
@@ -107,6 +118,7 @@ class ResourceManager {
         val id = RandomUtils.generateUid()
         val ext = FileUtils.getExtension(name)
         val path = constructPath(entryId, id, ext)
+        log.info("Saving uploaded resource to {} entry={}", path.toString(), entryId)
         val file = path.toFile().apply {
             parentFile.mkdirs()
             createNewFile()
@@ -141,6 +153,7 @@ class ResourceManager {
                 val updatedResource = getResource(id)!!
                 val oldPath = constructPath(updatedResource.entryId, id, originalResource.extension)
                 val newPath = constructPath(updatedResource.entryId, id, updatedResource.extension)
+                log.info("Moving resources after entry update from={} to={} entry={}", oldPath.toString(), newPath.toString(), updatedResource.entryId)
                 Files.move(oldPath, newPath)
                 updatedResource
             }
@@ -152,6 +165,7 @@ class ResourceManager {
         res?.let {
             Resources.deleteWhere { Resources.id eq id }
             val path = constructPath(res.entryId, res.id, res.extension).toFile()
+            log.info("Deleting entry resource at {} entry={}", path, res.entryId)
             if (path.exists())
                 return@transaction path.delete()
             return@transaction true
@@ -162,6 +176,7 @@ class ResourceManager {
     fun deleteAll(entryId: String): Boolean = transaction {
         Resources.deleteWhere { Resources.entryId eq entryId }
         val path = constructPath(entryId, "", "")
+        log.info("Recursively deleting all entry resources at {} entry={}", path.toString(), entryId)
         path.toFile().let {
             if (it.exists()) it.deleteRecursively() else true
         }

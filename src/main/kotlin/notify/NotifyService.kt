@@ -5,6 +5,7 @@ import common.Environment
 import io.ktor.http.cio.websocket.Frame
 import kotlinx.coroutines.channels.SendChannel
 import org.apache.commons.mail.HtmlEmail
+import org.slf4j.LoggerFactory
 import user.UserService
 import util.JsonMapper.defaultMapper
 import util.loggerFor
@@ -13,13 +14,17 @@ private val logger = loggerFor<NotifyService>()
 
 class NotifyService(private val userService: UserService) {
 
+    private val log = LoggerFactory.getLogger(NotifyService::class.java)
+
     private val notifiers = Sets.newConcurrentHashSet<SendChannel<Frame>>()
 
     suspend fun accept(notify: Notification, body: Any?) {
         logger.info("Accepting ${notify.type} notification: ${notify.message}")
         notifiers.forEach {
-            if(it.isClosedForSend) notifiers.remove(it)
-            else {
+            if (it.isClosedForSend) {
+                log.warn("Notifier is closed for sending, removing from pool")
+                notifiers.remove(it)
+            } else {
                 val payload = defaultMapper.writeValueAsString(buildNotification(notify, body))
                 it.send(Frame.Text(payload))
             }
@@ -44,9 +49,10 @@ class NotifyService(private val userService: UserService) {
     }
 
     fun sendEmail(subject: String, body: String) {
-        if(!Environment.mail.enabled) return
+        if (!Environment.mail.enabled) return
         val address = userService.currentUserPreferences.email
         address?.let {
+            log.info("Sending notification email subject={}", subject)
             val email = HtmlEmail()
             email.hostName = Environment.mail.server
             email.setSmtpPort(Environment.mail.port)

@@ -8,18 +8,18 @@ class CollectionService : GroupService<Collection, NewCollection>(GroupType.COLL
 
     override fun toInsert(eId: String, entity: NewCollection): Groups.(InsertStatement<*>) -> Unit = {
         val time = System.currentTimeMillis()
-        it[Groups.id] = eId
-        it[Groups.name] = entity.name
-        it[Groups.type] = GroupType.COLLECTION
-        it[Groups.parentId] = entity.parentId
-        it[Groups.dateCreated] = time
-        it[Groups.dateUpdated] = time
+        it[id] = eId
+        it[name] = entity.name
+        it[type] = GroupType.COLLECTION
+        it[parentId] = entity.parentId
+        it[dateCreated] = time
+        it[dateUpdated] = time
     }
 
     override fun toUpdate(entity: NewCollection): Groups.(UpdateBuilder<*>) -> Unit = {
-        it[Groups.name] = entity.name
-        it[Groups.parentId] = entity.parentId
-        it[Groups.dateUpdated] = System.currentTimeMillis()
+        it[name] = entity.name
+        it[parentId] = entity.parentId
+        it[dateUpdated] = System.currentTimeMillis()
     }
 
     override fun toModel(row: ResultRow): Collection {

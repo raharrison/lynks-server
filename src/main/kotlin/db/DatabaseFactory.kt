@@ -21,7 +21,7 @@ import user.UserPreferences
 import util.loggerFor
 import worker.WorkerSchedules
 
-val logger = loggerFor<DatabaseFactory>()
+val log = loggerFor<DatabaseFactory>()
 
 class DatabaseFactory {
 
@@ -33,10 +33,11 @@ class DatabaseFactory {
             Groups, EntryGroups, WorkerSchedules)
 
     fun connect() {
-        logger.info("Initialising database")
+        log.info("Initialising database")
 
         if(Environment.mode == ConfigMode.TEST) {
             // no connection pooling
+            log.info("In test mode, not using connection pooling")
             Database.connect(Environment.server.database, driver = Environment.server.driver)
         } else {
             Database.connect(hikari())

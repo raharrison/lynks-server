@@ -2,12 +2,15 @@ package link
 
 import common.BaseProperties
 import kotlinx.coroutines.runBlocking
+import org.slf4j.LoggerFactory
 import resource.JPG
 import resource.ResourceRetriever
 import task.YoutubeDlTask
 import util.JsonMapper
 import util.URLUtils
 import java.net.URLEncoder
+
+private val log = LoggerFactory.getLogger(YoutubeLinkProcessor::class.java)
 
 class YoutubeLinkProcessor(private val retriever: ResourceRetriever) : LinkProcessor {
 
@@ -46,17 +49,20 @@ class YoutubeLinkProcessor(private val retriever: ResourceRetriever) : LinkProce
     private fun embedUrl(): String = "https://www.youtube.com/embed/$videoId"
 
     private suspend fun downloadVideoInfo(): String? {
+        log.info("Retrieving video info for Youtube video id={}", videoId)
         val eurl = URLEncoder.encode("https://youtube.googleapis.com/v/$videoId", "UTF-8")
         val url = "https://youtube.com/get_video_info?video_id=$videoId&el=embedded&eurl=$eurl&hl=en"
         return retriever.getString(url)
     }
 
     override suspend fun generateThumbnail(): ImageResource? {
+        log.info("Capturing thumbnail for Youtube video videoId={}", videoId)
         val dl = "https://img.youtube.com/vi/$videoId/mqdefault.jpg"
         return retriever.getFile(dl)?.let { ImageResource(it, JPG) }
     }
 
     override suspend fun generateScreenshot(): ImageResource? {
+        log.info("Capturing screenshot for Youtube video videoId={}", videoId)
         val dl = "https://img.youtube.com/vi/$videoId/maxresdefault.jpg"
         return retriever.getFile(dl)?.let { ImageResource(it, JPG) }
     }

@@ -4,9 +4,12 @@ import common.DefaultPageRequest
 import common.PageRequest
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.slf4j.LoggerFactory
 import util.MarkdownUtils
 import util.RandomUtils
 import util.RowMapper.toComment
+
+private val log = LoggerFactory.getLogger(CommentService::class.java)
 
 class CommentService {
 
@@ -42,6 +45,7 @@ class CommentService {
     fun updateComment(entryId: String, comment: NewComment): Comment? {
         val id = comment.id
         return if (id == null) {
+            log.info("Updating comment but no id, reverting to add entry={}", entryId)
             addComment(entryId, comment)
         } else {
             transaction {
@@ -49,7 +53,11 @@ class CommentService {
                     it[plainText] = comment.plainText
                     it[markdownText] = MarkdownUtils.convertToMarkdown(comment.plainText)
                 }
-                if(updated > 0) getComment(entryId, id)!! else null
+                if (updated > 0) getComment(entryId, id)!!
+                else {
+                    log.info("No rows modified when updating comment id={} entry={}", id, entryId)
+                    null
+                }
             }
         }
     }

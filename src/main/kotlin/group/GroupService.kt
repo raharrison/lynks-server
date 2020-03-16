@@ -5,11 +5,15 @@ import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.statements.InsertStatement
 import org.jetbrains.exposed.sql.statements.UpdateBuilder
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.slf4j.LoggerFactory
 import util.RandomUtils
 
 abstract class GroupService<T : Grouping<T>, in U : IdBasedNewEntity>(private val groupType: GroupType) {
 
+    private val log = LoggerFactory.getLogger(this::class.java)
+
     private val collection by lazy {
+        log.info("Building group tree for {}s", groupType.name.toLowerCase())
         GroupCollection<T>().apply { build(queryAllGroups()) }
     }
 
@@ -27,7 +31,10 @@ abstract class GroupService<T : Grouping<T>, in U : IdBasedNewEntity>(private va
                 .map { toModel(it) }
     }
 
-    fun rebuild() = collection.build(queryAllGroups())
+    fun rebuild() {
+        log.info("Rebuilding group tree for {}s", groupType.name.toLowerCase())
+        collection.build(queryAllGroups())
+    }
 
     fun getAll(): List<T> = collection.rootGroups().map { it.copy() }
 
@@ -53,7 +60,10 @@ abstract class GroupService<T : Grouping<T>, in U : IdBasedNewEntity>(private va
                 val updated = Groups.update({ Groups.id eq id }, body = toUpdate(group))
                 if(updated > 0) {
                     collection.update(queryGroup(id)!!, extractParentId(group))
-                } else null
+                } else {
+                    log.info("No rows modified when updating group id={}", id)
+                    null
+                }
             }
         }
     }
