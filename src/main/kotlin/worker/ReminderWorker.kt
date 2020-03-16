@@ -16,7 +16,7 @@ import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
 import com.github.shyiko.skedule.Schedule as Skedule
 
-private val logger = loggerFor<ReminderWorker>()
+private val log = loggerFor<ReminderWorker>()
 
 class ReminderWorkerRequest(val reminder: Reminder, crudType: CrudType): VariableWorkerRequest(crudType) {
     override fun hashCode(): Int = reminder.reminderId.hashCode()
@@ -44,10 +44,10 @@ class ReminderWorker(private val reminderService: ReminderService, private val e
     }
 
     private suspend fun launchReminder(reminder: AdhocReminder) {
-        logger.info("Reminder = $reminder")
+        log.info("Reminder = $reminder")
         val fireDate = ZonedDateTime.ofInstant(Instant.ofEpochMilli(reminder.interval), ZoneId.of(reminder.tz))
         val sleep = calcDelay(fireDate)
-        logger.info("Sleeping for ${sleep}ms")
+        log.info("Sleeping for ${sleep}ms")
         delay(sleep)
         if (reminderService.isActive(reminder.reminderId))
             reminderElapsed(reminder)
@@ -60,7 +60,7 @@ class ReminderWorker(private val reminderService: ReminderService, private val e
         while (true) {
             val next = schedule.next(ZonedDateTime.now(tz))
             val sleep = calcDelay(next)
-            logger.info("Sleeping for ${sleep}ms")
+            log.info("Sleeping for ${sleep}ms")
             delay(sleep)
             if (reminderService.isActive(reminder.reminderId)) reminderElapsed(reminder)
             else break

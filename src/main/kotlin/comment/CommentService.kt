@@ -4,12 +4,12 @@ import common.DefaultPageRequest
 import common.PageRequest
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.slf4j.LoggerFactory
 import util.MarkdownUtils
 import util.RandomUtils
 import util.RowMapper.toComment
+import util.loggerFor
 
-private val log = LoggerFactory.getLogger(CommentService::class.java)
+private val log = loggerFor<CommentService>()
 
 class CommentService {
 

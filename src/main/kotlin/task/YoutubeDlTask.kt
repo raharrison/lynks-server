@@ -1,16 +1,16 @@
 package task
 
 import common.inject.Inject
-import org.slf4j.LoggerFactory
 import resource.ResourceManager
 import resource.ResourceType
 import util.ExecUtils
 import util.Result
+import util.loggerFor
 import java.io.File
 
 class YoutubeDlTask(id: String, entryId: String) : Task<YoutubeDlTask.YoutubeDlTaskContext>(id, entryId) {
 
-    private val logger = LoggerFactory.getLogger(YoutubeDlTask::class.java)
+    private val log = loggerFor<YoutubeDlTask>()
 
     @Inject
     lateinit var resourceManager: ResourceManager
@@ -44,7 +44,7 @@ class YoutubeDlTask(id: String, entryId: String) : Task<YoutubeDlTask.YoutubeDlT
                 }
             }
             is Result.Failure -> {
-                logger.error(
+                log.error(
                     "Error running YoutubeDl task: {} return code: {} error: {}",
                     context.toString(),
                     result.reason.code,

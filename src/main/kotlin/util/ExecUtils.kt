@@ -1,8 +1,6 @@
 package util
 
 import org.apache.commons.lang3.SystemUtils
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 import java.io.InputStream
 import java.util.*
 
@@ -10,7 +8,7 @@ class ExecException(val code: Int, message: String) : RuntimeException(message)
 
 object ExecUtils {
 
-    private val LOGGER: Logger = LoggerFactory.getLogger(ExecUtils::class.java)
+    private val log = loggerFor<ExecUtils>()
 
     private val NOOP_CONSUMER: (line: String) -> Unit = {}
 
@@ -32,7 +30,7 @@ object ExecUtils {
 
         val pb = ProcessBuilder(commands)
         pb.environment().putAll(env)
-        LOGGER.info("Running: ${pb.command()} \n with env $env")
+        log.info("Running: ${pb.command()} \n with env $env")
 
         val process = pb.start()
         val result = collectOutput(process.inputStream, listener)
@@ -42,7 +40,7 @@ object ExecUtils {
         val res = process.waitFor()
         process.destroy()
         if (res != 0) {
-            LOGGER.info("Failed to execute command {}.\nstderr: {}\nstdout: {}", pb.command(), errors, result)
+            log.info("Failed to execute command {}.\nstderr: {}\nstdout: {}", pb.command(), errors, result)
             return Result.Failure(ExecException(res, errors))
         }
         return Result.Success(result)

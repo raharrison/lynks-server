@@ -11,7 +11,7 @@ import java.net.URLEncoder
 import java.time.Duration
 import java.time.Instant
 
-private val logger = loggerFor<DiscussionFinderWorker>()
+private val log = loggerFor<DiscussionFinderWorker>()
 
 data class DiscussionFinderWorkerRequest(val linkId: String, val intervalIndex: Int = -1): PersistVariableWorkerRequest() {
     override val key = linkId
@@ -28,7 +28,7 @@ class DiscussionFinderWorker(private val linkService: LinkService,
     }
 
     override suspend fun doWork(input: DiscussionFinderWorkerRequest) {
-        logger.info("Launching discussion finder for entry ${input.linkId}")
+        log.info("Launching discussion finder for entry ${input.linkId}")
         findDiscussions(input.linkId, input.intervalIndex)
     }
 
@@ -40,12 +40,12 @@ class DiscussionFinderWorker(private val linkService: LinkService,
         var intervalIndex = initialIntervalIndex
         while (true) {
             val link = linkService.get(linkId) ?: break
-            logger.info("Finding discussions for entry ${link.id}")
+            log.info("Finding discussions for entry ${link.id}")
             val discussions = mutableListOf<Discussion>().apply {
                 addAll(hackerNewsDiscussions(link.url))
                 addAll(redditDiscussions(link.url))
             }
-            logger.info("Found ${discussions.size} discussions for entry ${link.id}")
+            log.info("Found ${discussions.size} discussions for entry ${link.id}")
 
             val current = if (link.props.containsAttribute("discussions"))
                 link.props.getAttribute("discussions") as List<*>
@@ -62,10 +62,10 @@ class DiscussionFinderWorker(private val linkService: LinkService,
             if (intervalIndex >= intervals.size) {
                 // would break but more discussions found
                 if (current.size != discussions.size && discussions.isNotEmpty()) {
-                    logger.info("Discussion finder for entry ${link.id} remaining active")
+                    log.info("Discussion finder for entry ${link.id} remaining active")
                     intervalIndex--
                 } else {
-                    logger.info("Discussion finder for entry ${link.id} ending")
+                    log.info("Discussion finder for entry ${link.id} ending")
                     break
                 }
             }
@@ -73,7 +73,7 @@ class DiscussionFinderWorker(private val linkService: LinkService,
             // update schedule
             updateSchedule(DiscussionFinderWorkerRequest(linkId, intervalIndex))
             val interval = intervals[intervalIndex]
-            logger.info("Discussion finder for entry ${link.id} sleeping for $interval minutes")
+            log.info("Discussion finder for entry ${link.id} sleeping for $interval minutes")
 
             delay(Duration.ofMinutes(interval))
         }

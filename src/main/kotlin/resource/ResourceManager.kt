@@ -7,10 +7,10 @@ import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.update
-import org.slf4j.LoggerFactory
 import util.FileUtils
 import util.RandomUtils
 import util.RowMapper.toResource
+import util.loggerFor
 import util.toUrlString
 import java.io.File
 import java.io.InputStream
@@ -18,7 +18,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 
-private val log = LoggerFactory.getLogger(ResourceManager::class.java)
+private val log = loggerFor<ResourceManager>()
 
 class ResourceManager {
 

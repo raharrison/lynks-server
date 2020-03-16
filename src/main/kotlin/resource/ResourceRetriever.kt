@@ -1,7 +1,7 @@
 package resource
 
 import kotlinx.coroutines.future.await
-import org.slf4j.LoggerFactory
+import util.loggerFor
 import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
@@ -53,7 +53,7 @@ class WebResourceRetriever : ResourceRetriever {
 
     companion object {
         private val client = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build()
-        private val log = LoggerFactory.getLogger(WebResourceRetriever::class.java)
+        private val log = loggerFor<WebResourceRetriever>()
     }
 
 }

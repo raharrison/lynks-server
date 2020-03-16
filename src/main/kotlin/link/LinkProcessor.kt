@@ -8,12 +8,12 @@ import io.webfolder.cdp.event.Events
 import io.webfolder.cdp.event.network.ResponseReceived
 import io.webfolder.cdp.session.Session
 import io.webfolder.cdp.type.network.ResourceType
-import org.slf4j.LoggerFactory
 import resource.JPG
 import resource.PDF
 import resource.PNG
 import task.DiscussionFinderTask
 import task.LinkProcessingTask
+import util.loggerFor
 import java.awt.Color
 import java.awt.Image
 import java.awt.image.BufferedImage
@@ -63,7 +63,7 @@ interface LinkProcessor : AutoCloseable {
 
 }
 
-private val log = LoggerFactory.getLogger(DefaultLinkProcessor::class.java)
+private val log = loggerFor<DefaultLinkProcessor>()
 
 open class DefaultLinkProcessor : LinkProcessor {
 

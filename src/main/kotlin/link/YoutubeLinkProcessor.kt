@@ -2,15 +2,15 @@ package link
 
 import common.BaseProperties
 import kotlinx.coroutines.runBlocking
-import org.slf4j.LoggerFactory
 import resource.JPG
 import resource.ResourceRetriever
 import task.YoutubeDlTask
 import util.JsonMapper
 import util.URLUtils
+import util.loggerFor
 import java.net.URLEncoder
 
-private val log = LoggerFactory.getLogger(YoutubeLinkProcessor::class.java)
+private val log = loggerFor<YoutubeLinkProcessor>()
 
 class YoutubeLinkProcessor(private val retriever: ResourceRetriever) : LinkProcessor {
 

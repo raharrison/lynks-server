@@ -8,7 +8,7 @@ enum class ConfigMode {
     DEV, TEST, PROD
 }
 
-private val logger = loggerFor<Environment>()
+private val log = loggerFor<Environment>()
 
 object Environment {
 
@@ -43,7 +43,7 @@ object Environment {
     val mode: ConfigMode = ConfigMode.valueOf(System.getProperty("CONFIG_MODE")?.toUpperCase() ?: "DEV")
 
     init {
-        logger.info("Using config mode: $mode")
+        log.info("Using config mode: $mode")
     }
 
     private val config = Config {

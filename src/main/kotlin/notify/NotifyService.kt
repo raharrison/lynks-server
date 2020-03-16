@@ -5,21 +5,20 @@ import common.Environment
 import io.ktor.http.cio.websocket.Frame
 import kotlinx.coroutines.channels.SendChannel
 import org.apache.commons.mail.HtmlEmail
-import org.slf4j.LoggerFactory
 import user.UserService
 import util.JsonMapper.defaultMapper
 import util.loggerFor
 
-private val logger = loggerFor<NotifyService>()
+private val log = loggerFor<NotifyService>()
 
 class NotifyService(private val userService: UserService) {
 
-    private val log = LoggerFactory.getLogger(NotifyService::class.java)
+    private val log = loggerFor<NotifyService>()
 
     private val notifiers = Sets.newConcurrentHashSet<SendChannel<Frame>>()
 
     suspend fun accept(notify: Notification, body: Any?) {
-        logger.info("Accepting ${notify.type} notification: ${notify.message}")
+        log.info("Accepting ${notify.type} notification: ${notify.message}")
         notifiers.forEach {
             if (it.isClosedForSend) {
                 log.warn("Notifier is closed for sending, removing from pool")
