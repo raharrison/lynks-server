@@ -1,5 +1,6 @@
 package util
 
+import common.Environment
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
@@ -18,7 +19,8 @@ class MarkdownUtilsTest {
     @Test
     fun testEntryLinks() {
         val id = RandomUtils.generateUid()
-        assertConvertEqual("link is @$id", "<p>link is <a href=\"/api/entry/$id\"><strong>@$id</strong></a></p>\n")
+        val prefix = Environment.server.rootPath
+        assertConvertEqual("link is @$id", "<p>link is <a href=\"$prefix/entry/$id\"><strong>@$id</strong></a></p>\n")
     }
 
     private fun assertConvertEqual(input: String, output: String) {

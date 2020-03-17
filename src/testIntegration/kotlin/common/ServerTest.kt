@@ -37,12 +37,12 @@ open class ServerTest {
         @JvmStatic
         fun startServer() {
             if(!serverStarted) {
-                server = embeddedServer(Netty, Environment.server.port, watchPaths = listOf("Main"), module = Application::module)
+                server = embeddedServer(Netty, Environment.server.port, module = Application::module)
                 server.start()
                 serverStarted = true
 
                 RestAssured.baseURI = "http://localhost"
-                RestAssured.basePath = "/api"
+                RestAssured.basePath = Environment.server.rootPath
                 RestAssured.port = Environment.server.port
                 RestAssured.config = RestAssuredConfig.config().objectMapperConfig(objectMapperConfig()
                         .jackson2ObjectMapperFactory { _, _ -> JsonMapper.defaultMapper })

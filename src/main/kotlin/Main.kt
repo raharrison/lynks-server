@@ -84,7 +84,8 @@ fun Application.module() {
 
     install(Routing) {
         with(serviceProvider) {
-            route("/api") {
+            val prefix = Environment.server.rootPath
+            route(prefix) {
                 comment(get())
                 link(get())
                 note(get())

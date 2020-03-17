@@ -18,6 +18,7 @@ object Environment {
         val port by optional(8080)
         val resourceBasePath by required<String>()
         val resourceTempPath by required<String>()
+        val rootPath by optional("/api")
     }
 
     data class Server(
@@ -25,7 +26,8 @@ object Environment {
         val driver: String = config[ServerSpec.driver],
         val port: Int = config[ServerSpec.port],
         val resourceBasePath: String = config[ServerSpec.resourceBasePath],
-        val resourceTempPath: String = config[ServerSpec.resourceTempPath]
+        val resourceTempPath: String = config[ServerSpec.resourceTempPath],
+        val rootPath: String = config[ServerSpec.rootPath]
     )
 
     private object MailSpec : ConfigSpec("mail") {
