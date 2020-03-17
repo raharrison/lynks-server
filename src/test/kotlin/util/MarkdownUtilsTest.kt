@@ -15,6 +15,12 @@ class MarkdownUtilsTest {
         assertConvertEqual("http://google.com", "<p><a href=\"http://google.com\">http://google.com</a></p>\n")
     }
 
+    @Test
+    fun testEntryLinks() {
+        val id = RandomUtils.generateUid()
+        assertConvertEqual("link is @$id", "<p>link is <a href=\"/api/entry/$id\"><strong>@$id</strong></a></p>\n")
+    }
+
     private fun assertConvertEqual(input: String, output: String) {
         val out = MarkdownUtils.convertToMarkdown(input)
         assertThat(output).isEqualTo(out)
