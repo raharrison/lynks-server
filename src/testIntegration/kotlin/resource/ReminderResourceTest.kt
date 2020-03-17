@@ -4,6 +4,7 @@ import common.EntryType
 import common.ServerTest
 import io.restassured.RestAssured.*
 import io.restassured.http.ContentType
+import notify.NotificationMethod
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -12,12 +13,12 @@ import util.createDummyEntry
 import util.createDummyReminder
 import java.time.ZoneId
 
-class ReminderResourceTest: ServerTest() {
+class ReminderResourceTest : ServerTest() {
 
     @BeforeEach
     fun createEntries() {
         createDummyEntry("e1", "title1", "content1", EntryType.LINK)
-        createDummyReminder("r1", "e1", ReminderType.ADHOC, "message", (System.currentTimeMillis() + 1.2e+6).toLong().toString())
+        createDummyReminder("r1", "e1", ReminderType.ADHOC, NotificationMethod.PUSH, "message", (System.currentTimeMillis() + 1.2e+6).toLong().toString())
     }
 
     @Test
@@ -30,6 +31,7 @@ class ReminderResourceTest: ServerTest() {
         assertThat(reminders).extracting("reminderId").containsOnly("r1")
         assertThat(reminders).extracting("entryId").containsOnly("e1")
         assertThat(reminders).extracting("type").containsOnly(ReminderType.ADHOC.toString())
+        assertThat(reminders).extracting("notifyMethod").containsOnly(NotificationMethod.PUSH)
         assertThat(reminders).extracting("message").containsOnly("message")
     }
 
@@ -42,6 +44,7 @@ class ReminderResourceTest: ServerTest() {
         assertThat(reminder.reminderId).isEqualTo("r1")
         assertThat(reminder.entryId).isEqualTo("e1")
         assertThat(reminder.type).isEqualTo(ReminderType.ADHOC)
+        assertThat(reminder.notifyMethod).isEqualTo(NotificationMethod.PUSH)
         assertThat(reminder.message).isEqualTo("message")
     }
 
@@ -54,7 +57,8 @@ class ReminderResourceTest: ServerTest() {
 
     @Test
     fun testCreateReminder() {
-        val reminder = NewReminder(null, "e1", ReminderType.RECURRING, "message", "every 30 minutes", ZoneId.systemDefault().id)
+        val reminder = NewReminder(null, "e1", ReminderType.RECURRING, NotificationMethod.EMAIL,
+                "message", "every 30 minutes", ZoneId.systemDefault().id)
         val created = given()
                 .contentType(ContentType.JSON)
                 .body(reminder)
@@ -67,6 +71,7 @@ class ReminderResourceTest: ServerTest() {
         assertThat(created.reminderId).isNotNull()
         assertThat(created.entryId).isEqualTo(reminder.entryId)
         assertThat(created.type).isEqualTo(reminder.type)
+        assertThat(created.notifyMethod).isEqualTo(NotificationMethod.EMAIL)
         assertThat(created.message).isEqualTo("message")
         assertThat(created.spec).isEqualTo(reminder.spec)
         assertThat(created.tz).isEqualTo(reminder.tz)
@@ -86,7 +91,7 @@ class ReminderResourceTest: ServerTest() {
 
     @Test
     fun testUpdateReminder() {
-        val reminder = NewReminder("r1", "e1", ReminderType.RECURRING, "updated", "every 30 minutes", "Asia/Singapore")
+        val reminder = NewReminder("r1", "e1", ReminderType.RECURRING, NotificationMethod.EMAIL, "updated", "every 30 minutes", "Asia/Singapore")
         val updated = given()
                 .contentType(ContentType.JSON)
                 .body(reminder)
@@ -98,6 +103,7 @@ class ReminderResourceTest: ServerTest() {
         assertThat(updated.reminderId).isEqualTo(reminder.reminderId)
         assertThat(updated.entryId).isEqualTo(reminder.entryId)
         assertThat(updated.type).isEqualTo(reminder.type)
+        assertThat(updated.notifyMethod).isEqualTo(NotificationMethod.EMAIL)
         assertThat(updated.message).isEqualTo("updated")
         assertThat(updated.spec).isEqualTo(reminder.spec)
         assertThat(updated.tz).isEqualTo(reminder.tz)
@@ -111,14 +117,15 @@ class ReminderResourceTest: ServerTest() {
 
     @Test
     fun testUpdateReminderReturnsNotFound() {
-        val reminder = NewReminder("invalid", "e1", ReminderType.RECURRING, "", "every 30 minutes", ZoneId.systemDefault().id)
+        val reminder = NewReminder("invalid", "e1", ReminderType.RECURRING, NotificationMethod.EMAIL,
+                "", "every 30 minutes", ZoneId.systemDefault().id)
         given()
-            .contentType(ContentType.JSON)
-            .body(reminder)
-            .When()
-            .put("/reminder")
-            .then()
-            .statusCode(404)
+                .contentType(ContentType.JSON)
+                .body(reminder)
+                .When()
+                .put("/reminder")
+                .then()
+                .statusCode(404)
     }
 
     @Test

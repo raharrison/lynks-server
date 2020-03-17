@@ -6,6 +6,7 @@ import common.Entries
 import common.EntryType
 import group.GroupType
 import group.Groups
+import notify.NotificationMethod
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.transactions.transaction
 import reminder.ReminderType
@@ -59,11 +60,13 @@ fun createDummyComment(id: String, entryId: String, content: String) = transacti
     }
 }
 
-fun createDummyReminder(id: String, entryId: String, type: ReminderType, message: String? = null, spec: String, tz: String = ZoneId.systemDefault().id) = transaction {
+fun createDummyReminder(id: String, entryId: String, type: ReminderType, notifyMethod: NotificationMethod,
+                        message: String? = null, spec: String, tz: String = ZoneId.systemDefault().id) = transaction {
     Reminders.insert {
         it[Reminders.reminderId] = id
         it[Reminders.entryId] = entryId
         it[Reminders.type] = type
+        it[Reminders.notifyMethod] = notifyMethod
         it[Reminders.message] = message
         it[Reminders.spec] = spec
         it[Reminders.tz] = tz

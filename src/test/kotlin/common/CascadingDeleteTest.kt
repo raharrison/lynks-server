@@ -5,6 +5,7 @@ import entry.LinkService
 import group.CollectionService
 import group.TagService
 import io.mockk.mockk
+import notify.NotificationMethod
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -30,7 +31,7 @@ class CascadingDeleteTest: DatabaseTest() {
         createDummyCollection("c2", "col2", "c1")
         createDummyEntry("id1", "link1", "link content", EntryType.LINK)
         createDummyComment("c1", "id1", "comment content")
-        createDummyReminder("rem1", "id1", ReminderType.ADHOC, "message", System.currentTimeMillis().toString())
+        createDummyReminder("rem1", "id1", ReminderType.ADHOC, NotificationMethod.EMAIL,"message", System.currentTimeMillis().toString())
 
         resourceManager.saveGeneratedResource("r1", "id1", "resource name", "jpg", ResourceType.SCREENSHOT, 11)
 

@@ -3,6 +3,7 @@ package worker
 import entry.EntryService
 import kotlinx.coroutines.delay
 import notify.Notification
+import notify.NotificationMethod
 import notify.NotifyService
 import reminder.AdhocReminder
 import reminder.RecurringReminder
@@ -13,6 +14,7 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
+import kotlin.math.max
 import com.github.shyiko.skedule.Schedule as Skedule
 
 class ReminderWorkerRequest(val reminder: Reminder, crudType: CrudType) : VariableWorkerRequest(crudType) {
@@ -66,28 +68,33 @@ class ReminderWorker(private val reminderService: ReminderService, private val e
     }
 
     private suspend fun reminderElapsed(reminder: Reminder) {
-        log.info("Reminder elapsed, sending notification entry={} reminder={}", reminder.entryId, reminder.reminderId)
-        // send notification
-        if (reminder.message == null) {
-            sendNotification(Notification.reminder(), reminder)
-        } else {
-            sendNotification(Notification.reminder(reminder.message!!), reminder)
+        log.info("Reminder elapsed entry={} reminder={}", reminder.entryId, reminder.reminderId)
+
+        if (reminder.notifyMethod == NotificationMethod.PUSH || reminder.notifyMethod == NotificationMethod.BOTH) {
+            // send notification
+            if (reminder.message == null) {
+                sendNotification(Notification.reminder(), reminder)
+            } else {
+                sendNotification(Notification.reminder(reminder.message!!), reminder)
+            }
         }
 
-        // send email
-        val entry = entryService.get(reminder.entryId)
-        val content = mapOf("title" to entry?.title,
-                "spec" to reminder.spec,
-                "message" to reminder.message)
+        if (reminder.notifyMethod == NotificationMethod.EMAIL || reminder.notifyMethod == NotificationMethod.BOTH) {
+            // send email
+            val entry = entryService.get(reminder.entryId)
+            val content = mapOf("title" to entry?.title,
+                    "spec" to reminder.spec,
+                    "message" to reminder.message)
 
-        val template = ResourceTemplater("reminder.html")
-        val email = template.apply(content)
+            val template = ResourceTemplater("reminder.html")
+            val email = template.apply(content)
 
-        notifyService.sendEmail("Lynks - Reminder Elapsed", email)
+            notifyService.sendEmail("Lynks - Reminder Elapsed", email)
+        }
     }
 
     private fun calcDelay(date: ZonedDateTime): Long {
-        return Math.max(0, ZonedDateTime.now().until(date, ChronoUnit.MILLIS))
+        return max(0, ZonedDateTime.now().until(date, ChronoUnit.MILLIS))
     }
 
 }

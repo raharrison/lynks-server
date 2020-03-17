@@ -16,11 +16,11 @@ class ReminderService(private val workerRegistry: WorkerRegistry) {
     private fun toModel(row: ResultRow): Reminder {
         return when (row[Reminders.type]) {
             ReminderType.ADHOC -> AdhocReminder(
-                    row[Reminders.reminderId], row[Reminders.entryId],
+                    row[Reminders.reminderId], row[Reminders.entryId], row[Reminders.notifyMethod],
                     row[Reminders.message], row[Reminders.spec].toLong(), row[Reminders.tz]
             )
             ReminderType.RECURRING -> RecurringReminder(
-                    row[Reminders.reminderId], row[Reminders.entryId],
+                    row[Reminders.reminderId], row[Reminders.entryId], row[Reminders.notifyMethod],
                     row[Reminders.message], row[Reminders.spec], row[Reminders.tz]
             )
         }
@@ -51,6 +51,7 @@ class ReminderService(private val workerRegistry: WorkerRegistry) {
             it[reminderId] = job.reminderId
             it[entryId] = job.entryId
             it[type] = job.type
+            it[notifyMethod] = job.notifyMethod
             it[message] = job.message
             it[spec] = job.spec
             it[tz] = checkValidTimeZone(job.tz)
@@ -67,6 +68,7 @@ class ReminderService(private val workerRegistry: WorkerRegistry) {
             it[reminderId] = id
             it[entryId] = reminder.entryId
             it[type] = reminder.type
+            it[notifyMethod] = reminder.notifyMethod
             it[message] = reminder.message
             it[spec] = reminder.spec
             it[tz] = checkValidTimeZone(reminder.tz)
@@ -84,6 +86,7 @@ class ReminderService(private val workerRegistry: WorkerRegistry) {
         } else {
             val updatedCount = Reminders.update({ Reminders.reminderId eq reminder.reminderId }) {
                 it[type] = reminder.type
+                it[notifyMethod] = reminder.notifyMethod
                 it[message] = reminder.message
                 it[spec] = reminder.spec
                 it[tz] = checkValidTimeZone(reminder.tz)
