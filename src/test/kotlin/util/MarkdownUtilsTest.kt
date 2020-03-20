@@ -12,7 +12,7 @@ class MarkdownUtilsTest {
     }
 
     @Test
-    fun testUrlConvert() {
+    fun testAutoLinking() {
         assertConvertEqual("http://google.com", "<p><a href=\"http://google.com\">http://google.com</a></p>\n")
     }
 
@@ -21,6 +21,28 @@ class MarkdownUtilsTest {
         val id = RandomUtils.generateUid()
         val prefix = Environment.server.rootPath
         assertConvertEqual("link is @$id", "<p>link is <a href=\"$prefix/entry/$id\"><strong>@$id</strong></a></p>\n")
+    }
+
+    @Test
+    fun testStrikethroughSubscript() {
+        assertConvertEqual("~~striked~~", "<p><del>striked</del></p>\n")
+        assertConvertEqual("~subscript~", "<p><sub>subscript</sub></p>\n")
+    }
+
+    @Test
+    fun testTaskLists() {
+        assertConvertEqual("- [x] finished", """
+            <ul>
+            <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" checked="checked" disabled="disabled" readonly="readonly" />&nbsp;finished</li>
+            </ul>
+            
+        """.trimIndent())
+        assertConvertEqual("- [ ] unfinished", """
+            <ul>
+            <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" readonly="readonly" />&nbsp;unfinished</li>
+            </ul>
+        
+        """.trimIndent())
     }
 
     private fun assertConvertEqual(input: String, output: String) {

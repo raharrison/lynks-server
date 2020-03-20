@@ -301,6 +301,7 @@ class ResourceManagerTest: DatabaseTest() {
         assertFileContents(originalResourceAsFile?.second.toString(), data)
 
         val updateResourceRequest = resource.copy(name="updated.xml")
+        Thread.sleep(5)
         val updatedResource = resourceManager.updateResource(updateResourceRequest)
         assertThat(updatedResource).isNotNull()
         assertThat(updatedResource?.id).isEqualTo(resource.id)

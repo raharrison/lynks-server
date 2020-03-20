@@ -1,9 +1,9 @@
 package util
 
 import com.vladsch.flexmark.ext.autolink.AutolinkExtension
-import com.vladsch.flexmark.ext.gfm.strikethrough.StrikethroughExtension
+import com.vladsch.flexmark.ext.gfm.strikethrough.StrikethroughSubscriptExtension
+import com.vladsch.flexmark.ext.gfm.tasklist.TaskListExtension
 import com.vladsch.flexmark.ext.gfm.users.GfmUsersExtension
-import com.vladsch.flexmark.ext.superscript.SuperscriptExtension
 import com.vladsch.flexmark.ext.tables.TablesExtension
 import com.vladsch.flexmark.html.HtmlRenderer
 import com.vladsch.flexmark.parser.Parser
@@ -30,10 +30,11 @@ object MarkdownUtils {
                 .set(
                         Parser.EXTENSIONS, listOf(
                         TablesExtension.create(),
-                        StrikethroughExtension.create(),
-                        SuperscriptExtension.create(),
+                        StrikethroughSubscriptExtension.create(),
                         AutolinkExtension.create(),
-                        GfmUsersExtension.create()
+                        GfmUsersExtension.create(),
+                        TaskListExtension.create()
+
                 )
                 ).toImmutable()
         parser = Parser.builder(options).build()
