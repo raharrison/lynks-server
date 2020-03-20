@@ -33,7 +33,7 @@ class LinkProcessorWorkerTest {
         val screen = ImageResource(byteArrayOf(4,5,6), "png")
         val html = "<html>"
         val content = "article content"
-        val processor = mockk<LinkProcessor>()
+        val processor = mockk<LinkProcessor>(relaxUnitFun = true)
 
         coEvery { notifyService.accept(any(), ofType(Link::class)) } just Runs
         coEvery { processor.generateThumbnail() } returns thumb
@@ -48,8 +48,10 @@ class LinkProcessorWorkerTest {
         every { linkService.update(link) } returns link
         every { linkService.mergeProps(eq("id1"), any()) } just Runs
 
+        every { resourceManager.moveTempFiles(link.id, link.url) } returns false
+
         val channel = worker.apply { runner = this@runBlocking.coroutineContext }.worker()
-        channel.send(PersistLinkProcessingRequest(link))
+        channel.send(PersistLinkProcessingRequest(link, true))
         channel.close()
 
         coVerify(exactly = 1) { processorFactory.createProcessors(link.url) }
@@ -70,11 +72,75 @@ class LinkProcessorWorkerTest {
     }
 
     @Test
+    fun testDefaultPersistAlreadyProcessed() = runBlocking(TestCoroutineContext()) {
+        val link = Link("id1", "title", "google.com", "google.com", "", 100)
+
+        val processor = mockk<LinkProcessor>(relaxUnitFun = true)
+        coEvery { notifyService.accept(any(), ofType(Link::class)) } just Runs
+        coEvery { processor.enrich(link.props) } just Runs
+        every { processor.close() } just Runs
+
+        coEvery { processorFactory.createProcessors(link.url) } returns listOf(processor)
+        every { linkService.update(link) } returns link
+        every { linkService.mergeProps(eq("id1"), any()) } just Runs
+
+        every { resourceManager.moveTempFiles(link.id, link.url) } returns true
+
+        val channel = worker.apply { runner = this@runBlocking.coroutineContext }.worker()
+        channel.send(PersistLinkProcessingRequest(link, true))
+        channel.close()
+
+        coVerify(exactly = 1) { processorFactory.createProcessors(link.url) }
+        verify(exactly = 1) { processor.close() }
+        verify(exactly = 1) { linkService.mergeProps(eq("id1"), any()) }
+        verify(exactly = 1) { linkService.update(link) }
+        coVerify(exactly = 1) { notifyService.accept(any(), ofType(Link::class)) }
+
+        coVerify(exactly = 0) { processor.generateThumbnail() }
+        coVerify(exactly = 0) { processor.generateScreenshot() }
+        coVerify(exactly = 0) { processor.html }
+        coVerify(exactly = 0) { processor.content }
+        verify(exactly = 0) { resourceManager.saveGeneratedResource(any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun testDefaultPersistNoProcessFlag() = runBlocking(TestCoroutineContext()) {
+        val link = Link("id1", "title", "google.com", "google.com", "", 100)
+
+        val processor = mockk<LinkProcessor>(relaxUnitFun = true)
+        coEvery { notifyService.accept(any(), ofType(Link::class)) } just Runs
+        coEvery { processor.enrich(link.props) } just Runs
+        every { processor.close() } just Runs
+
+        coEvery { processorFactory.createProcessors(link.url) } returns listOf(processor)
+        every { linkService.update(link) } returns link
+        every { linkService.mergeProps(eq("id1"), any()) } just Runs
+
+        every { resourceManager.moveTempFiles(link.id, link.url) } returns false
+
+        val channel = worker.apply { runner = this@runBlocking.coroutineContext }.worker()
+        channel.send(PersistLinkProcessingRequest(link, false))
+        channel.close()
+
+        coVerify(exactly = 1) { processorFactory.createProcessors(link.url) }
+        verify(exactly = 1) { processor.close() }
+        verify(exactly = 1) { linkService.mergeProps(eq("id1"), any()) }
+        verify(exactly = 1) { linkService.update(link) }
+        coVerify(exactly = 1) { notifyService.accept(any(), ofType(Link::class)) }
+
+        coVerify(exactly = 0) { processor.generateThumbnail() }
+        coVerify(exactly = 0) { processor.generateScreenshot() }
+        coVerify(exactly = 0) { processor.html }
+        coVerify(exactly = 0) { processor.content }
+        verify(exactly = 0) { resourceManager.saveGeneratedResource(any(), any(), any(), any()) }
+    }
+
+    @Test
     fun testDefaultPersistCompletedExceptionally() = runBlocking(TestCoroutineContext()) {
         val link = Link("id1", "title", "google.com", "google.com", "", 100)
 
         val exception = RuntimeException("error during computation")
-        val processor = mockk<LinkProcessor>()
+        val processor = mockk<LinkProcessor>(relaxUnitFun = true)
         coEvery { notifyService.accept(any(), null) } just Runs
         coEvery { processor.generateThumbnail() } throws exception
         coEvery{ processor.generateScreenshot()} returns null
@@ -84,8 +150,10 @@ class LinkProcessorWorkerTest {
         every { linkService.update(link) } returns link
         every { linkService.mergeProps(eq("id1"), any()) } just Runs
 
+        every { resourceManager.moveTempFiles(link.id, link.url) } returns false
+
         val channel = worker.apply { runner = this@runBlocking.coroutineContext }.worker()
-        channel.send(PersistLinkProcessingRequest(link))
+        channel.send(PersistLinkProcessingRequest(link, true))
         channel.close()
 
         coVerify(exactly = 1) { processorFactory.createProcessors(link.url) }
@@ -105,7 +173,7 @@ class LinkProcessorWorkerTest {
         val thumb = ImageResource(byteArrayOf(1,2,3), "jpg")
         val screen = ImageResource(byteArrayOf(4,5,6), "png")
         val html = "<html>"
-        val processor = mockk<LinkProcessor>()
+        val processor = mockk<LinkProcessor>(relaxUnitFun = true)
 
         val thumbPath = "thumbPath"
         val screenPath = "screenPath"
@@ -151,7 +219,7 @@ class LinkProcessorWorkerTest {
     fun testSuggestCompletedExceptionally() = runBlocking(TestCoroutineContext()) {
         val url = "google.com"
 
-        val processor = mockk<LinkProcessor>()
+        val processor = mockk<LinkProcessor>(relaxUnitFun = true)
 
         val exception = RuntimeException("error during computation")
         coEvery { processor.generateThumbnail() } throws exception

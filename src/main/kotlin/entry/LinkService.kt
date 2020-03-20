@@ -46,10 +46,7 @@ class LinkService(
 
     override fun add(entry: NewLink): Link {
         val link = super.add(entry)
-        if (!resourceManager.moveTempFiles(link.id, link.url)) {
-            if (entry.process)
-                workerRegistry.acceptLinkWork(PersistLinkProcessingRequest(link))
-        }
+        workerRegistry.acceptLinkWork(PersistLinkProcessingRequest(link, entry.process))
         if (entry.process)
             workerRegistry.acceptDiscussionWork(link.id)
         return link

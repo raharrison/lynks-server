@@ -14,7 +14,6 @@ import org.junit.jupiter.api.assertThrows
 import resource.ResourceManager
 import util.createDummyCollection
 import util.createDummyTag
-import worker.PersistLinkProcessingRequest
 import worker.WorkerRegistry
 
 class LinkServiceTest : DatabaseTest() {
@@ -33,9 +32,9 @@ class LinkServiceTest : DatabaseTest() {
         createDummyCollection("c2", "col2")
 
         val resourceManager = mockk<ResourceManager>()
-        every { resourceManager.moveTempFiles(any(), any()) } returns true
         every { resourceManager.deleteAll(any()) } returns true
         val workerRegistry = mockk<WorkerRegistry>()
+        every { workerRegistry.acceptLinkWork(any()) } just Runs
         every { workerRegistry.acceptDiscussionWork(any()) } just Runs
         linkService = LinkService(tagService, collectionService, resourceManager, workerRegistry)
     }
@@ -69,32 +68,14 @@ class LinkServiceTest : DatabaseTest() {
     }
 
     @Test
-    fun testNoExistingResourcesTriggersWorker() {
-        val resourceManager = mockk<ResourceManager>()
-        every { resourceManager.moveTempFiles(any(), "google.com") } returns false
-
-        val workerRegistry = mockk<WorkerRegistry>()
-        every { workerRegistry.acceptLinkWork(any()) } just Runs
-        every { workerRegistry.acceptDiscussionWork(any()) } just Runs
-
-        linkService = LinkService(tagService, collectionService, resourceManager, workerRegistry)
-        val link = linkService.add(newLink("n1", "google.com", listOf("t1", "t2")))
-
-        verify(exactly = 1) { resourceManager.moveTempFiles(link.id, link.url) }
-        verify(exactly = 1) { workerRegistry.acceptLinkWork(ofType(PersistLinkProcessingRequest::class)) }
-        verify(exactly = 1) { workerRegistry.acceptDiscussionWork(link.id) }
-    }
-
-    @Test
     fun testNoProcessFlag() {
         val resourceManager = mockk<ResourceManager>()
-        every { resourceManager.moveTempFiles(any(), any()) } returns true
         val workerRegistry = mockk<WorkerRegistry>()
+        every { workerRegistry.acceptLinkWork(any()) } just Runs
         linkService = LinkService(tagService, collectionService, resourceManager, workerRegistry)
         val link = linkService.add(newLink("n1", "google.com", "url", listOf("t1", "t2"), listOf("c1"), false))
 
-        verify(exactly = 1) { resourceManager.moveTempFiles(link.id, link.url) }
-        verify(exactly = 0) { workerRegistry.acceptLinkWork(any()) }
+        verify(exactly = 1) { workerRegistry.acceptLinkWork(any()) }
         verify(exactly = 0) { workerRegistry.acceptDiscussionWork(link.id) }
     }
 

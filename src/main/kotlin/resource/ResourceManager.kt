@@ -1,7 +1,6 @@
 package resource
 
 import common.Environment
-import io.ktor.util.extension
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.select
@@ -56,12 +55,8 @@ class ResourceManager {
             Files.list(target).use { it ->
                 var count = 0
                 it.forEach {
-                    val id = RandomUtils.generateUid()
-                    val size = Files.size(it)
-                    val extension = it.extension
-                    Files.move(it, constructPath(entryId, id, extension))
                     val filename = FileUtils.removeExtension(it.fileName.toString())
-                    saveGeneratedResource(id, entryId, "$id.$extension", extension, ResourceType.valueOf(filename.toUpperCase()), size)
+                    saveGeneratedResource(entryId, ResourceType.valueOf(filename.toUpperCase()), it)
                     count += 1
                 }
                 log.info("{} temp files moved for entry={}", count, entryId)

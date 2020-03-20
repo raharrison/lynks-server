@@ -111,17 +111,17 @@ class ResourceManagerTest: DatabaseTest() {
         for (resource in resources) {
             assertThat(resource.entryId).isEqualTo("eid")
             assertThat(resource.dateUpdated).isEqualTo(resource.dateCreated)
-            assertThat(resource.name).isEqualTo("${resource.id}.${resource.extension}")
+            assertThat(resource.name).isEqualTo("${resource.type.name.toLowerCase()}.${resource.extension}")
             when(resource.type) {
                 ResourceType.DOCUMENT -> {
                     assertThat(resource.extension).isEqualTo(HTML)
                     assertThat(resource.size).isEqualTo(data1.size.toLong())
-                    assertFileContents(resourceManager.constructPath("eid", resource.name).toString(), data1)
+                    assertFileContents(resourceManager.constructPath("eid", "${resource.id}.${resource.extension}").toString(), data1)
                 }
                 ResourceType.THUMBNAIL -> {
                     assertThat(resource.extension).isEqualTo(JPG)
                     assertThat(resource.size).isEqualTo(data2.size.toLong())
-                    assertFileContents(resourceManager.constructPath("eid", resource.name).toString(), data2)
+                    assertFileContents(resourceManager.constructPath("eid", "${resource.id}.${resource.extension}").toString(), data2)
                 }
                 else -> fail("wrong type")
             }

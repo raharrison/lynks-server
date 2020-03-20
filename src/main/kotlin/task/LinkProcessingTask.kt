@@ -15,7 +15,7 @@ class LinkProcessingTask(id: String, entryId: String) : Task<TaskContext>(id, en
 
     override suspend fun process(context: TaskContext) {
         linkService.get(entryId)?.let {
-            workerRegistry.acceptLinkWork(PersistLinkProcessingRequest(it))
+            workerRegistry.acceptLinkWork(PersistLinkProcessingRequest(it, true))
         }
     }
 

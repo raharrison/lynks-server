@@ -17,16 +17,15 @@ import resource.WebResourceRetriever
 import suggest.Suggestion
 
 sealed class LinkProcessingRequest
-class PersistLinkProcessingRequest(val link: Link) : LinkProcessingRequest()
+class PersistLinkProcessingRequest(val link: Link, val process: Boolean) : LinkProcessingRequest()
 class SuggestLinkProcessingRequest(val url: String, val response: CompletableDeferred<Suggestion>) : LinkProcessingRequest()
 
 class LinkProcessorFactory {
     private val processors = listOf<() -> LinkProcessor> { YoutubeLinkProcessor(WebResourceRetriever()) }
 
-    suspend fun createProcessors(url: String): List<LinkProcessor> {
-        val procs = processors.asSequence().map { it() }.filter { it.matches(url) }.toList()
-        procs.forEach { it.init(url) }
-        return if (procs.isNotEmpty()) procs else listOf(DefaultLinkProcessor().apply { init(url) })
+    fun createProcessors(url: String): List<LinkProcessor> {
+        val processors = processors.asSequence().map { it() }.filter { it.matches(url) }.toList()
+        return if (processors.isNotEmpty()) processors else listOf(DefaultLinkProcessor())
     }
 }
 
@@ -38,23 +37,27 @@ class LinkProcessorWorker(private val resourceManager: ResourceManager,
 
     override suspend fun doWork(input: LinkProcessingRequest) {
         when (input) {
-            is PersistLinkProcessingRequest -> processLinkPersist(input.link)
+            is PersistLinkProcessingRequest -> processLinkPersist(input.link, input.process)
             is SuggestLinkProcessingRequest -> processLinkSuggest(input.url, input.response)
         }
     }
 
-    private suspend fun processLinkPersist(link: Link) {
+    private suspend fun processLinkPersist(link: Link, process: Boolean) {
         try {
+            val alreadyProcessed = resourceManager.moveTempFiles(link.id, link.url)
             processorFactory.createProcessors(link.url).forEach { it ->
                 it.use { proc ->
                     coroutineScope {
-                        val thumb = async { proc.generateThumbnail() }
-                        val screen = async { proc.generateScreenshot() }
                         proc.enrich(link.props)
-                        link.content = proc.content
-                        thumb.await()?.let { resourceManager.saveGeneratedResource(link.id, "thumbnail.${it.extension}", ResourceType.THUMBNAIL, it.image) }
-                        screen.await()?.let { resourceManager.saveGeneratedResource(link.id, "screenshot.${it.extension}", ResourceType.SCREENSHOT, it.image) }
-                        proc.html?.let { resourceManager.saveGeneratedResource(link.id, "document.$HTML", ResourceType.DOCUMENT, it.toByteArray()) }
+                        if (!alreadyProcessed && process) {
+                            proc.init(link.url)
+                            val thumb = async { proc.generateThumbnail() }
+                            val screen = async { proc.generateScreenshot() }
+                            link.content = proc.content
+                            thumb.await()?.let { resourceManager.saveGeneratedResource(link.id, "thumbnail.${it.extension}", ResourceType.THUMBNAIL, it.image) }
+                            screen.await()?.let { resourceManager.saveGeneratedResource(link.id, "screenshot.${it.extension}", ResourceType.SCREENSHOT, it.image) }
+                            proc.html?.let { resourceManager.saveGeneratedResource(link.id, "document.$HTML", ResourceType.DOCUMENT, it.toByteArray()) }
+                        }
                     }
                 }
             }
@@ -81,6 +84,7 @@ class LinkProcessorWorker(private val resourceManager: ResourceManager,
             processorFactory.createProcessors(url).forEach { it ->
                 it.use { proc ->
                     coroutineScope {
+                        proc.init(url)
                         val thumb = async { proc.generateThumbnail() }
                         val screen = async { proc.generateScreenshot() }
                         val thumbPath = thumb.await()?.let { resourceManager.saveTempFile(url, it.image, ResourceType.THUMBNAIL, it.extension) }
