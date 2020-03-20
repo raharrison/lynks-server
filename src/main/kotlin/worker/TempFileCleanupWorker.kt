@@ -24,15 +24,20 @@ class TempFileCleanupWorker(private val userService: UserService, notifyService:
     }
 
     override suspend fun doWork(input: TempFileCleanupWorkerRequest) {
+        val sleep = input.preferences.tempFileCleanInterval
+        val sleepDuration = Duration.ofHours(sleep)
+
+        // initial delay from startup
+        delay(sleepDuration)
+
         while (true) {
             try {
                 val dirs = FileUtils.directoriesOlderThan(Paths.get(Environment.server.resourceTempPath), MAX_FILE_AGE)
                 log.info("Temp file cleanup worker removing {} dirs: {}", dirs.size, dirs)
                 FileUtils.deleteDirectories(dirs)
             } finally {
-                val sleep = input.preferences.tempFileCleanInterval
                 log.info("Temp file cleanup worker sleeping for {} hours", sleep)
-                delay(Duration.ofHours(sleep))
+                delay(sleepDuration)
             }
         }
     }

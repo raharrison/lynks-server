@@ -56,26 +56,25 @@ class TempFileCleanupWorkerTest {
     private val context = TestCoroutineContext()
 
     @Test
-    fun testWorkerRemovesOldFilesOnStartup() = runBlocking(context) {
+    fun testWorkerRemovesOldFilesOnStartupAfterInitialDelay() = runBlocking(context) {
         val worker = TempFileCleanupWorker(userService, notifyService)
-                .apply { runner = context }.worker()
-        context.triggerActions()
+            .apply { runner = context }.worker()
+
+        context.advanceTimeBy(6, TimeUnit.HOURS)
+        worker.close()
 
         assertThat(Files.exists(newFile)).isTrue()
         assertThat(Files.exists(oldFile)).isFalse()
-
-        worker.close()
         Unit
     }
 
     @Test
     fun testOverrideDefaultTimeout() = runBlocking(context) {
         val worker = TempFileCleanupWorker(userService, notifyService)
-                .apply { runner = context }.worker()
+            .apply { runner = context }.worker()
         context.triggerActions() // initial trigger
 
         worker.offer(TempFileCleanupWorkerRequest(Preferences(tempFileCleanInterval = 2)))
-        context.triggerActions() // get to delay
 
         createTempFiles() // recreate files
         assertThat(Files.exists(newFile)).isTrue()
