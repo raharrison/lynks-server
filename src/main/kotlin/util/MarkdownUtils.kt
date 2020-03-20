@@ -3,12 +3,11 @@ package util
 import com.vladsch.flexmark.ext.autolink.AutolinkExtension
 import com.vladsch.flexmark.ext.gfm.strikethrough.StrikethroughSubscriptExtension
 import com.vladsch.flexmark.ext.gfm.tasklist.TaskListExtension
-import com.vladsch.flexmark.ext.gfm.users.GfmUsersExtension
 import com.vladsch.flexmark.ext.tables.TablesExtension
 import com.vladsch.flexmark.html.HtmlRenderer
 import com.vladsch.flexmark.parser.Parser
 import com.vladsch.flexmark.util.data.MutableDataSet
-import common.Environment
+import util.markdown.EntryLinkExtension
 
 object MarkdownUtils {
 
@@ -21,24 +20,21 @@ object MarkdownUtils {
 
     init {
         val options = MutableDataSet()
-                .set(HtmlRenderer.SOFT_BREAK, "<br />\n")
-                .set(TablesExtension.COLUMN_SPANS, false)
-                .set(TablesExtension.APPEND_MISSING_COLUMNS, true)
-                .set(TablesExtension.DISCARD_EXTRA_COLUMNS, true)
-                .set(TablesExtension.HEADER_SEPARATOR_COLUMN_MATCH, true)
-                .set(GfmUsersExtension.GIT_HUB_USERS_URL_ROOT, "${Environment.server.rootPath}/entry")
-                .set(
-                        Parser.EXTENSIONS, listOf(
-                        TablesExtension.create(),
-                        StrikethroughSubscriptExtension.create(),
-                        AutolinkExtension.create(),
-                        GfmUsersExtension.create(),
-                        TaskListExtension.create()
-
+            .set(HtmlRenderer.SOFT_BREAK, "<br />\n")
+            .set(TablesExtension.COLUMN_SPANS, false)
+            .set(TablesExtension.APPEND_MISSING_COLUMNS, true)
+            .set(TablesExtension.DISCARD_EXTRA_COLUMNS, true)
+            .set(TablesExtension.HEADER_SEPARATOR_COLUMN_MATCH, true)
+            .set(
+                Parser.EXTENSIONS, listOf(
+                    TablesExtension.create(),
+                    StrikethroughSubscriptExtension.create(),
+                    AutolinkExtension.create(),
+                    TaskListExtension.create(),
+                    EntryLinkExtension()
                 )
-                ).toImmutable()
+            ).toImmutable()
         parser = Parser.builder(options).build()
         renderer = HtmlRenderer.builder(options).build()
     }
-
 }

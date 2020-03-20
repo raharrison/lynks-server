@@ -18,9 +18,19 @@ class MarkdownUtilsTest {
 
     @Test
     fun testEntryLinks() {
-        val id = RandomUtils.generateUid()
+        val iterations = 1000
         val prefix = Environment.server.rootPath
-        assertConvertEqual("link is @$id", "<p>link is <a href=\"$prefix/entry/$id\"><strong>@$id</strong></a></p>\n")
+        repeat(iterations) {
+            val id = RandomUtils.generateUid()
+            assertConvertEqual(
+                "link is @$id",
+                "<p>link is <a href=\"$prefix/entry/$id\"><strong>@$id</strong></a></p>\n"
+            )
+            assertConvertEqual(
+                "link is @$id and more",
+                "<p>link is <a href=\"$prefix/entry/$id\"><strong>@$id</strong></a> and more</p>\n"
+            )
+        }
     }
 
     @Test
