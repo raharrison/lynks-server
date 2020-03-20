@@ -7,11 +7,6 @@ import com.vladsch.flexmark.parser.LightInlineParser
 import java.util.regex.Pattern
 
 internal class EntryLinkInlineParserExtension : InlineParserExtension {
-    private val ENTRY_LINK_PATTERN = Pattern.compile(
-        "^(@)([a-z\\d-_](?:[a-z\\d-_]|-(?=[a-z\\d-_])){0,12})(?![\\w-])",
-        Pattern.CASE_INSENSITIVE
-    )
-
     override fun finalizeDocument(inlineParser: InlineParser) {}
     override fun finalizeBlock(inlineParser: InlineParser) {}
 
@@ -36,6 +31,13 @@ internal class EntryLinkInlineParserExtension : InlineParserExtension {
             }
         }
         return false
+    }
+
+    companion object {
+        private val ENTRY_LINK_PATTERN = Pattern.compile(
+            "^(@)([a-z\\d-_](?:[a-z\\d-_]|-(?=[a-z\\d-_])){0,12})(?![\\w-])",
+            Pattern.CASE_INSENSITIVE
+        )
     }
 
     internal class Factory : InlineParserExtensionFactory {
