@@ -1,5 +1,5 @@
-package group;
+package group
 
-public enum GroupType {
+enum class GroupType {
     TAG, COLLECTION
 }
