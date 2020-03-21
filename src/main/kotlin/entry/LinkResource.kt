@@ -35,14 +35,14 @@ fun Route.link(linkService: LinkService) {
 
         post("/") {
             val link = call.receive<NewLink>()
-            if(!checkLink(link)) call.respond(HttpStatusCode.BadRequest)
+            if(!checkLink(link)) call.respond(HttpStatusCode.BadRequest, "Invalid URL")
             else call.respond(HttpStatusCode.Created, linkService.add(link))
         }
 
         put("/") {
             val link = call.receive<NewLink>()
             val updated = linkService.update(link)
-            if(!checkLink(link)) call.respond(HttpStatusCode.BadRequest)
+            if(!checkLink(link)) call.respond(HttpStatusCode.BadRequest, "Invalid URL")
             else {
                 if (updated == null) call.respond(HttpStatusCode.NotFound)
                 else call.respond(HttpStatusCode.OK, updated)

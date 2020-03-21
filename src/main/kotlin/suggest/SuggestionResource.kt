@@ -12,8 +12,8 @@ fun Route.suggest(suggestionService: SuggestionService) {
 
     post("/suggest") {
         val url = call.receive<String>()
-        if(!URLUtils.isValidUrl(url)) call.respond(HttpStatusCode.BadRequest, "Invalid url provided")
-        call.respond(suggestionService.processLink(url))
+        if(!URLUtils.isValidUrl(url)) call.respond(HttpStatusCode.BadRequest, "Invalid URL")
+        else call.respond(suggestionService.processLink(url))
     }
 
 }
