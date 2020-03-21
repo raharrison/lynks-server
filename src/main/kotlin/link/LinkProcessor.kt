@@ -67,7 +67,7 @@ private val log = loggerFor<DefaultLinkProcessor>()
 
 open class DefaultLinkProcessor : LinkProcessor {
 
-    protected lateinit var session: Session
+    private var session: Session? = null
     protected lateinit var url: String
 
     override suspend fun init(url: String) {
@@ -117,50 +117,65 @@ open class DefaultLinkProcessor : LinkProcessor {
         }
     }
 
-    override fun close() = session.close()
+    override fun close() {
+        session?.close()
+    }
 
     override fun matches(url: String): Boolean = true
 
-    override suspend fun generateThumbnail(): ImageResource = synchronized(session) {
-        log.info("Capturing thumbnail for url={}", resolvedUrl)
-        val screen = session.command.page.captureScreenshot()
-        val img = ImageIO.read(ByteArrayInputStream(screen))
-        val scaledImage = img.getScaledInstance(640, 360, Image.SCALE_SMOOTH)
-        val imageBuff = BufferedImage(640, 360, BufferedImage.TYPE_INT_RGB)
-        imageBuff.graphics.drawImage(scaledImage, 0, 0, Color.BLACK, null)
-        imageBuff.graphics.dispose()
-        val buffer = ByteArrayOutputStream()
-        ImageIO.write(imageBuff, "jpg", buffer)
-        return ImageResource(buffer.toByteArray(), JPG)
+    override suspend fun generateThumbnail(): ImageResource {
+        if (session == null) throw sessionNotInit()
+        synchronized(session!!) {
+            log.info("Capturing thumbnail for url={}", resolvedUrl)
+            val screen = session?.command?.page?.captureScreenshot()
+            val img = ImageIO.read(ByteArrayInputStream(screen))
+            val scaledImage = img.getScaledInstance(640, 360, Image.SCALE_SMOOTH)
+            val imageBuff = BufferedImage(640, 360, BufferedImage.TYPE_INT_RGB)
+            imageBuff.graphics.drawImage(scaledImage, 0, 0, Color.BLACK, null)
+            imageBuff.graphics.dispose()
+            val buffer = ByteArrayOutputStream()
+            ImageIO.write(imageBuff, "jpg", buffer)
+            return ImageResource(buffer.toByteArray(), JPG)
+        }
     }
 
-    override suspend fun generateScreenshot(): ImageResource = synchronized(session) {
-        log.info("Capturing full page screenshot for url={}", resolvedUrl)
-        return ImageResource(session.captureScreenshot(true), PNG)
+    override suspend fun generateScreenshot(): ImageResource {
+        if (session == null) throw sessionNotInit()
+        synchronized(session!!) {
+            log.info("Capturing full page screenshot for url={}", resolvedUrl)
+            return ImageResource(session?.captureScreenshot(true) ?: throw sessionNotInit(), PNG)
+        }
     }
 
     override suspend fun printPage(): ImageResource? {
         log.info("Capturing pdf for url={}", resolvedUrl)
-        return ImageResource(session.command.page.printToPDF(true, false, true,
+        return ImageResource(
+            session?.command?.page?.printToPDF(
+                true, false, true,
                 0.9, 11.7, 16.5,
                 0.1, 0.1, 0.1, 0.1,
-                null, false, null, null, false), PDF)
+                null, false, null, null, false
+            )
+                ?: throw sessionNotInit(), PDF
+        )
     }
 
-    override val html: String get() = session.content
+    override val html: String get() = session?.content ?: throw sessionNotInit()
 
     override val content: String?
         get() {
             log.info("Performing article extraction for url={}", resolvedUrl)
             val article = ArticleExtractor.with(resolvedUrl, html)
-                    .extractMetadata()
-                    .extractContent()
-                    .article()
+                .extractMetadata()
+                .extractContent()
+                .article()
             return article.document.toString()
         }
 
-    override val title: String get() = session.title
+    override val title: String get() = session?.title ?: throw sessionNotInit()
 
-    override val resolvedUrl: String get() = session.location
+    override val resolvedUrl: String get() = session?.location ?: throw sessionNotInit()
+
+    private fun sessionNotInit() = IllegalStateException("Web session has not been initialised")
 
 }
