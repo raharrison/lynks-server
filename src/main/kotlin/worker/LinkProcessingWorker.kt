@@ -21,11 +21,11 @@ class PersistLinkProcessingRequest(val link: Link, val process: Boolean) : LinkP
 class SuggestLinkProcessingRequest(val url: String, val response: CompletableDeferred<Suggestion>) : LinkProcessingRequest()
 
 class LinkProcessorFactory {
-    private val processors = listOf<() -> LinkProcessor> { YoutubeLinkProcessor(WebResourceRetriever()) }
+    private val processors = listOf<(String) -> LinkProcessor> { YoutubeLinkProcessor(it, WebResourceRetriever()) }
 
     fun createProcessors(url: String): List<LinkProcessor> {
-        val processors = processors.asSequence().map { it() }.filter { it.matches(url) }.toList()
-        return if (processors.isNotEmpty()) processors else listOf(DefaultLinkProcessor())
+        val processors = processors.asSequence().map { it(url) }.filter { it.matches() }.toList()
+        return if (processors.isNotEmpty()) processors else listOf(DefaultLinkProcessor(url))
     }
 }
 
@@ -50,7 +50,7 @@ class LinkProcessorWorker(private val resourceManager: ResourceManager,
                     coroutineScope {
                         proc.enrich(link.props)
                         if (!alreadyProcessed && process) {
-                            proc.init(link.url)
+                            proc.init()
                             val thumb = async { proc.generateThumbnail() }
                             val screen = async { proc.generateScreenshot() }
                             link.content = proc.content
@@ -84,7 +84,7 @@ class LinkProcessorWorker(private val resourceManager: ResourceManager,
             processorFactory.createProcessors(url).forEach { it ->
                 it.use { proc ->
                     coroutineScope {
-                        proc.init(url)
+                        proc.init()
                         val thumb = async { proc.generateThumbnail() }
                         val screen = async { proc.generateScreenshot() }
                         val thumbPath = thumb.await()?.let { resourceManager.saveTempFile(url, it.image, ResourceType.THUMBNAIL, it.extension) }

@@ -38,9 +38,9 @@ data class ImageResource(val image: ByteArray, val extension: String) {
 
 interface LinkProcessor : AutoCloseable {
 
-    suspend fun init(url: String)
+    suspend fun init()
 
-    fun matches(url: String): Boolean
+    fun matches(): Boolean
 
     suspend fun generateThumbnail(): ImageResource?
 
@@ -65,13 +65,11 @@ interface LinkProcessor : AutoCloseable {
 
 private val log = loggerFor<DefaultLinkProcessor>()
 
-open class DefaultLinkProcessor : LinkProcessor {
+open class DefaultLinkProcessor(private val url: String) : LinkProcessor {
 
     private var session: Session? = null
-    protected lateinit var url: String
 
-    override suspend fun init(url: String) {
-        this.url = url
+    override suspend fun init() {
         session = connectSession(url)
     }
 
@@ -121,7 +119,7 @@ open class DefaultLinkProcessor : LinkProcessor {
         session?.close()
     }
 
-    override fun matches(url: String): Boolean = true
+    override fun matches(): Boolean = true
 
     override suspend fun generateThumbnail(): ImageResource {
         if (session == null) throw sessionNotInit()

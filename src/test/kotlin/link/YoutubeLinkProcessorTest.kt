@@ -44,10 +44,10 @@ class YoutubeLinkProcessorTest {
 
     @Test
     fun testMatches() {
-        assertThat(processor.matches(url)).isTrue()
-        assertThat(processor.matches("http://youtube.com/something")).isTrue()
-        assertThat(processor.matches("http://youtu.com/watch?v=DAiEUeM8Uv0")).isFalse()
-        assertThat(processor.matches("http://google.com")).isFalse()
+        assertThat(YoutubeLinkProcessor(url, retriever).matches()).isTrue()
+        assertThat(YoutubeLinkProcessor("http://youtube.com/something", retriever).matches()).isTrue()
+        assertThat(YoutubeLinkProcessor("http://youtu.com/watch?v=DAiEUeM8Uv0", retriever).matches()).isFalse()
+        assertThat(YoutubeLinkProcessor("http://google.com", retriever).matches()).isFalse()
     }
 
     @Test
@@ -94,7 +94,7 @@ class YoutubeLinkProcessorTest {
     }
 
     private fun createProcessor(): YoutubeLinkProcessor = runBlocking {
-        YoutubeLinkProcessor(retriever).apply { this.init(url) }
+        YoutubeLinkProcessor(url, retriever).apply { init() }
     }
 
 }

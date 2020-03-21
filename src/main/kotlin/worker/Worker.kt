@@ -101,21 +101,22 @@ abstract class PersistedVariableChannelBasedWorker<T : PersistVariableWorkerRequ
 
     override suspend fun beforeWork() {
         super.beforeWork()
-        transaction {
+        val requests = transaction {
             WorkerSchedules.select { WorkerSchedules.worker eq workerName }.map {
-                val request: T = defaultMapper.readValue(it[WorkerSchedules.request], requestClass)
-                onChannelReceive(request)
+                defaultMapper.readValue(it[WorkerSchedules.request], requestClass)
             }
+        }
+        requests.forEach {
+            onChannelReceive(it)
         }
     }
 
     override fun onChannelReceive(request: T): Job? {
-        return super.onChannelReceive(request).also {
-            deleteSchedule(request) // delete initially
-            if(request.crudType != CrudType.DELETE) {
-                addSchedule(request) // add back if create/update
-            }
+        deleteSchedule(request) // delete initially
+        if(request.crudType != CrudType.DELETE) {
+            addSchedule(request) // add back if create/update
         }
+        return super.onChannelReceive(request)
     }
 
     override fun onWorkerFinished(request: T) {

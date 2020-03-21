@@ -12,14 +12,16 @@ import java.net.URLEncoder
 
 private val log = loggerFor<YoutubeLinkProcessor>()
 
-class YoutubeLinkProcessor(private val retriever: ResourceRetriever) : LinkProcessor {
+class YoutubeLinkProcessor(private val url: String, private val retriever: ResourceRetriever) : LinkProcessor {
 
-    private lateinit var url: String
     private lateinit var videoId: String
 
-    override suspend fun init(url: String) {
-        this.url = url
-        this.videoId = URLUtils.extractQueryParams(url)["v"] ?: throw IllegalArgumentException("Invalid youtube url")
+    override suspend fun init() {
+        this.videoId = extractVideoId()
+    }
+
+    private fun extractVideoId(): String {
+        return URLUtils.extractQueryParams(url)["v"] ?: throw IllegalArgumentException("Invalid youtube url")
     }
 
     override val html: String? = null
@@ -44,9 +46,9 @@ class YoutubeLinkProcessor(private val retriever: ResourceRetriever) : LinkProce
     override fun close() {
     }
 
-    override fun matches(url: String): Boolean = URLUtils.extractSource(url) == "youtube.com"
+    override fun matches(): Boolean = URLUtils.extractSource(url) == "youtube.com"
 
-    private fun embedUrl(): String = "https://www.youtube.com/embed/$videoId"
+    private fun embedUrl(): String = "https://www.youtube.com/embed/${extractVideoId()}"
 
     private suspend fun downloadVideoInfo(): String? {
         log.info("Retrieving video info for Youtube video id={}", videoId)
