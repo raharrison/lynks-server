@@ -309,7 +309,7 @@ class NoteServiceTest : DatabaseTest() {
         val updatedProps = BaseProperties()
         updatedProps.addAttribute("key2", "updated")
         updatedProps.addAttribute("key3", "attribute3")
-        val updatedTask = TaskDefinition("t1", "updatedDesc", "className", mapOf("b1" to "c1"))
+        val updatedTask = TaskDefinition("t3", "description", "className", mapOf("b1" to "c1"))
         updatedProps.addTask(updatedTask)
 
         noteService.mergeProps(added.id, updatedProps)
@@ -321,8 +321,9 @@ class NoteServiceTest : DatabaseTest() {
         assertThat(updated?.props?.getAttribute("key3")).isEqualTo("attribute3")
 
         assertThat(updated?.props?.tasks).hasSize(1)
-        assertThat(updated?.props?.getTask("t1")?.description).isEqualTo("updatedDesc")
-        assertThat(updated?.props?.getTask("t1")?.input).containsOnly(entry("b1", "c1"))
+        assertThat(updated?.props?.getTask("t1")).isNull()
+        assertThat(updated?.props?.getTask("t3")?.description).isEqualTo("description")
+        assertThat(updated?.props?.getTask("t3")?.input).containsOnly(entry("b1", "c1"))
     }
 
     @Test

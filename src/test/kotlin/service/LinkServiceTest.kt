@@ -7,7 +7,7 @@ import group.CollectionService
 import group.TagService
 import io.mockk.*
 import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.data.MapEntry
+import org.assertj.core.data.MapEntry.entry
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -337,7 +337,7 @@ class LinkServiceTest : DatabaseTest() {
         val updatedProps = BaseProperties()
         updatedProps.addAttribute("key2", "updated")
         updatedProps.addAttribute("key3", "attribute3")
-        val updatedTask = TaskDefinition("t1", "updatedDesc", "className", mapOf("b1" to "c1"))
+        val updatedTask = TaskDefinition("t3", "description", "className", mapOf("b1" to "c1"))
         updatedProps.addTask(updatedTask)
 
         linkService.mergeProps(added.id, updatedProps)
@@ -349,8 +349,9 @@ class LinkServiceTest : DatabaseTest() {
         assertThat(updated?.props?.getAttribute("key3")).isEqualTo("attribute3")
 
         assertThat(updated?.props?.tasks).hasSize(1)
-        assertThat(updated?.props?.getTask("t1")?.description).isEqualTo("updatedDesc")
-        assertThat(updated?.props?.getTask("t1")?.input).containsOnly(MapEntry.entry("b1", "c1"))
+        assertThat(updated?.props?.getTask("t1")).isNull()
+        assertThat(updated?.props?.getTask("t3")?.description).isEqualTo("description")
+        assertThat(updated?.props?.getTask("t3")?.input).containsOnly(entry("b1", "c1"))
     }
 
     @Test

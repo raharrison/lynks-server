@@ -43,7 +43,7 @@ open class BaseProperties {
 
     fun merge(newProps: BaseProperties): BaseProperties {
         val mergedAttributes = this.attributes.toMutableMap() + newProps.attributes
-        val mergedTasks = this.tasks.associateBy { it.id } + newProps.tasks.associateBy { it.id }
+        val mergedTasks = this.tasks.associateBy { it.description } + newProps.tasks.associateBy { it.description }
         return BaseProperties(mergedAttributes.toMutableMap(), mergedTasks.values.toMutableList())
     }
 }
