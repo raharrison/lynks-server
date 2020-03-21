@@ -31,7 +31,7 @@ class ReminderResourceTest : ServerTest() {
         assertThat(reminders).extracting("reminderId").containsOnly("r1")
         assertThat(reminders).extracting("entryId").containsOnly("e1")
         assertThat(reminders).extracting("type").containsOnly(ReminderType.ADHOC.toString())
-        assertThat(reminders).extracting("notifyMethod").containsOnly(NotificationMethod.PUSH)
+        assertThat(reminders).extracting("notifyMethod").containsOnly(NotificationMethod.PUSH.name)
         assertThat(reminders).extracting("message").containsOnly("message")
     }
 

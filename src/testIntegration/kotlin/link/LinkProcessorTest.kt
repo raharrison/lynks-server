@@ -22,11 +22,12 @@ class LinkProcessorTest: ServerTest() {
         assertThat(processors).hasOnlyElementsOfType(DefaultLinkProcessor::class.java)
 
         processors.first().use {
+            it.init()
             assertThat(it.title).isEqualTo("Ryan Harrison - My blog, portfolio and technology related ramblings")
             assertThat(it.html).isNotBlank()
             assertThat(it.content).isNotBlank()
             assertThat(it.resolvedUrl).isEqualTo("$url/")
-            assertThat(it.matches(url)).isTrue()
+            assertThat(it.matches()).isTrue()
 
             val screen = it.generateScreenshot()
             assertThat(screen?.extension).isEqualTo(PNG)
@@ -47,13 +48,17 @@ class LinkProcessorTest: ServerTest() {
     fun testDefaultLinkProcessorInvalidUrl() {
         assertThrows<Exception> {
             runBlocking {
-                processorFactory.createProcessors("invalid.invalid")
+                processorFactory.createProcessors("invalid.invalid").forEach {
+                    it.init()
+                }
             }
         }
         // 404 error
         assertThrows<Exception> {
             runBlocking {
-                processorFactory.createProcessors("https://ryanharrison.co.uk/nothinghere")
+                processorFactory.createProcessors("https://ryanharrison.co.uk/nothinghere").forEach {
+                    it.init()
+                }
             }
         }
     }
