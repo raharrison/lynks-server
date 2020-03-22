@@ -20,6 +20,8 @@ class LinkServiceTest : DatabaseTest() {
 
     private val tagService = TagService()
     private val collectionService = CollectionService()
+    private val resourceManager = mockk<ResourceManager>()
+    private val workerRegistry = mockk<WorkerRegistry>()
     private lateinit var linkService: LinkService
 
     @BeforeEach
@@ -31,9 +33,7 @@ class LinkServiceTest : DatabaseTest() {
         createDummyCollection("c1", "col1")
         createDummyCollection("c2", "col2")
 
-        val resourceManager = mockk<ResourceManager>()
         every { resourceManager.deleteAll(any()) } returns true
-        val workerRegistry = mockk<WorkerRegistry>()
         every { workerRegistry.acceptLinkWork(any()) } just Runs
         every { workerRegistry.acceptDiscussionWork(any()) } just Runs
         linkService = LinkService(tagService, collectionService, resourceManager, workerRegistry)
@@ -47,6 +47,8 @@ class LinkServiceTest : DatabaseTest() {
         assertThat(link.url).isEqualTo("google.com/page")
         assertThat(link.source).isEqualTo("google.com")
         assertThat(link.dateUpdated).isPositive()
+        verify(exactly = 1) { workerRegistry.acceptLinkWork(any()) }
+        verify(exactly = 1) { workerRegistry.acceptDiscussionWork(link.id) }
     }
 
     @Test
@@ -68,7 +70,7 @@ class LinkServiceTest : DatabaseTest() {
     }
 
     @Test
-    fun testNoProcessFlag() {
+    fun testCreateWithNoProcessFlag() {
         val resourceManager = mockk<ResourceManager>()
         val workerRegistry = mockk<WorkerRegistry>()
         every { workerRegistry.acceptLinkWork(any()) } just Runs
@@ -239,6 +241,26 @@ class LinkServiceTest : DatabaseTest() {
         assertThat(oldLink?.title).isEqualTo("updated")
         assertThat(oldLink?.tags).hasSize(1)
         assertThat(oldLink?.collections).hasSize(1)
+
+        // for initial add and then update
+        verify(exactly = 2) { workerRegistry.acceptLinkWork(any()) }
+        verify(exactly = 2) { workerRegistry.acceptDiscussionWork(added1.id) }
+    }
+
+    @Test
+    fun testUpdateLinkNoProcessFlag() {
+        val added1 = linkService.add(newLink("n1", "google.com"))
+        assertThat(linkService.get(added1.id)?.title).isEqualTo("n1")
+
+        val updated = linkService.update(newLink(added1.id, "updated", "amazon.com").copy(process = false))
+        val newLink = linkService.get(updated!!.id)
+        assertThat(newLink?.id).isEqualTo(added1.id)
+        assertThat(newLink?.title).isEqualTo("updated")
+        assertThat(newLink?.url).isEqualTo("amazon.com")
+
+        // for initial add then update
+        verify(exactly = 2) { workerRegistry.acceptLinkWork(any()) }
+        verify(exactly = 1) { workerRegistry.acceptDiscussionWork(added1.id) }
     }
 
     @Test
@@ -325,6 +347,7 @@ class LinkServiceTest : DatabaseTest() {
         assertThat(updated?.props?.getTask("t1")).isNull()
         assertThat(updated?.props?.getAttribute("t3")).isNull()
     }
+
     @Test
     fun testMergeProps() {
         val added = linkService.add(newLink("n1", "google.com"))

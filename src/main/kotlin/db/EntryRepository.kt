@@ -93,7 +93,7 @@ abstract class EntryRepository<T : Entry, in U : NewEntry>(
         get(newId)!!
     }
 
-    fun update(entry: U): T? {
+    open fun update(entry: U): T? {
         val id = entry.id
         return if (id == null) {
             add(entry)

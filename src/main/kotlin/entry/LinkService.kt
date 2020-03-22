@@ -52,6 +52,14 @@ class LinkService(
         return link
     }
 
+    override fun update(entry: NewLink): Link? {
+        return super.update(entry)?.also {
+            workerRegistry.acceptLinkWork(PersistLinkProcessingRequest(it, entry.process))
+            if (entry.process)
+                workerRegistry.acceptDiscussionWork(it.id)
+        }
+    }
+
     override fun delete(id: String): Boolean {
         return super.delete(id) && resourceManager.deleteAll(id)
     }
