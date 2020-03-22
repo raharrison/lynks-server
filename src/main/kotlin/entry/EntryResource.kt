@@ -43,6 +43,11 @@ fun Route.entry(entryService: EntryService, reminderService: ReminderService) {
             call.respond(reminderService.getRemindersForEntry(id))
         }
 
+        get("/{id}/history") {
+            val id = call.parameters["id"]!!
+            call.respond(entryService.getEntryVersions(id))
+        }
+
         post("/{id}/star") {
             val id = call.parameters["id"]!!
             val updated = entryService.star(id, true)

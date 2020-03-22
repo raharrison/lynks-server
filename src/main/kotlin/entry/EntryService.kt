@@ -58,4 +58,17 @@ class EntryService(tagService: TagService, collectionService: CollectionService)
         }
         get(id)
     }
+
+    fun getEntryVersions(id: String): List<EntryVersion> = transaction {
+        EntryVersions.slice(EntryVersions.id, EntryVersions.version, EntryVersions.dateUpdated)
+            .select { EntryVersions.id eq id }
+            .orderBy(EntryVersions.version, SortOrder.ASC)
+            .map {
+                EntryVersion(
+                    id = it[EntryVersions.id],
+                    version = it[EntryVersions.version],
+                    dateUpdated = it[EntryVersions.dateUpdated]
+                )
+            }
+    }
 }

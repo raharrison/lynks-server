@@ -10,6 +10,7 @@ import reminder.Reminder
 import reminder.ReminderType
 import util.createDummyEntry
 import util.createDummyReminder
+import util.updateDummyEntry
 import java.time.ZoneId
 
 class EntryResourceTest : ServerTest() {
@@ -213,5 +214,27 @@ class EntryResourceTest : ServerTest() {
             .statusCode(200)
             .extract().to<Link>()
         assertThat(retrieved.starred).isFalse()
+    }
+
+    @Test
+    fun testGetEntryHistory() {
+        val entryVersions1 = get("/entry/{id}/history", "e1")
+            .then()
+            .statusCode(200)
+            .extract().to<List<EntryVersion>>()
+        assertThat(entryVersions1).hasSize(1)
+        assertThat(entryVersions1).extracting("id").containsOnly("e1")
+        assertThat(entryVersions1).extracting("version").containsOnly(0)
+
+        updateDummyEntry("e1", "updated", 1)
+
+        val entryVersions2 = get("/entry/{id}/history", "e1")
+            .then()
+            .statusCode(200)
+            .extract().to<List<EntryVersion>>()
+        assertThat(entryVersions2).hasSize(2)
+        assertThat(entryVersions2).extracting("id").containsOnly("e1")
+        assertThat(entryVersions2).extracting("version").containsOnly(0, 1)
+        assertThat(entryVersions2).extracting("dateUpdated").doesNotHaveDuplicates()
     }
 }

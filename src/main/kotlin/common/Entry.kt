@@ -6,7 +6,7 @@ import group.Tag
 import org.jetbrains.exposed.sql.Column
 import org.jetbrains.exposed.sql.Table
 
-abstract class BaseEntries(name: String): Table(name) {
+abstract class BaseEntries(name: String) : Table(name) {
     val id = varchar("ID", 12)
     val title = varchar("TITLE", 255)
     val plainContent = text("PLAIN_CONTENT").nullable()
@@ -24,12 +24,12 @@ object Entries : BaseEntries("ENTRY") {
     override val primaryKey = PrimaryKey(id)
 }
 
-object EntryVersions: BaseEntries("ENTRY_VERSION") {
+object EntryVersions : BaseEntries("ENTRY_VERSION") {
     override val version = integer("VERSION").default(0)
     override val primaryKey = PrimaryKey(id, version)
 }
 
-interface Entry: IdBasedCreatedEntity {
+interface Entry : IdBasedCreatedEntity {
     val title: String
     val dateUpdated: Long
     val version: Int
@@ -39,7 +39,13 @@ interface Entry: IdBasedCreatedEntity {
     val collections: List<Collection>
 }
 
-interface NewEntry: IdBasedNewEntity {
+interface NewEntry : IdBasedNewEntity {
     val tags: List<String>
     val collections: List<String>
 }
+
+data class EntryVersion(
+    override val id: String,
+    val version: Int,
+    val dateUpdated: Long
+) : IdBasedCreatedEntity

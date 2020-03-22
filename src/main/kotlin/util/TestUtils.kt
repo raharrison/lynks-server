@@ -9,6 +9,7 @@ import group.Groups
 import notify.NotificationMethod
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.sql.update
 import reminder.ReminderType
 import reminder.Reminders
 import worker.WorkerSchedules
@@ -24,6 +25,14 @@ fun createDummyEntry(id: String, title: String, content: String, type: EntryType
         it[Entries.type] = type
         it[dateUpdated] = System.currentTimeMillis()
         it[props] = prop
+    }
+}
+
+fun updateDummyEntry(id: String, title: String, version: Int) = transaction {
+    Entries.update({Entries.id eq id}) {
+        it[Entries.title] = title
+        it[Entries.version] = version
+        it[Entries.dateUpdated] = System.currentTimeMillis()
     }
 }
 

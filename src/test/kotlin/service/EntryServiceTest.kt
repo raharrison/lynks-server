@@ -9,6 +9,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import util.createDummyEntry
+import util.updateDummyEntry
 
 class EntryServiceTest: DatabaseTest() {
 
@@ -151,6 +152,27 @@ class EntryServiceTest: DatabaseTest() {
     fun testSetStarInvalidEntry() {
         assertThat(entryService.star("invalid", true)).isNull()
         assertThat(entryService.star("invalid", false)).isNull()
+    }
+
+    @Test
+    fun testGetHistory() {
+        val history1 = entryService.getEntryVersions("id1")
+        assertThat(history1).hasSize(1)
+        assertThat(history1).extracting("id").containsOnly("id1")
+        assertThat(history1).extracting("version").containsOnly(0)
+
+        updateDummyEntry("id1", "updated", 1)
+
+        val history2 = entryService.getEntryVersions("id1")
+        assertThat(history2).hasSize(2)
+        assertThat(history2).extracting("id").containsOnly("id1")
+        assertThat(history2).extracting("version").containsExactly(0, 1)
+        assertThat(history2).extracting("dateUpdated").doesNotHaveDuplicates()
+    }
+
+    @Test
+    fun getHistoryNotExists() {
+        assertThat(entryService.getEntryVersions("invalid")).isEmpty()
     }
 
 }
