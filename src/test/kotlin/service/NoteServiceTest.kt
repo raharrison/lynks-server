@@ -329,43 +329,44 @@ class NoteServiceTest : DatabaseTest() {
     @Test
     fun testVersioning() {
         val added = noteService.add(newNote("n1", "some content"))
-        val version1 = noteService.get(added.id, 0)
-        assertThat(added.version).isZero()
+        val version1 = noteService.get(added.id, 1)
+        assertThat(added.version).isOne()
         assertThat(added).isEqualToIgnoringGivenFields(version1, "props")
 
         // update via new entity
         val updated = noteService.update(newNote(added.id, "edited", "different content"))
-        val version2 = noteService.get(added.id, 1)
-        assertThat(updated?.version).isOne()
+        val version2 = noteService.get(added.id, 2)
+        assertThat(updated?.version).isEqualTo(2)
         assertThat(version2).isEqualToIgnoringGivenFields(updated, "props")
         assertThat(version2?.title).isEqualTo("edited")
 
         // get original
-        val first = noteService.get(added.id, 0)
+        val first = noteService.get(added.id, 1)
         assertThat(first?.title).isEqualTo("n1")
-        assertThat(first?.version).isZero()
+        assertThat(first?.version).isOne()
 
         // update directly
         val updatedDirect = noteService.update(updated!!.copy(title = "new title"), true)
         val version3 = noteService.get(added.id)
         assertThat(version3?.title).isEqualTo(updatedDirect?.title)
-        assertThat(version3?.version).isEqualTo(2)
+        assertThat(version3?.version).isEqualTo(3)
 
         // get version before
-        val stepBack = noteService.get(added.id, 1)
-        assertThat(stepBack?.version).isEqualTo(1)
+        val stepBack = noteService.get(added.id, 2)
+        assertThat(stepBack?.version).isEqualTo(2)
         assertThat(stepBack?.title).isEqualTo(version2?.title)
 
         // get current version
         val current = noteService.get(added.id)
-        assertThat(current?.version).isEqualTo(2)
+        assertThat(current?.version).isEqualTo(3)
         assertThat(current?.title).isEqualTo(version3?.title)
     }
 
     @Test
     fun testGetInvalidVersion() {
         val added = noteService.add(newNote("n1", "some content"))
-        assertThat(noteService.get(added.id, 1)).isNull()
+        assertThat(noteService.get(added.id, 0)).isNull()
+        assertThat(noteService.get(added.id, 2)).isNull()
         assertThat(noteService.get(added.id, -1)).isNull()
         assertThat(noteService.get("invalid", 0)).isNull()
     }

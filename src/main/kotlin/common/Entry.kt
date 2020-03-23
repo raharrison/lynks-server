@@ -20,12 +20,12 @@ abstract class BaseEntries(name: String) : Table(name) {
 }
 
 object Entries : BaseEntries("ENTRY") {
-    override val version = integer("VERSION").default(0)
+    override val version = integer("VERSION").default(1)
     override val primaryKey = PrimaryKey(id)
 }
 
 object EntryVersions : BaseEntries("ENTRY_VERSION") {
-    override val version = integer("VERSION").default(0)
+    override val version = integer("VERSION").default(1)
     override val primaryKey = PrimaryKey(id, version)
 }
 

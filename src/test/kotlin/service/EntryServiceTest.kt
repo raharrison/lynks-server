@@ -136,13 +136,13 @@ class EntryServiceTest: DatabaseTest() {
 
         val star = entryService.star("id1", true)
         assertThat(star?.starred).isTrue()
-        assertThat(star?.version).isZero()
+        assertThat(star?.version).isOne()
         // date updated is same
         assertThat(star?.dateUpdated).isEqualTo(dateUpdated)
 
         val unstar = entryService.star("id1", false)
         assertThat(unstar?.starred).isFalse()
-        assertThat(unstar?.version).isZero()
+        assertThat(unstar?.version).isOne()
         assertThat(unstar?.dateUpdated).isEqualTo(dateUpdated)
 
         assertThat(entryService.get("id1")?.starred).isFalse()
@@ -159,14 +159,14 @@ class EntryServiceTest: DatabaseTest() {
         val history1 = entryService.getEntryVersions("id1")
         assertThat(history1).hasSize(1)
         assertThat(history1).extracting("id").containsOnly("id1")
-        assertThat(history1).extracting("version").containsOnly(0)
+        assertThat(history1).extracting("version").containsOnly(1)
 
-        updateDummyEntry("id1", "updated", 1)
+        updateDummyEntry("id1", "updated", 2)
 
         val history2 = entryService.getEntryVersions("id1")
         assertThat(history2).hasSize(2)
         assertThat(history2).extracting("id").containsOnly("id1")
-        assertThat(history2).extracting("version").containsExactly(0, 1)
+        assertThat(history2).extracting("version").containsExactly(1, 2)
         assertThat(history2).extracting("dateUpdated").doesNotHaveDuplicates()
     }
 

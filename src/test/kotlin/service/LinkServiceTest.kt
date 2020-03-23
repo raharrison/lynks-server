@@ -380,43 +380,44 @@ class LinkServiceTest : DatabaseTest() {
     @Test
     fun testVersioning() {
         val added = linkService.add(newLink("n1", "google.com"))
-        val version1 = linkService.get(added.id, 0)
-        assertThat(added.version).isZero()
+        val version1 = linkService.get(added.id, 1)
+        assertThat(added.version).isOne()
         assertThat(added).isEqualToIgnoringGivenFields(version1, "props")
 
         // update via new entity
         val updated = linkService.update(newLink(added.id, "edited", "fb.com"))
-        val version2 = linkService.get(added.id, 1)
-        assertThat(updated?.version).isOne()
+        val version2 = linkService.get(added.id, 2)
+        assertThat(updated?.version).isEqualTo(2)
         assertThat(version2).isEqualToIgnoringGivenFields(updated, "props")
         assertThat(version2?.title).isEqualTo("edited")
 
         // get original
-        val first = linkService.get(added.id, 0)
+        val first = linkService.get(added.id, 1)
         assertThat(first?.title).isEqualTo("n1")
-        assertThat(first?.version).isZero()
+        assertThat(first?.version).isOne()
 
         // update directly
         val updatedDirect = linkService.update(updated!!.copy(title = "new title"), true)
         val version3 = linkService.get(added.id)
         assertThat(version3?.title).isEqualTo(updatedDirect?.title)
-        assertThat(version3?.version).isEqualTo(2)
+        assertThat(version3?.version).isEqualTo(3)
 
         // get version before
-        val stepBack = linkService.get(added.id, 1)
-        assertThat(stepBack?.version).isEqualTo(1)
+        val stepBack = linkService.get(added.id, 2)
+        assertThat(stepBack?.version).isEqualTo(2)
         assertThat(stepBack?.title).isEqualTo(version2?.title)
 
         // get current version
         val current = linkService.get(added.id)
-        assertThat(current?.version).isEqualTo(2)
+        assertThat(current?.version).isEqualTo(3)
         assertThat(current?.title).isEqualTo(version3?.title)
     }
 
     @Test
     fun testGetInvalidVersion() {
         val added = linkService.add(newLink("n1", "google.com"))
-        assertThat(linkService.get(added.id, 1)).isNull()
+        assertThat(linkService.get(added.id, 0)).isNull()
+        assertThat(linkService.get(added.id, 2)).isNull()
         assertThat(linkService.get(added.id, -1)).isNull()
         assertThat(linkService.get("invalid", 0)).isNull()
     }
@@ -429,12 +430,12 @@ class LinkServiceTest : DatabaseTest() {
         val read = linkService.read(added.id, true)
         assertThat(read?.props?.getAttribute("read")).isEqualTo(true)
         // date and version is still the same
-        assertThat(read?.version).isZero()
+        assertThat(read?.version).isOne()
         assertThat(read?.dateUpdated).isEqualTo(added.dateUpdated)
 
         val unread = linkService.read(added.id, false)
         assertThat(unread?.props?.getAttribute("read")).isEqualTo(false)
-        assertThat(unread?.version).isZero()
+        assertThat(unread?.version).isOne()
         assertThat(unread?.dateUpdated).isEqualTo(added.dateUpdated)
 
         assertThat(linkService.get(added.id)?.props?.getAttribute("read")).isEqualTo(false)
