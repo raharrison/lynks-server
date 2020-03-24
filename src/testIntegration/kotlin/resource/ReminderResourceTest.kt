@@ -33,6 +33,8 @@ class ReminderResourceTest : ServerTest() {
         assertThat(reminders).extracting("type").containsOnly(ReminderType.ADHOC.toString())
         assertThat(reminders).extracting("notifyMethod").containsOnly(NotificationMethod.PUSH.name)
         assertThat(reminders).extracting("message").containsOnly("message")
+        assertThat(reminders).extracting("dateCreated").doesNotContainNull()
+        assertThat(reminders).extracting("dateUpdated").doesNotContainNull()
     }
 
     @Test
@@ -46,6 +48,7 @@ class ReminderResourceTest : ServerTest() {
         assertThat(reminder.type).isEqualTo(ReminderType.ADHOC)
         assertThat(reminder.notifyMethod).isEqualTo(NotificationMethod.PUSH)
         assertThat(reminder.message).isEqualTo("message")
+        assertThat(reminder.dateCreated).isPositive().isEqualTo(reminder.dateUpdated)
     }
 
     @Test
@@ -75,6 +78,7 @@ class ReminderResourceTest : ServerTest() {
         assertThat(created.message).isEqualTo("message")
         assertThat(created.spec).isEqualTo(reminder.spec)
         assertThat(created.tz).isEqualTo(reminder.tz)
+        assertThat(created.dateCreated).isEqualTo(created.dateUpdated)
 
         val retrieved = get("/reminder/{id}", created.reminderId)
                 .then()
@@ -107,6 +111,7 @@ class ReminderResourceTest : ServerTest() {
         assertThat(updated.message).isEqualTo("updated")
         assertThat(updated.spec).isEqualTo(reminder.spec)
         assertThat(updated.tz).isEqualTo(reminder.tz)
+        assertThat(updated.dateUpdated).isNotEqualTo(updated.dateCreated)
 
         val retrieved = get("/reminder/{id}", reminder.reminderId)
                 .then()

@@ -46,6 +46,7 @@ class LinkResourceTest: ServerTest() {
         assertThat(created.tags).hasSize(1).extracting("id").containsExactly("t1")
         assertThat(created.collections).hasSize(1).extracting("id").containsExactly("c1")
         assertThat(created.content).isNull()
+        assertThat(created.dateCreated).isEqualTo(created.dateUpdated)
         val retrieved = get("/link/{id}", created.id)
                 .then()
                 .extract().to<Link>()
@@ -87,6 +88,7 @@ class LinkResourceTest: ServerTest() {
         assertThat(link.id).isEqualTo("e3")
         assertThat(link.title).isEqualTo("title3")
         assertThat(link.url).isEqualTo("content3")
+        assertThat(link.dateCreated).isEqualTo(link.dateUpdated)
     }
 
     @Test
@@ -128,6 +130,7 @@ class LinkResourceTest: ServerTest() {
         assertThat(updated.source).isEqualTo("gmail.com")
         assertThat(updated.tags).hasSize(1).extracting("id").containsExactly("t1")
         assertThat(updated.collections).hasSize(1).extracting("id").containsExactly("c1")
+        assertThat(updated.dateCreated).isNotEqualTo(updated.dateUpdated)
         val retrieved = get("/link/{id}", "e3")
                 .then().extract().to<Link>()
         assertThat(retrieved).isEqualToIgnoringGivenFields(updated, "dateUpdated", "props")
@@ -202,9 +205,10 @@ class LinkResourceTest: ServerTest() {
                 .statusCode(201)
                 .extract().to<Link>()
 
-        assertThat(created.version).isZero()
+        assertThat(created.version).isOne()
         assertThat(created.title).isEqualTo(newLink.title)
         assertThat(created.url).isEqualTo(newLink.url)
+        assertThat(created.dateCreated).isEqualTo(created.dateUpdated)
 
         // update
         val updateLink = NewLink(created.id, "edited", "google.com")
@@ -219,24 +223,27 @@ class LinkResourceTest: ServerTest() {
 
         assertThat(updated.title).isEqualTo(updateLink.title)
         assertThat(updated.url).isEqualTo(updateLink.url)
-        assertThat(updated.version).isOne()
+        assertThat(updated.version).isEqualTo(2)
+        assertThat(updated.dateCreated).isNotEqualTo(updated.dateUpdated)
 
         // retrieve versions
-        val original = get("/link/{id}/{version}", created.id, 0)
+        val original = get("/link/{id}/{version}", created.id, 1)
                 .then()
                 .statusCode(200)
                 .extract().to<Link>()
-        assertThat(original.version).isEqualTo(0)
+        assertThat(original.version).isOne()
         assertThat(original.title).isEqualTo(newLink.title)
         assertThat(original.url).isEqualTo(newLink.url)
+        assertThat(original.dateCreated).isEqualTo(original.dateUpdated)
 
-        val current = get("/link/{id}/{version}", created.id, 1)
+        val current = get("/link/{id}", created.id)
                 .then()
                 .statusCode(200)
                 .extract().to<Link>()
-        assertThat(current.version).isEqualTo(1)
+        assertThat(current.version).isEqualTo(2)
         assertThat(current.title).isEqualTo(updateLink.title)
         assertThat(current.url).isEqualTo(updateLink.url)
+        assertThat(current.dateCreated).isNotEqualTo(current.dateUpdated)
     }
 
     @Test
@@ -256,6 +263,7 @@ class LinkResourceTest: ServerTest() {
                 .statusCode(200)
                 .extract().to<Link>()
         assertThat(read.props.getAttribute("read")).isEqualTo(true)
+        assertThat(read.dateCreated).isEqualTo(read.dateUpdated)
         val retrieved = get("/link/{id}", "e1")
                 .then()
                 .statusCode(200)
@@ -270,6 +278,7 @@ class LinkResourceTest: ServerTest() {
                 .statusCode(200)
                 .extract().to<Link>()
         assertThat(read.props.getAttribute("read")).isEqualTo(false)
+        assertThat(read.dateCreated).isEqualTo(read.dateUpdated)
         val retrieved = get("/link/{id}", "e1")
                 .then()
                 .statusCode(200)

@@ -45,6 +45,7 @@ class NoteResourceTest: ServerTest() {
         assertThat(created.type).isEqualTo(EntryType.NOTE)
         assertThat(created.tags).hasSize(1).extracting("id").containsExactly("t1")
         assertThat(created.collections).hasSize(1).extracting("id").containsExactly("c1")
+        assertThat(created.dateCreated).isEqualTo(created.dateUpdated)
         val retrieved = get("/note/{id}", created.id)
                 .then()
                 .extract().to<Note>()
@@ -86,6 +87,7 @@ class NoteResourceTest: ServerTest() {
         assertThat(note.id).isEqualTo("e2")
         assertThat(note.title).isEqualTo("title2")
         assertThat(note.plainText).isEqualTo("content2")
+        assertThat(note.dateCreated).isEqualTo(note.dateUpdated)
     }
 
     @Test
@@ -127,6 +129,7 @@ class NoteResourceTest: ServerTest() {
         assertThat(updated.markdownText).isEqualTo("<p>modified</p>\n")
         assertThat(updated.tags).hasSize(1).extracting("id").containsExactly("t1")
         assertThat(updated.collections).hasSize(1).extracting("id").containsExactly("c1")
+        assertThat(updated.dateCreated).isNotEqualTo(updated.dateUpdated)
         val retrieved = get("/note/{id}", "e2")
                 .then().extract().to<Note>()
         assertThat(retrieved).isEqualToIgnoringGivenFields(updated, "dateUpdated", "props")
@@ -201,9 +204,10 @@ class NoteResourceTest: ServerTest() {
                 .statusCode(201)
                 .extract().to<Note>()
 
-        assertThat(created.version).isZero()
+        assertThat(created.version).isOne()
         assertThat(created.title).isEqualTo(newNote.title)
         assertThat(created.plainText).isEqualTo(newNote.plainText)
+        assertThat(created.dateCreated).isEqualTo(created.dateUpdated)
 
         // update
         val updateNote = NewNote(created.id, "edited", "new content", emptyList())
@@ -218,24 +222,27 @@ class NoteResourceTest: ServerTest() {
 
         assertThat(updated.title).isEqualTo(updateNote.title)
         assertThat(updated.plainText).isEqualTo(updateNote.plainText)
-        assertThat(updated.version).isOne()
+        assertThat(updated.version).isEqualTo(2)
+        assertThat(updated.dateCreated).isNotEqualTo(updated.dateUpdated)
 
         // retrieve versions
-        val original = get("/note/{id}/{version}", created.id, 0)
+        val original = get("/note/{id}/{version}", created.id, 1)
                 .then()
                 .statusCode(200)
                 .extract().to<Note>()
-        assertThat(original.version).isEqualTo(0)
+        assertThat(original.version).isOne()
         assertThat(original.title).isEqualTo(newNote.title)
         assertThat(original.plainText).isEqualTo(newNote.plainText)
+        assertThat(original.dateCreated).isEqualTo(original.dateUpdated)
 
-        val current = get("/note/{id}/{version}", created.id, 1)
+        val current = get("/note/{id}", created.id)
                 .then()
                 .statusCode(200)
                 .extract().to<Note>()
-        assertThat(current.version).isEqualTo(1)
+        assertThat(current.version).isEqualTo(2)
         assertThat(current.title).isEqualTo(updateNote.title)
         assertThat(current.plainText).isEqualTo(updateNote.plainText)
+        assertThat(current.dateCreated).isNotEqualTo(current.dateUpdated)
     }
 
 

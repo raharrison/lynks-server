@@ -35,7 +35,7 @@ class DiscussionFinderTaskTest {
     @Test
     fun testProcess() {
         val context = discussionFinderTask.createContext(emptyMap())
-        val link = Link("eid", "title", "url", "", "", 1)
+        val link = Link("eid", "title", "url", "", "", 1, 1)
 
         every { linkService.get("eid") } returns link
         every { workerRegistry.acceptDiscussionWork(any()) } just Runs

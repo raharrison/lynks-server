@@ -13,6 +13,8 @@ object Reminders : Table("REMINDER") {
     val message = varchar("MESSAGE", 255).nullable()
     val spec = varchar("SPEC", 32)
     val tz = varchar("TZ", 32)
+    val dateCreated = long("DATE_CREATED")
+    val dateUpdated = long("DATE_UPDATED")
     override val primaryKey = PrimaryKey(reminderId)
 }
 
@@ -29,6 +31,8 @@ interface Reminder {
     val message: String?
     val spec: String
     val tz: String
+    val dateCreated: Long
+    val dateUpdated: Long
 }
 
 data class AdhocReminder(override val reminderId: String,
@@ -36,7 +40,9 @@ data class AdhocReminder(override val reminderId: String,
                          override val notifyMethod: NotificationMethod,
                          override val message: String?,
                          val interval: Long,
-                         override val tz: String) : Reminder {
+                         override val tz: String,
+                         override val dateCreated: Long,
+                         override val dateUpdated: Long) : Reminder {
     override val type: ReminderType = ReminderType.ADHOC
     override val spec: String = interval.toString()
 }
@@ -46,7 +52,9 @@ data class RecurringReminder(override val reminderId: String,
                              override val notifyMethod: NotificationMethod,
                              override val message: String?,
                              val fire: String,
-                             override val tz: String) : Reminder {
+                             override val tz: String,
+                             override val dateCreated: Long,
+                             override val dateUpdated: Long) : Reminder {
     override val type: ReminderType = ReminderType.RECURRING
     override val spec: String = fire
 }

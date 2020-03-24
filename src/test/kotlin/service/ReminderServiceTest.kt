@@ -30,12 +30,13 @@ class ReminderServiceTest : DatabaseTest() {
 
     @Test
     fun testAddNewReminderDirectly() {
-        val reminder = reminderService.add(reminder("sid", "e1", ReminderType.ADHOC, NotificationMethod.EMAIL, "message", 100))
+        val reminder = reminderService.add(reminder("sid", "e1", ReminderType.ADHOC, NotificationMethod.EMAIL, "text", 100))
         assertThat(reminder.reminderId).isEqualTo("sid")
         assertThat(reminder.entryId).isEqualTo("e1")
         assertThat(reminder.spec).isEqualTo("100")
-        assertThat(reminder.message).isEqualTo("message")
+        assertThat(reminder.message).isEqualTo("text")
         assertThat(reminder.notifyMethod).isEqualTo(NotificationMethod.EMAIL)
+        assertThat(reminder.dateCreated).isEqualTo(reminder.dateUpdated)
         val retrieved = reminderService.get(reminder.reminderId)
         assertThat(retrieved).isEqualTo(reminder)
         verify(exactly = 1) { workerRegistry.acceptReminderWork(any()) }
@@ -61,6 +62,8 @@ class ReminderServiceTest : DatabaseTest() {
         assertThat(retrieved2?.message).isEqualTo(reminder2.message)
         assertThat(retrieved?.notifyMethod).isEqualTo(NotificationMethod.BOTH)
         assertThat(retrieved2?.notifyMethod).isEqualTo(NotificationMethod.PUSH)
+        assertThat(retrieved?.dateCreated).isEqualTo(retrieved?.dateUpdated)
+        assertThat(retrieved2?.dateCreated).isEqualTo(retrieved2?.dateUpdated)
         verify(exactly = 2) { workerRegistry.acceptReminderWork(any()) }
     }
 
@@ -81,6 +84,8 @@ class ReminderServiceTest : DatabaseTest() {
         assertThat(res.message).isEqualTo("message")
         assertThat(res.spec).isEqualTo("200")
         assertThat(res.tz).isEqualTo(tz)
+        assertThat(rem.dateCreated).isEqualTo(rem.dateUpdated)
+        assertThat(res.dateCreated).isEqualTo(res.dateUpdated)
         assertThat(res.notifyMethod).isEqualTo(NotificationMethod.PUSH)
         assertThat(reminderService.getAllReminders()).hasSize(2)
         assertThat(reminderService.get(res.reminderId)).isEqualTo(res)
@@ -151,6 +156,7 @@ class ReminderServiceTest : DatabaseTest() {
         assertThat(res?.notifyMethod).isEqualTo(NotificationMethod.EMAIL)
         assertThat(res?.message).isEqualTo("message")
         assertThat(res?.spec).isEqualTo("300")
+        assertThat(res?.dateCreated).isEqualTo(res?.dateUpdated)
         assertThat(reminderService.get(res!!.reminderId)).isEqualTo(res)
         assertThat(reminderService.getAllReminders()).hasSize(1)
         verify(exactly = 1) { workerRegistry.acceptReminderWork(any()) }
@@ -168,6 +174,7 @@ class ReminderServiceTest : DatabaseTest() {
         assertThat(updated?.notifyMethod).isEqualTo(NotificationMethod.BOTH)
         assertThat(updated?.message).isEqualTo("message2")
         assertThat(updated?.spec).isEqualTo("500")
+        assertThat(updated?.dateCreated).isNotEqualTo(updated?.dateUpdated)
         assertThat(reminderService.get(res1.reminderId)).isEqualTo(updated)
 
         // cannot update entryId
@@ -178,6 +185,7 @@ class ReminderServiceTest : DatabaseTest() {
         assertThat(updated2?.message).isEqualTo("message3")
         assertThat(updated2?.spec).isEqualTo("800")
         assertThat(updated2?.tz).isEqualTo("America/New_York")
+        assertThat(updated2?.dateCreated).isNotEqualTo(updated2?.dateUpdated)
         assertThat(reminderService.get(res2.reminderId)).isEqualTo(updated2)
 
         verify(exactly = 4) { workerRegistry.acceptReminderWork(any()) }
@@ -214,9 +222,12 @@ class ReminderServiceTest : DatabaseTest() {
 
     private fun reminder(sid: String, eId: String, type: ReminderType, notifyMethod: NotificationMethod = NotificationMethod.EMAIL,
                          message: String? = null, interval: Long = 0): Reminder {
+        val time = System.currentTimeMillis()
         return when (type) {
-            ReminderType.ADHOC -> AdhocReminder(sid, entryId = eId, message = message, notifyMethod = notifyMethod, interval = interval, tz = this.tz)
-            ReminderType.RECURRING -> RecurringReminder(sid, entryId = eId, message = message, notifyMethod = notifyMethod, fire = interval.toString(), tz = this.tz)
+            ReminderType.ADHOC -> AdhocReminder(sid, entryId = eId, message = message, notifyMethod = notifyMethod,
+                interval = interval, tz = this.tz, dateCreated = time, dateUpdated = time)
+            ReminderType.RECURRING -> RecurringReminder(sid, entryId = eId, message = message, notifyMethod = notifyMethod,
+                fire = interval.toString(), tz = this.tz, dateCreated = time, dateUpdated = time)
         }
     }
 

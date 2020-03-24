@@ -21,6 +21,7 @@ object RowMapper {
             url = row[table.plainContent]!!,
             source = row[table.src],
             content = row[table.content],
+            dateCreated = row[table.dateCreated],
             dateUpdated = row[table.dateUpdated],
             tags = tags,
             collections = collections,
@@ -36,6 +37,7 @@ object RowMapper {
             title = row[table.title],
             plainText = row[table.plainContent]!!,
             markdownText = row[table.content]!!,
+            dateCreated = row[table.dateCreated],
             dateUpdated = row[table.dateUpdated],
             tags = tags,
             collections = collections,
@@ -51,7 +53,8 @@ object RowMapper {
                     entryId = row[Comments.entryId],
                     plainText = row[Comments.plainText],
                     markdownText = row[Comments.markdownText],
-                    dateCreated = row[Comments.dateCreated]
+                    dateCreated = row[Comments.dateCreated],
+                    dateUpdated = row[Comments.dateUpdated]
             )
 
     fun toResource(row: ResultRow): Resource {

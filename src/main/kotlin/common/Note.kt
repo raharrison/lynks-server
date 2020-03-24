@@ -8,6 +8,7 @@ data class Note(
         override val title: String,
         val plainText: String,
         val markdownText: String,
+        override val dateCreated: Long,
         override val dateUpdated: Long,
         override val tags: List<Tag> = emptyList(),
         override val collections: List<Collection> = emptyList(),

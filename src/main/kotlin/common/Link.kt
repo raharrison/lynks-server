@@ -9,6 +9,7 @@ data class Link(
         val url: String,
         val source: String,
         var content: String?,
+        override val dateCreated: Long,
         override val dateUpdated: Long,
         override val tags: List<Tag> = emptyList(),
         override val collections: List<Collection> = emptyList(),

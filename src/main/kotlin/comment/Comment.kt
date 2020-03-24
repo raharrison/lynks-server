@@ -12,6 +12,7 @@ object Comments : Table("COMMENT") {
     val plainText = text("PLAIN_TEXT")
     val markdownText = text("MARKDOWN_TEXT")
     val dateCreated = long("DATE_CREATED")
+    val dateUpdated = long("DATE_UPDATED")
     override val primaryKey = PrimaryKey(id)
 }
 
@@ -21,7 +22,8 @@ data class Comment(
         val entryId: String,
         val plainText: String,
         val markdownText: String,
-        val dateCreated: Long
+        val dateCreated: Long,
+        val dateUpdated: Long
 ): IdBasedCreatedEntity
 
 

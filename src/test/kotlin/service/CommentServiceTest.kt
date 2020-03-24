@@ -29,6 +29,8 @@ class CommentServiceTest : DatabaseTest() {
         assertThat(added.entryId).isEqualTo("e1")
         assertThat(added.plainText).isEqualTo("comment content")
         assertThat(added.markdownText).isEqualTo("<p>comment content</p>\n")
+        assertThat(added.dateCreated).isNotZero()
+        assertThat(added.dateUpdated).isNotZero()
     }
 
     @Test
@@ -54,6 +56,7 @@ class CommentServiceTest : DatabaseTest() {
         assertThat(retrieved?.entryId).isEqualTo("e1")
         assertThat(retrieved?.plainText).isEqualTo(added.plainText)
         assertThat(retrieved?.dateCreated).isEqualTo(added.dateCreated)
+        assertThat(retrieved?.dateUpdated).isEqualTo(added.dateUpdated)
         assertThat(retrieved?.id).isEqualTo(added.id)
         assertThat(retrieved?.markdownText).isEqualTo(added.markdownText)
     }
@@ -129,15 +132,20 @@ class CommentServiceTest : DatabaseTest() {
     fun testUpdateExistingComment() {
         val added1 = commentService.addComment("e1", newComment(content = "comment content 1"))
         assertThat(commentService.getComment(added1.entryId, added1.id)?.entryId).isEqualTo("e1")
+        assertThat(added1.dateCreated).isEqualTo(added1.dateUpdated)
 
         val updated = commentService.updateComment("e1", newComment(added1.id, "changed"))
         val newComm = commentService.getComment(updated!!.entryId, updated.id)
+        assertThat(updated).isEqualTo(newComm)
         assertThat(newComm?.entryId).isEqualTo("e1")
         assertThat(newComm?.plainText).isEqualTo("changed")
+        assertThat(newComm?.dateCreated).isEqualTo(added1.dateCreated)
+        assertThat(newComm?.dateUpdated).isNotEqualTo(added1.dateCreated)
 
         val oldComm = commentService.getComment(added1.entryId, added1.id)
         assertThat(oldComm?.entryId).isEqualTo("e1")
         assertThat(oldComm?.plainText).isEqualTo("changed")
+        assertThat(oldComm?.dateUpdated).isNotEqualTo(oldComm?.dateCreated)
     }
 
     @Test
@@ -148,6 +156,7 @@ class CommentServiceTest : DatabaseTest() {
         val updated = commentService.updateComment("e1", newComment(content = "new comment"))
         assertThat(commentService.getComment(updated!!.entryId, updated.id)?.entryId).isEqualTo("e1")
         assertThat(added1.id).isNotEqualTo(updated.id)
+        assertThat(updated.dateCreated).isEqualTo(updated.dateUpdated)
 
         val comments = commentService.getCommentsFor("e1")
         assertThat(comments).hasSize(2)

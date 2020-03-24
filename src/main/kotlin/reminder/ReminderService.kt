@@ -17,11 +17,13 @@ class ReminderService(private val workerRegistry: WorkerRegistry) {
         return when (row[Reminders.type]) {
             ReminderType.ADHOC -> AdhocReminder(
                     row[Reminders.reminderId], row[Reminders.entryId], row[Reminders.notifyMethod],
-                    row[Reminders.message], row[Reminders.spec].toLong(), row[Reminders.tz]
+                    row[Reminders.message], row[Reminders.spec].toLong(), row[Reminders.tz],
+                    row[Reminders.dateCreated], row[Reminders.dateUpdated]
             )
             ReminderType.RECURRING -> RecurringReminder(
                     row[Reminders.reminderId], row[Reminders.entryId], row[Reminders.notifyMethod],
-                    row[Reminders.message], row[Reminders.spec], row[Reminders.tz]
+                    row[Reminders.message], row[Reminders.spec], row[Reminders.tz],
+                    row[Reminders.dateCreated], row[Reminders.dateUpdated]
             )
         }
     }
@@ -47,6 +49,7 @@ class ReminderService(private val workerRegistry: WorkerRegistry) {
     }
 
     fun add(job: Reminder): Reminder = transaction {
+        val time = System.currentTimeMillis()
         Reminders.insert {
             it[reminderId] = job.reminderId
             it[entryId] = job.entryId
@@ -55,6 +58,8 @@ class ReminderService(private val workerRegistry: WorkerRegistry) {
             it[message] = job.message
             it[spec] = job.spec
             it[tz] = checkValidTimeZone(job.tz)
+            it[dateCreated] = time
+            it[dateUpdated] = time
         }
         get(job.reminderId)!!.also {
             log.info("Created reminder, submitting worker request id={}", job.reminderId)
@@ -64,6 +69,7 @@ class ReminderService(private val workerRegistry: WorkerRegistry) {
 
     fun addReminder(reminder: NewReminder): Reminder = transaction {
         val id = RandomUtils.generateUid()
+        val time = System.currentTimeMillis()
         Reminders.insert {
             it[reminderId] = id
             it[entryId] = reminder.entryId
@@ -72,6 +78,8 @@ class ReminderService(private val workerRegistry: WorkerRegistry) {
             it[message] = reminder.message
             it[spec] = reminder.spec
             it[tz] = checkValidTimeZone(reminder.tz)
+            it[dateCreated] = time
+            it[dateUpdated] = time
         }
         get(id)!!.also {
             log.info("Created reminder, submitting worker request id={}", id)
@@ -90,6 +98,7 @@ class ReminderService(private val workerRegistry: WorkerRegistry) {
                 it[message] = reminder.message
                 it[spec] = reminder.spec
                 it[tz] = checkValidTimeZone(reminder.tz)
+                it[dateUpdated] = System.currentTimeMillis()
             }
             if (updatedCount > 0) {
                 get(reminder.reminderId)?.also {

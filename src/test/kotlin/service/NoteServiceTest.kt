@@ -41,6 +41,7 @@ class NoteServiceTest : DatabaseTest() {
         assertThat(note.plainText).isEqualTo("content")
         assertThat(note.markdownText).isEqualTo("<p>content</p>\n")
         assertThat(note.dateUpdated).isPositive()
+        assertThat(note.dateCreated).isEqualTo(note.dateUpdated)
     }
 
     @Test
@@ -50,6 +51,7 @@ class NoteServiceTest : DatabaseTest() {
         assertThat(note.title).isEqualTo("n1")
         assertThat(note.plainText).isEqualTo("content")
         assertThat(note.tags).hasSize(2).extracting("id").containsExactly("t1", "t2")
+        assertThat(note.dateCreated).isEqualTo(note.dateUpdated)
     }
 
     @Test
@@ -64,6 +66,7 @@ class NoteServiceTest : DatabaseTest() {
         assertThat(note.title).isEqualTo("n1")
         assertThat(note.plainText).isEqualTo("content")
         assertThat(note.collections).hasSize(2).extracting("id").containsExactly("c1", "c2")
+        assertThat(note.dateCreated).isEqualTo(note.dateUpdated)
     }
 
     @Test
@@ -80,6 +83,7 @@ class NoteServiceTest : DatabaseTest() {
         assertThat(retrieved?.tags).isEqualTo(note2.tags)
         assertThat(retrieved?.collections).isEqualTo(note2.collections)
         assertThat(retrieved?.plainText).isEqualTo(note2.plainText)
+        assertThat(retrieved?.dateCreated).isEqualTo(note2.dateUpdated)
     }
 
     @Test
@@ -214,6 +218,7 @@ class NoteServiceTest : DatabaseTest() {
         assertThat(newNote?.plainText).isEqualTo("new content")
         assertThat(newNote?.tags).hasSize(1)
         assertThat(newNote?.collections).hasSize(1)
+        assertThat(newNote?.dateUpdated).isNotEqualTo(newNote?.dateCreated)
 
         val oldNote = noteService.get(added1.id)
         assertThat(oldNote?.id).isEqualTo(updated.id)
@@ -264,6 +269,8 @@ class NoteServiceTest : DatabaseTest() {
         assertThat(noteService.get(updated!!.id)?.id).isNotEqualTo(added1.id)
         assertThat(added1.id).isNotEqualTo(updated.id)
         assertThat(updated.title).isEqualTo("updated")
+        assertThat(updated.dateUpdated).isEqualTo(updated.dateCreated)
+        assertThat(added1.dateCreated).isNotEqualTo(updated.dateCreated)
         assertThat(noteService.get(added1.id)?.title).isEqualTo("n1")
     }
 
@@ -282,6 +289,7 @@ class NoteServiceTest : DatabaseTest() {
         assertThat(updated?.props?.getAttribute("key1")).isEqualTo("attribute1")
         assertThat(updated?.props?.getAttribute("key2")).isEqualTo("attribute2")
         assertThat(updated?.props?.getAttribute("key3")).isNull()
+        assertThat(updated?.dateUpdated).isEqualTo(updated?.dateCreated)
     }
 
     @Test
@@ -295,6 +303,7 @@ class NoteServiceTest : DatabaseTest() {
         val updated = noteService.get(added.id)
         assertThat(updated?.props?.getTask("t1")).isEqualTo(task)
         assertThat(updated?.props?.getAttribute("t3")).isNull()
+        assertThat(updated?.dateUpdated).isEqualTo(updated?.dateCreated)
     }
 
     @Test
@@ -332,6 +341,7 @@ class NoteServiceTest : DatabaseTest() {
         val version1 = noteService.get(added.id, 1)
         assertThat(added.version).isOne()
         assertThat(added).isEqualToIgnoringGivenFields(version1, "props")
+        assertThat(added.dateUpdated).isEqualTo(added.dateCreated)
 
         // update via new entity
         val updated = noteService.update(newNote(added.id, "edited", "different content"))
@@ -339,27 +349,33 @@ class NoteServiceTest : DatabaseTest() {
         assertThat(updated?.version).isEqualTo(2)
         assertThat(version2).isEqualToIgnoringGivenFields(updated, "props")
         assertThat(version2?.title).isEqualTo("edited")
+        assertThat(updated?.dateUpdated).isNotEqualTo(updated?.dateCreated)
 
         // get original
         val first = noteService.get(added.id, 1)
         assertThat(first?.title).isEqualTo("n1")
         assertThat(first?.version).isOne()
+        assertThat(first?.dateCreated).isEqualTo(first?.dateUpdated)
 
         // update directly
         val updatedDirect = noteService.update(updated!!.copy(title = "new title"), true)
         val version3 = noteService.get(added.id)
         assertThat(version3?.title).isEqualTo(updatedDirect?.title)
         assertThat(version3?.version).isEqualTo(3)
+        assertThat(version3?.dateUpdated).isNotEqualTo(updated.dateUpdated)
 
         // get version before
         val stepBack = noteService.get(added.id, 2)
         assertThat(stepBack?.version).isEqualTo(2)
         assertThat(stepBack?.title).isEqualTo(version2?.title)
+        assertThat(stepBack?.dateUpdated).isNotEqualTo(version3?.dateUpdated)
 
         // get current version
         val current = noteService.get(added.id)
         assertThat(current?.version).isEqualTo(3)
         assertThat(current?.title).isEqualTo(version3?.title)
+        assertThat(current?.dateUpdated).isNotEqualTo(stepBack?.dateUpdated)
+        assertThat(current?.dateCreated).isNotEqualTo(version3?.dateUpdated)
     }
 
     @Test

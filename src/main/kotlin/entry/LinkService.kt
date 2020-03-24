@@ -25,12 +25,14 @@ class LinkService(
     }
 
     override fun toInsert(eId: String, entry: NewLink): BaseEntries.(InsertStatement<*>) -> Unit = {
+        val time = System.currentTimeMillis()
         it[id] = eId
         it[title] = entry.title
         it[plainContent] = entry.url
         it[src] = URLUtils.extractSource(entry.url)
         it[type] = EntryType.LINK
-        it[dateUpdated] = System.currentTimeMillis()
+        it[dateCreated] = time
+        it[dateUpdated] = time
     }
 
     override fun toUpdate(entry: NewLink): BaseEntries.(UpdateBuilder<*>) -> Unit = {

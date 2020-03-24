@@ -16,6 +16,7 @@ import worker.WorkerSchedules
 import java.time.ZoneId
 
 fun createDummyEntry(id: String, title: String, content: String, type: EntryType, prop: BaseProperties? = null) = transaction {
+    val time = System.currentTimeMillis()
     Entries.insert {
         it[Entries.id] = id
         it[Entries.title] = title
@@ -23,7 +24,8 @@ fun createDummyEntry(id: String, title: String, content: String, type: EntryType
         it[Entries.content] = content
         it[src] = "src"
         it[Entries.type] = type
-        it[dateUpdated] = System.currentTimeMillis()
+        it[dateCreated] = time
+        it[dateUpdated] = time
         it[props] = prop
     }
 }
@@ -60,17 +62,20 @@ fun createDummyCollection(id: String, name: String, parentId: String?=null) = tr
 }
 
 fun createDummyComment(id: String, entryId: String, content: String) = transaction {
+    val time = System.currentTimeMillis()
     Comments.insert {
         it[Comments.id] = id
         it[Comments.entryId] = entryId
         it[plainText] = content
         it[markdownText] = content
-        it[dateCreated] = System.currentTimeMillis()
+        it[dateCreated] = time
+        it[dateUpdated] = time
     }
 }
 
 fun createDummyReminder(id: String, entryId: String, type: ReminderType, notifyMethod: NotificationMethod,
                         message: String? = null, spec: String, tz: String = ZoneId.systemDefault().id) = transaction {
+    val time = System.currentTimeMillis()
     Reminders.insert {
         it[Reminders.reminderId] = id
         it[Reminders.entryId] = entryId
@@ -79,6 +84,8 @@ fun createDummyReminder(id: String, entryId: String, type: ReminderType, notifyM
         it[Reminders.message] = message
         it[Reminders.spec] = spec
         it[Reminders.tz] = tz
+        it[Reminders.dateCreated] = time
+        it[Reminders.dateUpdated] = time
     }
 }
 

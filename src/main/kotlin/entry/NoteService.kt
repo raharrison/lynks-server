@@ -28,13 +28,15 @@ class NoteService(tagService: TagService, collectionService: CollectionService,
     }
 
     override fun toInsert(eId: String, entry: NewNote): BaseEntries.(UpdateBuilder<*>) -> Unit = {
+        val time = System.currentTimeMillis()
         it[id] = eId
         it[title] = entry.title
         it[plainContent] = entry.plainText
         it[content] = MarkdownUtils.convertToMarkdown(entry.plainText)
         it[src] = "Me"
         it[type] = EntryType.NOTE
-        it[dateUpdated] = System.currentTimeMillis()
+        it[dateCreated] = time
+        it[dateUpdated] = time
     }
 
     override fun toUpdate(entry: NewNote): BaseEntries.(UpdateBuilder<*>) -> Unit = {

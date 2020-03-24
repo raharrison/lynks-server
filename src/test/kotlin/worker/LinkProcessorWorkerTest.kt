@@ -27,7 +27,7 @@ class LinkProcessorWorkerTest {
 
     @Test
     fun testDefaultPersist() = runBlocking(TestCoroutineContext()) {
-        val link = Link("id1", "title", "google.com", "google.com", "", 100)
+        val link = Link("id1", "title", "google.com", "google.com", "", 100, 100)
 
         val thumb = ImageResource(byteArrayOf(1,2,3), "jpg")
         val screen = ImageResource(byteArrayOf(4,5,6), "png")
@@ -73,7 +73,7 @@ class LinkProcessorWorkerTest {
 
     @Test
     fun testDefaultPersistAlreadyProcessed() = runBlocking(TestCoroutineContext()) {
-        val link = Link("id1", "title", "google.com", "google.com", "", 100)
+        val link = Link("id1", "title", "google.com", "google.com", "", 100, 100)
 
         val processor = mockk<LinkProcessor>(relaxUnitFun = true)
         coEvery { notifyService.accept(any(), ofType(Link::class)) } just Runs
@@ -105,7 +105,7 @@ class LinkProcessorWorkerTest {
 
     @Test
     fun testDefaultPersistNoProcessFlag() = runBlocking(TestCoroutineContext()) {
-        val link = Link("id1", "title", "google.com", "google.com", "", 100)
+        val link = Link("id1", "title", "google.com", "google.com", "", 100, 100)
 
         val processor = mockk<LinkProcessor>(relaxUnitFun = true)
         coEvery { notifyService.accept(any(), ofType(Link::class)) } just Runs
@@ -137,7 +137,7 @@ class LinkProcessorWorkerTest {
 
     @Test
     fun testDefaultPersistCompletedExceptionally() = runBlocking(TestCoroutineContext()) {
-        val link = Link("id1", "title", "google.com", "google.com", "", 100)
+        val link = Link("id1", "title", "google.com", "google.com", "", 100, 100)
 
         val exception = RuntimeException("error during computation")
         val processor = mockk<LinkProcessor>(relaxUnitFun = true)

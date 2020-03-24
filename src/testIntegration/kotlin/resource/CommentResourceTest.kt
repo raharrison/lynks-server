@@ -41,6 +41,7 @@ class CommentResourceTest: ServerTest() {
         assertThat(created.plainText).isEqualTo(newComment.plainText)
         assertThat(created.markdownText).isEqualTo("<p>some markdown text</p>\n")
         assertThat(created.entryId).isEqualTo("e1")
+        assertThat(created.dateCreated).isEqualTo(created.dateUpdated)
         val retrieved = get("/entry/{entryId}/comments/{id}", created.entryId, created.id)
                 .then()
                 .extract().to<Comment>()
@@ -63,6 +64,8 @@ class CommentResourceTest: ServerTest() {
         assertThat(comment.id).isEqualTo("c2")
         assertThat(comment.entryId).isEqualTo("e2")
         assertThat(comment.plainText).isEqualTo("comment content2")
+        assertThat(comment.dateCreated).isNotZero()
+        assertThat(comment.dateUpdated).isNotZero()
     }
 
     @Test
@@ -102,6 +105,7 @@ class CommentResourceTest: ServerTest() {
                 .extract().to<Comment>()
         assertThat(updated.plainText).isEqualTo("modified")
         assertThat(updated.markdownText).isEqualTo("<p>modified</p>\n")
+        assertThat(updated.dateUpdated).isNotEqualTo(updated.dateCreated)
         val retrieved = get("/entry/{entryId}/comments/{id}", "e2", "c2")
                 .then().extract().to<Comment>()
         assertThat(retrieved).isEqualTo(updated)

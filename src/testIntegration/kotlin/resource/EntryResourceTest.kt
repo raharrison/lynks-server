@@ -224,9 +224,9 @@ class EntryResourceTest : ServerTest() {
             .extract().to<List<EntryVersion>>()
         assertThat(entryVersions1).hasSize(1)
         assertThat(entryVersions1).extracting("id").containsOnly("e1")
-        assertThat(entryVersions1).extracting("version").containsOnly(0)
+        assertThat(entryVersions1).extracting("version").containsOnly(1)
 
-        updateDummyEntry("e1", "updated", 1)
+        updateDummyEntry("e1", "updated", 2)
 
         val entryVersions2 = get("/entry/{id}/history", "e1")
             .then()
@@ -234,7 +234,7 @@ class EntryResourceTest : ServerTest() {
             .extract().to<List<EntryVersion>>()
         assertThat(entryVersions2).hasSize(2)
         assertThat(entryVersions2).extracting("id").containsOnly("e1")
-        assertThat(entryVersions2).extracting("version").containsOnly(0, 1)
+        assertThat(entryVersions2).extracting("version").containsOnly(1, 2)
         assertThat(entryVersions2).extracting("dateUpdated").doesNotHaveDuplicates()
     }
 }

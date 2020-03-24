@@ -47,6 +47,7 @@ class LinkServiceTest : DatabaseTest() {
         assertThat(link.url).isEqualTo("google.com/page")
         assertThat(link.source).isEqualTo("google.com")
         assertThat(link.dateUpdated).isPositive()
+        assertThat(link.dateCreated).isEqualTo(link.dateUpdated)
         verify(exactly = 1) { workerRegistry.acceptLinkWork(any()) }
         verify(exactly = 1) { workerRegistry.acceptDiscussionWork(link.id) }
     }
@@ -58,6 +59,7 @@ class LinkServiceTest : DatabaseTest() {
         assertThat(link.title).isEqualTo("n1")
         assertThat(link.url).isEqualTo("google.com")
         assertThat(link.tags).hasSize(2).extracting("id").containsExactly("t1", "t2")
+        assertThat(link.dateCreated).isEqualTo(link.dateUpdated)
     }
 
     @Test
@@ -67,6 +69,7 @@ class LinkServiceTest : DatabaseTest() {
         assertThat(link.title).isEqualTo("n1")
         assertThat(link.url).isEqualTo("google.com")
         assertThat(link.collections).hasSize(2).extracting("id").containsExactly("c1", "c2")
+        assertThat(link.dateCreated).isEqualTo(link.dateUpdated)
     }
 
     @Test
@@ -100,6 +103,7 @@ class LinkServiceTest : DatabaseTest() {
         assertThat(retrieved?.tags).isEqualTo(link2.tags)
         assertThat(retrieved?.collections).isEqualTo(link2.collections)
         assertThat(retrieved?.url).isEqualTo(link2.url)
+        assertThat(retrieved?.dateCreated).isEqualTo(link2.dateUpdated)
     }
 
     @Test
@@ -234,6 +238,7 @@ class LinkServiceTest : DatabaseTest() {
         assertThat(newLink?.url).isEqualTo("amazon.com")
         assertThat(newLink?.tags).hasSize(1)
         assertThat(newLink?.collections).hasSize(1)
+        assertThat(newLink?.dateUpdated).isNotEqualTo(newLink?.dateCreated)
 
         val oldLink = linkService.get(added1.id)
         assertThat(oldLink?.id).isEqualTo(updated.id)
@@ -257,6 +262,7 @@ class LinkServiceTest : DatabaseTest() {
         assertThat(newLink?.id).isEqualTo(added1.id)
         assertThat(newLink?.title).isEqualTo("updated")
         assertThat(newLink?.url).isEqualTo("amazon.com")
+        assertThat(newLink?.dateUpdated).isNotEqualTo(newLink?.dateCreated)
 
         // for initial add then update
         verify(exactly = 2) { workerRegistry.acceptLinkWork(any()) }
@@ -272,6 +278,7 @@ class LinkServiceTest : DatabaseTest() {
         val updated = linkService.update(added)
         assertThat(added.content).isEqualTo(updated!!.content)
         assertThat(updated.content).isEqualTo("modified")
+        assertThat(updated.dateCreated).isEqualTo(updated.dateUpdated)
         val retrieved = linkService.get(added.id)
         assertThat(retrieved?.content).isEqualTo(updated.content)
     }
@@ -318,6 +325,8 @@ class LinkServiceTest : DatabaseTest() {
         assertThat(added1.id).isNotEqualToIgnoringCase(updated.id)
         assertThat(updated.title).isEqualTo("updated")
         assertThat(updated.url).isEqualTo("amazon.com")
+        assertThat(updated.dateUpdated).isEqualTo(updated.dateCreated)
+        assertThat(added1.dateCreated).isNotEqualTo(updated.dateCreated)
         assertThat(linkService.get(added1.id)?.title).isEqualTo("n1")
     }
 
@@ -330,6 +339,7 @@ class LinkServiceTest : DatabaseTest() {
         linkService.update(added)
 
         val updated = linkService.get(added.id)
+        assertThat(updated?.dateUpdated).isEqualTo(updated?.dateCreated)
         assertThat(updated?.props?.containsAttribute("key1")).isFalse()
         assertThat(updated?.props?.containsAttribute("key2")).isFalse()
         assertThat(updated?.props?.containsAttribute("key3")).isFalse()
@@ -344,6 +354,7 @@ class LinkServiceTest : DatabaseTest() {
         linkService.update(added)
 
         val updated = linkService.get(added.id)
+        assertThat(updated?.dateUpdated).isEqualTo(updated?.dateCreated)
         assertThat(updated?.props?.getTask("t1")).isNull()
         assertThat(updated?.props?.getAttribute("t3")).isNull()
     }
@@ -383,6 +394,7 @@ class LinkServiceTest : DatabaseTest() {
         val version1 = linkService.get(added.id, 1)
         assertThat(added.version).isOne()
         assertThat(added).isEqualToIgnoringGivenFields(version1, "props")
+        assertThat(added.dateUpdated).isEqualTo(added.dateCreated)
 
         // update via new entity
         val updated = linkService.update(newLink(added.id, "edited", "fb.com"))
@@ -390,27 +402,33 @@ class LinkServiceTest : DatabaseTest() {
         assertThat(updated?.version).isEqualTo(2)
         assertThat(version2).isEqualToIgnoringGivenFields(updated, "props")
         assertThat(version2?.title).isEqualTo("edited")
+        assertThat(updated?.dateUpdated).isNotEqualTo(updated?.dateCreated)
 
         // get original
         val first = linkService.get(added.id, 1)
         assertThat(first?.title).isEqualTo("n1")
         assertThat(first?.version).isOne()
+        assertThat(first?.dateCreated).isEqualTo(first?.dateUpdated)
 
         // update directly
         val updatedDirect = linkService.update(updated!!.copy(title = "new title"), true)
         val version3 = linkService.get(added.id)
         assertThat(version3?.title).isEqualTo(updatedDirect?.title)
         assertThat(version3?.version).isEqualTo(3)
+        assertThat(version3?.dateUpdated).isNotEqualTo(updated.dateUpdated)
 
         // get version before
         val stepBack = linkService.get(added.id, 2)
         assertThat(stepBack?.version).isEqualTo(2)
         assertThat(stepBack?.title).isEqualTo(version2?.title)
+        assertThat(stepBack?.dateUpdated).isNotEqualTo(version3?.dateUpdated)
 
         // get current version
         val current = linkService.get(added.id)
         assertThat(current?.version).isEqualTo(3)
         assertThat(current?.title).isEqualTo(version3?.title)
+        assertThat(current?.dateUpdated).isNotEqualTo(stepBack?.dateUpdated)
+        assertThat(current?.dateCreated).isNotEqualTo(version3?.dateUpdated)
     }
 
     @Test

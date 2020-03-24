@@ -24,7 +24,7 @@ class UnreadLinkDigestWorkerTest {
 
     @BeforeEach
     fun before() {
-        every { linkService.getUnread() } returns listOf(Link("id", "title", "url", "src", "", 0))
+        every { linkService.getUnread() } returns listOf(Link("id", "title", "url", "src", "", 0, 0))
     }
 
     @Test

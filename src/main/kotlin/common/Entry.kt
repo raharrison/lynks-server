@@ -13,6 +13,7 @@ abstract class BaseEntries(name: String) : Table(name) {
     val content = text("CONTENT").nullable()
     val src = varchar("SOURCE", 255)
     val type = enumeration("TYPE", EntryType::class)
+    val dateCreated = long("DATE_CREATED")
     val dateUpdated = long("DATE_UPDATED")
     val props = json("PROPS", BaseProperties::class.java).nullable()
     abstract val version: Column<Int>
@@ -31,6 +32,7 @@ object EntryVersions : BaseEntries("ENTRY_VERSION") {
 
 interface Entry : IdBasedCreatedEntity {
     val title: String
+    val dateCreated: Long
     val dateUpdated: Long
     val version: Int
     val starred: Boolean

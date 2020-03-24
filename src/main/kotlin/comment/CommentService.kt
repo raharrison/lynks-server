@@ -26,18 +26,16 @@ class CommentService {
                 .map { toComment(it) }
     }
 
-    fun deleteComment(entryId: String, id: String): Boolean = transaction {
-        Comments.deleteWhere { Comments.id eq id and (Comments.entryId eq entryId) } > 0
-    }
-
     fun addComment(eId: String, comment: NewComment): Comment = transaction {
         val newId = RandomUtils.generateUid()
+        val time = System.currentTimeMillis()
         Comments.insert {
             it[id] = newId
             it[entryId] = eId
             it[plainText] = comment.plainText
             it[markdownText] = MarkdownUtils.convertToMarkdown(comment.plainText)
-            it[dateCreated] = System.currentTimeMillis()
+            it[dateCreated] = time
+            it[dateUpdated] = time
         }
         getComment(eId, newId)!!
     }
@@ -52,6 +50,7 @@ class CommentService {
                 val updated = Comments.update({ Comments.id eq id and (Comments.entryId eq entryId) }) {
                     it[plainText] = comment.plainText
                     it[markdownText] = MarkdownUtils.convertToMarkdown(comment.plainText)
+                    it[dateUpdated] = System.currentTimeMillis()
                 }
                 if (updated > 0) getComment(entryId, id)!!
                 else {
@@ -60,5 +59,9 @@ class CommentService {
                 }
             }
         }
+    }
+
+    fun deleteComment(entryId: String, id: String): Boolean = transaction {
+        Comments.deleteWhere { Comments.id eq id and (Comments.entryId eq entryId) } > 0
     }
 }

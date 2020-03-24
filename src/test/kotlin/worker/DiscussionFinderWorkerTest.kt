@@ -17,7 +17,7 @@ import util.createDummyWorkerSchedule
 class DiscussionFinderWorkerTest: DatabaseTest() {
 
     private val testUrl = "https://www.factorio.com/blog/post/fff-246"
-    private val link = Link("id1", "title", testUrl, "factorio.com", "", 100)
+    private val link = Link("id1", "title", testUrl, "factorio.com", "", 100, 100)
 
     private val linkService = mockk<LinkService>()
     private val retriever = mockk<ResourceRetriever>()
