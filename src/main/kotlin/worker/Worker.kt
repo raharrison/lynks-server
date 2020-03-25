@@ -136,6 +136,7 @@ abstract class PersistedVariableChannelBasedWorker<T : PersistVariableWorkerRequ
         WorkerSchedules.update({ (WorkerSchedules.worker eq workerName) and (WorkerSchedules.key eq request.key) }) {
             it[key] = request.key
             it[WorkerSchedules.request] = defaultMapper.writeValueAsString(request)
+            it[lastRun] = System.currentTimeMillis()
         }
     }
 
