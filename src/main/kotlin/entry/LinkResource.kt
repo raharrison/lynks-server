@@ -5,6 +5,7 @@ import io.ktor.application.call
 import io.ktor.http.HttpStatusCode
 import io.ktor.request.receive
 import io.ktor.response.respond
+import io.ktor.response.respondRedirect
 import io.ktor.routing.*
 import util.URLUtils
 import util.pageRequest
@@ -67,6 +68,13 @@ fun Route.link(linkService: LinkService) {
             val updated = linkService.read(id, false)
             if (updated == null) call.respond(HttpStatusCode.NotFound)
             else call.respond(updated)
+        }
+
+        get("/{id}/launch") {
+            val id = call.parameters["id"]!!
+            val read = linkService.read(id, true)
+            if (read == null) call.respond(HttpStatusCode.NotFound)
+            else call.respondRedirect(read.url)
         }
     }
 }

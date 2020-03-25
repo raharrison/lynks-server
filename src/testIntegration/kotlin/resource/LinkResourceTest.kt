@@ -304,4 +304,19 @@ class LinkResourceTest: ServerTest() {
                 .statusCode(400)
     }
 
+    @Test
+    fun testLaunchInvalidLink() {
+        get("/link/{id}/launch", "invalid")
+            .then()
+            .statusCode(404)
+    }
+
+    @Test
+    fun testLaunchLinkRedirects() {
+        get("/link/{id}/launch", "e1")
+            .then()
+            .statusCode(302)
+            .header("Location", "content1")
+    }
+
 }
