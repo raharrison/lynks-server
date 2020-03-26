@@ -84,6 +84,15 @@ class EntryServiceTest: DatabaseTest() {
     }
 
     @Test
+    fun testSearchSortOrdering() {
+        val retrieved = entryService.get(PageRequest(0, 10, sort = "dateCreated", direction = SortDirection.ASC))
+        assertThat(retrieved).extracting("id").containsExactly("id1", "id2", "id3")
+
+        val retrieved2 = entryService.get(PageRequest(0, 10, sort = "dateCreated", direction = SortDirection.DESC))
+        assertThat(retrieved2).extracting("id").containsExactly("id3", "id2", "id1")
+    }
+
+    @Test
     fun testSearchTitle() {
         val entries = entryService.search("note")
         assertThat(entries).hasSize(2)

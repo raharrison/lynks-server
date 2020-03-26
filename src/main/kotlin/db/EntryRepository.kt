@@ -10,6 +10,8 @@ import org.jetbrains.exposed.sql.statements.UpdateBuilder
 import org.jetbrains.exposed.sql.transactions.transaction
 import util.RandomUtils
 import util.combine
+import util.findColumn
+import util.orderBy
 
 abstract class EntryRepository<T : Entry, in U : NewEntry>(
     private val tagService: TagService,
@@ -73,8 +75,11 @@ abstract class EntryRepository<T : Entry, in U : NewEntry>(
             query = query.combine { collectionTable[EntryGroups.groupId].inList(collections) }
         }
 
+        val sortColumn = Entries.findColumn(page.sort) ?: Entries.dateUpdated
+        val sortOrder = page.direction ?: SortDirection.DESC
+
         return query.apply {
-            orderBy(Entries.dateUpdated, SortOrder.DESC)
+            orderBy(sortColumn, sortOrder)
             limit(page.limit, page.offset)
         }
     }

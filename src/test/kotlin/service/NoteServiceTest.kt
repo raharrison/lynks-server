@@ -71,7 +71,15 @@ class NoteServiceTest : DatabaseTest() {
 
     @Test
     fun testCreateNoteWithInvalidCollection() {
-        assertThrows<InvalidModelException> { noteService.add(newNote("n1", "content", cols = listOf("c1", "invalid"))) }
+        assertThrows<InvalidModelException> {
+            noteService.add(
+                newNote(
+                    "n1",
+                    "content",
+                    cols = listOf("c1", "invalid")
+                )
+            )
+        }
     }
 
     @Test
@@ -117,6 +125,21 @@ class NoteServiceTest : DatabaseTest() {
         notes = noteService.get(PageRequest(0, 10))
         assertThat(notes).hasSize(3)
         assertThat(notes).extracting("title").doesNotHaveDuplicates()
+    }
+
+    @Test
+    fun testGetNotesSortOrdering() {
+        noteService.add(newNote("n1", "content1", listOf("t1", "t2"), listOf("c1")))
+        Thread.sleep(10)
+        noteService.add(newNote("n2", "content2", listOf("t1", "t2"), listOf("c1")))
+        Thread.sleep(10)
+        noteService.add(newNote("n3", "content3", listOf("t1", "t2"), listOf("c1")))
+
+        val notes = noteService.get(PageRequest(0, 10, sort = "dateCreated", direction = SortDirection.ASC))
+        assertThat(notes).extracting("title").containsExactly("n1", "n2", "n3")
+
+        val notes2 = noteService.get(PageRequest(0, 10, sort = "dateCreated", direction = SortDirection.DESC))
+        assertThat(notes2).extracting("title").containsExactly("n3", "n2", "n1")
     }
 
     @Test
@@ -387,7 +410,19 @@ class NoteServiceTest : DatabaseTest() {
         assertThat(noteService.get("invalid", 0)).isNull()
     }
 
-    private fun newNote(title: String, content: String, tags: List<String> = emptyList(), cols: List<String> = emptyList()) = NewNote(null, title, content, tags, cols)
-    private fun newNote(id: String, title: String, content: String, tags: List<String> = emptyList(), cols: List<String> = emptyList()) = NewNote(id, title, content, tags, cols)
+    private fun newNote(
+        title: String,
+        content: String,
+        tags: List<String> = emptyList(),
+        cols: List<String> = emptyList()
+    ) = NewNote(null, title, content, tags, cols)
+
+    private fun newNote(
+        id: String,
+        title: String,
+        content: String,
+        tags: List<String> = emptyList(),
+        cols: List<String> = emptyList()
+    ) = NewNote(id, title, content, tags, cols)
 
 }

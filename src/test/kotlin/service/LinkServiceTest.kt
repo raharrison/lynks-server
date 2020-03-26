@@ -91,7 +91,16 @@ class LinkServiceTest : DatabaseTest() {
 
     @Test
     fun testCreateLinkWithInvalidCollection() {
-        assertThrows<InvalidModelException> { linkService.add(newLink("n1", "google.com", emptyList(), listOf("c1", "invalid"))) }
+        assertThrows<InvalidModelException> {
+            linkService.add(
+                newLink(
+                    "n1",
+                    "google.com",
+                    emptyList(),
+                    listOf("c1", "invalid")
+                )
+            )
+        }
     }
 
     @Test
@@ -137,6 +146,21 @@ class LinkServiceTest : DatabaseTest() {
         links = linkService.get(PageRequest(0, 10))
         assertThat(links).hasSize(3)
         assertThat(links).extracting("title").doesNotHaveDuplicates()
+    }
+
+    @Test
+    fun testGetLinksSortOrdering() {
+        linkService.add(newLink("n1", "google.com", listOf("t1", "t2"), listOf("c1")))
+        Thread.sleep(10)
+        linkService.add(newLink("n2", "amazon.com", listOf("t1", "t2"), listOf("c1")))
+        Thread.sleep(10)
+        linkService.add(newLink("n3", "netflix.com", listOf("t1", "t2"), listOf("c1")))
+
+        val links = linkService.get(PageRequest(0, 10, sort = "dateCreated", direction = SortDirection.ASC))
+        assertThat(links).extracting("title").containsExactly("n1", "n2", "n3")
+
+        val links2 = linkService.get(PageRequest(0, 10, sort = "dateCreated", direction = SortDirection.DESC))
+        assertThat(links2).extracting("title").containsExactly("n3", "n2", "n1")
     }
 
     @Test
@@ -478,8 +502,28 @@ class LinkServiceTest : DatabaseTest() {
         assertThat(linkService.getUnread()).isEmpty()
     }
 
-    private fun newLink(title: String, url: String, tags: List<String> = emptyList(), cols: List<String> = emptyList()) = NewLink(null, title, url, tags, cols)
-    private fun newLink(id: String, title: String, url: String, tags: List<String> = emptyList(), cols: List<String> = emptyList()) = NewLink(id, title, url, tags, cols)
-    private fun newLink(id: String, title: String, url: String, tags: List<String> = emptyList(), cols: List<String> = emptyList(), process: Boolean) = NewLink(id, title, url, tags, cols, process)
+    private fun newLink(
+        title: String,
+        url: String,
+        tags: List<String> = emptyList(),
+        cols: List<String> = emptyList()
+    ) = NewLink(null, title, url, tags, cols)
+
+    private fun newLink(
+        id: String,
+        title: String,
+        url: String,
+        tags: List<String> = emptyList(),
+        cols: List<String> = emptyList()
+    ) = NewLink(id, title, url, tags, cols)
+
+    private fun newLink(
+        id: String,
+        title: String,
+        url: String,
+        tags: List<String> = emptyList(),
+        cols: List<String> = emptyList(),
+        process: Boolean
+    ) = NewLink(id, title, url, tags, cols, process)
 
 }
