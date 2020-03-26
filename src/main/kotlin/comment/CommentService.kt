@@ -2,12 +2,11 @@ package comment
 
 import common.DefaultPageRequest
 import common.PageRequest
+import common.SortDirection
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
-import util.MarkdownUtils
-import util.RandomUtils
+import util.*
 import util.RowMapper.toComment
-import util.loggerFor
 
 private val log = loggerFor<CommentService>()
 
@@ -20,8 +19,10 @@ class CommentService {
     }
 
     fun getCommentsFor(id: String, pageRequest: PageRequest = DefaultPageRequest): List<Comment> = transaction {
+        val sortColumn = Comments.findColumn(pageRequest.sort) ?: Comments.dateCreated
+        val sortOrder = pageRequest.direction ?: SortDirection.ASC
         Comments.select { Comments.entryId eq id }
-                .orderBy(Comments.dateCreated, SortOrder.ASC)
+                .orderBy(sortColumn, sortOrder)
                 .limit(pageRequest.limit, pageRequest.offset)
                 .map { toComment(it) }
     }

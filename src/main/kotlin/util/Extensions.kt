@@ -1,11 +1,9 @@
 package util
 
 import common.PageRequest
+import common.SortDirection
 import io.ktor.application.ApplicationCall
-import org.jetbrains.exposed.sql.Op
-import org.jetbrains.exposed.sql.Query
-import org.jetbrains.exposed.sql.SqlExpressionBuilder
-import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.*
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.nio.file.Path
@@ -23,6 +21,16 @@ fun ApplicationCall.pageRequest(): PageRequest {
 
 fun Path.toUrlString(): String {
     return toString().replace("\\", "/")
+}
+
+fun Table.findColumn(name: String?): Column<*>? {
+    if (name == null) return null
+    return this.columns.find { it.name == name }
+}
+
+fun Query.orderBy(column: Expression<*>, direction: SortDirection): Query {
+    val order = SortOrder.valueOf(direction.name)
+    return orderBy(column to order)
 }
 
 inline fun <reified T> loggerFor(): Logger = LoggerFactory.getLogger(T::class.java)

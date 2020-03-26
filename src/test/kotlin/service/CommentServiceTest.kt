@@ -5,6 +5,7 @@ import comment.NewComment
 import common.DatabaseTest
 import common.EntryType
 import common.PageRequest
+import common.SortDirection
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -107,6 +108,21 @@ class CommentServiceTest : DatabaseTest() {
         comments = commentService.getCommentsFor("e1", PageRequest(0, 10))
         assertThat(comments).hasSize(3)
         assertThat(comments).extracting("id").doesNotHaveDuplicates()
+    }
+
+    @Test
+    fun testGetCommentsSorting() {
+        val c1 = commentService.addComment("e1", newComment(content = "comment content 1"))
+        Thread.sleep(10)
+        val c2 = commentService.addComment("e1", newComment(content = "comment content 2"))
+        Thread.sleep(10)
+        val c3 = commentService.addComment("e1", newComment(content = "comment content 3"))
+
+        var comments = commentService.getCommentsFor("e1", PageRequest(0, 10, sort = "dateCreated", direction = SortDirection.DESC))
+        assertThat(comments).extracting("id").containsExactly(c3.id, c2.id, c1.id)
+
+        comments = commentService.getCommentsFor("e1", PageRequest(0, 10, sort = "dateCreated", direction = SortDirection.ASC))
+        assertThat(comments).extracting("id").containsExactly(c1.id, c2.id, c3.id)
     }
 
     @Test
