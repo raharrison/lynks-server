@@ -2,6 +2,7 @@ package entry
 
 import common.*
 import db.EntryRepository
+import db.like
 import db.notLike
 import group.CollectionService
 import group.TagService
@@ -83,6 +84,11 @@ class LinkService(
 
     fun getUnread(): List<Link> = transaction {
         Entries.select { Entries.props.isNull() or (Entries.props notLike "%\"read\":true%") }
+            .map { toModel(it) }
+    }
+
+    fun getDead(): List<Link> = transaction {
+        Entries.select { Entries.props like "%\"dead\":true%" }
             .map { toModel(it) }
     }
 

@@ -502,6 +502,20 @@ class LinkServiceTest : DatabaseTest() {
         assertThat(linkService.getUnread()).isEmpty()
     }
 
+    @Test
+    fun testGetDeadLinks() {
+        val added = linkService.add(newLink("n1", "google.com"))
+        assertThat(linkService.getDead()).isEmpty()
+
+        added.props.addAttribute("dead", true)
+        linkService.mergeProps(added.id, added.props)
+        assertThat(linkService.getDead()).hasSize(1).extracting("id").containsExactly(added.id)
+
+        added.props.addAttribute("dead", false)
+        linkService.mergeProps(added.id, added.props)
+        assertThat(linkService.getDead()).isEmpty()
+    }
+
     private fun newLink(
         title: String,
         url: String,
