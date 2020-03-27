@@ -9,32 +9,26 @@ import java.io.Reader
 import java.sql.Connection
 import java.sql.ResultSet
 
-class EntryVersionTrigger: TriggerAdapter() {
+class EntryVersionTrigger : TriggerAdapter() {
 
-    private val versionColumnIndex = findVersionColumn()
-
-    private fun findVersionColumn(): Int {
-        return EntryVersions.columns.indexOfFirst {
-            it == EntryVersions.version
-        }
-    }
+    private val versionColumnName = EntryVersions.version.name
 
     @Suppress("UNCHECKED_CAST")
     override fun fire(conn: Connection?, oldRow: ResultSet?, newRow: ResultSet) {
-        if(!newRow.next()) return
+        if (!newRow.next()) return
 
         // update operation
-        if(oldRow != null) {
+        if (oldRow != null) {
             // if no version change
-            if(oldRow.getInt(versionColumnIndex + 1) == newRow.getInt(versionColumnIndex + 1))
+            if (oldRow.getInt(versionColumnName) == newRow.getInt(versionColumnName))
                 return
         }
 
-        val insert : EntryVersions.(InsertStatement<Number>)->Unit = {
+        val insert: EntryVersions.(InsertStatement<Number>) -> Unit = {
             val statement = it
-            this.columns.forEachIndexed { index, column ->
-                val raw = newRow.getObject(index + 1)
-                statement[column as Column<Any?>] = when(raw) {
+            this.columns.forEach { column ->
+                val raw = newRow.getObject(column.name)
+                statement[column as Column<Any?>] = when (raw) {
                     is Reader -> raw.readText()
                     else -> raw
                 }
