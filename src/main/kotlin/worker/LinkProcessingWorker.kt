@@ -18,6 +18,7 @@ import suggest.Suggestion
 
 sealed class LinkProcessingRequest
 class PersistLinkProcessingRequest(val link: Link, val process: Boolean) : LinkProcessingRequest()
+class ActiveLinkCheckingRequest(val url: String, val response: CompletableDeferred<Boolean>) : LinkProcessingRequest()
 class SuggestLinkProcessingRequest(val url: String, val response: CompletableDeferred<Suggestion>) : LinkProcessingRequest()
 
 class LinkProcessorFactory {
@@ -39,6 +40,7 @@ class LinkProcessorWorker(private val resourceManager: ResourceManager,
         when (input) {
             is PersistLinkProcessingRequest -> processLinkPersist(input.link, input.process)
             is SuggestLinkProcessingRequest -> processLinkSuggest(input.url, input.response)
+            is ActiveLinkCheckingRequest -> processActiveCheck(input.url, input.response)
         }
     }
 
@@ -98,6 +100,23 @@ class LinkProcessorWorker(private val resourceManager: ResourceManager,
         } catch (e: Exception) {
             log.error("Link processing worker failed generating suggestion for url={}", url, e)
             deferred.completeExceptionally(e)
+        }
+    }
+
+    private suspend fun processActiveCheck(url: String, deferred: CompletableDeferred<Boolean>) {
+        try {
+            log.info("Link processing worker executing active check request for url={}", url)
+            processorFactory.createProcessors(url).forEach {
+                it.use { proc ->
+                    coroutineScope {
+                        proc.init()
+                        deferred.complete(true)
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            log.error("Link processing worker detected dead link for url={}", url, e)
+            deferred.complete(false)
         }
     }
 }
