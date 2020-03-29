@@ -2,6 +2,7 @@ package worker
 
 import common.Link
 import common.TestCoroutineContext
+import entry.EntryAuditService
 import entry.LinkService
 import io.mockk.*
 import kotlinx.coroutines.CompletableDeferred
@@ -23,8 +24,10 @@ class LinkProcessorWorkerTest {
     private val resourceManager = mockk<ResourceManager>()
     private val processorFactory = mockk<LinkProcessorFactory>()
     private val notifyService = mockk<NotifyService>(relaxUnitFun = true)
+    private val entryAuditService = mockk<EntryAuditService>(relaxUnitFun = true)
     private val worker =
-        LinkProcessorWorker(resourceManager, linkService, notifyService).also { it.processorFactory = processorFactory }
+        LinkProcessorWorker(resourceManager, linkService, notifyService, entryAuditService)
+            .also { it.processorFactory = processorFactory }
 
     @Test
     fun testDefaultPersist() = runBlocking(TestCoroutineContext()) {

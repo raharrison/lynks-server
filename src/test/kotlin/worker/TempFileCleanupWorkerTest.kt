@@ -1,6 +1,7 @@
 package worker
 
 import common.Environment
+import entry.EntryAuditService
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.runBlocking
@@ -27,6 +28,7 @@ class TempFileCleanupWorkerTest {
 
     private val userService = mockk<UserService>()
     private val notifyService = mockk<NotifyService>()
+    private val entryAuditService = mockk<EntryAuditService>(relaxUnitFun = true)
 
     @AfterEach
     fun cleanUp() {
@@ -57,7 +59,7 @@ class TempFileCleanupWorkerTest {
 
     @Test
     fun testWorkerRemovesOldFilesOnStartupAfterInitialDelay() = runBlocking(context) {
-        val worker = TempFileCleanupWorker(userService, notifyService)
+        val worker = TempFileCleanupWorker(userService, notifyService, entryAuditService)
             .apply { runner = context }.worker()
 
         context.advanceTimeBy(6, TimeUnit.HOURS)
@@ -70,7 +72,7 @@ class TempFileCleanupWorkerTest {
 
     @Test
     fun testOverrideDefaultTimeout() = runBlocking(context) {
-        val worker = TempFileCleanupWorker(userService, notifyService)
+        val worker = TempFileCleanupWorker(userService, notifyService, entryAuditService)
             .apply { runner = context }.worker()
         context.triggerActions() // initial trigger
 

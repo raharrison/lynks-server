@@ -1,6 +1,7 @@
 package worker
 
 import common.Link
+import entry.EntryAuditService
 import entry.LinkService
 import io.mockk.every
 import io.mockk.mockk
@@ -19,6 +20,7 @@ class UnreadLinkDigestWorkerTest {
     private val userService = mockk<UserService>()
     private val linkService = mockk<LinkService>()
     private val notifyService = mockk<NotifyService>(relaxUnitFun = true)
+    private val entryAuditService = mockk<EntryAuditService>(relaxUnitFun = true)
 
     private val context = TestCoroutineContext()
 
@@ -30,7 +32,7 @@ class UnreadLinkDigestWorkerTest {
     @Test
     fun testNotEnabled() = runBlocking(context) {
         every { userService.currentUserPreferences } returns Preferences(digest = false)
-        val worker = UnreadLinkDigestWorker(linkService, userService, notifyService)
+        val worker = UnreadLinkDigestWorker(linkService, userService, notifyService, entryAuditService)
                 .apply { runner = context }.worker()
         worker.close()
 
@@ -41,7 +43,7 @@ class UnreadLinkDigestWorkerTest {
     @Test
     fun testCreateFromStartup() = runBlocking(context) {
         every { userService.currentUserPreferences } returns Preferences(digest = true)
-        val worker = UnreadLinkDigestWorker(linkService, userService, notifyService)
+        val worker = UnreadLinkDigestWorker(linkService, userService, notifyService, entryAuditService)
                 .apply { runner = context }.worker()
         context.triggerActions() // to get to initial delay
 
@@ -55,7 +57,7 @@ class UnreadLinkDigestWorkerTest {
     @Test
     fun testOverrideWithNewPreferences()= runBlocking(context) {
         every { userService.currentUserPreferences } returns Preferences(digest = true)
-        val worker = UnreadLinkDigestWorker(linkService, userService, notifyService)
+        val worker = UnreadLinkDigestWorker(linkService, userService, notifyService, entryAuditService)
                 .apply { runner = context }.worker()
         context.triggerActions() // to get to initial delay
 

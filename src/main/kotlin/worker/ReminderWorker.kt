@@ -1,5 +1,6 @@
 package worker
 
+import entry.EntryAuditService
 import entry.EntryService
 import kotlinx.coroutines.delay
 import notify.Notification
@@ -19,11 +20,14 @@ import com.github.shyiko.skedule.Schedule as Skedule
 
 class ReminderWorkerRequest(val reminder: Reminder, crudType: CrudType) : VariableWorkerRequest(crudType) {
     override fun hashCode(): Int = reminder.reminderId.hashCode()
-    override fun equals(other: Any?): Boolean = other is ReminderWorkerRequest && this.reminder.reminderId == other.reminder.reminderId
+    override fun equals(other: Any?): Boolean =
+        other is ReminderWorkerRequest && this.reminder.reminderId == other.reminder.reminderId
 }
 
-class ReminderWorker(private val reminderService: ReminderService, private val entryService: EntryService,
-                     notifyService: NotifyService) : VariableChannelBasedWorker<ReminderWorkerRequest>(notifyService) {
+class ReminderWorker(
+    private val reminderService: ReminderService, private val entryService: EntryService,
+    notifyService: NotifyService, entryAuditService: EntryAuditService
+) : VariableChannelBasedWorker<ReminderWorkerRequest>(notifyService, entryAuditService) {
 
     override suspend fun beforeWork() {
         super.beforeWork()
@@ -44,7 +48,12 @@ class ReminderWorker(private val reminderService: ReminderService, private val e
 
     private suspend fun launchReminder(reminder: AdhocReminder) {
         val fireDate = ZonedDateTime.ofInstant(Instant.ofEpochMilli(reminder.interval), ZoneId.of(reminder.tz))
-        log.info("Launching single reminder entry={} id={} nextFire={}", reminder.entryId, reminder.reminderId, fireDate)
+        log.info(
+            "Launching single reminder entry={} id={} nextFire={}",
+            reminder.entryId,
+            reminder.reminderId,
+            fireDate
+        )
         val sleep = calcDelay(fireDate)
         log.info("Reminder worker sleeping for {}ms entry={} reminder={}", sleep, reminder.entryId, reminder.reminderId)
         delay(sleep)
@@ -58,9 +67,19 @@ class ReminderWorker(private val reminderService: ReminderService, private val e
         val schedule = Skedule.parse(fire)
         while (true) {
             val next = schedule.next(ZonedDateTime.now(tz))
-            log.info("Launching recurring reminder entry={} id={} nextFire={}", reminder.entryId, reminder.reminderId, next)
+            log.info(
+                "Launching recurring reminder entry={} id={} nextFire={}",
+                reminder.entryId,
+                reminder.reminderId,
+                next
+            )
             val sleep = calcDelay(next)
-            log.info("Reminder worker sleeping for {}ms entry={} reminder={}", sleep, reminder.entryId, reminder.reminderId)
+            log.info(
+                "Reminder worker sleeping for {}ms entry={} reminder={}",
+                sleep,
+                reminder.entryId,
+                reminder.reminderId
+            )
             delay(sleep)
             if (reminderService.isActive(reminder.reminderId)) reminderElapsed(reminder)
             else break
@@ -82,9 +101,11 @@ class ReminderWorker(private val reminderService: ReminderService, private val e
         if (reminder.notifyMethod == NotificationMethod.EMAIL || reminder.notifyMethod == NotificationMethod.BOTH) {
             // send email
             val entry = entryService.get(reminder.entryId)
-            val content = mapOf("title" to entry?.title,
-                    "spec" to reminder.spec,
-                    "message" to reminder.message)
+            val content = mapOf(
+                "title" to entry?.title,
+                "spec" to reminder.spec,
+                "message" to reminder.message
+            )
 
             val template = ResourceTemplater("reminder.html")
             val email = template.apply(content)

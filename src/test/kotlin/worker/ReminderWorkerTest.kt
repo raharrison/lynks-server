@@ -1,5 +1,6 @@
 package worker
 
+import entry.EntryAuditService
 import entry.EntryService
 import io.mockk.*
 import kotlinx.coroutines.runBlocking
@@ -21,6 +22,7 @@ class ReminderWorkerTest {
     private val reminderService = mockk<ReminderService>()
     private val notifyService = mockk<NotifyService>()
     private val entryService = mockk<EntryService>()
+    private val entryAuditService = mockk<EntryAuditService>(relaxUnitFun = true)
     private val context = TestCoroutineContext()
 
     @BeforeEach
@@ -240,5 +242,6 @@ class ReminderWorkerTest {
         coVerify(exactly = 0) { notifyService.accept(any(), reminder) }
     }
 
-    private fun createWorker() = ReminderWorker(reminderService, entryService, notifyService).apply { runner = context }
+    private fun createWorker() = ReminderWorker(reminderService, entryService, notifyService, entryAuditService)
+        .apply { runner = context }
 }

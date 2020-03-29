@@ -1,5 +1,6 @@
 package worker
 
+import entry.EntryAuditService
 import entry.LinkService
 import kotlinx.coroutines.time.delay
 import notify.NotifyService
@@ -14,13 +15,16 @@ import java.time.temporal.TemporalAdjusters
 import java.util.*
 import kotlin.math.min
 
-class UnreadLinkDigestWorkerRequest(val preferences: Preferences, crudType: CrudType = CrudType.UPDATE) : VariableWorkerRequest(crudType) {
+class UnreadLinkDigestWorkerRequest(val preferences: Preferences, crudType: CrudType = CrudType.UPDATE) :
+    VariableWorkerRequest(crudType) {
     override fun hashCode(): Int = 1
     override fun equals(other: Any?): Boolean = other is UnreadLinkDigestWorkerRequest
 }
 
-class UnreadLinkDigestWorker(private val linkService: LinkService, private val userService: UserService,
-                             notifyService: NotifyService) : VariableChannelBasedWorker<UnreadLinkDigestWorkerRequest>(notifyService) {
+class UnreadLinkDigestWorker(
+    private val linkService: LinkService, private val userService: UserService,
+    notifyService: NotifyService, entryAuditService: EntryAuditService
+) : VariableChannelBasedWorker<UnreadLinkDigestWorkerRequest>(notifyService, entryAuditService) {
 
     private val random = Random()
 
@@ -38,8 +42,8 @@ class UnreadLinkDigestWorker(private val linkService: LinkService, private val u
         // time till next fire
         val today = LocalDateTime.now()
         val fire = today.with(TemporalAdjusters.next(DayOfWeek.MONDAY))
-                .withHour(9)
-                .withMinute(0)
+            .withHour(9)
+            .withMinute(0)
         val initialDelay = today.until(fire, ChronoUnit.SECONDS)
 
         while (true) {
@@ -67,14 +71,16 @@ class UnreadLinkDigestWorker(private val linkService: LinkService, private val u
         val random = indexes.map { links[it] }
 
         val formatter = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM)
-                .withLocale(Locale.getDefault())
-                .withZone(ZoneId.systemDefault())
+            .withLocale(Locale.getDefault())
+            .withZone(ZoneId.systemDefault())
 
         val content = random.map {
-            mapOf("title" to it.title,
-                    "url" to it.url,
-                    "source" to it.source,
-                    "date" to formatter.format(Instant.ofEpochMilli(it.dateUpdated)))
+            mapOf(
+                "title" to it.title,
+                "url" to it.url,
+                "source" to it.source,
+                "date" to formatter.format(Instant.ofEpochMilli(it.dateUpdated))
+            )
         }
 
         val template = ResourceTemplater("unread-link-digest.html")

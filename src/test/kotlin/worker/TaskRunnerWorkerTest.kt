@@ -1,6 +1,7 @@
 package worker
 
 import common.TestCoroutineContext
+import entry.EntryAuditService
 import io.mockk.*
 import kotlinx.coroutines.runBlocking
 import notify.NotifyService
@@ -20,7 +21,10 @@ class TaskRunnerWorkerTest {
         val notifyService = mockk<NotifyService>(relaxUnitFun = true)
         coEvery { notifyService.accept(any(), null) } just Runs
 
-        val taskRunnerWorker = TaskRunnerWorker(notifyService).apply { runner = this@runBlocking.coroutineContext }.worker()
+        val entryAuditService = mockk<EntryAuditService>(relaxUnitFun = true)
+
+        val taskRunnerWorker = TaskRunnerWorker(notifyService, entryAuditService)
+            .apply { runner = this@runBlocking.coroutineContext }.worker()
         val request = TaskRunnerRequest(task, context)
         taskRunnerWorker.send(request)
         taskRunnerWorker.close()

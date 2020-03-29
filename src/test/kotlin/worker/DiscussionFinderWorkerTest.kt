@@ -4,6 +4,7 @@ import common.BaseProperties
 import common.DatabaseTest
 import common.Link
 import common.TestCoroutineContext
+import entry.EntryAuditService
 import entry.LinkService
 import io.mockk.*
 import kotlinx.coroutines.runBlocking
@@ -22,6 +23,7 @@ class DiscussionFinderWorkerTest: DatabaseTest() {
     private val linkService = mockk<LinkService>()
     private val retriever = mockk<ResourceRetriever>()
     private val notifyService = mockk<NotifyService>(relaxUnitFun = true)
+    private val entryAuditService = mockk<EntryAuditService>(relaxUnitFun = true)
     private val propsSlot = slot<BaseProperties>()
 
     @BeforeEach
@@ -37,7 +39,7 @@ class DiscussionFinderWorkerTest: DatabaseTest() {
         coEvery { retriever.getString(match { it.contains("hn.algolia") }) } returns ""
         coEvery { retriever.getString(match { it.contains("reddit.com") }) } returns ""
 
-        val worker = DiscussionFinderWorker(linkService, retriever, notifyService)
+        val worker = DiscussionFinderWorker(linkService, retriever, notifyService, entryAuditService)
                 .apply { runner = this@runBlocking.coroutineContext }.worker()
 
         worker.send(DiscussionFinderWorkerRequest(link.id))
@@ -55,7 +57,7 @@ class DiscussionFinderWorkerTest: DatabaseTest() {
         coEvery { retriever.getString(match { it.contains("hn.algolia") }) } returns getFile("/hacker_discussions.json")
         coEvery { retriever.getString(match { it.contains("reddit.com") }) } returns getFile("/reddit_discussions.json")
 
-        val worker = DiscussionFinderWorker(linkService, retriever, notifyService)
+        val worker = DiscussionFinderWorker(linkService, retriever, notifyService, entryAuditService)
                 .apply { runner = this@runBlocking.coroutineContext }.worker()
 
         worker.send(DiscussionFinderWorkerRequest(link.id))
@@ -83,7 +85,7 @@ class DiscussionFinderWorkerTest: DatabaseTest() {
 
         createDummyWorkerSchedule(DiscussionFinderWorker::class.java.simpleName, "key", DiscussionFinderWorkerRequest(link.id, 2))
 
-        val worker = DiscussionFinderWorker(linkService, retriever, notifyService)
+        val worker = DiscussionFinderWorker(linkService, retriever, notifyService, entryAuditService)
                 .apply { runner = this@runBlocking.coroutineContext }.worker()
 
         worker.close()
@@ -102,7 +104,7 @@ class DiscussionFinderWorkerTest: DatabaseTest() {
         coEvery { retriever.getString(match { it.contains("hn.algolia") }) } returns "" andThen getFile("/hacker_discussions.json") andThen ""
         coEvery { retriever.getString(match { it.contains("reddit.com") }) } returns "" andThen getFile("/reddit_discussions.json") andThen ""
 
-        val worker = DiscussionFinderWorker(linkService, retriever, notifyService)
+        val worker = DiscussionFinderWorker(linkService, retriever, notifyService, entryAuditService)
                 .apply { runner = this@runBlocking.coroutineContext }.worker()
 
         worker.send(DiscussionFinderWorkerRequest(link.id))
@@ -124,7 +126,7 @@ class DiscussionFinderWorkerTest: DatabaseTest() {
         coEvery { retriever.getString(match { it.contains("hn.algolia") }) } returnsMany hnResponses
         coEvery { retriever.getString(match { it.contains("reddit.com") }) } returnsMany redditResponses
 
-        val worker = DiscussionFinderWorker(linkService, retriever, notifyService)
+        val worker = DiscussionFinderWorker(linkService, retriever, notifyService, entryAuditService)
                 .apply { runner = this@runBlocking.coroutineContext }.worker()
 
         worker.send(DiscussionFinderWorkerRequest(link.id))

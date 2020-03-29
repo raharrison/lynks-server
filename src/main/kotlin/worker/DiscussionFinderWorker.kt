@@ -1,5 +1,6 @@
 package worker
 
+import entry.EntryAuditService
 import entry.LinkService
 import kotlinx.coroutines.time.delay
 import notify.Notification
@@ -10,15 +11,26 @@ import java.net.URLEncoder
 import java.time.Duration
 import java.time.Instant
 
-data class DiscussionFinderWorkerRequest(val linkId: String, val intervalIndex: Int = -1) : PersistVariableWorkerRequest() {
+data class DiscussionFinderWorkerRequest(val linkId: String, val intervalIndex: Int = -1) :
+    PersistVariableWorkerRequest() {
     override val key = linkId
 }
 
-class DiscussionFinderWorker(private val linkService: LinkService,
-                             private val resourceRetriever: ResourceRetriever,
-                             notifyService: NotifyService) : PersistedVariableChannelBasedWorker<DiscussionFinderWorkerRequest>(notifyService) {
+class DiscussionFinderWorker(
+    private val linkService: LinkService,
+    private val resourceRetriever: ResourceRetriever,
+    notifyService: NotifyService,
+    entryAuditService: EntryAuditService
+) : PersistedVariableChannelBasedWorker<DiscussionFinderWorkerRequest>(notifyService, entryAuditService) {
 
-    private data class Discussion(val source: DiscussionSource, val title: String, val url: String, val score: Int, val comments: Int, val created: Long)
+    private data class Discussion(
+        val source: DiscussionSource,
+        val title: String,
+        val url: String,
+        val score: Int,
+        val comments: Int,
+        val created: Long
+    )
 
     private enum class DiscussionSource {
         REDDIT, HACKER_NEWS;
@@ -94,12 +106,18 @@ class DiscussionFinderWorker(private val linkService: LinkService,
                 val comments = hit.get("num_comments").intValue()
                 val createdStamp = hit.get("created_at").textValue()
                 val instant = Instant.parse(createdStamp)
-                discussions.add(Discussion(DiscussionSource.HACKER_NEWS, title, link, score,
-                        comments, instant.toEpochMilli()))
+                discussions.add(
+                    Discussion(
+                        DiscussionSource.HACKER_NEWS, title, link, score,
+                        comments, instant.toEpochMilli()
+                    )
+                )
             }
         }
-        return discussions.sortedWith(compareByDescending(Discussion::created)
-                .thenComparing(compareByDescending(Discussion::comments)))
+        return discussions.sortedWith(
+            compareByDescending(Discussion::created)
+                .thenComparing(compareByDescending(Discussion::comments))
+        )
     }
 
     private suspend fun redditDiscussions(url: String): List<Discussion> {
@@ -126,8 +144,10 @@ class DiscussionFinderWorker(private val linkService: LinkService,
                 }
             }
         }
-        return discussions.sortedWith(compareByDescending(Discussion::created)
-                .thenComparing(compareByDescending(Discussion::comments)))
+        return discussions.sortedWith(
+            compareByDescending(Discussion::created)
+                .thenComparing(compareByDescending(Discussion::comments))
+        )
     }
 
 

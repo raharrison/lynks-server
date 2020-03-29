@@ -1,6 +1,7 @@
 package worker
 
 import common.Link
+import entry.EntryAuditService
 import entry.LinkService
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
@@ -32,7 +33,9 @@ class LinkProcessorFactory {
 
 class LinkProcessorWorker(private val resourceManager: ResourceManager,
                           private val linkService: LinkService,
-                          notifyService: NotifyService) : ChannelBasedWorker<LinkProcessingRequest>(notifyService) {
+                          notifyService: NotifyService,
+                          entryAuditService: EntryAuditService
+) : ChannelBasedWorker<LinkProcessingRequest>(notifyService, entryAuditService) {
 
     internal var processorFactory = LinkProcessorFactory()
 

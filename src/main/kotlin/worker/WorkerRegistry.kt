@@ -11,13 +11,13 @@ class WorkerRegistry {
 
     fun init(serviceProvider: ServiceProvider) {
         with(serviceProvider) {
-            linkWorker = LinkProcessorWorker(get(), get(), get()).worker()
+            linkWorker = LinkProcessorWorker(get(), get(), get(), get()).worker()
             discussionWorker = DiscussionFinderWorker(get(),
-                    WebResourceRetriever(), get()).worker()
-            taskWorker = TaskRunnerWorker(get()).worker()
-            unreadDigestWorker = UnreadLinkDigestWorker(get(), get(), get()).worker()
-            fileCleanupWorker = TempFileCleanupWorker(get(), get()).worker()
-            reminderWorker = ReminderWorker(get(), get(), get()).worker()
+                    WebResourceRetriever(), get(), get()).worker()
+            taskWorker = TaskRunnerWorker(get(), get()).worker()
+            unreadDigestWorker = UnreadLinkDigestWorker(get(), get(), get(), get()).worker()
+            fileCleanupWorker = TempFileCleanupWorker(get(), get(), get()).worker()
+            reminderWorker = ReminderWorker(get(), get(), get(), get()).worker()
         }
     }
 

@@ -1,5 +1,6 @@
 package worker
 
+import entry.EntryAuditService
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.channels.actor
@@ -12,7 +13,10 @@ import org.slf4j.LoggerFactory
 import util.JsonMapper.defaultMapper
 import kotlin.coroutines.CoroutineContext
 
-abstract class Worker<T>(protected val notifyService: NotifyService) : CoroutineScope {
+abstract class Worker<T>(
+    protected val notifyService: NotifyService,
+    protected val entryAuditService: EntryAuditService
+) : CoroutineScope {
 
     protected val log: Logger = LoggerFactory.getLogger(this::class.java)
 
@@ -30,7 +34,7 @@ abstract class Worker<T>(protected val notifyService: NotifyService) : Coroutine
         job()
     }
 
-    protected suspend fun sendNotification(notification: Notification = Notification.processed(), body: Any?=null) {
+    protected suspend fun sendNotification(notification: Notification = Notification.processed(), body: Any? = null) {
         notifyService.accept(notification, body)
     }
 
@@ -38,11 +42,12 @@ abstract class Worker<T>(protected val notifyService: NotifyService) : Coroutine
         get() = runner + supervisor
 }
 
-abstract class ChannelBasedWorker<T>(notifyService: NotifyService): Worker<T>(notifyService) {
+abstract class ChannelBasedWorker<T>(notifyService: NotifyService, entryAuditService: EntryAuditService) :
+    Worker<T>(notifyService, entryAuditService) {
 
     fun worker(): SendChannel<T> = actor {
         beforeWork()
-        for(request in channel) {
+        for (request in channel) {
             onChannelReceive(request)
         }
     }
@@ -61,7 +66,11 @@ abstract class ChannelBasedWorker<T>(notifyService: NotifyService): Worker<T>(no
 enum class CrudType { CREATE, UPDATE, DELETE }
 abstract class VariableWorkerRequest(val crudType: CrudType = CrudType.UPDATE)
 
-abstract class VariableChannelBasedWorker<T : VariableWorkerRequest>(notifyService: NotifyService): ChannelBasedWorker<T>(notifyService) {
+abstract class VariableChannelBasedWorker<T : VariableWorkerRequest>(
+    notifyService: NotifyService,
+    entryAuditService: EntryAuditService
+) :
+    ChannelBasedWorker<T>(notifyService, entryAuditService) {
 
     private val jobs = mutableMapOf<T, Job?>()
 
@@ -70,7 +79,7 @@ abstract class VariableChannelBasedWorker<T : VariableWorkerRequest>(notifyServi
     }
 
     override fun onChannelReceive(request: T): Job? {
-        return when(request.crudType) {
+        return when (request.crudType) {
             CrudType.CREATE -> launch(request)
             CrudType.UPDATE -> {
                 jobs[request]?.cancel()
@@ -94,7 +103,11 @@ abstract class PersistVariableWorkerRequest(crudType: CrudType = CrudType.UPDATE
     abstract val key: String
 }
 
-abstract class PersistedVariableChannelBasedWorker<T : PersistVariableWorkerRequest>(notifyService: NotifyService): VariableChannelBasedWorker<T>(notifyService) {
+abstract class PersistedVariableChannelBasedWorker<T : PersistVariableWorkerRequest>(
+    notifyService: NotifyService,
+    entryAuditService: EntryAuditService
+) :
+    VariableChannelBasedWorker<T>(notifyService, entryAuditService) {
 
     private val workerName = javaClass.simpleName
     abstract val requestClass: Class<T>
@@ -113,7 +126,7 @@ abstract class PersistedVariableChannelBasedWorker<T : PersistVariableWorkerRequ
 
     override fun onChannelReceive(request: T): Job? {
         deleteSchedule(request) // delete initially
-        if(request.crudType != CrudType.DELETE) {
+        if (request.crudType != CrudType.DELETE) {
             addSchedule(request) // add back if create/update
         }
         return super.onChannelReceive(request)

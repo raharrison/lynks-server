@@ -5,6 +5,7 @@ import entry.EntryAuditService
 import entry.EntryService
 import group.CollectionService
 import group.TagService
+import io.mockk.mockk
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -17,7 +18,7 @@ class EntryServiceTest: DatabaseTest() {
 
     private val tagService = TagService()
     private val collectionService = CollectionService()
-    private val entryAuditService = EntryAuditService()
+    private val entryAuditService = mockk<EntryAuditService>(relaxUnitFun = true)
     private val entryService = EntryService(tagService, collectionService, entryAuditService)
 
     @BeforeEach
