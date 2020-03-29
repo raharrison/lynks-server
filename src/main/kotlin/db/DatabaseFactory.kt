@@ -3,10 +3,7 @@ package db
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import comment.Comments
-import common.ConfigMode
-import common.Entries
-import common.EntryVersions
-import common.Environment
+import common.*
 import group.EntryGroups
 import group.Groups
 import org.jetbrains.exposed.sql.Database
@@ -28,14 +25,16 @@ class DatabaseFactory {
     var connected: Boolean = false
         private set
 
-    private val tables = listOf(Entries, EntryVersions,
-            Comments, Resources, Reminders, UserPreferences,
-            Groups, EntryGroups, WorkerSchedules)
+    private val tables = listOf(
+        Entries, EntryVersions, EntryAudit,
+        Comments, Resources, Reminders, UserPreferences,
+        Groups, EntryGroups, WorkerSchedules
+    )
 
     fun connect() {
         log.info("Initialising database")
 
-        if(Environment.mode == ConfigMode.TEST) {
+        if (Environment.mode == ConfigMode.TEST) {
             // no connection pooling
             log.info("In test mode, not using connection pooling")
             Database.connect(Environment.server.database, driver = Environment.server.driver)
@@ -65,10 +64,14 @@ class DatabaseFactory {
     private fun enableTriggers() {
         val conn = (TransactionManager.current().connection as JdbcConnectionImpl).connection
         conn.createStatement().use {
-            it.execute("CREATE TRIGGER IF NOT EXISTS ENTRY_VERS_INS AFTER INSERT ON ENTRY " +
-                    "FOR EACH ROW CALL \"${EntryVersionTrigger::class.qualifiedName}\"")
-            it.execute("CREATE TRIGGER IF NOT EXISTS ENTRY_VERS_UPD AFTER UPDATE ON ENTRY " +
-                    "FOR EACH ROW CALL \"${EntryVersionTrigger::class.qualifiedName}\"")
+            it.execute(
+                "CREATE TRIGGER IF NOT EXISTS ENTRY_VERS_INS AFTER INSERT ON ENTRY " +
+                        "FOR EACH ROW CALL \"${EntryVersionTrigger::class.qualifiedName}\""
+            )
+            it.execute(
+                "CREATE TRIGGER IF NOT EXISTS ENTRY_VERS_UPD AFTER UPDATE ON ENTRY " +
+                        "FOR EACH ROW CALL \"${EntryVersionTrigger::class.qualifiedName}\""
+            )
         }
     }
 

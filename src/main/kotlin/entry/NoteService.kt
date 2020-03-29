@@ -16,8 +16,10 @@ import resource.ResourceManager
 import util.MarkdownUtils
 import util.RowMapper
 
-class NoteService(tagService: TagService, collectionService: CollectionService,
-                  private val resourceManager: ResourceManager) : EntryRepository<Note, NewNote>(tagService, collectionService) {
+class NoteService(
+    tagService: TagService, collectionService: CollectionService, entryAuditService: EntryAuditService,
+    private val resourceManager: ResourceManager
+) : EntryRepository<Note, NewNote>(tagService, collectionService, entryAuditService) {
 
     override fun toModel(row: ResultRow, groups: GroupSet, table: BaseEntries): Note {
         return RowMapper.toNote(table, row, groups.tags, groups.collections)

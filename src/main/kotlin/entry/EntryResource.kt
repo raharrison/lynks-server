@@ -10,7 +10,7 @@ import io.ktor.routing.route
 import reminder.ReminderService
 import util.pageRequest
 
-fun Route.entry(entryService: EntryService, reminderService: ReminderService) {
+fun Route.entry(entryService: EntryService, reminderService: ReminderService, entryAuditService: EntryAuditService) {
 
     route("/entry") {
 
@@ -46,6 +46,11 @@ fun Route.entry(entryService: EntryService, reminderService: ReminderService) {
         get("/{id}/history") {
             val id = call.parameters["id"]!!
             call.respond(entryService.getEntryVersions(id))
+        }
+
+        get("/{id}/audit") {
+            val id = call.parameters["id"]!!
+            call.respond(entryAuditService.getEntryAudit(id))
         }
 
         post("/{id}/star") {

@@ -1,6 +1,7 @@
 package common
 
 import comment.CommentService
+import entry.EntryAuditService
 import entry.LinkService
 import group.CollectionService
 import group.TagService
@@ -22,6 +23,7 @@ class CascadingDeleteTest: DatabaseTest() {
     private val resourceManager = ResourceManager()
     private val commentService = CommentService()
     private val reminderService = ReminderService(mockk(relaxUnitFun = true))
+    private val entryAuditService = EntryAuditService()
     private lateinit var linkService: LinkService
 
     @BeforeEach
@@ -35,7 +37,7 @@ class CascadingDeleteTest: DatabaseTest() {
 
         resourceManager.saveGeneratedResource("r1", "id1", "resource name", "jpg", ResourceType.SCREENSHOT, 11)
 
-        linkService = LinkService(tagService, collectionService, resourceManager, mockk(relaxUnitFun = true))
+        linkService = LinkService(tagService, collectionService, entryAuditService, resourceManager, mockk(relaxUnitFun = true))
         tagService.rebuild()
         collectionService.rebuild()
     }
@@ -133,6 +135,15 @@ class CascadingDeleteTest: DatabaseTest() {
         assertThat(linkService.delete("id1")).isTrue()
         assertThat(reminderService.getRemindersForEntry("id1")).isEmpty()
         assertThat(linkService.get("id1")).isNull()
+    }
+
+    @Test
+    fun testDeletingEntryDeletesAudit() {
+        val added = linkService.add(NewLink(null, "title", "url", listOf("t1"), emptyList(), false))
+        assertThat(entryAuditService.getEntryAudit(added.id)).hasSize(1)
+        assertThat(linkService.delete(added.id)).isTrue()
+        assertThat(entryAuditService.getEntryAudit(added.id)).isEmpty()
+        assertThat(linkService.get(added.id)).isNull()
     }
 
     @Test

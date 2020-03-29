@@ -2,6 +2,7 @@ package service
 
 import common.*
 import common.exception.InvalidModelException
+import entry.EntryAuditService
 import entry.LinkService
 import group.CollectionService
 import group.TagService
@@ -22,6 +23,7 @@ class LinkServiceTest : DatabaseTest() {
     private val collectionService = CollectionService()
     private val resourceManager = mockk<ResourceManager>()
     private val workerRegistry = mockk<WorkerRegistry>()
+    private val entryAuditService = mockk<EntryAuditService>(relaxUnitFun = true)
     private lateinit var linkService: LinkService
 
     @BeforeEach
@@ -36,7 +38,7 @@ class LinkServiceTest : DatabaseTest() {
         every { resourceManager.deleteAll(any()) } returns true
         every { workerRegistry.acceptLinkWork(any()) } just Runs
         every { workerRegistry.acceptDiscussionWork(any()) } just Runs
-        linkService = LinkService(tagService, collectionService, resourceManager, workerRegistry)
+        linkService = LinkService(tagService, collectionService, entryAuditService, resourceManager, workerRegistry)
     }
 
     @Test
@@ -50,6 +52,7 @@ class LinkServiceTest : DatabaseTest() {
         assertThat(link.dateCreated).isEqualTo(link.dateUpdated)
         verify(exactly = 1) { workerRegistry.acceptLinkWork(any()) }
         verify(exactly = 1) { workerRegistry.acceptDiscussionWork(link.id) }
+        verify(exactly = 1) { entryAuditService.acceptAuditEvent(link.id, any(), any()) }
     }
 
     @Test
@@ -60,6 +63,7 @@ class LinkServiceTest : DatabaseTest() {
         assertThat(link.url).isEqualTo("google.com")
         assertThat(link.tags).hasSize(2).extracting("id").containsExactly("t1", "t2")
         assertThat(link.dateCreated).isEqualTo(link.dateUpdated)
+        verify(exactly = 1) { entryAuditService.acceptAuditEvent(link.id, any(), any()) }
     }
 
     @Test
@@ -70,6 +74,7 @@ class LinkServiceTest : DatabaseTest() {
         assertThat(link.url).isEqualTo("google.com")
         assertThat(link.collections).hasSize(2).extracting("id").containsExactly("c1", "c2")
         assertThat(link.dateCreated).isEqualTo(link.dateUpdated)
+        verify(exactly = 1) { entryAuditService.acceptAuditEvent(link.id, any(), any()) }
     }
 
     @Test
@@ -77,11 +82,12 @@ class LinkServiceTest : DatabaseTest() {
         val resourceManager = mockk<ResourceManager>()
         val workerRegistry = mockk<WorkerRegistry>()
         every { workerRegistry.acceptLinkWork(any()) } just Runs
-        linkService = LinkService(tagService, collectionService, resourceManager, workerRegistry)
+        linkService = LinkService(tagService, collectionService, entryAuditService, resourceManager, workerRegistry)
         val link = linkService.add(newLink("n1", "google.com", "url", listOf("t1", "t2"), listOf("c1"), false))
 
         verify(exactly = 1) { workerRegistry.acceptLinkWork(any()) }
         verify(exactly = 0) { workerRegistry.acceptDiscussionWork(link.id) }
+        verify(exactly = 1) { entryAuditService.acceptAuditEvent(link.id, any(), any()) }
     }
 
     @Test
@@ -274,6 +280,7 @@ class LinkServiceTest : DatabaseTest() {
         // for initial add and then update
         verify(exactly = 2) { workerRegistry.acceptLinkWork(any()) }
         verify(exactly = 2) { workerRegistry.acceptDiscussionWork(added1.id) }
+        verify(exactly = 2) { entryAuditService.acceptAuditEvent(added1.id, any(), any()) }
     }
 
     @Test
@@ -291,6 +298,7 @@ class LinkServiceTest : DatabaseTest() {
         // for initial add then update
         verify(exactly = 2) { workerRegistry.acceptLinkWork(any()) }
         verify(exactly = 1) { workerRegistry.acceptDiscussionWork(added1.id) }
+        verify(exactly = 2) { entryAuditService.acceptAuditEvent(added1.id, any(), any()) }
     }
 
     @Test
@@ -305,6 +313,7 @@ class LinkServiceTest : DatabaseTest() {
         assertThat(updated.dateCreated).isEqualTo(updated.dateUpdated)
         val retrieved = linkService.get(added.id)
         assertThat(retrieved?.content).isEqualTo(updated.content)
+        verify(exactly = 1) { entryAuditService.acceptAuditEvent(added.id, any(), any()) }
     }
 
     @Test
@@ -321,6 +330,7 @@ class LinkServiceTest : DatabaseTest() {
 
         linkService.update(newLink(added1.id, "n1", "google.com", listOf("t2", "t3")))
         assertThat(linkService.get(added1.id)?.tags).extracting("id").containsExactlyInAnyOrder("t2", "t3")
+        verify(exactly = 3) { entryAuditService.acceptAuditEvent(added1.id, any(), any()) }
     }
 
     @Test
@@ -337,6 +347,7 @@ class LinkServiceTest : DatabaseTest() {
 
         linkService.update(newLink(added1.id, "n1", "google.com"))
         assertThat(linkService.get(added1.id)?.collections).extracting("id").isEmpty()
+        verify(exactly = 3) { entryAuditService.acceptAuditEvent(added1.id, any(), any()) }
     }
 
     @Test
@@ -352,6 +363,8 @@ class LinkServiceTest : DatabaseTest() {
         assertThat(updated.dateUpdated).isEqualTo(updated.dateCreated)
         assertThat(added1.dateCreated).isNotEqualTo(updated.dateCreated)
         assertThat(linkService.get(added1.id)?.title).isEqualTo("n1")
+        verify(exactly = 1) { entryAuditService.acceptAuditEvent(added1.id, any(), any()) }
+        verify(exactly = 1) { entryAuditService.acceptAuditEvent(updated.id, any(), any()) }
     }
 
     @Test

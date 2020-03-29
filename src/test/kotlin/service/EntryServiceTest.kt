@@ -1,9 +1,11 @@
 package service
 
 import common.*
+import entry.EntryAuditService
 import entry.EntryService
 import group.CollectionService
 import group.TagService
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -15,7 +17,8 @@ class EntryServiceTest: DatabaseTest() {
 
     private val tagService = TagService()
     private val collectionService = CollectionService()
-    private val entryService = EntryService(tagService, collectionService)
+    private val entryAuditService = EntryAuditService()
+    private val entryService = EntryService(tagService, collectionService, entryAuditService)
 
     @BeforeEach
     fun createEntries() {
@@ -155,12 +158,15 @@ class EntryServiceTest: DatabaseTest() {
         assertThat(unstar?.dateUpdated).isEqualTo(dateUpdated)
 
         assertThat(entryService.get("id1")?.starred).isFalse()
+
+        verify(exactly = 2) { entryAuditService.acceptAuditEvent("id1", any(), any()) }
     }
 
     @Test
     fun testSetStarInvalidEntry() {
         assertThat(entryService.star("invalid", true)).isNull()
         assertThat(entryService.star("invalid", false)).isNull()
+        verify(exactly = 0) { entryAuditService.acceptAuditEvent("invalid", any(), any()) }
     }
 
     @Test

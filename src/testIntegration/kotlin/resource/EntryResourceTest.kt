@@ -237,4 +237,25 @@ class EntryResourceTest : ServerTest() {
         assertThat(entryVersions2).extracting("version").containsOnly(1, 2)
         assertThat(entryVersions2).extracting("dateUpdated").doesNotHaveDuplicates()
     }
+
+    @Test
+    fun testGetEntryAudit() {
+        val entryAudit1 = get("/entry/{id}/audit", "e1")
+            .then()
+            .statusCode(200)
+            .extract().to<List<EntryAuditItem>>()
+        assertThat(entryAudit1).hasSize(1)
+        assertThat(entryAudit1).extracting("entryId").containsOnly("e1")
+
+        updateDummyEntry("e1", "updated", 2)
+
+        val entryAudit2 = get("/entry/{id}/audit", "e1")
+            .then()
+            .statusCode(200)
+            .extract().to<List<EntryAuditItem>>()
+        assertThat(entryAudit2).hasSize(2)
+        assertThat(entryAudit2).extracting("entryId").containsOnly("e1")
+        assertThat(entryAudit2).extracting("details").doesNotContainNull()
+        assertThat(entryAudit2).extracting("timestamp").doesNotHaveDuplicates()
+    }
 }

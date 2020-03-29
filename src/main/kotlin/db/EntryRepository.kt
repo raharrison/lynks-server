@@ -2,6 +2,7 @@ package db
 
 import common.*
 import common.exception.InvalidModelException
+import entry.EntryAuditService
 import group.*
 import group.Collection
 import org.jetbrains.exposed.sql.*
@@ -15,7 +16,8 @@ import util.orderBy
 
 abstract class EntryRepository<T : Entry, in U : NewEntry>(
     private val tagService: TagService,
-    private val collectionService: CollectionService
+    private val collectionService: CollectionService,
+    protected val entryAuditService: EntryAuditService
 ) {
 
     protected class GroupSet(val tags: List<Tag> = emptyList(), val collections: List<Collection> = emptyList())
@@ -28,9 +30,9 @@ abstract class EntryRepository<T : Entry, in U : NewEntry>(
 
     fun get(id: String, version: Int): T? = transaction {
         getBaseQuery(EntryVersions, EntryVersions).combine {
-            EntryVersions.id eq id and
-                    (EntryVersions.version eq version)
-        }
+                EntryVersions.id eq id and
+                        (EntryVersions.version eq version)
+            }
             .mapNotNull { toModel(it, EntryVersions) }
             .singleOrNull()
     }
@@ -84,18 +86,22 @@ abstract class EntryRepository<T : Entry, in U : NewEntry>(
         }
     }
 
-    open fun add(entry: U): T = transaction {
-        val newId = RandomUtils.generateUid()
-        validateTags(entry.tags)
-        validateCollections(entry.collections)
-        Entries.insert(toInsert(newId, entry))
-        for (group in entry.tags + entry.collections) {
-            EntryGroups.insert {
-                it[groupId] = group
-                it[entryId] = newId
+    open fun add(entry: U): T {
+        val serviceName = this::class.simpleName
+        return transaction {
+            val newId = RandomUtils.generateUid()
+            validateTags(entry.tags)
+            validateCollections(entry.collections)
+            Entries.insert(toInsert(newId, entry))
+            for (group in entry.tags + entry.collections) {
+                EntryGroups.insert {
+                    it[groupId] = group
+                    it[entryId] = newId
+                }
             }
+            entryAuditService.acceptAuditEvent(newId, serviceName, "Created")
+            get(newId)!!
         }
-        get(newId)!!
     }
 
     open fun update(entry: U): T? {
@@ -105,6 +111,7 @@ abstract class EntryRepository<T : Entry, in U : NewEntry>(
         } else {
             validateTags(entry.tags)
             validateCollections(entry.collections)
+            val serviceName = this::class.simpleName
             transaction {
                 val where = getBaseQuery().combine { Entries.id eq id }.where!!
                 val updated = Entries.update({ where }, body = {
@@ -115,7 +122,12 @@ abstract class EntryRepository<T : Entry, in U : NewEntry>(
                 })
                 if (updated > 0) {
                     updateGroupsForEntry(entry.tags + entry.collections, id)
-                    get(id)
+                    val updatedEntry = get(id)
+                    entryAuditService.acceptAuditEvent(
+                        id, serviceName,
+                        "Updated to version ${updatedEntry?.version}"
+                    )
+                    updatedEntry
                 } else {
                     null
                 }
@@ -138,7 +150,14 @@ abstract class EntryRepository<T : Entry, in U : NewEntry>(
         })
         if (updated > 0) {
             updateGroupsForEntry(entry.tags.map { it.id } + entry.collections.map { it.id }, entry.id)
-            get(entry.id)
+            val updatedEntry = get(entry.id)
+            if (newVersion)
+                entryAuditService.acceptAuditEvent(
+                    id,
+                    this::class.simpleName,
+                    "Updated to version ${updatedEntry?.version}"
+                )
+            updatedEntry
         } else {
             null
         }

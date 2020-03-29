@@ -17,9 +17,9 @@ import worker.PersistLinkProcessingRequest
 import worker.WorkerRegistry
 
 class LinkService(
-    tagService: TagService, collectionService: CollectionService, private val resourceManager: ResourceManager,
-    private val workerRegistry: WorkerRegistry
-) : EntryRepository<Link, NewLink>(tagService, collectionService) {
+    tagService: TagService, collectionService: CollectionService, entryAuditService: EntryAuditService,
+    private val resourceManager: ResourceManager, private val workerRegistry: WorkerRegistry
+) : EntryRepository<Link, NewLink>(tagService, collectionService, entryAuditService) {
 
     override fun getBaseQuery(base: ColumnSet, where: BaseEntries): Query {
         return base.select { where.type eq EntryType.LINK }

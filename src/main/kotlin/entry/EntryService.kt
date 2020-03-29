@@ -11,8 +11,8 @@ import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.jetbrains.exposed.sql.transactions.transaction
 import util.RowMapper
 
-class EntryService(tagService: TagService, collectionService: CollectionService) :
-    EntryRepository<Entry, NewEntry>(tagService, collectionService) {
+class EntryService(tagService: TagService, collectionService: CollectionService, entryAuditService: EntryAuditService) :
+    EntryRepository<Entry, NewEntry>(tagService, collectionService, entryAuditService) {
 
     override fun toModel(row: ResultRow, groups: GroupSet, table: BaseEntries): Entry {
         return when (row[table.type]) {
@@ -53,10 +53,16 @@ class EntryService(tagService: TagService, collectionService: CollectionService)
     }
 
     fun star(id: String, starred: Boolean): Entry? = transaction {
-        Entries.update({ Entries.id eq id }) {
+        val updated = Entries.update({ Entries.id eq id }) {
             it[Entries.starred] = starred
         }
-        get(id)
+        if (updated > 0) {
+            val starMessage = if (starred) "starred" else "unstarred"
+            entryAuditService.acceptAuditEvent(id, EntryService::class.simpleName, "Entry $starMessage")
+            get(id)
+        } else {
+            null
+        }
     }
 
     fun getEntryVersions(id: String): List<EntryVersion> = transaction {

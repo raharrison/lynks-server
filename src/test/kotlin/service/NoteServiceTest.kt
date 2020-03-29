@@ -2,11 +2,13 @@ package service
 
 import common.*
 import common.exception.InvalidModelException
+import entry.EntryAuditService
 import entry.NoteService
 import group.CollectionService
 import group.TagService
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.data.MapEntry.entry
 import org.junit.jupiter.api.BeforeEach
@@ -21,7 +23,8 @@ class NoteServiceTest : DatabaseTest() {
     private val tagService = TagService()
     private val collectionService = CollectionService()
     private val resourceManager = mockk<ResourceManager>()
-    private val noteService = NoteService(tagService, collectionService, resourceManager)
+    private val entryAuditService = mockk<EntryAuditService>(relaxUnitFun = true)
+    private val noteService = NoteService(tagService, collectionService, entryAuditService, resourceManager)
 
     @BeforeEach
     fun createTags() {
@@ -42,6 +45,7 @@ class NoteServiceTest : DatabaseTest() {
         assertThat(note.markdownText).isEqualTo("<p>content</p>\n")
         assertThat(note.dateUpdated).isPositive()
         assertThat(note.dateCreated).isEqualTo(note.dateUpdated)
+        verify { entryAuditService.acceptAuditEvent(note.id, any(), any()) }
     }
 
     @Test
@@ -52,6 +56,7 @@ class NoteServiceTest : DatabaseTest() {
         assertThat(note.plainText).isEqualTo("content")
         assertThat(note.tags).hasSize(2).extracting("id").containsExactly("t1", "t2")
         assertThat(note.dateCreated).isEqualTo(note.dateUpdated)
+        verify { entryAuditService.acceptAuditEvent(note.id, any(), any()) }
     }
 
     @Test
@@ -67,6 +72,7 @@ class NoteServiceTest : DatabaseTest() {
         assertThat(note.plainText).isEqualTo("content")
         assertThat(note.collections).hasSize(2).extracting("id").containsExactly("c1", "c2")
         assertThat(note.dateCreated).isEqualTo(note.dateUpdated)
+        verify { entryAuditService.acceptAuditEvent(note.id, any(), any()) }
     }
 
     @Test
@@ -242,6 +248,7 @@ class NoteServiceTest : DatabaseTest() {
         assertThat(newNote?.tags).hasSize(1)
         assertThat(newNote?.collections).hasSize(1)
         assertThat(newNote?.dateUpdated).isNotEqualTo(newNote?.dateCreated)
+        verify { entryAuditService.acceptAuditEvent(added1.id, any(), any()) }
 
         val oldNote = noteService.get(added1.id)
         assertThat(oldNote?.id).isEqualTo(updated.id)
@@ -265,6 +272,7 @@ class NoteServiceTest : DatabaseTest() {
 
         noteService.update(newNote(added1.id, "n1", "content 1", listOf("t2", "t3")))
         assertThat(noteService.get(added1.id)?.tags).extracting("id").containsExactlyInAnyOrder("t2", "t3")
+        verify(exactly = 3) { entryAuditService.acceptAuditEvent(added1.id, any(), any()) }
     }
 
     @Test
@@ -278,6 +286,7 @@ class NoteServiceTest : DatabaseTest() {
         assertThat(noteService.get(added1.id)?.title).isEqualTo("n1")
         assertThat(noteService.get(added1.id)?.plainText).isEqualTo("content 1")
         assertThat(noteService.get(added1.id)?.collections).extracting("id").containsExactlyInAnyOrder("c2")
+        verify { entryAuditService.acceptAuditEvent(added1.id, any(), any()) }
 
         noteService.update(newNote(added1.id, "n1", "content 1", emptyList(), emptyList()))
         assertThat(noteService.get(added1.id)?.collections).extracting("id").isEmpty()
@@ -294,6 +303,8 @@ class NoteServiceTest : DatabaseTest() {
         assertThat(updated.title).isEqualTo("updated")
         assertThat(updated.dateUpdated).isEqualTo(updated.dateCreated)
         assertThat(added1.dateCreated).isNotEqualTo(updated.dateCreated)
+        verify { entryAuditService.acceptAuditEvent(added1.id, any(), any()) }
+
         assertThat(noteService.get(added1.id)?.title).isEqualTo("n1")
     }
 
@@ -313,6 +324,7 @@ class NoteServiceTest : DatabaseTest() {
         assertThat(updated?.props?.getAttribute("key2")).isEqualTo("attribute2")
         assertThat(updated?.props?.getAttribute("key3")).isNull()
         assertThat(updated?.dateUpdated).isEqualTo(updated?.dateCreated)
+        verify { entryAuditService.acceptAuditEvent(added.id, any(), any()) }
     }
 
     @Test
