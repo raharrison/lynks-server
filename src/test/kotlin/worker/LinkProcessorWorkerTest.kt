@@ -82,7 +82,7 @@ class LinkProcessorWorkerTest {
         verify(exactly = 1) {
             resourceManager.saveGeneratedResource(
                 link.id,
-                "thumbnail.jpg",
+                match { it.startsWith("thumbnail") },
                 ResourceType.THUMBNAIL,
                 thumb.image
             )
@@ -90,7 +90,7 @@ class LinkProcessorWorkerTest {
         verify(exactly = 1) {
             resourceManager.saveGeneratedResource(
                 link.id,
-                "screenshot.png",
+                match { it.startsWith("screenshot") },
                 ResourceType.SCREENSHOT,
                 screen.image
             )
@@ -98,11 +98,12 @@ class LinkProcessorWorkerTest {
         verify(exactly = 1) {
             resourceManager.saveGeneratedResource(
                 link.id,
-                "document.html",
+                match { it.startsWith("document") },
                 ResourceType.DOCUMENT,
                 html.toByteArray()
             )
         }
+        verify(exactly = 1) { entryAuditService.acceptAuditEvent(link.id, any(), any()) }
     }
 
     @Test
@@ -135,6 +136,7 @@ class LinkProcessorWorkerTest {
         coVerify(exactly = 0) { processor.html }
         coVerify(exactly = 0) { processor.content }
         verify(exactly = 0) { resourceManager.saveGeneratedResource(any(), any(), any(), any()) }
+        verify(exactly = 1) { entryAuditService.acceptAuditEvent(link.id, any(), any()) }
     }
 
     @Test
@@ -160,13 +162,14 @@ class LinkProcessorWorkerTest {
         verify(exactly = 1) { processor.close() }
         verify(exactly = 1) { linkService.mergeProps(eq("id1"), any()) }
         verify(exactly = 1) { linkService.update(link) }
-        coVerify(exactly = 1) { notifyService.accept(any(), ofType(Link::class)) }
+        coVerify(exactly = 0) { notifyService.accept(any(), ofType(Link::class)) }
 
         coVerify(exactly = 0) { processor.generateThumbnail() }
         coVerify(exactly = 0) { processor.generateScreenshot() }
         coVerify(exactly = 0) { processor.html }
         coVerify(exactly = 0) { processor.content }
         verify(exactly = 0) { resourceManager.saveGeneratedResource(any(), any(), any(), any()) }
+        verify(exactly = 0) { entryAuditService.acceptAuditEvent(link.id, any(), any()) }
     }
 
     @Test
@@ -195,6 +198,7 @@ class LinkProcessorWorkerTest {
         verify(exactly = 0) { linkService.update(link) }
         verify(exactly = 1) { linkService.mergeProps(eq("id1"), any()) }
         coVerify(exactly = 1) { notifyService.accept(any(), null) }
+        verify(exactly = 1) { entryAuditService.acceptAuditEvent(link.id, any(), any()) }
         assertThat(link.props.containsAttribute("dead")).isTrue()
 
         Unit

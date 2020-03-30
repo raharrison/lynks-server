@@ -16,6 +16,7 @@ import resource.ResourceManager
 import resource.ResourceType
 import resource.WebResourceRetriever
 import suggest.Suggestion
+import java.time.LocalDate
 
 sealed class LinkProcessingRequest
 class PersistLinkProcessingRequest(val link: Link, val process: Boolean) : LinkProcessingRequest()
@@ -59,9 +60,9 @@ class LinkProcessorWorker(private val resourceManager: ResourceManager,
                             val thumb = async { proc.generateThumbnail() }
                             val screen = async { proc.generateScreenshot() }
                             link.content = proc.content
-                            thumb.await()?.let { resourceManager.saveGeneratedResource(link.id, "thumbnail.${it.extension}", ResourceType.THUMBNAIL, it.image) }
-                            screen.await()?.let { resourceManager.saveGeneratedResource(link.id, "screenshot.${it.extension}", ResourceType.SCREENSHOT, it.image) }
-                            proc.html?.let { resourceManager.saveGeneratedResource(link.id, "document.$HTML", ResourceType.DOCUMENT, it.toByteArray()) }
+                            thumb.await()?.let { resourceManager.saveGeneratedResource(link.id, createResourceFileName(ResourceType.THUMBNAIL, it.extension), ResourceType.THUMBNAIL, it.image) }
+                            screen.await()?.let { resourceManager.saveGeneratedResource(link.id, createResourceFileName(ResourceType.SCREENSHOT, it.extension), ResourceType.SCREENSHOT, it.image) }
+                            proc.html?.let { resourceManager.saveGeneratedResource(link.id, createResourceFileName(ResourceType.DOCUMENT, HTML), ResourceType.DOCUMENT, it.toByteArray()) }
                         }
                     }
                 }
@@ -71,16 +72,25 @@ class LinkProcessorWorker(private val resourceManager: ResourceManager,
 
             val updatedLink = linkService.update(link)
             log.info("Link processing worker request complete, sending notification entry={}", link.id)
-            sendNotification(body = updatedLink)
+            if(process) {
+                entryAuditService.acceptAuditEvent(link.id, LinkProcessorWorker::class.simpleName, "Link processing completed successfully")
+                sendNotification(body = updatedLink)
+            }
         } catch (e: Exception) {
             log.error("Link processing worker failed for entry={}", link.id, e)
             // mark as dead if processing failed
             link.props.addAttribute("dead", System.currentTimeMillis())
             linkService.mergeProps(link.id, link.props)
             log.info("Link processing worker marked link as dead after failure, sending notification entry={}", link.id)
+            entryAuditService.acceptAuditEvent(link.id, LinkProcessorWorker::class.simpleName, "Link processing failed")
             sendNotification(Notification.error("Error occurred processing link"))
             // log and reschedule
         }
+    }
+
+    private fun createResourceFileName(type: ResourceType, extension: String): String {
+        val date = LocalDate.now().toString()
+        return "${type.name.toLowerCase()}-$date.${extension}"
     }
 
     private suspend fun processLinkSuggest(url: String, deferred: CompletableDeferred<Suggestion>) {
