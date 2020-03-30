@@ -16,6 +16,7 @@ import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.time.LocalDate
 
 private val log = loggerFor<ResourceManager>()
 
@@ -56,7 +57,8 @@ class ResourceManager {
                 var count = 0
                 it.forEach {
                     val filename = FileUtils.removeExtension(it.fileName.toString())
-                    saveGeneratedResource(entryId, ResourceType.valueOf(filename.toUpperCase()), it)
+                    val type = ResourceType.valueOf(filename.toUpperCase().split("-")[0])
+                    saveGeneratedResource(entryId, type, it)
                     count += 1
                 }
                 log.info("{} temp files moved for entry={}", count, entryId)
@@ -129,8 +131,10 @@ class ResourceManager {
         return constructPath(entryId, resId)
     }
 
-    private fun constructTempPath(name: String, type: ResourceType, extension: String) =
-        Paths.get(Environment.server.resourceTempPath, FileUtils.createTempFileName(name), "${type.toString().toLowerCase()}.$extension")
+    private fun constructTempPath(name: String, type: ResourceType, extension: String): Path {
+        val date = LocalDate.now().toString()
+        return Paths.get(Environment.server.resourceTempPath, FileUtils.createTempFileName(name), "${type.toString().toLowerCase()}-$date.$extension")
+    }
 
     private fun constructTempPath(name: String) = Paths.get(Environment.server.resourceTempPath, FileUtils.createTempFileName(name))
 

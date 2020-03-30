@@ -60,7 +60,7 @@ class ResourceManagerTest: DatabaseTest() {
         assertThat(docPath).startsWith(Environment.server.resourceTempPath)
         val docFile = fileName(docPath)
         assertThat(getExtension(docFile)).isEqualTo(HTML)
-        assertThat(removeExtension(docFile)).isEqualTo(ResourceType.DOCUMENT.toString().toLowerCase())
+        assertThat(removeExtension(docFile)).startsWith(ResourceType.DOCUMENT.toString().toLowerCase())
 
         // create thumbnail
         val thumb = byteArrayOf(6,7,8,9,10)
@@ -72,7 +72,7 @@ class ResourceManagerTest: DatabaseTest() {
         assertThat(thumbPath).startsWith(Environment.server.resourceTempPath)
         val thumbFile = fileName(thumbPath)
         assertThat(getExtension(thumbFile)).isEqualTo(JPG)
-        assertThat(removeExtension(thumbFile)).isEqualTo(ResourceType.THUMBNAIL.toString().toLowerCase())
+        assertThat(removeExtension(thumbFile)).startsWith(ResourceType.THUMBNAIL.toString().toLowerCase())
 
         // parent dir contains 2 files
         val folder = Paths.get(thumbPath).parent
@@ -111,7 +111,7 @@ class ResourceManagerTest: DatabaseTest() {
         for (resource in resources) {
             assertThat(resource.entryId).isEqualTo("eid")
             assertThat(resource.dateUpdated).isEqualTo(resource.dateCreated)
-            assertThat(resource.name).isEqualTo("${resource.type.name.toLowerCase()}.${resource.extension}")
+            assertThat(resource.name).startsWith(resource.type.name.toLowerCase())
             when(resource.type) {
                 ResourceType.DOCUMENT -> {
                     assertThat(resource.extension).isEqualTo(HTML)
