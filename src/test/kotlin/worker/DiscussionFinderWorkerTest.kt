@@ -50,6 +50,7 @@ class DiscussionFinderWorkerTest: DatabaseTest() {
 
         coVerify(exactly = 5 * 2) { retriever.getString(any()) }
         coVerify(exactly = 0) { notifyService.accept(any(), any()) }
+        coVerify(exactly = 5) { entryAuditService.acceptAuditEvent(link.id, any(), any()) }
     }
 
     @Test
@@ -75,7 +76,8 @@ class DiscussionFinderWorkerTest: DatabaseTest() {
         assertThat(discussions).extracting("url").doesNotHaveDuplicates()
 
         coVerify(exactly = 5 * 2) { retriever.getString(any()) }
-        coVerify(exactly = 5) { notifyService.accept(any(), link) }
+        coVerify(exactly = 1) { notifyService.accept(any(), link) }
+        coVerify(exactly = 1) { entryAuditService.acceptAuditEvent(link.id, any(), any()) }
     }
 
     @Test
@@ -96,7 +98,8 @@ class DiscussionFinderWorkerTest: DatabaseTest() {
         assertThat(propsSlot.captured.getAttribute("discussions") as List<*>).hasSize(6)
 
         coVerify(exactly = 2 * 2) { retriever.getString(any()) }
-        coVerify(exactly = 2) { notifyService.accept(any(), link) }
+        coVerify(exactly = 1) { notifyService.accept(any(), link) }
+        coVerify(exactly = 1) { entryAuditService.acceptAuditEvent(link.id, any(), any()) }
     }
 
     @Test
@@ -117,6 +120,7 @@ class DiscussionFinderWorkerTest: DatabaseTest() {
 
         coVerify(exactly = 5 * 2) { retriever.getString(any()) }
         coVerify(exactly = 1) { notifyService.accept(any(), link) }
+        coVerify(exactly = 5) { entryAuditService.acceptAuditEvent(link.id, any(), any()) }
     }
 
     @Test
@@ -138,7 +142,8 @@ class DiscussionFinderWorkerTest: DatabaseTest() {
         assertThat(discussions).hasSize(6)
 
         coVerify(exactly = 6 * 2) { retriever.getString(any()) }
-        coVerify(exactly = 2) { notifyService.accept(any(), link) }
+        coVerify(exactly = 1) { notifyService.accept(any(), link) }
+        coVerify(exactly = 5) { entryAuditService.acceptAuditEvent(link.id, any(), any()) }
     }
 
     private fun getFile(name: String) = this.javaClass.getResource(name).readText()

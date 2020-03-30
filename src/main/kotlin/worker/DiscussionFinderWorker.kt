@@ -54,7 +54,7 @@ class DiscussionFinderWorker(
                 addAll(hackerNewsDiscussions(link.url))
                 addAll(redditDiscussions(link.url))
             }
-            log.info("Found {} discussion for entry={}", discussions.size, link.id)
+            log.info("Found {} discussions for entry={}", discussions.size, link.id)
 
             val current = if (link.props.containsAttribute("discussions"))
                 link.props.getAttribute("discussions") as List<*>
@@ -63,9 +63,17 @@ class DiscussionFinderWorker(
             if (discussions.isNotEmpty()) {
                 link.props.addAttribute("discussions", discussions)
                 linkService.mergeProps(link.id, link.props)
-                val message = "${discussions.size} Discussions Found"
-                log.info("Discussion finder worker sending notification entry={}", link.id)
-                sendNotification(Notification.discussions(message), link)
+
+                val difference = discussions.size - current.size
+                if (difference > 0) {
+                    val message = "$difference new discussions found"
+                    log.info("Discussion finder worker sending notification entry={} difference={}", link.id, difference)
+                    entryAuditService.acceptAuditEvent(link.id, DiscussionFinderWorker::class.simpleName, message)
+                    sendNotification(Notification.discussions(message), link)
+                }
+            } else {
+                log.info("Discussion finder worker none found entry={}", link.id)
+                entryAuditService.acceptAuditEvent(link.id, DiscussionFinderWorker::class.simpleName, "No discussions found")
             }
 
             intervalIndex++
