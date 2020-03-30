@@ -1,5 +1,6 @@
 package task
 
+import entry.EntryAuditService
 import io.mockk.*
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
@@ -16,9 +17,11 @@ import java.nio.file.Paths
 class YoutubeDlTaskTest {
 
     private val resourceManager = mockk<ResourceManager>()
+    private val entryAuditService = mockk<EntryAuditService>(relaxUnitFun = true)
 
     private val youtubeDlTask = YoutubeDlTask("tid", "eid").also {
         it.resourceManager = resourceManager
+        it.entryAuditService = entryAuditService
     }
 
     @Test
@@ -83,6 +86,7 @@ class YoutubeDlTaskTest {
         }
 
         verify(exactly = 1) { resourceManager.constructPath("eid", any()) }
+        verify(exactly = 1) { entryAuditService.acceptAuditEvent("eid", any(), any())  }
     }
 
     @Test
@@ -104,6 +108,7 @@ class YoutubeDlTaskTest {
         unmockkObject(ExecUtils)
 
         verify(exactly = 1) { resourceManager.constructPath("eid", any()) }
+        verify(exactly = 1) { entryAuditService.acceptAuditEvent("eid", any(), any())  }
     }
 
 }

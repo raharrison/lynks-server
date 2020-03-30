@@ -1,6 +1,7 @@
 package task
 
 import common.inject.Inject
+import entry.EntryAuditService
 import resource.ResourceManager
 import resource.ResourceType
 import util.ExecUtils
@@ -14,6 +15,9 @@ class YoutubeDlTask(id: String, entryId: String) : Task<YoutubeDlTask.YoutubeDlT
 
     @Inject
     lateinit var resourceManager: ResourceManager
+
+    @Inject
+    lateinit var entryAuditService: EntryAuditService
 
     override suspend fun process(context: YoutubeDlTaskContext) {
         val outputTemplate = "-o \"${resourceManager.constructPath(entryId, "%(name)s.%(ext)s")}\""
@@ -41,6 +45,8 @@ class YoutubeDlTask(id: String, entryId: String) : Task<YoutubeDlTask.YoutubeDlT
                             type = ResourceType.GENERATED,
                             path = file.toPath()
                     )
+                    entryAuditService.acceptAuditEvent(entryId, YoutubeDlTask::class.simpleName,
+                        "Youtube download task execution succeeded, created: " + file.name)
                 } else {
                     log.error("No filename found in YoutubeDl output - command likely failed")
                 }
@@ -52,6 +58,8 @@ class YoutubeDlTask(id: String, entryId: String) : Task<YoutubeDlTask.YoutubeDlT
                     result.reason.code,
                     result.reason.message
                 )
+                entryAuditService.acceptAuditEvent(entryId, YoutubeDlTask::class.simpleName,
+                    "Youtube download task execution failed")
             }
         }
     }
