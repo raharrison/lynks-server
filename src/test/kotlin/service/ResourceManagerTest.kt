@@ -103,7 +103,7 @@ class ResourceManagerTest: DatabaseTest() {
         val path3 = resourceManager.saveTempFile("twitter.com", data2, ResourceType.THUMBNAIL, JPG)
                 .let { tempFileToFullPath(it).toUrlString() }
 
-        assertThat(resourceManager.moveTempFiles("eid", "youtube.com")).isTrue()
+        assertThat(resourceManager.moveTempFiles("eid", "youtube.com")).isNotEmpty()
 
         // check resources generated
         val resources = resourceManager.getResourcesFor("eid")
@@ -138,7 +138,7 @@ class ResourceManagerTest: DatabaseTest() {
 
     @Test
     fun testMoveTempFileDoesntExist() {
-        assertThat(resourceManager.moveTempFiles("eid", "nothing")).isFalse()
+        assertThat(resourceManager.moveTempFiles("eid", "nothing")).isEmpty()
     }
 
     @Test

@@ -11,10 +11,7 @@ import link.LinkProcessor
 import link.YoutubeLinkProcessor
 import notify.Notification
 import notify.NotifyService
-import resource.HTML
-import resource.ResourceManager
-import resource.ResourceType
-import resource.WebResourceRetriever
+import resource.*
 import suggest.Suggestion
 import java.time.LocalDate
 
@@ -50,12 +47,17 @@ class LinkProcessorWorker(private val resourceManager: ResourceManager,
 
     private suspend fun processLinkPersist(link: Link, process: Boolean) {
         try {
-            val alreadyProcessed = resourceManager.moveTempFiles(link.id, link.url)
+            val movedResources = resourceManager.moveTempFiles(link.id, link.url)
+            findExistingDocumentContent(movedResources)?.also {
+                link.content = it
+            }
+            val shouldProcess = process && movedResources.isEmpty()
+
             processorFactory.createProcessors(link.url).forEach { it ->
                 it.use { proc ->
                     coroutineScope {
                         proc.enrich(link.props)
-                        if (!alreadyProcessed && process) {
+                        if (shouldProcess) {
                             proc.init()
                             val thumb = async { proc.generateThumbnail() }
                             val screen = async { proc.generateScreenshot() }
@@ -85,6 +87,12 @@ class LinkProcessorWorker(private val resourceManager: ResourceManager,
             entryAuditService.acceptAuditEvent(link.id, LinkProcessorWorker::class.simpleName, "Link processing failed")
             sendNotification(Notification.error("Error occurred processing link"))
             // log and reschedule
+        }
+    }
+
+    private fun findExistingDocumentContent(resources: List<Resource>): String? {
+        return resources.find { it.type == ResourceType.DOCUMENT }?.let {
+            return resourceManager.getResourceAsFile(it.id)?.second?.readText()
         }
     }
 

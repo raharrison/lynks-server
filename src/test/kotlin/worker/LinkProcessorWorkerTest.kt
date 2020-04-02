@@ -11,15 +11,19 @@ import link.ImageResource
 import link.LinkProcessor
 import notify.NotifyService
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import resource.HTML
 import resource.Resource
 import resource.ResourceManager
 import resource.ResourceType
 import suggest.Suggestion
+import java.nio.file.Files
+import java.nio.file.Paths
 
 class LinkProcessorWorkerTest {
 
+    private val resourcePath = Paths.get("temp.txt")
     private val linkService = mockk<LinkService>()
     private val resourceManager = mockk<ResourceManager>()
     private val processorFactory = mockk<LinkProcessorFactory>()
@@ -28,6 +32,13 @@ class LinkProcessorWorkerTest {
     private val worker =
         LinkProcessorWorker(resourceManager, linkService, notifyService, entryAuditService)
             .also { it.processorFactory = processorFactory }
+
+    @AfterEach
+    fun clean() {
+        if(Files.exists(resourcePath)) {
+            Files.delete(resourcePath)
+        }
+    }
 
     @Test
     fun testDefaultPersist() = runBlocking(TestCoroutineContext()) {
@@ -61,7 +72,7 @@ class LinkProcessorWorkerTest {
         every { linkService.update(link) } returns link
         every { linkService.mergeProps(eq("id1"), any()) } just Runs
 
-        every { resourceManager.moveTempFiles(link.id, link.url) } returns false
+        every { resourceManager.moveTempFiles(link.id, link.url) } returns emptyList()
 
         val channel = worker.apply { runner = this@runBlocking.coroutineContext }.worker()
         channel.send(PersistLinkProcessingRequest(link, true))
@@ -110,6 +121,9 @@ class LinkProcessorWorkerTest {
     fun testDefaultPersistAlreadyProcessed() = runBlocking(TestCoroutineContext()) {
         val link = Link("id1", "title", "google.com", "google.com", "", 100, 100)
 
+        val docResource = Resource("rid", "id1","name", "html", ResourceType.DOCUMENT, 10, 123, 123)
+        Files.write(resourcePath, byteArrayOf(1, 2))
+
         val processor = mockk<LinkProcessor>(relaxUnitFun = true)
         coEvery { notifyService.accept(any(), ofType(Link::class)) } just Runs
         coEvery { processor.enrich(link.props) } just Runs
@@ -119,7 +133,8 @@ class LinkProcessorWorkerTest {
         every { linkService.update(link) } returns link
         every { linkService.mergeProps(eq("id1"), any()) } just Runs
 
-        every { resourceManager.moveTempFiles(link.id, link.url) } returns true
+        every { resourceManager.moveTempFiles(link.id, link.url) } returns listOf(docResource)
+        every { resourceManager.getResourceAsFile(docResource.id) } returns Pair(docResource, resourcePath.toFile())
 
         val channel = worker.apply { runner = this@runBlocking.coroutineContext }.worker()
         channel.send(PersistLinkProcessingRequest(link, true))
@@ -152,7 +167,7 @@ class LinkProcessorWorkerTest {
         every { linkService.update(link) } returns link
         every { linkService.mergeProps(eq("id1"), any()) } just Runs
 
-        every { resourceManager.moveTempFiles(link.id, link.url) } returns false
+        every { resourceManager.moveTempFiles(link.id, link.url) } returns emptyList()
 
         val channel = worker.apply { runner = this@runBlocking.coroutineContext }.worker()
         channel.send(PersistLinkProcessingRequest(link, false))
@@ -187,7 +202,7 @@ class LinkProcessorWorkerTest {
         every { linkService.update(link) } returns link
         every { linkService.mergeProps(eq("id1"), any()) } just Runs
 
-        every { resourceManager.moveTempFiles(link.id, link.url) } returns false
+        every { resourceManager.moveTempFiles(link.id, link.url) } returns emptyList()
 
         val channel = worker.apply { runner = this@runBlocking.coroutineContext }.worker()
         channel.send(PersistLinkProcessingRequest(link, true))

@@ -47,26 +47,26 @@ class ResourceManager {
         return Paths.get(Environment.server.resourceTempPath).relativize(path).toUrlString()
     }
 
-    fun moveTempFiles(entryId: String, src: String): Boolean {
+    fun moveTempFiles(entryId: String, src: String): List<Resource> {
         val tempPath = constructTempPath(src)
         if (Files.exists(tempPath)) {
             log.info("Moving temporary files for entry={} src={}", entryId, src)
             val target = Paths.get(Environment.server.resourceBasePath, entryId)
+            val generatedResources = mutableListOf<Resource>()
             Files.move(tempPath, target)
             Files.list(target).use { it ->
-                var count = 0
                 it.forEach {
                     val filename = FileUtils.removeExtension(it.fileName.toString())
                     val type = ResourceType.valueOf(filename.toUpperCase().split("-")[0])
-                    saveGeneratedResource(entryId, type, it)
-                    count += 1
+                    val generatedResource = saveGeneratedResource(entryId, type, it)
+                    generatedResources.add(generatedResource)
                 }
-                log.info("{} temp files moved for entry={}", count, entryId)
+                log.info("{} temp files moved for entry={}", generatedResources.size, entryId)
             }
-            return true
+            return generatedResources
         }
         log.debug("No temporary files to move for entry={}", entryId)
-        return false
+        return emptyList()
     }
 
     fun saveGeneratedResource(id: String = RandomUtils.generateUid(), entryId: String, name: String, extension: String, type: ResourceType, size: Long): Resource {
