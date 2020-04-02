@@ -251,7 +251,7 @@ class LinkResourceTest: ServerTest() {
         post("/link/{id}/read", "invalid")
                 .then()
                 .statusCode(404)
-        post("/link/{id}/unread", "invalid")
+        post("/link/{id}/read", "invalid")
                 .then()
                 .statusCode(404)
     }
@@ -313,7 +313,8 @@ class LinkResourceTest: ServerTest() {
 
     @Test
     fun testLaunchLinkRedirects() {
-        get("/link/{id}/launch", "e1")
+        given().redirects().follow(false)
+            .get("/link/{id}/launch", "e1")
             .then()
             .statusCode(302)
             .header("Location", "content1")

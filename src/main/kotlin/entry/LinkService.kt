@@ -83,7 +83,10 @@ class LinkService(
         val newProps = BaseProperties()
         newProps.addAttribute("read", read)
         mergeProps(id, newProps)
-        return get(id)
+        val readMessage = if (read) "read" else "unread"
+        return get(id)?.also {
+            entryAuditService.acceptAuditEvent(id, LinkService::class.simpleName, "Link marked as $readMessage")
+        }
     }
 
     fun getUnread(): List<Link> = transaction {

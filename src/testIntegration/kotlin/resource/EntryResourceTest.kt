@@ -244,10 +244,10 @@ class EntryResourceTest : ServerTest() {
             .then()
             .statusCode(200)
             .extract().to<List<EntryAuditItem>>()
-        assertThat(entryAudit1).hasSize(1)
-        assertThat(entryAudit1).extracting("entryId").containsOnly("e1")
+        assertThat(entryAudit1).isEmpty()
 
-        updateDummyEntry("e1", "updated", 2)
+        post("/entry/{id}/star", "e1")
+        post("/entry/{id}/star", "e1")
 
         val entryAudit2 = get("/entry/{id}/audit", "e1")
             .then()
