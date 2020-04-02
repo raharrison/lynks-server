@@ -1,6 +1,7 @@
 package resource
 
 import common.Environment
+import common.exception.InvalidModelException
 import io.ktor.application.call
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
@@ -61,7 +62,7 @@ fun Route.resources(resourceManager: ResourceManager) {
                 }
                 part.dispose()
             }
-            if(res == null) call.respond(HttpStatusCode.BadRequest)
+            if(res == null) throw InvalidModelException()
             else call.respond(HttpStatusCode.Created, res!!)
         }
 

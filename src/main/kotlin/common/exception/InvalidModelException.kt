@@ -1,3 +1,6 @@
 package common.exception
 
-class InvalidModelException(message: String): RuntimeException(message)
+class InvalidModelException : RuntimeException {
+    constructor() : super()
+    constructor(message: String) : super(message)
+}

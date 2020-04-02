@@ -23,14 +23,14 @@ class TaskResourceTest: ServerTest() {
     fun testInvalidEntryId() {
         post("/entry/{eid}/task/{tid}", "invalid", "t1")
                 .then()
-                .statusCode(400)
+                .statusCode(404)
     }
 
     @Test
     fun testInvalidTaskId() {
         post("/entry/{eid}/task/{tid}", "e1", "invalid")
                 .then()
-                .statusCode(400)
+                .statusCode(404)
     }
 
     @Test

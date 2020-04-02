@@ -9,17 +9,12 @@ import io.ktor.routing.post
 fun Route.task(taskService: TaskService) {
 
     post("/entry/{entryId}/task/{id}") {
-        val entryId = call.parameters["entryId"]
-        val taskId = call.parameters["id"]
-        if(entryId != null && taskId != null) {
-            if(taskService.runTask(entryId, taskId))
-                call.respond(HttpStatusCode.OK)
-            else
-                call.respond(HttpStatusCode.BadRequest)
-        }
+        val entryId = call.parameters["entryId"]!!
+        val taskId = call.parameters["id"]!!
+        if (taskService.runTask(entryId, taskId))
+            call.respond(HttpStatusCode.OK)
         else
-            call.respond(HttpStatusCode.BadRequest)
-
+            call.respond(HttpStatusCode.NotFound)
     }
 
 }

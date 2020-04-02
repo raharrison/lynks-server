@@ -1,5 +1,6 @@
 package user
 
+import common.exception.InvalidModelException
 import io.ktor.application.call
 import io.ktor.http.HttpStatusCode
 import io.ktor.request.receive
@@ -20,8 +21,7 @@ fun Route.user(userService: UserService, workerRegistry: WorkerRegistry) {
         val preferences = call.receive<Preferences>()
         preferences.email?.let { email ->
             if (!URLUtils.isValidEmail(email)) {
-                call.respond(HttpStatusCode.BadRequest, "Invalid email address")
-                return@post
+                throw InvalidModelException("Invalid email address")
             }
         }
         val updated = userService.updateUserPreferences(preferences)

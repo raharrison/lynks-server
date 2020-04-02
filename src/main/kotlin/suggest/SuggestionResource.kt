@@ -1,7 +1,7 @@
 package suggest
 
+import common.exception.InvalidModelException
 import io.ktor.application.call
-import io.ktor.http.HttpStatusCode
 import io.ktor.request.receive
 import io.ktor.response.respond
 import io.ktor.routing.Route
@@ -12,7 +12,7 @@ fun Route.suggest(suggestionService: SuggestionService) {
 
     post("/suggest") {
         val url = call.receive<String>()
-        if(!URLUtils.isValidUrl(url)) call.respond(HttpStatusCode.BadRequest, "Invalid URL")
+        if(!URLUtils.isValidUrl(url)) throw InvalidModelException("Invalid URL")
         else call.respond(suggestionService.processLink(url))
     }
 
