@@ -136,7 +136,7 @@ class LinkServiceTest : DatabaseTest() {
 
         var links = linkService.get(PageRequest(0, 1))
         assertThat(links).hasSize(1)
-        assertThat(links).extracting("url").containsOnly("netflix.com")
+        assertThat(links).extracting("source").containsOnly("netflix.com")
         assertThat(links).extracting("title").containsOnly("n3")
 
         links = linkService.get(PageRequest(1, 1))

@@ -1,9 +1,6 @@
 package entry
 
-import common.BaseEntries
-import common.EntryType
-import common.NewNote
-import common.Note
+import common.*
 import db.EntryRepository
 import group.CollectionService
 import group.TagService
@@ -19,10 +16,14 @@ import util.RowMapper
 class NoteService(
     tagService: TagService, collectionService: CollectionService, entryAuditService: EntryAuditService,
     private val resourceManager: ResourceManager
-) : EntryRepository<Note, NewNote>(tagService, collectionService, entryAuditService) {
+) : EntryRepository<Note, SlimNote, NewNote>(tagService, collectionService, entryAuditService) {
 
     override fun toModel(row: ResultRow, groups: GroupSet, table: BaseEntries): Note {
         return RowMapper.toNote(table, row, groups.tags, groups.collections)
+    }
+
+    override fun toSlimModel(row: ResultRow, groups: GroupSet, table: BaseEntries): SlimNote {
+        return RowMapper.toSlimNote(table, row, groups.tags, groups.collections)
     }
 
     override fun getBaseQuery(base: ColumnSet, where: BaseEntries): Query {

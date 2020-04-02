@@ -12,12 +12,19 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import util.RowMapper
 
 class EntryService(tagService: TagService, collectionService: CollectionService, entryAuditService: EntryAuditService) :
-    EntryRepository<Entry, NewEntry>(tagService, collectionService, entryAuditService) {
+    EntryRepository<Entry, SlimEntry, NewEntry>(tagService, collectionService, entryAuditService) {
 
     override fun toModel(row: ResultRow, groups: GroupSet, table: BaseEntries): Entry {
         return when (row[table.type]) {
             EntryType.LINK -> RowMapper.toLink(table, row, groups.tags, groups.collections)
             EntryType.NOTE -> RowMapper.toNote(table, row, groups.tags, groups.collections)
+        }
+    }
+
+    override fun toSlimModel(row: ResultRow, groups: GroupSet, table: BaseEntries): SlimEntry {
+        return when (row[table.type]) {
+            EntryType.LINK -> RowMapper.toSlimLink(table, row, groups.tags, groups.collections)
+            EntryType.NOTE -> RowMapper.toSlimNote(table, row, groups.tags, groups.collections)
         }
     }
 
@@ -37,7 +44,7 @@ class EntryService(tagService: TagService, collectionService: CollectionService,
         throw NotImplementedError()
     }
 
-    fun search(term: String, page: PageRequest = DefaultPageRequest): List<Entry> = transaction {
+    fun search(term: String, page: PageRequest = DefaultPageRequest): List<SlimEntry> = transaction {
         val conn = (TransactionManager.current().connection as JdbcConnectionImpl).connection
         conn.prepareStatement("SELECT * FROM FT_SEARCH_DATA(?, 0, 0)").use { prep ->
             prep.setString(1, term)

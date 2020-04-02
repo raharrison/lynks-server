@@ -2,10 +2,7 @@ package util
 
 import comment.Comment
 import comment.Comments
-import common.BaseEntries
-import common.BaseProperties
-import common.Link
-import common.Note
+import common.*
 import group.Collection
 import group.Tag
 import org.jetbrains.exposed.sql.ResultRow
@@ -31,6 +28,18 @@ object RowMapper {
         )
     }
 
+    fun toSlimLink(table: BaseEntries, row: ResultRow, tags: List<Tag>, collections: List<Collection>): SlimLink {
+        return SlimLink(
+            id = row[table.id],
+            title = row[table.title],
+            source = row[table.src],
+            dateUpdated = row[table.dateUpdated],
+            tags = tags,
+            collections = collections,
+            starred = row[table.starred]
+        )
+    }
+
     fun toNote(table: BaseEntries, row: ResultRow, tags: List<Tag>, collections: List<Collection>): Note {
         return Note(
             id = row[table.id],
@@ -43,6 +52,17 @@ object RowMapper {
             collections = collections,
             props = row[table.props] ?: BaseProperties(),
             version = row[table.version],
+            starred = row[table.starred]
+        )
+    }
+
+    fun toSlimNote(table: BaseEntries, row: ResultRow, tags: List<Tag>, collections: List<Collection>): SlimNote {
+        return SlimNote(
+            id = row[table.id],
+            title = row[table.title],
+            dateUpdated = row[table.dateUpdated],
+            tags = tags,
+            collections = collections,
             starred = row[table.starred]
         )
     }

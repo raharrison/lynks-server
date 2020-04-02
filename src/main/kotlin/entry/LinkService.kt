@@ -19,7 +19,7 @@ import worker.WorkerRegistry
 class LinkService(
     tagService: TagService, collectionService: CollectionService, entryAuditService: EntryAuditService,
     private val resourceManager: ResourceManager, private val workerRegistry: WorkerRegistry
-) : EntryRepository<Link, NewLink>(tagService, collectionService, entryAuditService) {
+) : EntryRepository<Link, SlimLink, NewLink>(tagService, collectionService, entryAuditService) {
 
     override fun getBaseQuery(base: ColumnSet, where: BaseEntries): Query {
         return base.select { where.type eq EntryType.LINK }
@@ -45,6 +45,10 @@ class LinkService(
 
     override fun toModel(row: ResultRow, groups: GroupSet, table: BaseEntries): Link {
         return RowMapper.toLink(table, row, groups.tags, groups.collections)
+    }
+
+    override fun toSlimModel(row: ResultRow, groups: GroupSet, table: BaseEntries): SlimLink {
+        return RowMapper.toSlimLink(table, row, groups.tags, groups.collections)
     }
 
     override fun add(entry: NewLink): Link {

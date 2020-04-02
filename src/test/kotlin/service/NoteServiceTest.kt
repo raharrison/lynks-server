@@ -115,7 +115,6 @@ class NoteServiceTest : DatabaseTest() {
 
         var notes = noteService.get(PageRequest(0, 1))
         assertThat(notes).hasSize(1)
-        assertThat(notes).extracting("plainText").containsOnly("content3")
         assertThat(notes).extracting("title").containsOnly("n3")
 
         notes = noteService.get(PageRequest(1, 1))

@@ -14,7 +14,7 @@ import util.combine
 import util.findColumn
 import util.orderBy
 
-abstract class EntryRepository<T : Entry, in U : NewEntry>(
+abstract class EntryRepository<T : Entry, S: SlimEntry, in U : NewEntry>(
     private val tagService: TagService,
     private val collectionService: CollectionService,
     protected val entryAuditService: EntryAuditService
@@ -37,20 +37,20 @@ abstract class EntryRepository<T : Entry, in U : NewEntry>(
             .singleOrNull()
     }
 
-    fun get(page: PageRequest = DefaultPageRequest): List<T> = transaction {
+    fun get(page: PageRequest = DefaultPageRequest): List<S> = transaction {
         resolveEntryRows(createPagedQuery(page).toList())
     }
 
-    fun get(ids: List<String>, page: PageRequest = DefaultPageRequest): List<T> = transaction {
+    fun get(ids: List<String>, page: PageRequest = DefaultPageRequest): List<S> = transaction {
         if (ids.isEmpty()) emptyList()
         else {
             resolveEntryRows(createPagedQuery(page).combine { Entries.id inList ids }.toList())
         }
     }
 
-    private fun resolveEntryRows(rows: List<ResultRow>): List<T> {
+    private fun resolveEntryRows(rows: List<ResultRow>): List<S> {
         val groups = getGroupsForEntries(rows.map { it[Entries.id] })
-        return rows.map { toModel(it, groups.getOrDefault(it[Entries.id], GroupSet())) }
+        return rows.map { toSlimModel(it, groups.getOrDefault(it[Entries.id], GroupSet())) }
     }
 
     private fun createPagedQuery(page: PageRequest): Query {
@@ -247,6 +247,8 @@ abstract class EntryRepository<T : Entry, in U : NewEntry>(
     protected abstract fun toUpdate(entry: T): BaseEntries.(UpdateBuilder<*>) -> Unit
 
     protected abstract fun toModel(row: ResultRow, groups: GroupSet, table: BaseEntries = Entries): T
+
+    protected abstract fun toSlimModel(row: ResultRow, groups: GroupSet, table: BaseEntries = Entries): S
 
     protected fun toModel(row: ResultRow, table: BaseEntries = Entries): T {
         return toModel(row, getGroupsForEntry(row[table.id]), table)

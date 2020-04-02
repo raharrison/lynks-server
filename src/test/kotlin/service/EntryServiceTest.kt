@@ -55,8 +55,8 @@ class EntryServiceTest: DatabaseTest() {
         val retrieved = entryService.get()
         assertThat(retrieved).hasSize(3)
         assertThat(retrieved).extracting("id").containsExactlyInAnyOrder("id1", "id2", "id3")
-        assertThat(retrieved).hasAtLeastOneElementOfType(Note::class.java)
-        assertThat(retrieved).hasAtLeastOneElementOfType(Link::class.java)
+        assertThat(retrieved).hasAtLeastOneElementOfType(SlimNote::class.java)
+        assertThat(retrieved).hasAtLeastOneElementOfType(SlimLink::class.java)
     }
 
     @Test
@@ -79,12 +79,12 @@ class EntryServiceTest: DatabaseTest() {
         val retrieved = entryService.get(PageRequest(2))
         assertThat(retrieved).hasSize(1)
         assertThat(retrieved).extracting("id").containsExactly("id1")
-        assertThat(retrieved).hasOnlyElementsOfType(Link::class.java)
+        assertThat(retrieved).hasOnlyElementsOfType(SlimLink::class.java)
 
         val retrieved2 = entryService.get(PageRequest(0, 1))
         assertThat(retrieved2).hasSize(1)
         assertThat(retrieved2).extracting("id").containsExactly("id3")
-        assertThat(retrieved2).hasOnlyElementsOfType(Note::class.java)
+        assertThat(retrieved2).hasOnlyElementsOfType(SlimNote::class.java)
     }
 
     @Test
@@ -101,12 +101,12 @@ class EntryServiceTest: DatabaseTest() {
         val entries = entryService.search("note")
         assertThat(entries).hasSize(2)
         assertThat(entries).extracting("id").containsExactlyInAnyOrder("id2", "id3")
-        assertThat(entries).hasOnlyElementsOfType(Note::class.java)
+        assertThat(entries).hasOnlyElementsOfType(SlimNote::class.java)
 
         val entries2 = entryService.search("link")
         assertThat(entries2).hasSize(1)
         assertThat(entries2).extracting("id").containsExactly("id1")
-        assertThat(entries2).hasOnlyElementsOfType(Link::class.java)
+        assertThat(entries2).hasOnlyElementsOfType(SlimLink::class.java)
     }
 
     @Test
@@ -114,8 +114,8 @@ class EntryServiceTest: DatabaseTest() {
         val entries = entryService.search("content")
         assertThat(entries).hasSize(2)
         assertThat(entries).extracting("id").containsExactlyInAnyOrder("id1", "id2")
-        assertThat(entries).hasAtLeastOneElementOfType(Note::class.java)
-        assertThat(entries).hasAtLeastOneElementOfType(Link::class.java)
+        assertThat(entries).hasAtLeastOneElementOfType(SlimNote::class.java)
+        assertThat(entries).hasAtLeastOneElementOfType(SlimLink::class.java)
     }
 
     @Test
