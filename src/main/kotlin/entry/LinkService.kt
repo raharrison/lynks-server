@@ -11,6 +11,7 @@ import org.jetbrains.exposed.sql.statements.InsertStatement
 import org.jetbrains.exposed.sql.statements.UpdateBuilder
 import org.jetbrains.exposed.sql.transactions.transaction
 import resource.ResourceManager
+import resource.ResourceType
 import util.RowMapper
 import util.URLUtils
 import worker.PersistLinkProcessingRequest
@@ -53,7 +54,7 @@ class LinkService(
 
     override fun add(entry: NewLink): Link {
         val link = super.add(entry)
-        workerRegistry.acceptLinkWork(PersistLinkProcessingRequest(link, entry.process))
+        workerRegistry.acceptLinkWork(PersistLinkProcessingRequest(link, ResourceType.all(), entry.process))
         if (entry.process)
             workerRegistry.acceptDiscussionWork(link.id)
         return link
@@ -61,7 +62,7 @@ class LinkService(
 
     override fun update(entry: NewLink): Link? {
         return super.update(entry)?.also {
-            workerRegistry.acceptLinkWork(PersistLinkProcessingRequest(it, entry.process))
+            workerRegistry.acceptLinkWork(PersistLinkProcessingRequest(it, ResourceType.all(), entry.process))
             if (entry.process)
                 workerRegistry.acceptDiscussionWork(it.id)
         }

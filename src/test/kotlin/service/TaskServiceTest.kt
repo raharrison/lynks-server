@@ -11,7 +11,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import task.LinkProcessingTask
-import task.TaskContext
 import task.TaskService
 import worker.WorkerRegistry
 
@@ -42,19 +41,19 @@ class TaskServiceTest {
 
         assertThat(res).isTrue()
 
-        val context = TaskContext(mapOf("k1" to "v1"))
+        val context = LinkProcessingTask.LinkProcessingTaskContext(mapOf("k1" to "v1"))
         verify(exactly = 1) { entryService.get("entry1") }
         verify { workerRegistry.acceptTaskWork(match {
-            if(it is LinkProcessingTask) {
-                assertThat(it.id).isEqualTo("task1")
-                assertThat(it.entryId).isEqualTo("entry1")
-                assertThat(it.workerRegistry).isEqualTo(workerRegistry)
-                assertThat(it.linkService).isEqualTo(linkService)
+            if(it::class == LinkProcessingTask::class) {
+                val processingTask = it as LinkProcessingTask
+                assertThat(processingTask.id).isEqualTo("task1")
+                assertThat(processingTask.entryId).isEqualTo("entry1")
+                assertThat(processingTask.workerRegistry).isEqualTo(workerRegistry)
+                assertThat(processingTask.linkService).isEqualTo(linkService)
                 return@match true
             }
             false
         }, context) }
-
     }
 
     @Test

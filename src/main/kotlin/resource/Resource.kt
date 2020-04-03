@@ -4,6 +4,7 @@ import common.Entries
 import common.IdBasedCreatedEntity
 import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.Table
+import java.util.*
 
 object Resources : Table("RESOURCE") {
     val id = varchar("ID", 12)
@@ -29,7 +30,11 @@ data class Resource(
 ): IdBasedCreatedEntity
 
 enum class ResourceType {
-    UPLOAD, SCREENSHOT, THUMBNAIL, DOCUMENT, GENERATED
+    UPLOAD, SCREENSHOT, THUMBNAIL, DOCUMENT, GENERATED;
+
+    companion object {
+        fun all() = EnumSet.allOf(ResourceType::class.java)
+    }
 }
 
 // files/{entryId}/{id}

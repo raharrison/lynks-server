@@ -14,11 +14,15 @@ import notify.NotifyService
 import resource.*
 import suggest.Suggestion
 import java.time.LocalDate
+import java.util.*
 
 sealed class LinkProcessingRequest
-class PersistLinkProcessingRequest(val link: Link, val process: Boolean) : LinkProcessingRequest()
+class PersistLinkProcessingRequest(val link: Link, val resourceSet: EnumSet<ResourceType>, val process: Boolean) :
+    LinkProcessingRequest()
+
 class ActiveLinkCheckingRequest(val url: String, val response: CompletableDeferred<Boolean>) : LinkProcessingRequest()
-class SuggestLinkProcessingRequest(val url: String, val response: CompletableDeferred<Suggestion>) : LinkProcessingRequest()
+class SuggestLinkProcessingRequest(val url: String, val response: CompletableDeferred<Suggestion>) :
+    LinkProcessingRequest()
 
 class LinkProcessorFactory {
     private val processors = listOf<(String) -> LinkProcessor> { YoutubeLinkProcessor(it, WebResourceRetriever()) }
@@ -29,23 +33,24 @@ class LinkProcessorFactory {
     }
 }
 
-class LinkProcessorWorker(private val resourceManager: ResourceManager,
-                          private val linkService: LinkService,
-                          notifyService: NotifyService,
-                          entryAuditService: EntryAuditService
+class LinkProcessorWorker(
+    private val resourceManager: ResourceManager,
+    private val linkService: LinkService,
+    notifyService: NotifyService,
+    entryAuditService: EntryAuditService
 ) : ChannelBasedWorker<LinkProcessingRequest>(notifyService, entryAuditService) {
 
     internal var processorFactory = LinkProcessorFactory()
 
     override suspend fun doWork(input: LinkProcessingRequest) {
         when (input) {
-            is PersistLinkProcessingRequest -> processLinkPersist(input.link, input.process)
+            is PersistLinkProcessingRequest -> processLinkPersist(input.link, input.resourceSet, input.process)
             is SuggestLinkProcessingRequest -> processLinkSuggest(input.url, input.response)
             is ActiveLinkCheckingRequest -> processActiveCheck(input.url, input.response)
         }
     }
 
-    private suspend fun processLinkPersist(link: Link, process: Boolean) {
+    private suspend fun processLinkPersist(link: Link, resourceSet: EnumSet<ResourceType>, process: Boolean) {
         try {
             val movedResources = resourceManager.moveTempFiles(link.id, link.url)
             findExistingDocumentContent(movedResources)?.also {
@@ -53,18 +58,12 @@ class LinkProcessorWorker(private val resourceManager: ResourceManager,
             }
             val shouldProcess = process && movedResources.isEmpty()
 
-            processorFactory.createProcessors(link.url).forEach { it ->
+            processorFactory.createProcessors(link.url).forEach {
                 it.use { proc ->
                     coroutineScope {
                         proc.enrich(link.props)
                         if (shouldProcess) {
-                            proc.init()
-                            val thumb = async { proc.generateThumbnail() }
-                            val screen = async { proc.generateScreenshot() }
-                            link.content = proc.content
-                            thumb.await()?.let { resourceManager.saveGeneratedResource(link.id, createResourceFileName(ResourceType.THUMBNAIL, it.extension), ResourceType.THUMBNAIL, it.image) }
-                            screen.await()?.let { resourceManager.saveGeneratedResource(link.id, createResourceFileName(ResourceType.SCREENSHOT, it.extension), ResourceType.SCREENSHOT, it.image) }
-                            proc.html?.let { resourceManager.saveGeneratedResource(link.id, createResourceFileName(ResourceType.DOCUMENT, HTML), ResourceType.DOCUMENT, it.toByteArray()) }
+                            runPersistProcessor(link, resourceSet, proc)
                         }
                     }
                 }
@@ -74,8 +73,12 @@ class LinkProcessorWorker(private val resourceManager: ResourceManager,
 
             val updatedLink = linkService.update(link)
             log.info("Link processing worker request complete, sending notification entry={}", link.id)
-            if(process) {
-                entryAuditService.acceptAuditEvent(link.id, LinkProcessorWorker::class.simpleName, "Link processing completed successfully")
+            if (process) {
+                entryAuditService.acceptAuditEvent(
+                    link.id,
+                    LinkProcessorWorker::class.simpleName,
+                    "Link processing completed successfully"
+                )
                 sendNotification(body = updatedLink)
             }
         } catch (e: Exception) {
@@ -87,6 +90,47 @@ class LinkProcessorWorker(private val resourceManager: ResourceManager,
             entryAuditService.acceptAuditEvent(link.id, LinkProcessorWorker::class.simpleName, "Link processing failed")
             sendNotification(Notification.error("Error occurred processing link"))
             // log and reschedule
+        }
+    }
+
+    private suspend fun runPersistProcessor(link: Link, resourceSet: EnumSet<ResourceType>, proc: LinkProcessor) {
+        if (resourceSet.isEmpty())
+            return
+
+        proc.init()
+        val thumb = if (resourceSet.contains(ResourceType.THUMBNAIL)) async { proc.generateThumbnail() } else null
+        val screen = if (resourceSet.contains(ResourceType.SCREENSHOT)) async { proc.generateScreenshot() } else null
+
+        if (resourceSet.contains(ResourceType.DOCUMENT)) {
+            link.content = proc.content
+            proc.html?.let {
+                resourceManager.saveGeneratedResource(
+                    link.id,
+                    createResourceFileName(ResourceType.DOCUMENT, HTML),
+                    ResourceType.DOCUMENT,
+                    it.toByteArray()
+                )
+            }
+        }
+        if (resourceSet.contains(ResourceType.THUMBNAIL)) {
+            thumb?.await()?.let {
+                resourceManager.saveGeneratedResource(
+                    link.id,
+                    createResourceFileName(ResourceType.THUMBNAIL, it.extension),
+                    ResourceType.THUMBNAIL,
+                    it.image
+                )
+            }
+        }
+        if (resourceSet.contains(ResourceType.SCREENSHOT)) {
+            screen?.await()?.let {
+                resourceManager.saveGeneratedResource(
+                    link.id,
+                    createResourceFileName(ResourceType.SCREENSHOT, it.extension),
+                    ResourceType.SCREENSHOT,
+                    it.image
+                )
+            }
         }
     }
 
@@ -110,9 +154,18 @@ class LinkProcessorWorker(private val resourceManager: ResourceManager,
                         proc.init()
                         val thumb = async { proc.generateThumbnail() }
                         val screen = async { proc.generateScreenshot() }
-                        val thumbPath = thumb.await()?.let { resourceManager.saveTempFile(url, it.image, ResourceType.THUMBNAIL, it.extension) }
-                        val screenPath = screen.await()?.let { resourceManager.saveTempFile(url, it.image, ResourceType.SCREENSHOT, it.extension) }
-                        proc.html?.let { resourceManager.saveTempFile(url, it.toByteArray(), ResourceType.DOCUMENT, HTML) }
+                        val thumbPath = thumb.await()
+                            ?.let { resourceManager.saveTempFile(url, it.image, ResourceType.THUMBNAIL, it.extension) }
+                        val screenPath = screen.await()
+                            ?.let { resourceManager.saveTempFile(url, it.image, ResourceType.SCREENSHOT, it.extension) }
+                        proc.html?.let {
+                            resourceManager.saveTempFile(
+                                url,
+                                it.toByteArray(),
+                                ResourceType.DOCUMENT,
+                                HTML
+                            )
+                        }
                         log.info("Link processing worker completing suggestion request for url={}", url)
                         deferred.complete(Suggestion(proc.resolvedUrl, proc.title, thumbPath, screenPath))
                     }

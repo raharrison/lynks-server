@@ -7,10 +7,10 @@ import io.webfolder.cdp.Launcher
 import io.webfolder.cdp.event.Events
 import io.webfolder.cdp.event.network.ResponseReceived
 import io.webfolder.cdp.session.Session
-import io.webfolder.cdp.type.network.ResourceType
 import resource.JPG
 import resource.PDF
 import resource.PNG
+import resource.ResourceType
 import task.DiscussionFinderTask
 import task.LinkProcessingTask
 import util.loggerFor
@@ -80,7 +80,7 @@ open class DefaultLinkProcessor(private val url: String) : LinkProcessor {
         session.addEventListener { event, value ->
             if (Events.NetworkResponseReceived == event) {
                 val rr = value as ResponseReceived
-                if (rr.type == ResourceType.Document) {
+                if (rr.type == io.webfolder.cdp.type.network.ResourceType.Document) {
                     statuses.add(rr.response.status)
                 }
             }
@@ -117,6 +117,13 @@ open class DefaultLinkProcessor(private val url: String) : LinkProcessor {
 
     override fun close() {
         session?.close()
+    }
+
+    override suspend fun enrich(props: BaseProperties) {
+        super.enrich(props)
+        props.addTask("Generate Screenshot", LinkProcessingTask.build(ResourceType.SCREENSHOT))
+        props.addTask("Generate Document", LinkProcessingTask.build(ResourceType.DOCUMENT))
+        props.addTask("Generate Thumbnail", LinkProcessingTask.build(ResourceType.THUMBNAIL))
     }
 
     override fun matches(): Boolean = true

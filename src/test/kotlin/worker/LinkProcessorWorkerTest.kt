@@ -6,7 +6,9 @@ import entry.EntryAuditService
 import entry.LinkService
 import io.mockk.*
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import link.ImageResource
 import link.LinkProcessor
 import notify.NotifyService
@@ -20,6 +22,7 @@ import resource.ResourceType
 import suggest.Suggestion
 import java.nio.file.Files
 import java.nio.file.Paths
+import java.util.*
 
 class LinkProcessorWorkerTest {
 
@@ -41,7 +44,7 @@ class LinkProcessorWorkerTest {
     }
 
     @Test
-    fun testDefaultPersist() = runBlocking(TestCoroutineContext()) {
+    fun testDefaultPersistAllTypes() = runBlocking(TestCoroutineContext()) {
         val link = Link("id1", "title", "google.com", "google.com", "", 100, 100)
 
         val thumb = ImageResource(byteArrayOf(1, 2, 3), "jpg")
@@ -64,7 +67,7 @@ class LinkProcessorWorkerTest {
             "eid",
             "file1.txt",
             "txt",
-            ResourceType.UPLOAD,
+            ResourceType.GENERATED,
             12L,
             12L,
             12L
@@ -75,7 +78,7 @@ class LinkProcessorWorkerTest {
         every { resourceManager.moveTempFiles(link.id, link.url) } returns emptyList()
 
         val channel = worker.apply { runner = this@runBlocking.coroutineContext }.worker()
-        channel.send(PersistLinkProcessingRequest(link, true))
+        channel.send(PersistLinkProcessingRequest(link, ResourceType.all(), true))
         channel.close()
 
         coVerify(exactly = 1) { processorFactory.createProcessors(link.url) }
@@ -118,11 +121,73 @@ class LinkProcessorWorkerTest {
     }
 
     @Test
+    fun testDefaultPersistSingleType() = runBlocking(TestCoroutineContext()) {
+        val link = Link("id1", "title", "google.com", "google.com", "", 100, 100)
+
+        val screen = ImageResource(byteArrayOf(4, 5, 6), "png")
+        val processor = mockk<LinkProcessor>(relaxUnitFun = true)
+
+        coEvery { notifyService.accept(any(), ofType(Link::class)) } just Runs
+        coEvery { processor.generateScreenshot() } returns screen
+        coEvery { processor.enrich(link.props) } just Runs
+        every { processor.close() } just Runs
+
+        coEvery { processorFactory.createProcessors(link.url) } returns listOf(processor)
+        every { resourceManager.saveGeneratedResource(link.id, any(), any(), any()) } returns Resource(
+            "rid",
+            "eid",
+            "file1.txt",
+            "txt",
+            ResourceType.GENERATED,
+            12L,
+            12L,
+            12L
+        )
+        every { linkService.update(link) } returns link
+        every { linkService.mergeProps(eq("id1"), any()) } just Runs
+
+        every { resourceManager.moveTempFiles(link.id, link.url) } returns emptyList()
+
+        val channel = worker.apply { runner = this@runBlocking.coroutineContext }.worker()
+        channel.send(PersistLinkProcessingRequest(link, EnumSet.of(ResourceType.SCREENSHOT), true))
+        channel.close()
+
+        coVerify(exactly = 1) { processorFactory.createProcessors(link.url) }
+        verify(exactly = 1) { processor.close() }
+        verify(exactly = 1) { linkService.mergeProps(eq("id1"), any()) }
+        verify(exactly = 1) { linkService.update(link) }
+        coVerify(exactly = 1) { notifyService.accept(any(), ofType(Link::class)) }
+
+        coVerify(exactly = 0) { processor.generateThumbnail() }
+        coVerify(exactly = 1) { processor.generateScreenshot() }
+        coVerify(exactly = 0) { processor.html }
+        coVerify(exactly = 0) { processor.content }
+
+        verify(exactly = 0) {
+            resourceManager.saveGeneratedResource(link.id, any(), ResourceType.THUMBNAIL, any())
+        }
+        verify(exactly = 0) {
+            resourceManager.saveGeneratedResource(link.id, any(), ResourceType.DOCUMENT, any())
+        }
+        verify(exactly = 1) {
+            resourceManager.saveGeneratedResource(
+                link.id,
+                match { it.startsWith("screenshot") },
+                ResourceType.SCREENSHOT,
+                screen.image
+            )
+        }
+        verify(exactly = 1) { entryAuditService.acceptAuditEvent(link.id, any(), any()) }
+    }
+
+    @Test
     fun testDefaultPersistAlreadyProcessed() = runBlocking(TestCoroutineContext()) {
         val link = Link("id1", "title", "google.com", "google.com", "", 100, 100)
 
         val docResource = Resource("rid", "id1","name", "html", ResourceType.DOCUMENT, 10, 123, 123)
-        Files.write(resourcePath, byteArrayOf(1, 2))
+        withContext(Dispatchers.IO) {
+            Files.write(resourcePath, byteArrayOf(1, 2))
+        }
 
         val processor = mockk<LinkProcessor>(relaxUnitFun = true)
         coEvery { notifyService.accept(any(), ofType(Link::class)) } just Runs
@@ -137,7 +202,7 @@ class LinkProcessorWorkerTest {
         every { resourceManager.getResourceAsFile(docResource.id) } returns Pair(docResource, resourcePath.toFile())
 
         val channel = worker.apply { runner = this@runBlocking.coroutineContext }.worker()
-        channel.send(PersistLinkProcessingRequest(link, true))
+        channel.send(PersistLinkProcessingRequest(link, ResourceType.all(), true))
         channel.close()
 
         coVerify(exactly = 1) { processorFactory.createProcessors(link.url) }
@@ -170,7 +235,7 @@ class LinkProcessorWorkerTest {
         every { resourceManager.moveTempFiles(link.id, link.url) } returns emptyList()
 
         val channel = worker.apply { runner = this@runBlocking.coroutineContext }.worker()
-        channel.send(PersistLinkProcessingRequest(link, false))
+        channel.send(PersistLinkProcessingRequest(link, ResourceType.all(), false))
         channel.close()
 
         coVerify(exactly = 1) { processorFactory.createProcessors(link.url) }
@@ -205,7 +270,7 @@ class LinkProcessorWorkerTest {
         every { resourceManager.moveTempFiles(link.id, link.url) } returns emptyList()
 
         val channel = worker.apply { runner = this@runBlocking.coroutineContext }.worker()
-        channel.send(PersistLinkProcessingRequest(link, true))
+        channel.send(PersistLinkProcessingRequest(link, ResourceType.all(), true))
         channel.close()
 
         coVerify(exactly = 1) { processorFactory.createProcessors(link.url) }
