@@ -6,7 +6,7 @@ buildscript {
     ext.h2_version = '1.4.199'
     ext.hikari_version = '3.4.2'
 
-    ext.flexmark_version = '0.60.2'
+    ext.flexmark_version = '0.61.0'
     ext.handlebars_version = '4.1.2'
     ext.commons_email_version = '1.5'
 
