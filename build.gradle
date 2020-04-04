@@ -71,6 +71,10 @@ repositories {
 test {
     useJUnitPlatform()
     systemProperty "CONFIG_MODE", "TEST"
+    testLogging {
+        events "failed"
+        exceptionFormat "full"
+    }
 }
 
 dependencies {
