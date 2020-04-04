@@ -5,7 +5,7 @@ import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.resume
 
 // delay calls will be run immediately
-@UseExperimental(InternalCoroutinesApi::class)
+@OptIn(InternalCoroutinesApi::class)
 class TestCoroutineContext : CoroutineDispatcher(), Delay {
 
     override fun dispatchYield(context: CoroutineContext, block: Runnable) {

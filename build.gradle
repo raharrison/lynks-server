@@ -53,7 +53,11 @@ compileKotlin {
     kotlinOptions.jvmTarget = "1.8"
 }
 compileTestKotlin {
-    kotlinOptions.jvmTarget = "1.8"
+    kotlinOptions {
+        suppressWarnings = true
+        jvmTarget = "1.8"
+        freeCompilerArgs += '-Xopt-in=kotlin.RequiresOptIn'
+    }
 }
 compileTestIntegrationKotlin {
     kotlinOptions.jvmTarget = "1.8"
