@@ -12,7 +12,7 @@ object FileUtils {
 
     fun writeToFile(path: Path, data: ByteArray) {
         val parentPath = path.parent
-        if(!Files.exists(parentPath))
+        if (!Files.exists(parentPath))
             Files.createDirectories(parentPath)
         Files.write(path, data)
     }
@@ -32,12 +32,6 @@ object FileUtils {
     fun directoriesOlderThan(path: Path, days: Long): List<Path> {
         val now = Instant.now().minus(days, ChronoUnit.DAYS)
         return Files.newDirectoryStream(path) {
-
-            println("$it created = " + Files.readAttributes(it, BasicFileAttributes::class.java)
-                .lastModifiedTime().toInstant())
-            println("$it last modified = " + Files.readAttributes(it, BasicFileAttributes::class.java)
-                .lastModifiedTime().toInstant())
-
             Files.readAttributes(it, BasicFileAttributes::class.java)
                 .lastModifiedTime().toInstant().isBefore(now)
         }.use { it.toList() }
