@@ -45,11 +45,11 @@ class TempFileCleanupWorkerTest {
     private fun createTempFiles() {
         Paths.get(Environment.server.resourceTempPath).toFile().deleteRecursively()
         Files.createDirectories(oldFile.parent)
+        Files.createFile(oldFile)
         val oldTime = Instant.now().minus(15, ChronoUnit.DAYS)
         val attributes = Files.getFileAttributeView(oldFile.parent, BasicFileAttributeView::class.java)
         val time = FileTime.from(oldTime)
         attributes.setTimes(time, time, time)
-        Files.createFile(oldFile)
 
         Files.createDirectories(newFile.parent)
         Files.createFile(newFile)

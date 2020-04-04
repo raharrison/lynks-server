@@ -33,11 +33,13 @@ object FileUtils {
         val now = Instant.now().minus(days, ChronoUnit.DAYS)
         return Files.newDirectoryStream(path) {
 
-            println("$it = " + Files.readAttributes(it, BasicFileAttributes::class.java)
-                .creationTime().toInstant())
+            println("$it created = " + Files.readAttributes(it, BasicFileAttributes::class.java)
+                .lastModifiedTime().toInstant())
+            println("$it last modified = " + Files.readAttributes(it, BasicFileAttributes::class.java)
+                .lastModifiedTime().toInstant())
 
-            return@newDirectoryStream Files.readAttributes(it, BasicFileAttributes::class.java)
-                .creationTime().toInstant().isBefore(now)
+            Files.readAttributes(it, BasicFileAttributes::class.java)
+                .lastModifiedTime().toInstant().isBefore(now)
         }.use { it.toList() }
     }
 
