@@ -1,5 +1,7 @@
 package link
 
+import com.fasterxml.jackson.databind.JsonNode
+import com.fasterxml.jackson.databind.node.ArrayNode
 import common.BaseProperties
 import kotlinx.coroutines.runBlocking
 import resource.JPG
@@ -16,6 +18,14 @@ class YoutubeLinkProcessor(private val url: String, private val retriever: Resou
 
     private lateinit var videoId: String
 
+    private val videoInfo = lazy {
+        runBlocking {
+            downloadVideoInfo()?.let {
+                parseVideoInfo(it)
+            }
+        }
+    }
+
     override suspend fun init() {
         this.videoId = extractVideoId()
     }
@@ -24,24 +34,35 @@ class YoutubeLinkProcessor(private val url: String, private val retriever: Resou
         return URLUtils.extractQueryParams(url)["v"] ?: throw IllegalArgumentException("Invalid youtube url")
     }
 
+    private fun parseVideoInfo(raw: String): JsonNode? {
+        val params = URLUtils.extractQueryParams(raw)
+        if (params.containsKey("player_response")) {
+            val playerResponse = params["player_response"]
+            val playerResponseJson = JsonMapper.defaultMapper.readTree(playerResponse)
+            if ("error".equals(playerResponseJson["playabilityStatus"]["status"].asText("error"), true)) {
+                return null
+            }
+            return playerResponseJson["videoDetails"]
+        }
+        return null
+    }
+
     override val html: String? = null
     override val content: String? = null
 
-    override val title: String get() = runBlocking {
-        downloadVideoInfo()?.let {
-            val params = URLUtils.extractQueryParams(it)
-            if(params.containsKey("player_response")) {
-                val playerResponse = params["player_response"]
-                val playerResponseJson = JsonMapper.defaultMapper.readTree(playerResponse)
-                if ("error".equals(playerResponseJson["playabilityStatus"]["status"].asText("error"), true)) {
-                    return@runBlocking ""
-                }
-                return@runBlocking playerResponseJson["videoDetails"]["title"].asText()
-            } else ""
-        }
-        ""
-    }
+    override val title: String get() = videoInfo.value?.get("title")?.asText() ?: ""
+
     override val resolvedUrl: String get() = url
+
+    override val keywords: List<String>
+        get() {
+            return videoInfo.value?.get("keywords")?.let { it ->
+                if (it is ArrayNode) {
+                    return@let it.map { it.textValue() }.toList()
+                }
+                emptyList<String>()
+            } ?: emptyList<String>()
+        }
 
     override fun close() {
     }
@@ -80,6 +101,9 @@ class YoutubeLinkProcessor(private val url: String, private val retriever: Resou
     private fun addYoutubeDlTasks(url: String, props: BaseProperties) {
         props.addTask("Download Audio", YoutubeDlTask.build(url, YoutubeDlTask.YoutubeDlDownload.BEST_AUDIO))
         props.addTask("Download Video (max 720p)", YoutubeDlTask.build(url, YoutubeDlTask.YoutubeDlDownload.BEST_VIDEO))
-        props.addTask("Download Video (max 1080p)", YoutubeDlTask.build(url, YoutubeDlTask.YoutubeDlDownload.BEST_VIDEO_TRANSCODE))
+        props.addTask(
+            "Download Video (max 1080p)",
+            YoutubeDlTask.build(url, YoutubeDlTask.YoutubeDlDownload.BEST_VIDEO_TRANSCODE)
+        )
     }
 }

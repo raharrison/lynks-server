@@ -1,5 +1,6 @@
 package link
 
+import com.chimbori.crux.articles.Article
 import com.chimbori.crux.articles.ArticleExtractor
 import common.BaseProperties
 import io.webfolder.cdp.AdaptiveProcessManager
@@ -61,6 +62,8 @@ interface LinkProcessor : AutoCloseable {
 
     val resolvedUrl: String
 
+    val keywords: List<String>
+
 }
 
 private val log = loggerFor<DefaultLinkProcessor>()
@@ -68,6 +71,10 @@ private val log = loggerFor<DefaultLinkProcessor>()
 open class DefaultLinkProcessor(private val url: String) : LinkProcessor {
 
     private var session: Session? = null
+
+    private val article = lazy {
+        extractArticle()
+    }
 
     override suspend fun init() {
         session = connectSession(url)
@@ -97,6 +104,14 @@ open class DefaultLinkProcessor(private val url: String) : LinkProcessor {
             session.close()
             throw IllegalArgumentException("Could not navigate to $url")
         }
+    }
+
+    private fun extractArticle(): Article {
+        log.info("Performing article extraction for url={}", resolvedUrl)
+        return ArticleExtractor.with(resolvedUrl, html)
+            .extractMetadata()
+            .extractContent()
+            .article()
     }
 
     companion object {
@@ -167,19 +182,13 @@ open class DefaultLinkProcessor(private val url: String) : LinkProcessor {
 
     override val html: String get() = session?.content ?: throw sessionNotInit()
 
-    override val content: String?
-        get() {
-            log.info("Performing article extraction for url={}", resolvedUrl)
-            val article = ArticleExtractor.with(resolvedUrl, html)
-                .extractMetadata()
-                .extractContent()
-                .article()
-            return article.document.toString()
-        }
+    override val content: String? get() = article.value.document.toString()
 
     override val title: String get() = session?.title ?: throw sessionNotInit()
 
     override val resolvedUrl: String get() = session?.location ?: throw sessionNotInit()
+
+    override val keywords: List<String> get() = article.value.keywords.toList()
 
     private fun sessionNotInit() = IllegalStateException("Web session has not been initialised")
 

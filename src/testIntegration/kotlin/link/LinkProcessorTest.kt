@@ -27,6 +27,7 @@ class LinkProcessorTest: ServerTest() {
             assertThat(it.html).isNotBlank()
             assertThat(it.content).isNotBlank()
             assertThat(it.resolvedUrl).isEqualTo("$url/")
+            assertThat(it.keywords).contains("technology", "programming", "java", "blog", "code", "software")
             assertThat(it.matches()).isTrue()
 
             val screen = it.generateScreenshot()

@@ -37,6 +37,14 @@ class YoutubeLinkProcessorTest {
     }
 
     @Test
+    fun testGetKeywords() {
+        val vidInfo = this.javaClass.getResource("/get_video_info.txt").readText()
+        coEvery { retriever.getString(any()) } returns vidInfo
+        assertThat(processor.keywords).hasSizeGreaterThan(5)
+        coVerify(exactly = 1) { retriever.getString(any()) }
+    }
+
+    @Test
     fun testGetTitleBadInfo() {
         coEvery { retriever.getString(any()) } returns null
         assertThat(processor.title).isEmpty()
