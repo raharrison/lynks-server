@@ -9,10 +9,14 @@ import org.jetbrains.exposed.sql.statements.UpdateBuilder
 import org.jetbrains.exposed.sql.statements.jdbc.JdbcConnectionImpl
 import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.jetbrains.exposed.sql.transactions.transaction
+import resource.ResourceManager
 import util.RowMapper
 
-class EntryService(tagService: TagService, collectionService: CollectionService, entryAuditService: EntryAuditService) :
-    EntryRepository<Entry, SlimEntry, NewEntry>(tagService, collectionService, entryAuditService) {
+class EntryService(
+    tagService: TagService, collectionService: CollectionService, entryAuditService: EntryAuditService,
+    resourceManager: ResourceManager
+) :
+    EntryRepository<Entry, SlimEntry, NewEntry>(tagService, collectionService, entryAuditService, resourceManager) {
 
     override fun toModel(row: ResultRow, groups: GroupSet, table: BaseEntries): Entry {
         return when (row[table.type]) {

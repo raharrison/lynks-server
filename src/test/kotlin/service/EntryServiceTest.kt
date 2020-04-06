@@ -11,6 +11,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import resource.ResourceManager
 import util.createDummyEntry
 import util.updateDummyEntry
 
@@ -19,7 +20,8 @@ class EntryServiceTest: DatabaseTest() {
     private val tagService = TagService()
     private val collectionService = CollectionService()
     private val entryAuditService = mockk<EntryAuditService>(relaxUnitFun = true)
-    private val entryService = EntryService(tagService, collectionService, entryAuditService)
+    private val resourceManager = mockk<ResourceManager>()
+    private val entryService = EntryService(tagService, collectionService, entryAuditService, resourceManager)
 
     @BeforeEach
     fun createEntries() {

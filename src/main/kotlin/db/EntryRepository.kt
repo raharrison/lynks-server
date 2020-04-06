@@ -9,15 +9,17 @@ import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.statements.InsertStatement
 import org.jetbrains.exposed.sql.statements.UpdateBuilder
 import org.jetbrains.exposed.sql.transactions.transaction
+import resource.ResourceManager
 import util.RandomUtils
 import util.combine
 import util.findColumn
 import util.orderBy
 
-abstract class EntryRepository<T : Entry, S: SlimEntry, in U : NewEntry>(
+abstract class EntryRepository<T : Entry, S : SlimEntry, in U : NewEntry>(
     private val tagService: TagService,
     private val collectionService: CollectionService,
-    protected val entryAuditService: EntryAuditService
+    protected val entryAuditService: EntryAuditService,
+    protected val resourceManager: ResourceManager
 ) {
 
     protected class GroupSet(val tags: List<Tag> = emptyList(), val collections: List<Collection> = emptyList())
@@ -183,9 +185,8 @@ abstract class EntryRepository<T : Entry, S: SlimEntry, in U : NewEntry>(
             .singleOrNull()
 
         entry?.let {
-            return@transaction Entries.deleteWhere { Entries.id eq id } > 0
-        }
-        false
+            Entries.deleteWhere { Entries.id eq id } > 0 && resourceManager.deleteAll(id)
+        } ?: false
     }
 
     private fun updateGroupsForEntry(groups: List<String>, id: String) {

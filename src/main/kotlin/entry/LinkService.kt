@@ -19,8 +19,8 @@ import worker.WorkerRegistry
 
 class LinkService(
     tagService: TagService, collectionService: CollectionService, entryAuditService: EntryAuditService,
-    private val resourceManager: ResourceManager, private val workerRegistry: WorkerRegistry
-) : EntryRepository<Link, SlimLink, NewLink>(tagService, collectionService, entryAuditService) {
+    resourceManager: ResourceManager, private val workerRegistry: WorkerRegistry
+) : EntryRepository<Link, SlimLink, NewLink>(tagService, collectionService, entryAuditService, resourceManager) {
 
     override fun getBaseQuery(base: ColumnSet, where: BaseEntries): Query {
         return base.select { where.type eq EntryType.LINK }
@@ -66,10 +66,6 @@ class LinkService(
             if (entry.process)
                 workerRegistry.acceptDiscussionWork(it.id)
         }
-    }
-
-    override fun delete(id: String): Boolean {
-        return super.delete(id) && resourceManager.deleteAll(id)
     }
 
     override fun toUpdate(entry: Link): BaseEntries.(UpdateBuilder<*>) -> Unit = {

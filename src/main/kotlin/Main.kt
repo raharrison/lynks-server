@@ -72,7 +72,7 @@ fun Application.module() {
         register(TagService())
         register(CollectionService())
         register(EntryAuditService())
-        register(EntryService(get(), get(), get()))
+        register(EntryService(get(), get(), get(), get()))
         register(LinkService(get(), get(), get(), get(), get()))
         register(NoteService(get(), get(), get(), get()))
         register(CommentService())

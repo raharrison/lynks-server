@@ -15,8 +15,8 @@ import util.RowMapper
 
 class NoteService(
     tagService: TagService, collectionService: CollectionService, entryAuditService: EntryAuditService,
-    private val resourceManager: ResourceManager
-) : EntryRepository<Note, SlimNote, NewNote>(tagService, collectionService, entryAuditService) {
+    resourceManager: ResourceManager
+) : EntryRepository<Note, SlimNote, NewNote>(tagService, collectionService, entryAuditService, resourceManager) {
 
     override fun toModel(row: ResultRow, groups: GroupSet, table: BaseEntries): Note {
         return RowMapper.toNote(table, row, groups.tags, groups.collections)
@@ -54,9 +54,5 @@ class NoteService(
         it[plainContent] = entry.plainText
         it[content] = MarkdownUtils.convertToMarkdown(entry.plainText)
         it[props] = entry.props
-    }
-
-    override fun delete(id: String): Boolean {
-        return super.delete(id) && resourceManager.deleteAll(id)
     }
 }
