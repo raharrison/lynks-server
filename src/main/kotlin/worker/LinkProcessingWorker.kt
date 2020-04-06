@@ -167,7 +167,7 @@ class LinkProcessorWorker(
                             )
                         }
                         log.info("Link processing worker completing suggestion request for url={}", url)
-                        deferred.complete(Suggestion(proc.resolvedUrl, proc.title, thumbPath, screenPath))
+                        deferred.complete(Suggestion(proc.resolvedUrl, proc.title, thumbPath, screenPath, it.keywords))
                     }
                 }
             }

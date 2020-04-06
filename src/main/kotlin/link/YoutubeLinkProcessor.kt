@@ -54,14 +54,13 @@ class YoutubeLinkProcessor(private val url: String, private val retriever: Resou
 
     override val resolvedUrl: String get() = url
 
-    override val keywords: List<String>
+    override val keywords: Set<String>
         get() {
-            return videoInfo.value?.get("keywords")?.let { it ->
-                if (it is ArrayNode) {
-                    return@let it.map { it.textValue() }.toList()
-                }
-                emptyList<String>()
-            } ?: emptyList<String>()
+            val keywords = videoInfo.value?.get("keywords")
+            if (keywords is ArrayNode) {
+                return keywords.map { it.textValue() }.toSet()
+            }
+            return emptySet()
         }
 
     override fun close() {

@@ -8,6 +8,7 @@ data class Suggestion(
     val title: String? = null,
     val thumbnail: String? = null,
     val screenshot: String? = null,
+    val keywords: Set<String> = emptySet(),
     val tags: List<Tag> = emptyList(),
     val collections: List<Collection> = emptyList()
 )

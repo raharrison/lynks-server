@@ -17,7 +17,8 @@ class SuggestionServiceTest {
         val workerRegistry = mockk<WorkerRegistry>()
         val service = SuggestionService(workerRegistry)
 
-        val suggestion = Suggestion("google.com", "Google", null, null)
+        val keywords = setOf("search", "other", "important")
+        val suggestion = Suggestion("google.com", "Google", null, null, keywords)
 
         every { workerRegistry.acceptLinkWork(any()) } answers {
             val req = this.firstArg<SuggestLinkProcessingRequest>()
@@ -29,6 +30,7 @@ class SuggestionServiceTest {
             assertThat(response).isEqualTo(suggestion)
             assertThat(response.screenshot).isNull()
             assertThat(response.thumbnail).isNull()
+            assertThat(response.keywords).isEqualTo(keywords)
             assertThat(response.url).isEqualTo("google.com")
             assertThat(response.title).isEqualTo("Google")
         }

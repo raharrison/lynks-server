@@ -62,7 +62,7 @@ interface LinkProcessor : AutoCloseable {
 
     val resolvedUrl: String
 
-    val keywords: List<String>
+    val keywords: Set<String>
 
 }
 
@@ -188,7 +188,7 @@ open class DefaultLinkProcessor(private val url: String) : LinkProcessor {
 
     override val resolvedUrl: String get() = session?.location ?: throw sessionNotInit()
 
-    override val keywords: List<String> get() = article.value.keywords.toList()
+    override val keywords: Set<String> get() = article.value.keywords.toSet()
 
     private fun sessionNotInit() = IllegalStateException("Web session has not been initialised")
 

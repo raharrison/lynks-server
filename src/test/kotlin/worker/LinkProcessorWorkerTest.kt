@@ -297,12 +297,14 @@ class LinkProcessorWorkerTest {
         val screenPath = "screenPath"
         val resolvedUrl = "resolvedUrl"
         val title = "title"
+        val keywords = setOf("search", "other", "important")
 
         coEvery { processor.generateThumbnail() } returns thumb
         coEvery { processor.generateScreenshot() } returns screen
         coEvery { processor.html } returns html
         every { processor.title } returns title
         every { processor.resolvedUrl } returns resolvedUrl
+        every { processor.keywords } returns keywords
         every { processor.close() } just Runs
 
         coEvery { processorFactory.createProcessors(url) } returns listOf(processor)
@@ -334,6 +336,7 @@ class LinkProcessorWorkerTest {
         assertThat(suggestion.url).isEqualTo(resolvedUrl)
         assertThat(suggestion.thumbnail).isEqualTo(thumbPath)
         assertThat(suggestion.screenshot).isEqualTo(screenPath)
+        assertThat(suggestion.keywords).isEqualTo(keywords)
 
         coVerify(exactly = 1) { processorFactory.createProcessors(url) }
         verify(exactly = 1) { processor.close() }
@@ -341,6 +344,7 @@ class LinkProcessorWorkerTest {
         coVerify(exactly = 1) { processor.generateThumbnail() }
         coVerify(exactly = 1) { processor.generateScreenshot() }
         coVerify(exactly = 1) { processor.html }
+        coVerify(exactly = 1) { processor.keywords }
 
         verify(exactly = 1) { resourceManager.saveTempFile(url, thumb.image, ResourceType.THUMBNAIL, thumb.extension) }
         verify(exactly = 1) {

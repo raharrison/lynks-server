@@ -38,6 +38,7 @@ class SuggestionResourceTest: ServerTest() {
         assertThat(suggestion.title).isEqualTo("Ryan Harrison - My blog, portfolio and technology related ramblings")
         assertThat(suggestion.screenshot).isNotNull()
         assertThat(suggestion.thumbnail).isNotNull()
+        assertThat(suggestion.keywords).isNotEmpty()
 
         retrieveTempResource(suggestion.screenshot)
         retrieveTempResource(suggestion.thumbnail)
@@ -54,6 +55,7 @@ class SuggestionResourceTest: ServerTest() {
         assertThat(suggestion.title).isEqualTo("Savoy - How U Like Me Now (feat. Roniit) [Monstercat Release]")
         assertThat(suggestion.screenshot).isNull()
         assertThat(suggestion.thumbnail).isNotNull()
+        assertThat(suggestion.keywords).isNotEmpty()
 
         retrieveTempResource(suggestion.thumbnail)
     }
