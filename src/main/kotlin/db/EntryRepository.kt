@@ -3,8 +3,10 @@ package db
 import common.*
 import common.exception.InvalidModelException
 import entry.EntryAuditService
-import group.*
-import group.Collection
+import group.CollectionService
+import group.EntryGroups
+import group.GroupSet
+import group.TagService
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.statements.InsertStatement
 import org.jetbrains.exposed.sql.statements.UpdateBuilder
@@ -21,8 +23,6 @@ abstract class EntryRepository<T : Entry, S : SlimEntry, in U : NewEntry>(
     protected val entryAuditService: EntryAuditService,
     protected val resourceManager: ResourceManager
 ) {
-
-    protected class GroupSet(val tags: List<Tag> = emptyList(), val collections: List<Collection> = emptyList())
 
     fun get(id: String): T? = transaction {
         getBaseQuery().combine { Entries.id eq id }

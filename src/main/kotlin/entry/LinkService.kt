@@ -5,6 +5,7 @@ import db.EntryRepository
 import db.like
 import db.notLike
 import group.CollectionService
+import group.GroupSet
 import group.TagService
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.statements.InsertStatement

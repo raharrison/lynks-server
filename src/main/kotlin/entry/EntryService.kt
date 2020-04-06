@@ -3,6 +3,7 @@ package entry
 import common.*
 import db.EntryRepository
 import group.CollectionService
+import group.GroupSet
 import group.TagService
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.statements.UpdateBuilder

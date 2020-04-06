@@ -32,6 +32,8 @@ interface Grouping<T>: IdBasedCreatedEntity {
     fun copy(): T
 }
 
+class GroupSet(val tags: List<Tag> = emptyList(), val collections: List<Collection> = emptyList())
+
 data class Tag(
         override val id: String,
         override var name: String,
