@@ -58,10 +58,13 @@ class YoutubeDlTaskTest {
         val path = Paths.get(name)
         every { resourceManager.constructPath("eid", any()) } returns path
 
-        every { resourceManager.saveGeneratedResource(
+        every {
+            resourceManager.saveGeneratedResource(
                 entryId = "eid",
                 type = ResourceType.GENERATED,
-                path = path) } returns
+                path = path
+            )
+        } returns
                 Resource("rid", "eid", name, "", ResourceType.UPLOAD, 1, 1, 1)
 
         mockkObject(ExecUtils)
@@ -72,27 +75,30 @@ class YoutubeDlTaskTest {
             youtubeDlTask.process(context)
         }
 
-        verify(exactly = 1) { ExecUtils.executeCommand(match {
-            it.startsWith("youtube-dl") && it.endsWith(url)
-        }) }
+        verify(exactly = 1) {
+            ExecUtils.executeCommand(match {
+                it.startsWith("youtube-dl") && it.endsWith(url)
+            })
+        }
 
         unmockkObject(ExecUtils)
 
         verify(exactly = 1) {
             resourceManager.saveGeneratedResource(
-                    entryId = "eid",
-                    type = ResourceType.GENERATED,
-                    path = path)
+                entryId = "eid",
+                type = ResourceType.GENERATED,
+                path = path
+            )
         }
 
         verify(exactly = 1) { resourceManager.constructPath("eid", any()) }
-        verify(exactly = 1) { entryAuditService.acceptAuditEvent("eid", any(), any())  }
+        verify(exactly = 1) { entryAuditService.acceptAuditEvent("eid", any(), any()) }
     }
 
     @Test
     fun testProcessBadResult() {
         val url = "youtube.com/watch?v=1234"
-        val type = YoutubeDlTask.YoutubeDlDownload.BEST_AUDIO
+        val type = YoutubeDlTask.YoutubeDlDownload.BEST_VIDEO
         val context = youtubeDlTask.createContext(mapOf("url" to url, "type" to type.toString()))
 
         every { resourceManager.constructPath("eid", any()) } returns Paths.get("file.webm")
@@ -108,7 +114,28 @@ class YoutubeDlTaskTest {
         unmockkObject(ExecUtils)
 
         verify(exactly = 1) { resourceManager.constructPath("eid", any()) }
-        verify(exactly = 1) { entryAuditService.acceptAuditEvent("eid", any(), any())  }
+        verify(exactly = 1) { entryAuditService.acceptAuditEvent("eid", any(), any()) }
     }
 
+    @Test
+    fun testProcessNoReturnedFileName() {
+        val url = "youtube.com/watch?v=1234"
+        val type = YoutubeDlTask.YoutubeDlDownload.BEST_VIDEO_TRANSCODE
+        val context = youtubeDlTask.createContext(mapOf("url" to url, "type" to type.toString()))
+
+        every { resourceManager.constructPath("eid", any()) } returns Paths.get("video.webm")
+        mockkObject(ExecUtils)
+
+        every { ExecUtils.executeCommand(any()) } returns Result.Success("invalid")
+
+        runBlocking {
+            youtubeDlTask.process(context)
+        }
+
+        unmockkObject(ExecUtils)
+
+        verify(exactly = 0) {
+            resourceManager.saveGeneratedResource(any(), any(), any())
+        }
+    }
 }

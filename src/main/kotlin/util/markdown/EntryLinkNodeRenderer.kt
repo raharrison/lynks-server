@@ -14,28 +14,23 @@ internal class EntryLinkNodeRenderer : NodeRenderer {
     override fun getNodeRenderingHandlers(): Set<NodeRenderingHandler<*>> {
         return setOf(NodeRenderingHandler(
             EntryLinkNode::class.java,
-            CustomNodeRenderer { node: EntryLinkNode, context: NodeRendererContext, html: HtmlWriter ->
+            CustomNodeRenderer { node: EntryLinkNode, _: NodeRendererContext, html: HtmlWriter ->
                 render(
                     node,
-                    context,
                     html
                 )
             }
         ))
     }
 
-    private fun render(node: EntryLinkNode, context: NodeRendererContext, html: HtmlWriter) {
-        if (context.isDoNotRenderLinks) {
-            html.text(node.chars)
-        } else {
-            val sb = StringBuilder()
-            sb.append("${Environment.server.rootPath}/entry/").append(node.text)
-            html.srcPos(node.chars).attr("href", sb.toString()).withAttr().tag("a")
-            html.raw("<strong>")
-            html.text(node.chars)
-            html.raw("</strong>")
-            html.tag("/a")
-        }
+    private fun render(node: EntryLinkNode, html: HtmlWriter) {
+        val sb = StringBuilder()
+        sb.append("${Environment.server.rootPath}/entry/").append(node.text)
+        html.srcPos(node.chars).attr("href", sb.toString()).withAttr().tag("a")
+        html.raw("<strong>")
+        html.text(node.chars)
+        html.raw("</strong>")
+        html.tag("/a")
     }
 
     class Factory : NodeRendererFactory {

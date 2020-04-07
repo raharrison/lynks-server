@@ -1,8 +1,13 @@
 package util
 
+import com.vladsch.flexmark.util.sequence.BasedSequence
 import common.Environment
+import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import util.markdown.EntryLinkInlineParserExtension
+import util.markdown.EntryLinkNode
 
 class MarkdownUtilsTest {
 
@@ -41,18 +46,55 @@ class MarkdownUtilsTest {
 
     @Test
     fun testTaskLists() {
-        assertConvertEqual("- [x] finished", """
+        assertConvertEqual(
+            "- [x] finished", """
             <ul>
             <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" checked="checked" disabled="disabled" readonly="readonly" />&nbsp;finished</li>
             </ul>
             
-        """.trimIndent())
-        assertConvertEqual("- [ ] unfinished", """
+        """.trimIndent()
+        )
+        assertConvertEqual(
+            "- [ ] unfinished", """
             <ul>
             <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" readonly="readonly" />&nbsp;unfinished</li>
             </ul>
         
-        """.trimIndent())
+        """.trimIndent()
+        )
+    }
+
+    @Test
+    fun testEntryLinkParserExtensionNotPossible() {
+        assertConvertEqual(
+            "link is.@123",
+            "<p>link is.@123</p>\n"
+        )
+        assertConvertEqual(
+            "link is-@123",
+            "<p>link is-@123</p>\n"
+        )
+    }
+
+    @Nested
+    inner class Internal {
+        @Test
+        fun testEntryLinkNode() {
+            val sequence = mockk<BasedSequence>(relaxed = true)
+            val node = EntryLinkNode(sequence, sequence)
+            node.getAstExtra(StringBuilder())
+            assertThat(node.segments).isNotNull()
+        }
+
+        @Test
+        fun testEntryLinkParserExtensionFactory() {
+            val factory = EntryLinkInlineParserExtension.Factory()
+            assertThat(factory.afterDependents).isNull()
+            assertThat(factory.beforeDependents).isNull()
+            assertThat(factory.affectsGlobalScope()).isFalse()
+            assertThat(factory.characters).isEqualTo("@")
+            assertThat(factory.apply(mockk())).isNotNull()
+        }
     }
 
     private fun assertConvertEqual(input: String, output: String) {
