@@ -25,5 +25,19 @@ class GroupSetService(private val tagService: TagService, private val collection
         return GroupSet(tags, collections)
     }
 
+    fun matchWithContent(content: String?): GroupSet {
+        if(content == null) {
+            return GroupSet()
+        }
+        return GroupSet(
+            tagService.sequence().filter { isMatch(content, it) }.toList(),
+            collectionService.sequence().filter { isMatch(content, it) }.toList()
+        )
+    }
+
+    private fun isMatch(content: String, grouping: Grouping<*>): Boolean {
+        return content.contains(grouping.name)
+    }
+
 
 }

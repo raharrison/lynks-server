@@ -95,4 +95,28 @@ class GroupSetServiceTest {
         verify(exactly = 0) { collectionService.subtree(any()) }
     }
 
+    @Test
+    fun testMatchWithContent() {
+        every { tagService.sequence() } returns sequenceOf(
+            Tag("t1", "tag1", 124L, 1234L),
+            Tag("t2", "tag2", 124L, 1234L)
+        )
+        every { collectionService.sequence() } returns sequenceOf(
+            Collection("c1", "col1", mutableSetOf(), 124L, 1234L),
+            Collection("c2", "col2", mutableSetOf(), 124L, 1234L)
+        )
+
+        val content = "some content tag1 along with tag2 and col1 are relevant"
+        val set = groupSetService.matchWithContent(content)
+        assertThat(set.tags).hasSize(2).extracting("id").containsExactly("t1", "t2")
+        assertThat(set.collections).hasSize(1).extracting("id").containsExactly("c1")
+    }
+
+    @Test
+    fun testMatchWithEmptyContent() {
+        val set = groupSetService.matchWithContent(null)
+        assertThat(set.tags).isEmpty()
+        assertThat(set.collections).isEmpty()
+    }
+
 }

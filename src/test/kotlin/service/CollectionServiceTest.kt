@@ -209,4 +209,10 @@ class CollectionServiceTest : DatabaseTest() {
         assertThat(collectionService.update(NewCollection("invalid", "name"))).isNull()
     }
 
+    @Test
+    fun testGetAllAsSequence() {
+        val all = collectionService.sequence().toList()
+        assertThat(all).hasSize(8)
+    }
+
 }

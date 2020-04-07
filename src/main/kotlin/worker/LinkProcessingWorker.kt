@@ -3,6 +3,7 @@ package worker
 import common.Link
 import entry.EntryAuditService
 import entry.LinkService
+import group.GroupSetService
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -36,6 +37,7 @@ class LinkProcessorFactory {
 class LinkProcessorWorker(
     private val resourceManager: ResourceManager,
     private val linkService: LinkService,
+    private val groupSetService: GroupSetService,
     notifyService: NotifyService,
     entryAuditService: EntryAuditService
 ) : ChannelBasedWorker<LinkProcessingRequest>(notifyService, entryAuditService) {
@@ -166,8 +168,11 @@ class LinkProcessorWorker(
                                 HTML
                             )
                         }
+                        val content = proc.content
+                        val matchedGroups = groupSetService.matchWithContent(content)
                         log.info("Link processing worker completing suggestion request for url={}", url)
-                        deferred.complete(Suggestion(proc.resolvedUrl, proc.title, thumbPath, screenPath, it.keywords))
+                        deferred.complete(Suggestion(proc.resolvedUrl, proc.title, thumbPath, screenPath, it.keywords,
+                            matchedGroups.tags, matchedGroups.collections))
                     }
                 }
             }

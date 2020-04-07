@@ -119,4 +119,10 @@ class TagServiceTest : DatabaseTest() {
         assertThat(tagService.update(NewTag("invalid", "name"))).isNull()
     }
 
+    @Test
+    fun testGetAllAsSequence() {
+        val all = tagService.sequence().toList()
+        assertThat(all).hasSize(3)
+    }
+
 }
