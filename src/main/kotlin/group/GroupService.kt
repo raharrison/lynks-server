@@ -44,7 +44,7 @@ abstract class GroupService<T : Grouping<T>, in U : IdBasedNewEntity>(private va
 
     fun subtree(id: String): List<T> = collection.subtree(id).map { it.copy() }
 
-    fun sequence(): Sequence<T> = collection.all().asSequence()
+    fun sequence() = collection.all().asSequence()
 
     fun add(group: U): T = transaction {
         val newId = RandomUtils.generateUid()

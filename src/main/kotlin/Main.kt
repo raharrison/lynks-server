@@ -1,5 +1,6 @@
 import comment.CommentService
 import comment.comment
+import common.ConfigMode
 import common.Environment
 import common.endpoint.health
 import common.exception.InvalidModelException
@@ -38,25 +39,20 @@ import worker.WorkerRegistry
 
 fun Application.module() {
     install(DefaultHeaders)
-    install(CallLogging)
     install(ContentNegotiation) {
         register(ContentType.Application.Json, JacksonConverter(defaultMapper))
     }
     install(WebSockets)
-    install(Compression) {
-        gzip()
-    }
-    install(CORS) {
-        method(HttpMethod.Put)
-        method(HttpMethod.Delete)
-        anyHost()
-        allowNonSimpleContentTypes = true
-    }
-    install(PartialContent)
     install(StatusPages) {
         exception<InvalidModelException> {
             call.respond(HttpStatusCode.BadRequest, it.message ?: "Bad Request Format")
         }
+    }
+
+    when(Environment.mode) {
+        ConfigMode.TEST -> installTestFeatures()
+        ConfigMode.DEV -> installDevFeatures()
+        ConfigMode.PROD -> installProdFeatures()
     }
 
     DatabaseFactory().connect()
@@ -101,6 +97,27 @@ fun Application.module() {
             }
         }
     }
+}
+
+fun Application.installTestFeatures() {
+    install(CallLogging)
+}
+
+fun Application.installDevFeatures() {
+    install(CallLogging)
+    install(CORS) {
+        method(HttpMethod.Put)
+        method(HttpMethod.Delete)
+        anyHost()
+        allowNonSimpleContentTypes = true
+    }
+}
+
+fun Application.installProdFeatures() {
+    install(Compression) {
+        gzip()
+    }
+    install(PartialContent)
 }
 
 fun main() {
