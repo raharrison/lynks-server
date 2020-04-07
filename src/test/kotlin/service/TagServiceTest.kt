@@ -4,6 +4,7 @@ import common.DatabaseTest
 import common.NewNote
 import entry.NoteService
 import group.CollectionService
+import group.GroupSetService
 import group.NewTag
 import group.TagService
 import io.mockk.mockk
@@ -69,7 +70,7 @@ class TagServiceTest : DatabaseTest() {
 
     @Test
     fun testDeleteTagLinkedToEntry() {
-        val noteService = NoteService(tagService, CollectionService(), mockk(relaxUnitFun = true), mockk())
+        val noteService = NoteService(GroupSetService(tagService, CollectionService()), mockk(relaxUnitFun = true), mockk())
         val note = noteService.add(NewNote(null, "n1", "content", listOf("t1")))
         assertThat(note.tags).hasSize(1).extracting("id").containsOnly("t1")
         assertThat(tagService.delete("t1")).isTrue()

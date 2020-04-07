@@ -4,6 +4,7 @@ import comment.CommentService
 import entry.EntryAuditService
 import entry.LinkService
 import group.CollectionService
+import group.GroupSetService
 import group.TagService
 import io.mockk.mockk
 import notify.NotificationMethod
@@ -37,7 +38,7 @@ class CascadingDeleteTest: DatabaseTest() {
 
         resourceManager.saveGeneratedResource("r1", "id1", "resource name", "jpg", ResourceType.SCREENSHOT, 11)
 
-        linkService = LinkService(tagService, collectionService, entryAuditService, resourceManager, mockk(relaxUnitFun = true))
+        linkService = LinkService(GroupSetService(tagService, collectionService), entryAuditService, resourceManager, mockk(relaxUnitFun = true))
         tagService.rebuild()
         collectionService.rebuild()
     }

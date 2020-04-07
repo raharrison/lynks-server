@@ -2,9 +2,8 @@ package entry
 
 import common.*
 import db.EntryRepository
-import group.CollectionService
 import group.GroupSet
-import group.TagService
+import group.GroupSetService
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.statements.UpdateBuilder
 import org.jetbrains.exposed.sql.statements.jdbc.JdbcConnectionImpl
@@ -14,10 +13,9 @@ import resource.ResourceManager
 import util.RowMapper
 
 class EntryService(
-    tagService: TagService, collectionService: CollectionService, entryAuditService: EntryAuditService,
-    resourceManager: ResourceManager
+    groupSetService: GroupSetService, entryAuditService: EntryAuditService, resourceManager: ResourceManager
 ) :
-    EntryRepository<Entry, SlimEntry, NewEntry>(tagService, collectionService, entryAuditService, resourceManager) {
+    EntryRepository<Entry, SlimEntry, NewEntry>(groupSetService, entryAuditService, resourceManager) {
 
     override fun toModel(row: ResultRow, groups: GroupSet, table: BaseEntries): Entry {
         return when (row[table.type]) {

@@ -5,6 +5,7 @@ import common.exception.InvalidModelException
 import entry.EntryAuditService
 import entry.LinkService
 import group.CollectionService
+import group.GroupSetService
 import group.TagService
 import io.mockk.*
 import org.assertj.core.api.Assertions.assertThat
@@ -21,6 +22,7 @@ class LinkServiceTest : DatabaseTest() {
 
     private val tagService = TagService()
     private val collectionService = CollectionService()
+    private val groupSetService = GroupSetService(tagService, collectionService)
     private val resourceManager = mockk<ResourceManager>()
     private val workerRegistry = mockk<WorkerRegistry>()
     private val entryAuditService = mockk<EntryAuditService>(relaxUnitFun = true)
@@ -38,7 +40,7 @@ class LinkServiceTest : DatabaseTest() {
         every { resourceManager.deleteAll(any()) } returns true
         every { workerRegistry.acceptLinkWork(any()) } just Runs
         every { workerRegistry.acceptDiscussionWork(any()) } just Runs
-        linkService = LinkService(tagService, collectionService, entryAuditService, resourceManager, workerRegistry)
+        linkService = LinkService(groupSetService, entryAuditService, resourceManager, workerRegistry)
     }
 
     @Test
@@ -82,7 +84,7 @@ class LinkServiceTest : DatabaseTest() {
         val resourceManager = mockk<ResourceManager>()
         val workerRegistry = mockk<WorkerRegistry>()
         every { workerRegistry.acceptLinkWork(any()) } just Runs
-        linkService = LinkService(tagService, collectionService, entryAuditService, resourceManager, workerRegistry)
+        linkService = LinkService(groupSetService, entryAuditService, resourceManager, workerRegistry)
         val link = linkService.add(newLink("n1", "google.com", "url", listOf("t1", "t2"), listOf("c1"), false))
 
         verify(exactly = 1) { workerRegistry.acceptLinkWork(any()) }

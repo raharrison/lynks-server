@@ -4,6 +4,7 @@ import common.*
 import entry.EntryAuditService
 import entry.EntryService
 import group.CollectionService
+import group.GroupSetService
 import group.TagService
 import io.mockk.mockk
 import io.mockk.verify
@@ -19,9 +20,10 @@ class EntryServiceTest: DatabaseTest() {
 
     private val tagService = TagService()
     private val collectionService = CollectionService()
+    private val groupSetService = GroupSetService(tagService, collectionService)
     private val entryAuditService = mockk<EntryAuditService>(relaxUnitFun = true)
     private val resourceManager = mockk<ResourceManager>()
-    private val entryService = EntryService(tagService, collectionService, entryAuditService, resourceManager)
+    private val entryService = EntryService(groupSetService, entryAuditService, resourceManager)
 
     @BeforeEach
     fun createEntries() {

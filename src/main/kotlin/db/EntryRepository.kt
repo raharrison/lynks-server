@@ -1,12 +1,10 @@
 package db
 
 import common.*
-import common.exception.InvalidModelException
 import entry.EntryAuditService
-import group.CollectionService
 import group.EntryGroups
 import group.GroupSet
-import group.TagService
+import group.GroupSetService
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.statements.InsertStatement
 import org.jetbrains.exposed.sql.statements.UpdateBuilder
@@ -18,8 +16,7 @@ import util.findColumn
 import util.orderBy
 
 abstract class EntryRepository<T : Entry, S : SlimEntry, in U : NewEntry>(
-    private val tagService: TagService,
-    private val collectionService: CollectionService,
+    private val groupSetService: GroupSetService,
     protected val entryAuditService: EntryAuditService,
     protected val resourceManager: ResourceManager
 ) {
@@ -68,15 +65,13 @@ abstract class EntryRepository<T : Entry, S : SlimEntry, in U : NewEntry>(
         }
 
         var query = getBaseQuery(table)
+        val subtrees = groupSetService.subtrees(page.tag, page.collection)
 
-        page.tag?.let {
-            val tags = tagService.subtree(page.tag).map { it.id }
-            query = query.combine { tagTable[EntryGroups.groupId].inList(tags) }
+        if(subtrees.tags.isNotEmpty()) {
+            query = query.combine { tagTable[EntryGroups.groupId].inList(subtrees.tags.map { it.id }) }
         }
-
-        page.collection?.let {
-            val collections = collectionService.subtree(page.collection).map { it.id }
-            query = query.combine { collectionTable[EntryGroups.groupId].inList(collections) }
+        if(subtrees.collections.isNotEmpty()) {
+            query = query.combine { collectionTable[EntryGroups.groupId].inList(subtrees.collections.map { it.id }) }
         }
 
         val sortColumn = Entries.findColumn(page.sort) ?: Entries.dateUpdated
@@ -92,8 +87,7 @@ abstract class EntryRepository<T : Entry, S : SlimEntry, in U : NewEntry>(
         val serviceName = this::class.simpleName
         return transaction {
             val newId = RandomUtils.generateUid()
-            validateTags(entry.tags)
-            validateCollections(entry.collections)
+            groupSetService.assertGroups(entry.tags, entry.collections)
             Entries.insert(toInsert(newId, entry))
             for (group in entry.tags + entry.collections) {
                 EntryGroups.insert {
@@ -111,8 +105,7 @@ abstract class EntryRepository<T : Entry, S : SlimEntry, in U : NewEntry>(
         return if (id == null) {
             add(entry)
         } else {
-            validateTags(entry.tags)
-            validateCollections(entry.collections)
+            groupSetService.assertGroups(entry.tags, entry.collections)
             val serviceName = this::class.simpleName
             transaction {
                 val where = getBaseQuery().combine { Entries.id eq id }.where!!
@@ -138,8 +131,7 @@ abstract class EntryRepository<T : Entry, S : SlimEntry, in U : NewEntry>(
     }
 
     fun update(entry: T, newVersion: Boolean = false): T? = transaction {
-        validateTags(entry.tags.map { it.id })
-        validateCollections(entry.collections.map { it.id })
+        groupSetService.assertGroups(entry.tags.map { it.id }, entry.collections.map { it.id })
         val where = getBaseQuery().combine { Entries.id eq entry.id }.where!!
         val updated = Entries.update({ where }, body = {
             toUpdate(entry)(it)
@@ -214,7 +206,7 @@ abstract class EntryRepository<T : Entry, S : SlimEntry, in U : NewEntry>(
             .groupBy { it[EntryGroups.entryId] }
             .mapValues { entry ->
                 val groupIds = entry.value.map { it[EntryGroups.groupId] }
-                GroupSet(tagService.getIn(groupIds), collectionService.getIn(groupIds))
+                groupSetService.getIn(groupIds)
             }
     }
 
@@ -222,21 +214,7 @@ abstract class EntryRepository<T : Entry, S : SlimEntry, in U : NewEntry>(
         val groupIds = EntryGroups.slice(EntryGroups.groupId)
             .select { EntryGroups.entryId eq id }
             .map { it[EntryGroups.groupId] }
-        return GroupSet(tagService.getIn(groupIds), collectionService.getIn(groupIds))
-    }
-
-    private fun validateTags(ids: List<String>) {
-        ids.forEach {
-            if (tagService.get(it) == null)
-                throw InvalidModelException("Unknown tag: $it")
-        }
-    }
-
-    private fun validateCollections(ids: List<String>) {
-        ids.forEach {
-            if (collectionService.get(it) == null)
-                throw InvalidModelException("Unknown collection: $it")
-        }
+        return groupSetService.getIn(groupIds)
     }
 
     protected abstract fun getBaseQuery(base: ColumnSet = Entries, where: BaseEntries = Entries): Query

@@ -5,6 +5,7 @@ import common.exception.InvalidModelException
 import entry.EntryAuditService
 import entry.NoteService
 import group.CollectionService
+import group.GroupSetService
 import group.TagService
 import io.mockk.every
 import io.mockk.mockk
@@ -22,9 +23,10 @@ class NoteServiceTest : DatabaseTest() {
 
     private val tagService = TagService()
     private val collectionService = CollectionService()
+    private val groupSetService = GroupSetService(tagService, collectionService)
     private val resourceManager = mockk<ResourceManager>()
     private val entryAuditService = mockk<EntryAuditService>(relaxUnitFun = true)
-    private val noteService = NoteService(tagService, collectionService, entryAuditService, resourceManager)
+    private val noteService = NoteService(groupSetService, entryAuditService, resourceManager)
 
     @BeforeEach
     fun createTags() {

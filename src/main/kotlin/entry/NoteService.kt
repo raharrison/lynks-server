@@ -2,9 +2,8 @@ package entry
 
 import common.*
 import db.EntryRepository
-import group.CollectionService
 import group.GroupSet
-import group.TagService
+import group.GroupSetService
 import org.jetbrains.exposed.sql.ColumnSet
 import org.jetbrains.exposed.sql.Query
 import org.jetbrains.exposed.sql.ResultRow
@@ -15,9 +14,8 @@ import util.MarkdownUtils
 import util.RowMapper
 
 class NoteService(
-    tagService: TagService, collectionService: CollectionService, entryAuditService: EntryAuditService,
-    resourceManager: ResourceManager
-) : EntryRepository<Note, SlimNote, NewNote>(tagService, collectionService, entryAuditService, resourceManager) {
+    groupSetService: GroupSetService, entryAuditService: EntryAuditService, resourceManager: ResourceManager
+) : EntryRepository<Note, SlimNote, NewNote>(groupSetService, entryAuditService, resourceManager) {
 
     override fun toModel(row: ResultRow, groups: GroupSet, table: BaseEntries): Note {
         return RowMapper.toNote(table, row, groups.tags, groups.collections)

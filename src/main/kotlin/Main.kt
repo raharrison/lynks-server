@@ -6,10 +6,7 @@ import common.exception.InvalidModelException
 import common.inject.ServiceProvider
 import db.DatabaseFactory
 import entry.*
-import group.CollectionService
-import group.TagService
-import group.collection
-import group.tag
+import group.*
 import io.ktor.application.Application
 import io.ktor.application.call
 import io.ktor.application.install
@@ -71,10 +68,11 @@ fun Application.module() {
         register(ResourceManager())
         register(TagService())
         register(CollectionService())
+        register(GroupSetService(get(), get()))
         register(EntryAuditService())
-        register(EntryService(get(), get(), get(), get()))
-        register(LinkService(get(), get(), get(), get(), get()))
-        register(NoteService(get(), get(), get(), get()))
+        register(EntryService(get(), get(), get()))
+        register(LinkService(get(), get(), get(), get()))
+        register(NoteService(get(), get(), get()))
         register(CommentService())
         register(ReminderService(get()))
         register(SuggestionService(get()))

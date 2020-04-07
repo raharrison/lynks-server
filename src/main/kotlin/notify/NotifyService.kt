@@ -13,8 +13,6 @@ private val log = loggerFor<NotifyService>()
 
 class NotifyService(private val userService: UserService) {
 
-    private val log = loggerFor<NotifyService>()
-
     private val notifiers = Sets.newConcurrentHashSet<SendChannel<Frame>>()
 
     suspend fun accept(notify: Notification, body: Any?) {

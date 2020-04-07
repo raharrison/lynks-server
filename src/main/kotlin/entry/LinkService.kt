@@ -4,9 +4,8 @@ import common.*
 import db.EntryRepository
 import db.like
 import db.notLike
-import group.CollectionService
 import group.GroupSet
-import group.TagService
+import group.GroupSetService
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.statements.InsertStatement
 import org.jetbrains.exposed.sql.statements.UpdateBuilder
@@ -19,9 +18,9 @@ import worker.PersistLinkProcessingRequest
 import worker.WorkerRegistry
 
 class LinkService(
-    tagService: TagService, collectionService: CollectionService, entryAuditService: EntryAuditService,
+    groupSetService: GroupSetService, entryAuditService: EntryAuditService,
     resourceManager: ResourceManager, private val workerRegistry: WorkerRegistry
-) : EntryRepository<Link, SlimLink, NewLink>(tagService, collectionService, entryAuditService, resourceManager) {
+) : EntryRepository<Link, SlimLink, NewLink>(groupSetService, entryAuditService, resourceManager) {
 
     override fun getBaseQuery(base: ColumnSet, where: BaseEntries): Query {
         return base.select { where.type eq EntryType.LINK }
