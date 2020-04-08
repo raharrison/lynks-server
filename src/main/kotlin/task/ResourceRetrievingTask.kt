@@ -3,8 +3,13 @@ package task
 import common.inject.Inject
 import resource.ResourceManager
 import resource.ResourceRetriever
+import util.Result
+import util.loggerFor
 
-class ResourceRetrievingTask(id: String, entryId: String) : Task<ResourceRetrievingTask.ResourceTaskContext>(id, entryId) {
+private val log = loggerFor<ResourceRetrievingTask>()
+
+class ResourceRetrievingTask(id: String, entryId: String) :
+    Task<ResourceRetrievingTask.ResourceTaskContext>(id, entryId) {
 
     @Inject
     lateinit var resourceManager: ResourceManager
@@ -13,9 +18,11 @@ class ResourceRetrievingTask(id: String, entryId: String) : Task<ResourceRetriev
     lateinit var resourceRetriever: ResourceRetriever
 
     override suspend fun process(context: ResourceTaskContext) {
-        val bytes = resourceRetriever.getFile(context.url)
-        bytes?.let {
-            resourceManager.saveUploadedResource(entryId, context.name, bytes.inputStream())
+        when (val result = resourceRetriever.getFileResult(context.url)) {
+            is Result.Success -> {
+                resourceManager.saveUploadedResource(entryId, context.name, result.value.inputStream())
+            }
+            is Result.Failure -> log.error("Error whilst retrieving resource", result.reason)
         }
     }
 

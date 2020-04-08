@@ -1,5 +1,6 @@
 package task
 
+import common.exception.ExecutionException
 import entry.EntryAuditService
 import io.mockk.*
 import kotlinx.coroutines.runBlocking
@@ -9,7 +10,6 @@ import org.junit.jupiter.api.Test
 import resource.Resource
 import resource.ResourceManager
 import resource.ResourceType
-import util.ExecException
 import util.ExecUtils
 import util.Result
 import java.nio.file.Paths
@@ -105,7 +105,7 @@ class YoutubeDlTaskTest {
 
         mockkObject(ExecUtils)
 
-        every { ExecUtils.executeCommand(any()) } returns Result.Failure(ExecException(-1, "error"))
+        every { ExecUtils.executeCommand(any()) } returns Result.Failure(ExecutionException("error"))
 
         runBlocking {
             youtubeDlTask.process(context)
