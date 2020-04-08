@@ -6,10 +6,10 @@ import resource.ResourceRetriever
 import util.Result
 import util.loggerFor
 
-private val log = loggerFor<ResourceRetrievingTask>()
-
 class ResourceRetrievingTask(id: String, entryId: String) :
     Task<ResourceRetrievingTask.ResourceTaskContext>(id, entryId) {
+
+    private val log = loggerFor<ResourceRetrievingTask>()
 
     @Inject
     lateinit var resourceManager: ResourceManager

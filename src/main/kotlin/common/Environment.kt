@@ -42,6 +42,14 @@ object Environment {
         val port: Int = config[MailSpec.port]
     )
 
+    private object ExternalSpec : ConfigSpec("external") {
+        val smmryApiKey by optional<String?>(null)
+    }
+
+    data class External(
+        val smmryApikey: String? = config[ExternalSpec.smmryApiKey]
+    )
+
     val mode: ConfigMode = ConfigMode.valueOf(System.getProperty("CONFIG_MODE")?.toUpperCase() ?: "DEV")
 
     init {
@@ -51,6 +59,7 @@ object Environment {
     private val config = Config {
         addSpec(ServerSpec)
         addSpec(MailSpec)
+        addSpec(ExternalSpec)
     }
         .from.json.resource("${mode.toString().toLowerCase()}.json")
         .from.json.file(System.getProperty("CONFIG_FILE") ?: "lynks.config.json", optional = true)
@@ -59,4 +68,5 @@ object Environment {
 
     val server = Server()
     val mail = Mail()
+    val external = External()
 }

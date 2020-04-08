@@ -17,7 +17,7 @@ class LinkProcessingTask(id: String, entryId: String) :
     lateinit var linkService: LinkService
 
     override suspend fun process(context: LinkProcessingTaskContext) {
-        linkService.get(entryId)?.let { it ->
+        linkService.get(entryId)?.also { it ->
             val resourceSet = context.type?.let { EnumSet.of(it) } ?: ResourceType.all()
             workerRegistry.acceptLinkWork(PersistLinkProcessingRequest(it, resourceSet, true))
         }

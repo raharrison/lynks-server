@@ -1,0 +1,14 @@
+{
+    "sm_api_keyword_array": [
+        "proxy",
+        "server",
+        "Angular",
+        "file",
+        "config"
+    ],
+    "sm_api_character_count": "979",
+    "sm_api_content_reduced": "65%",
+    "sm_api_title": "Proxy API Requests",
+    "sm_api_content": "If you are developing with Angular locally, then chances are you also have some kind of API server also running on the same machine that you need to make requests to.[BREAK] The problem is, your local environment setup may not reflect that of a real-world deployment - where you might use something like Nginx as a reverse proxy.[BREAK] A much better option is to use the built-in proxying support of the Angular dev server to proxy certain URL patterns to your backend server - essentially making your browser think that they are being served from the same origin.[BREAK] To get this setup, simply create a config file called proxy.[BREAK] Next we need to point Angular to the newly created proxy config file to make sure webpack picks it up when the dev server is started.[BREAK] When you restart the dev server, you should start seeing the proxy take effect and requests being passed through to your API server accordingly.[BREAK] More complicated configuration use cases can be achieved by a creating a proxy JS config file proxy.[BREAK]",
+    "sm_api_limitation": "Waited 0 extra seconds due to API Free mode, 94 requests left to make for today."
+}

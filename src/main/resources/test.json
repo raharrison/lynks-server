@@ -9,5 +9,8 @@
         "enabled": false,
         "server": "localhost",
         "port": 1025
+    },
+    "external": {
+        "smmryApiKey": "DBB05EAE64"
     }
 }

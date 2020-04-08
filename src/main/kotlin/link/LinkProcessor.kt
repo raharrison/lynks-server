@@ -14,6 +14,7 @@ import resource.PNG
 import resource.ResourceType
 import task.DiscussionFinderTask
 import task.LinkProcessingTask
+import task.LinkSummarizerTask
 import util.loggerFor
 import java.awt.Color
 import java.awt.Image
@@ -52,6 +53,7 @@ interface LinkProcessor : AutoCloseable {
     suspend fun enrich(props: BaseProperties) {
         props.addTask("Process Link", LinkProcessingTask.build())
         props.addTask("Find Discussions", DiscussionFinderTask.build())
+        props.addTask("Generate Summary", LinkSummarizerTask.build())
     }
 
     val html: String?

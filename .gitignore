@@ -33,3 +33,4 @@ build/
 /captures
 /media
 lynksdb.*
+lynks.config.json

@@ -13,7 +13,7 @@ class DiscussionFinderTask(id: String, entryId: String) : Task<TaskContext>(id, 
     lateinit var linkService: LinkService
 
     override suspend fun process(context: TaskContext) {
-        linkService.get(entryId)?.let {
+        linkService.get(entryId)?.also {
             workerRegistry.acceptDiscussionWork(it.id)
         }
     }
