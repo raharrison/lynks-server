@@ -27,6 +27,7 @@ import notify.notify
 import reminder.ReminderService
 import reminder.reminder
 import resource.ResourceManager
+import resource.WebResourceRetriever
 import resource.resources
 import suggest.SuggestionService
 import suggest.suggest
@@ -60,6 +61,7 @@ fun Application.module() {
     val workerRegistry = WorkerRegistry()
     val serviceProvider = ServiceProvider().apply {
         register(workerRegistry)
+        register(WebResourceRetriever())
         register(UserService())
         register(ResourceManager())
         register(TagService())
