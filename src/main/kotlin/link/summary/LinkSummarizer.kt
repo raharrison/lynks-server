@@ -51,7 +51,7 @@ class LinkSummarizer(private val resourceRetriever: ResourceRetriever) {
     }
 
     private fun mapToSummary(response: SmmryResponse): Summary {
-        val content = response.content!!.split("[BREAK]").joinToString { "<p>$it</p>" }
+        val content = response.content!!.split("[BREAK]").joinToString("") { "<p>$it</p>" }
         return Summary(
             response.title!!,
             content,
