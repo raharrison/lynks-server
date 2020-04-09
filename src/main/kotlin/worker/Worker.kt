@@ -125,9 +125,10 @@ abstract class PersistedVariableChannelBasedWorker<T : PersistVariableWorkerRequ
     }
 
     override fun onChannelReceive(request: T): Job? {
+        val lastRun = getLastRunTime(request)
         deleteSchedule(request) // delete initially
         if (request.crudType != CrudType.DELETE) {
-            addSchedule(request) // add back if create/update
+            addSchedule(request, lastRun) // add back if create/update
         }
         return super.onChannelReceive(request)
     }
@@ -137,11 +138,12 @@ abstract class PersistedVariableChannelBasedWorker<T : PersistVariableWorkerRequ
         deleteSchedule(request)
     }
 
-    private fun addSchedule(request: T) = transaction {
+    private fun addSchedule(request: T, lastRun: Long?) = transaction {
         WorkerSchedules.insert {
             it[worker] = workerName
             it[key] = request.key
             it[WorkerSchedules.request] = defaultMapper.writeValueAsString(request)
+            it[WorkerSchedules.lastRun] = lastRun
         }
     }
 
@@ -151,6 +153,13 @@ abstract class PersistedVariableChannelBasedWorker<T : PersistVariableWorkerRequ
             it[WorkerSchedules.request] = defaultMapper.writeValueAsString(request)
             it[lastRun] = System.currentTimeMillis()
         }
+    }
+
+    protected fun getLastRunTime(request: T) = transaction {
+        WorkerSchedules.slice(WorkerSchedules.lastRun)
+            .select { (WorkerSchedules.worker eq workerName) and (WorkerSchedules.key eq request.key) }
+            .map { it[WorkerSchedules.lastRun] }
+            .singleOrNull()
     }
 
     private fun deleteSchedule(request: T) = transaction {

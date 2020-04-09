@@ -89,10 +89,11 @@ fun createDummyReminder(id: String, entryId: String, type: ReminderType, notifyM
     }
 }
 
-fun createDummyWorkerSchedule(worker: String, key: String, request: Any) = transaction {
+fun createDummyWorkerSchedule(worker: String, key: String, request: Any, lastRun: Long? = null) = transaction {
     WorkerSchedules.insert {
         it[WorkerSchedules.worker] = worker
         it[WorkerSchedules.key] = key
         it[WorkerSchedules.request] = JsonMapper.defaultMapper.writeValueAsString(request)
+        it[WorkerSchedules.lastRun] = lastRun
     }
 }

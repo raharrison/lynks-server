@@ -38,6 +38,7 @@ class DiscussionFinderWorker(
 
     override suspend fun doWork(input: DiscussionFinderWorkerRequest) {
         log.info("Launching discussion finder for entry={}", input.linkId)
+        checkLastRunTime(input)
         findDiscussions(input.linkId, input.intervalIndex)
     }
 
@@ -45,8 +46,21 @@ class DiscussionFinderWorker(
 
     override val requestClass = DiscussionFinderWorkerRequest::class.java
 
+    private suspend fun checkLastRunTime(input: DiscussionFinderWorkerRequest) {
+        val lastRun = getLastRunTime(input) ?: return
+        val now = System.currentTimeMillis()
+        val minsSinceLastRun = (now - lastRun) / 1000 / 60
+        val interval = intervals[input.intervalIndex]
+        if(minsSinceLastRun < interval) {
+            val diff = interval - minsSinceLastRun
+            log.debug("Discussion worker only {}mins since last run, sleeping for {}mins entryId={}", minsSinceLastRun, diff, input.linkId)
+            delay(Duration.ofMinutes(interval - minsSinceLastRun))
+        }
+    }
+
     private suspend fun findDiscussions(linkId: String, initialIntervalIndex: Int) {
         var intervalIndex = initialIntervalIndex
+
         while (true) {
             val link = linkService.get(linkId) ?: break
             log.info("Finding discussions for entry={}", link.id)

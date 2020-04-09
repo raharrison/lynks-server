@@ -103,6 +103,29 @@ class DiscussionFinderWorkerTest: DatabaseTest() {
     }
 
     @Test
+    fun testInitFromScheduleWithLastRunDelay() = runBlocking(TestCoroutineContext()) {
+        coEvery { retriever.getString(match { it.contains("hn.algolia") }) } returns getFile("/hacker_discussions.json")
+        coEvery { retriever.getString(match { it.contains("reddit.com") }) } returns getFile("/reddit_discussions.json")
+
+        val lastRun = System.currentTimeMillis() - (30 * 60 * 1000) // 30 mins ago
+        createDummyWorkerSchedule(DiscussionFinderWorker::class.java.simpleName, "key", DiscussionFinderWorkerRequest(link.id, 2), lastRun)
+
+        val worker = DiscussionFinderWorker(linkService, retriever, notifyService, entryAuditService)
+            .apply { runner = this@runBlocking.coroutineContext }.worker()
+
+        worker.close()
+
+        verify(exactly = 2) { linkService.get(link.id) }
+        verify(exactly = 2) { linkService.mergeProps(eq(link.id), ofType(BaseProperties::class)) }
+        assertThat(propsSlot.captured.containsAttribute("discussions")).isTrue()
+        assertThat(propsSlot.captured.getAttribute("discussions") as List<*>).hasSize(6)
+
+        coVerify(exactly = 2 * 2) { retriever.getString(any()) }
+        coVerify(exactly = 1) { notifyService.accept(any(), link) }
+        coVerify(exactly = 1) { entryAuditService.acceptAuditEvent(link.id, any(), any()) }
+    }
+
+    @Test
     fun testDifferingResponses(): Unit = runBlocking(TestCoroutineContext()) {
         coEvery { retriever.getString(match { it.contains("hn.algolia") }) } returns "" andThen getFile("/hacker_discussions.json") andThen ""
         coEvery { retriever.getString(match { it.contains("reddit.com") }) } returns "" andThen getFile("/reddit_discussions.json") andThen ""
