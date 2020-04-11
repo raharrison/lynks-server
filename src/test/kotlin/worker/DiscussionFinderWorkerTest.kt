@@ -81,6 +81,37 @@ class DiscussionFinderWorkerTest: DatabaseTest() {
     }
 
     @Test
+    fun testRedditCrosspostDiscussions() = runBlocking(TestCoroutineContext()) {
+        coEvery { retriever.getString(match { it.contains("hn.algolia") }) } returns ""
+        coEvery { retriever.getString(match { it.contains("reddit.com") }) } returns getFile("/reddit_crosspost_discussions.json")
+
+        val url = "https://old.reddit.com/r/programming/comments/ftkiyp/how_we_reduced_our_google_maps_api_cost_by_94/"
+        val link = Link("id1", "title", url, "reddit.com", "", 100, 100)
+
+        every { linkService.get(link.id) } returns link
+        every { linkService.mergeProps(eq(link.id), capture(propsSlot)) } just Runs
+
+        val worker = DiscussionFinderWorker(linkService, retriever, notifyService, entryAuditService)
+            .apply { runner = this@runBlocking.coroutineContext }.worker()
+
+        worker.send(DiscussionFinderWorkerRequest(link.id))
+        worker.close()
+
+        verify(exactly = 5) { linkService.mergeProps(eq(link.id), ofType(BaseProperties::class)) }
+        assertThat(propsSlot.captured.containsAttribute("discussions")).isTrue()
+        val discussions = propsSlot.captured.getAttribute("discussions") as List<Any?>
+        assertThat(discussions).hasSize(4)
+
+        assertThat(discussions).extracting("title")
+            .containsExactlyInAnyOrder("/r/GoogleMaps", "/r/hackernews", "/r/mistyfront", "/r/patient_hackernews")
+        assertThat(discussions).extracting("url").doesNotHaveDuplicates()
+
+        coVerify(exactly = 5 * 2) { retriever.getString(any()) }
+        coVerify(exactly = 1) { notifyService.accept(any(), link) }
+        coVerify(exactly = 1) { entryAuditService.acceptAuditEvent(link.id, any(), any()) }
+    }
+
+    @Test
     fun testInitFromSchedule() = runBlocking(TestCoroutineContext()) {
         coEvery { retriever.getString(match { it.contains("hn.algolia") }) } returns getFile("/hacker_discussions.json")
         coEvery { retriever.getString(match { it.contains("reddit.com") }) } returns getFile("/reddit_discussions.json")

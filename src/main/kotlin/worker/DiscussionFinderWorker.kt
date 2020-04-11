@@ -1,5 +1,6 @@
 package worker
 
+import com.fasterxml.jackson.databind.JsonNode
 import entry.EntryAuditService
 import entry.LinkService
 import kotlinx.coroutines.time.delay
@@ -45,6 +46,8 @@ class DiscussionFinderWorker(
     private val intervals = listOf<Long>(60, 60 * 4, 60 * 10, 60 * 24)
 
     override val requestClass = DiscussionFinderWorkerRequest::class.java
+
+    private val redditLink = Regex("reddit\\.com\\/r\\/.+\\/comments\\/.+\\/.+")
 
     private suspend fun checkLastRunTime(input: DiscussionFinderWorkerRequest) {
         val lastRun = getLastRunTime(input) ?: return
@@ -143,14 +146,21 @@ class DiscussionFinderWorker(
     }
 
     private suspend fun redditDiscussions(url: String): List<Discussion> {
-        val base = "https://www.reddit.com/api/info.json?url=%s"
-        val response = resourceRetriever.getString(base.format(encode(url)))
-        val discussions = mutableListOf<Discussion>()
-        if (response == null || response.isBlank()) return discussions
-        val node = defaultMapper.readTree(response)
+        val responseNode = if (redditLink.containsMatchIn(url)) {
+            // link to Reddit, look for crossposts
+            findRedditCrossPosts(url)
+        } else {
+            // external link, perform search
+            searchReddit(url)
+        }
 
-        if (node.has("data")) {
-            val data = node.get("data")
+        val discussions = mutableListOf<Discussion>()
+        if (responseNode == null) {
+            return discussions
+        }
+
+        if (responseNode.has("data")) {
+            val data = responseNode.get("data")
             if (data.has("children")) {
                 val children = data.get("children")
                 for (child in children) {
@@ -172,5 +182,22 @@ class DiscussionFinderWorker(
         )
     }
 
+    private suspend fun findRedditCrossPosts(url: String): JsonNode? {
+        val duplicatesUrl = url.replace("comments", "duplicates")
+        val response = resourceRetriever.getString(duplicatesUrl)
+        if (response == null || response.isBlank()) return null
+        val node = defaultMapper.readTree(response)
+        if (node.isArray) {
+            return node.elementAtOrNull(1)
+        }
+        return null
+    }
+
+    private suspend fun searchReddit(url: String): JsonNode? {
+        val base = "https://www.reddit.com/api/info.json?url=%s"
+        val response = resourceRetriever.getString(base.format(encode(url)))
+        if (response == null || response.isBlank()) return null
+        return defaultMapper.readTree(response)
+    }
 
 }
