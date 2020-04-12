@@ -4,10 +4,7 @@ import common.DatabaseTest
 import common.EntryType
 import common.Environment
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.fail
+import org.junit.jupiter.api.*
 import resource.*
 import util.FileUtils.getExtension
 import util.FileUtils.removeExtension
@@ -99,16 +96,27 @@ class ResourceManagerTest: DatabaseTest() {
         val tempFile = resourceManager.createTempFile(src, extension)
         assertThat(tempFile.src).isEqualTo(src)
         assertThat(tempFile.extension).isEqualTo(extension)
+        val path = tempFile.path
         tempFile.use {
-            assertThat(it.path.fileName).isNotEqualTo(src)
-            assertThat(getExtension(it.path.fileName.toString())).isEqualTo(extension)
-            assertThat(Files.exists(it.path)).isFalse()
-            Files.writeString(it.path, "test content")
-            assertThat(Files.exists(it.path)).isTrue()
+            assertThat(path.fileName).isNotEqualTo(src)
+            assertThat(getExtension(path.fileName.toString())).isEqualTo(extension)
+            assertThat(Files.exists(path)).isFalse()
+            Files.writeString(path, "test content")
+            assertThat(Files.exists(path)).isTrue()
         }
-        assertThat(Files.exists(tempFile.path)).isFalse()
+        assertThat(Files.exists(path)).isFalse()
     }
 
+    @Test
+    fun testCreateTempFileThrowsWhenClosed() {
+        val tempFile = resourceManager.createTempFile("src", "html")
+        tempFile.use {
+            assertThat(Files.exists(tempFile.path)).isFalse()
+        }
+        assertThrows<IllegalStateException> {
+            assertThat(Files.exists(tempFile.path)).isFalse()
+        }
+    }
 
     @Test
     fun testMoveTempFiles() {
