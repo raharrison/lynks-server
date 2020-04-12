@@ -99,7 +99,7 @@ open class DefaultLinkProcessor(private val url: String) : LinkProcessor {
         session.waitDocumentReady()
         session.wait(1000)
         session.activate()
-        if (statuses.size > 0 && statuses.first() == 200)
+        if (statuses.size > 0 && (statuses.first() == 200 || statuses.first() % 300 < 100))
             return session
         else {
             log.error("Unable to navigate to url={} response statuses={}", url, statuses)
