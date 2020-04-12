@@ -47,6 +47,12 @@ class ResourceManager {
         return Paths.get(Environment.server.resourceTempPath).relativize(path).toUrlString()
     }
 
+    fun createTempFile(src: String, extension: String): TempFile {
+        val path = constructTempPath(src, extension)
+        log.info("Temp file created at {}", path.toUrlString())
+        return TempFile(src, extension, path)
+    }
+
     fun moveTempFiles(entryId: String, src: String): List<Resource> {
         val tempPath = constructTempPath(src)
         if (Files.exists(tempPath)) {
@@ -134,6 +140,10 @@ class ResourceManager {
     private fun constructTempPath(name: String, type: ResourceType, extension: String): Path {
         val date = LocalDate.now().toString()
         return Paths.get(Environment.server.resourceTempPath, FileUtils.createTempFileName(name), "${type.toString().toLowerCase()}-$date.$extension")
+    }
+
+    private fun constructTempPath(name: String, extension: String): Path {
+        return Paths.get(Environment.server.resourceTempPath, FileUtils.createTempFileName(name), "${RandomUtils.generateUid()}.$extension")
     }
 
     private fun constructTempPath(name: String) = Paths.get(Environment.server.resourceTempPath, FileUtils.createTempFileName(name))

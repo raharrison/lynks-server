@@ -48,7 +48,7 @@ class ResourceManagerTest: DatabaseTest() {
     }
 
     @Test
-    fun testCreateTempFile() {
+    fun testSaveTempFile() {
         val src = "google.com"
         // create document
         val doc = byteArrayOf(1,2,3,4,5)
@@ -91,6 +91,24 @@ class ResourceManagerTest: DatabaseTest() {
         assertFileCount(Paths.get(path1).parent.toString(), 1)
         assertFileCount(Paths.get(path2).parent.toString(), 1)
     }
+
+    @Test
+    fun testCreateTempFile() {
+        val src = "src"
+        val extension = "html"
+        val tempFile = resourceManager.createTempFile(src, extension)
+        assertThat(tempFile.src).isEqualTo(src)
+        assertThat(tempFile.extension).isEqualTo(extension)
+        tempFile.use {
+            assertThat(it.path.fileName).isNotEqualTo(src)
+            assertThat(getExtension(it.path.fileName.toString())).isEqualTo(extension)
+            assertThat(Files.exists(it.path)).isFalse()
+            Files.writeString(it.path, "test content")
+            assertThat(Files.exists(it.path)).isTrue()
+        }
+        assertThat(Files.exists(tempFile.path)).isFalse()
+    }
+
 
     @Test
     fun testMoveTempFiles() {

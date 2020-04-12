@@ -17,6 +17,13 @@ object FileUtils {
         Files.write(path, data)
     }
 
+    fun deleteWithParentIfEmpty(path: Path) {
+        Files.deleteIfExists(path)
+        if (path.parent.toFile().list()?.isEmpty() == true) {
+            Files.delete(path.parent)
+        }
+    }
+
     fun createTempFileName(src: String): String {
         return Hashing.murmur3_128().hashString(src, Charset.defaultCharset()).toString()
     }
