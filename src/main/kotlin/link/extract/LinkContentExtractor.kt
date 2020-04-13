@@ -1,7 +1,6 @@
 package link.extract
 
 import com.chimbori.crux.articles.ArticleExtractor
-import org.jsoup.Jsoup
 import resource.ResourceManager
 import util.*
 import java.nio.file.Files
@@ -15,7 +14,7 @@ class LinkContentExtractor(private val resourceManager: ResourceManager = Resour
         return try {
             val readabilityContent = runReadability(url, html)
             // readability returns HTML doc, extract raw text
-            val textContent = extractTextFromHtmlDoc(readabilityContent.content)
+            val textContent = ExtractUtils.extractTextFromHtmlDoc(readabilityContent.content)
             LinkContent(
                 readabilityContent.title,
                 textContent,
@@ -26,13 +25,6 @@ class LinkContentExtractor(private val resourceManager: ResourceManager = Resour
             log.error("Readability call failed, falling back to article extraction result only", e)
             extractorContent
         }
-    }
-
-    private fun extractTextFromHtmlDoc(html: String?): String? {
-        if (html == null) return null
-        if (!html.startsWith("<html><body>")) return html
-        val document = Jsoup.parse(html)
-        return document.text()
     }
 
     private fun runReadability(url: String, html: String): LinkContent {
