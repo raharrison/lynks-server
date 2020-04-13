@@ -389,6 +389,7 @@ class LinkProcessorWorkerTest {
                 )
             } returns screenPath
             every { resourceManager.saveTempFile(url, html.toByteArray(), ResourceType.DOCUMENT, HTML) } returns screenPath
+            every { resourceManager.saveTempFile(url, content.toByteArray(), ResourceType.READABLE, HTML) } returns screenPath
 
             val deferred = CompletableDeferred<Suggestion>()
             val channel = worker.apply { runner = this@runBlocking.coroutineContext }.worker()

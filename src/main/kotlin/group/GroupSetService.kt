@@ -36,7 +36,9 @@ class GroupSetService(private val tagService: TagService, private val collection
     }
 
     private fun isMatch(content: String, grouping: Grouping<*>): Boolean {
-        return content.contains(grouping.name)
+        // simple search for group as a word wrapped by spaces
+        val toMatch = " ${grouping.name} "
+        return content.contains(toMatch)
     }
 
 
