@@ -13,11 +13,9 @@ class LinkContentExtractor(private val resourceManager: ResourceManager = Resour
         val extractorContent = runArticleExtract(url, html)
         return try {
             val readabilityContent = runReadability(url, html)
-            // readability returns HTML doc, extract raw text
-            val textContent = ExtractUtils.extractTextFromHtmlDoc(readabilityContent.content)
             LinkContent(
                 readabilityContent.title,
-                textContent,
+                readabilityContent.content,
                 extractorContent.imageUrl,
                 extractorContent.keywords
             )

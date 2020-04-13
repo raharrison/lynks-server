@@ -1,5 +1,5 @@
 Kotlin & Java CI with Github Actions
-<html><body><div><div class="post">
+<div><div class="post">
     <h1 class="post-title">Kotlin &amp; Java CI with Github Actions</h1>
     <span class="post-date">12 Apr 2020</span>
     <p>If you have a Kotlin/Java project of any reasonable size, you probably want some kind of <code class="highlighter-rouge">CI</code> (Continuous Integration) process running alongside the main development workflow. Commonly this takes the form of something like:</p>
@@ -8,19 +8,19 @@ Kotlin & Java CI with Github Actions
         <li>running a small build on every pull request before merging</li>
         <li>running a complete build on every change pushed to master (or any other branch) - including integration tests etc</li>
         <li>automatically run deployment steps e.g to Heroku, AWS or Github Pages</li>
-        <li>ensure that your project builds and runs on a wide variety of devices e.g different JDK versions/OSâ€™ - or really that it can build on a machine that isnâ€™t your local box</li>
+        <li>ensure that your project builds and runs on a wide variety of devices e.g different JDK versions/OS’ - or really that it can build on a machine that isn’t your local box</li>
         <li>in general your main branch contains a fully working version of your project</li>
         <li>run static code analysis tools or linters</li>
         <li>anything else that can be automated..</li>
     </ul>
 
-    <p>Previously, the most widespread tool for this is is probably <a href="https://travis-ci.org/">TravisCI</a> (which is free for open source usage). Now however, there is an alternative thatâ€™s built into Github itself - <a href="https://github.com/features/actions">Github Actions</a>. You can think of it as pretty much the same as other CI tools out there, but you get the added benefit of full integration with Github, so now everything can be in the same place!</p>
+    <p>Previously, the most widespread tool for this is is probably <a href="https://travis-ci.org/">TravisCI</a> (which is free for open source usage). Now however, there is an alternative that’s built into Github itself - <a href="https://github.com/features/actions">Github Actions</a>. You can think of it as pretty much the same as other CI tools out there, but you get the added benefit of full integration with Github, so now everything can be in the same place!</p>
 
     <h3 id="creating-a-a-gradle-build-action">Creating a a Gradle Build Action</h3>
 
-    <p>Your repository should have a new tab called <code class="highlighter-rouge">Actions</code> which is your new portal for anything CI related. Once you click on the tab you will be able to create your first Action. By default, Github will suggest some common workflows relevant to your project (e.g if itâ€™s a Node project run <code class="highlighter-rouge">npm run build</code> and <code class="highlighter-rouge">npm test</code>). These take the form of open source packages hosted within other repositories, but you can of course create your own custom actions taking the best bits from each.</p>
+    <p>Your repository should have a new tab called <code class="highlighter-rouge">Actions</code> which is your new portal for anything CI related. Once you click on the tab you will be able to create your first Action. By default, Github will suggest some common workflows relevant to your project (e.g if it’s a Node project run <code class="highlighter-rouge">npm run build</code> and <code class="highlighter-rouge">npm test</code>). These take the form of open source packages hosted within other repositories, but you can of course create your own custom actions taking the best bits from each.</p>
 
-    <p><img src="/images/2020/github_actions_tab.png" alt="Github Actions tab"/></p>
+    <p><img src="https://ryanharrison.co.uk/images/2020/github_actions_tab.png" alt="Github Actions tab"/></p>
 
     <p><code class="highlighter-rouge">Actions</code> take the form of simple <code class="highlighter-rouge">.yml</code> files which describes the workflow and steps to execute. In our case, we want to build and test our Kotlin or Java project. This example will use Gradle, but Maven will also work just as well. The below configuration is all we need to build our repo:</p>
 
@@ -60,15 +60,15 @@ Kotlin & Java CI with Github Actions
         <li>Execute the Gradle wrapper script to perform a complete build and test of our project. Note that this is exactly what we would do if we were to do the same locally - nothing needs to change just because we need to run this in a CI environment.</li>
     </ul>
 
-    <p>Thatâ€™s it to run a simple Gradle build for our Kotlin or Java project. Github will instruct you to commit the <code class="highlighter-rouge">.yml</code> file into the <code class="highlighter-rouge">.gitub/workflows</code> directory in the root of your repo so that it can be picked up properly.</p>
+    <p>That’s it to run a simple Gradle build for our Kotlin or Java project. Github will instruct you to commit the <code class="highlighter-rouge">.yml</code> file into the <code class="highlighter-rouge">.gitub/workflows</code> directory in the root of your repo so that it can be picked up properly.</p>
 
-    <p><img src="/images/2020/github_actions_file.png" alt="Github Actions sample file"/></p>
+    <p><img src="https://ryanharrison.co.uk/images/2020/github_actions_file.png" alt="Github Actions sample file"/></p>
 
     <h3 id="running-the-ci-workflow">Running the CI Workflow</h3>
 
     <p>Because we just set up our <code class="highlighter-rouge">Action</code> to be run automatically on any PR or push to <code class="highlighter-rouge">master</code>, there is nothing else we need to do to start utilising our new continuous integration process. In the <code class="highlighter-rouge">Actions</code> tab you will see all builds of your project alongside all log output. You will get notified in the event that your build process fails by email.</p>
 
-    <p><img src="/images/2020/github_actions_output.png" alt="Github Actions output"/></p>
+    <p><img src="https://ryanharrison.co.uk/images/2020/github_actions_output.png" alt="Github Actions output"/></p>
 
     <h3 id="caching-build-dependencies">Caching Build Dependencies</h3>
 
@@ -109,4 +109,4 @@ Kotlin & Java CI with Github Actions
 
 </div>
 
-</div></body></html>
+</div>
