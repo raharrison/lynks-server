@@ -10,8 +10,7 @@ import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.statements.UpdateBuilder
 import resource.ResourceManager
-import util.MarkdownUtils
-import util.RowMapper
+import util.markdown.MarkdownUtils
 
 class NoteService(
     groupSetService: GroupSetService, entryAuditService: EntryAuditService, resourceManager: ResourceManager

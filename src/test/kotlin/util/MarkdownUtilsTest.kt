@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import util.markdown.EntryLinkInlineParserExtension
 import util.markdown.EntryLinkNode
+import util.markdown.MarkdownUtils
 
 class MarkdownUtilsTest {
 

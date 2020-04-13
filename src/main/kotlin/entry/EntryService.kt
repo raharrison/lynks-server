@@ -10,7 +10,6 @@ import org.jetbrains.exposed.sql.statements.jdbc.JdbcConnectionImpl
 import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.jetbrains.exposed.sql.transactions.transaction
 import resource.ResourceManager
-import util.RowMapper
 
 class EntryService(
     groupSetService: GroupSetService, entryAuditService: EntryAuditService, resourceManager: ResourceManager

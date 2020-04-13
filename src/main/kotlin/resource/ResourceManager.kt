@@ -1,6 +1,7 @@
 package resource
 
 import common.Environment
+import common.RowMapper.toResource
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.select
@@ -8,7 +9,6 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.update
 import util.FileUtils
 import util.RandomUtils
-import util.RowMapper.toResource
 import util.loggerFor
 import util.toUrlString
 import java.io.File

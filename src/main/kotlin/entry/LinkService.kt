@@ -12,7 +12,6 @@ import org.jetbrains.exposed.sql.statements.UpdateBuilder
 import org.jetbrains.exposed.sql.transactions.transaction
 import resource.ResourceManager
 import resource.ResourceType
-import util.RowMapper
 import util.URLUtils
 import worker.PersistLinkProcessingRequest
 import worker.WorkerRegistry

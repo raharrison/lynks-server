@@ -2,11 +2,15 @@ package comment
 
 import common.DefaultPageRequest
 import common.PageRequest
+import common.RowMapper.toComment
 import common.SortDirection
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
-import util.*
-import util.RowMapper.toComment
+import util.RandomUtils
+import util.findColumn
+import util.loggerFor
+import util.markdown.MarkdownUtils
+import util.orderBy
 
 private val log = loggerFor<CommentService>()
 

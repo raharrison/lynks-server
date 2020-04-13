@@ -1,4 +1,4 @@
-package util
+package util.markdown
 
 import com.vladsch.flexmark.ext.autolink.AutolinkExtension
 import com.vladsch.flexmark.ext.gfm.strikethrough.StrikethroughSubscriptExtension
@@ -7,7 +7,6 @@ import com.vladsch.flexmark.ext.tables.TablesExtension
 import com.vladsch.flexmark.html.HtmlRenderer
 import com.vladsch.flexmark.parser.Parser
 import com.vladsch.flexmark.util.data.MutableDataSet
-import util.markdown.EntryLinkExtension
 
 object MarkdownUtils {
 

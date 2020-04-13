@@ -1,8 +1,7 @@
-package util
+package common
 
 import comment.Comment
 import comment.Comments
-import common.*
 import group.Collection
 import group.Tag
 import org.jetbrains.exposed.sql.ResultRow
