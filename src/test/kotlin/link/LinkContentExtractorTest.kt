@@ -2,7 +2,7 @@ package link
 
 import common.exception.ExecutionException
 import io.mockk.*
-import link.extract.ContentExtractor
+import link.extract.LinkContentExtractor
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import resource.ResourceManager
@@ -13,7 +13,7 @@ import java.nio.file.Files
 class LinkContentExtractorTest  {
 
     private val resourceManager = spyk<ResourceManager>()
-    private val contentExtractor = ContentExtractor(resourceManager)
+    private val contentExtractor = LinkContentExtractor(resourceManager)
 
     private val url = "https://ryanharrison.co.uk/2020/04/12/kotlin-java-ci-with-github-actions.html"
     private val rawHtml = this.javaClass.getResource("/content_extract_raw.html").readText()
@@ -42,7 +42,7 @@ class LinkContentExtractorTest  {
         assertThat(linkContent.title).isEqualTo(title)
         assertThat(linkContent.imageUrl).isNotNull()
         assertThat(linkContent.keywords).hasSize(7).contains("kotlin", "github", "actions", "build", "java")
-        assertThat(linkContent.content).contains("<html").doesNotStartWith(title)
+        assertThat(linkContent.content).doesNotContain("<html>").doesNotContain("<script>").doesNotStartWith(title)
     }
 
     @Test
@@ -65,7 +65,7 @@ class LinkContentExtractorTest  {
         assertThat(linkContent.title).isEqualTo(title)
         assertThat(linkContent.imageUrl).isNotNull()
         assertThat(linkContent.keywords).hasSize(7).contains("kotlin", "github", "actions", "build", "java")
-        assertThat(linkContent.content).doesNotContain("<html").doesNotStartWith(title)
+        assertThat(linkContent.content).doesNotContain("<html>").doesNotContain("<script>").doesNotStartWith(title)
     }
 
 }

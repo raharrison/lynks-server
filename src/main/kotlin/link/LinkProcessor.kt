@@ -6,8 +6,8 @@ import io.webfolder.cdp.Launcher
 import io.webfolder.cdp.event.Events
 import io.webfolder.cdp.event.network.ResponseReceived
 import io.webfolder.cdp.session.Session
-import link.extract.ContentExtractor
 import link.extract.LinkContent
+import link.extract.LinkContentExtractor
 import resource.JPG
 import resource.PDF
 import resource.PNG
@@ -167,7 +167,7 @@ open class DefaultLinkProcessor(private val url: String) : LinkProcessor {
     }
 
     override suspend fun extractLinkContent(): LinkContent {
-        val extractor = ContentExtractor()
+        val extractor = LinkContentExtractor()
         return extractor.extractContent(resolvedUrl, html)
     }
 
