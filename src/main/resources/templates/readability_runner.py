@@ -3,7 +3,7 @@ from readability import Document
 content = """{{{ content }}}"""
 url = "{{{ url }}}"
 
-doc = Document(content, url)
+doc = Document(content, url=url)
 
 # remove wrapping html/body tags
 summary = doc.summary()
