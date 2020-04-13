@@ -15,6 +15,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import link.ImageResource
 import link.LinkProcessor
+import link.extract.LinkContent
 import notify.NotifyService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
@@ -60,12 +61,13 @@ class LinkProcessorWorkerTest {
             val html = "<html>"
             val content = "article content"
             val processor = mockk<LinkProcessor>(relaxUnitFun = true)
+            val linkContent = LinkContent("title", content)
 
             coEvery { notifyService.accept(any(), ofType(Link::class)) } just Runs
             coEvery { processor.generateThumbnail() } returns thumb
             coEvery { processor.generateScreenshot() } returns screen
             coEvery { processor.html } returns html
-            coEvery { processor.content } returns content
+            coEvery { processor.extractLinkContent() } returns linkContent
             coEvery { processor.enrich(link.props) } just Runs
             every { processor.close() } just Runs
 
@@ -99,7 +101,7 @@ class LinkProcessorWorkerTest {
             coVerify(exactly = 1) { processor.generateThumbnail() }
             coVerify(exactly = 1) { processor.generateScreenshot() }
             coVerify(exactly = 1) { processor.html }
-            coVerify(exactly = 1) { processor.content }
+            coVerify(exactly = 1) { processor.extractLinkContent() }
 
             verify(exactly = 1) {
                 resourceManager.saveGeneratedResource(
@@ -169,7 +171,7 @@ class LinkProcessorWorkerTest {
             coVerify(exactly = 0) { processor.generateThumbnail() }
             coVerify(exactly = 1) { processor.generateScreenshot() }
             coVerify(exactly = 0) { processor.html }
-            coVerify(exactly = 0) { processor.content }
+            coVerify(exactly = 0) { processor.extractLinkContent() }
 
             verify(exactly = 0) {
                 resourceManager.saveGeneratedResource(link.id, any(), ResourceType.THUMBNAIL, any())
@@ -222,7 +224,7 @@ class LinkProcessorWorkerTest {
             coVerify(exactly = 0) { processor.generateThumbnail() }
             coVerify(exactly = 0) { processor.generateScreenshot() }
             coVerify(exactly = 0) { processor.html }
-            coVerify(exactly = 0) { processor.content }
+            coVerify(exactly = 0) { processor.extractLinkContent() }
             verify(exactly = 0) { resourceManager.saveGeneratedResource(any(), any(), any(), any()) }
             verify(exactly = 1) { entryAuditService.acceptAuditEvent(link.id, any(), any()) }
         }
@@ -255,7 +257,7 @@ class LinkProcessorWorkerTest {
             coVerify(exactly = 0) { processor.generateThumbnail() }
             coVerify(exactly = 0) { processor.generateScreenshot() }
             coVerify(exactly = 0) { processor.html }
-            coVerify(exactly = 0) { processor.content }
+            coVerify(exactly = 0) { processor.extractLinkContent() }
             verify(exactly = 0) { resourceManager.saveGeneratedResource(any(), any(), any(), any()) }
             verify(exactly = 0) { entryAuditService.acceptAuditEvent(link.id, any(), any()) }
         }
@@ -285,7 +287,7 @@ class LinkProcessorWorkerTest {
             coVerify(exactly = 0) { processor.generateThumbnail() }
             coVerify(exactly = 0) { processor.generateScreenshot() }
             coVerify(exactly = 0) { processor.html }
-            coVerify(exactly = 0) { processor.content }
+            coVerify(exactly = 0) { processor.extractLinkContent() }
             verify(exactly = 0) { resourceManager.saveGeneratedResource(any(), any(), any(), any()) }
             verify(exactly = 1) { entryAuditService.acceptAuditEvent(link.id, any(), any()) }
         }
@@ -348,14 +350,13 @@ class LinkProcessorWorkerTest {
                 Collection("c1", "col1", mutableSetOf(), 124L, 1234L),
                 Collection("c2", "col2", mutableSetOf(), 124L, 1234L)
             )
+            val linkContent = LinkContent(title, content, null, keywords)
 
             coEvery { processor.generateThumbnail() } returns thumb
             coEvery { processor.generateScreenshot() } returns screen
             coEvery { processor.html } returns html
-            every { processor.title } returns title
+            coEvery { processor.extractLinkContent() } returns linkContent
             every { processor.resolvedUrl } returns resolvedUrl
-            every { processor.keywords } returns keywords
-            every { processor.content } returns content
             every { processor.close() } just Runs
             every { groupSetService.matchWithContent(content) } returns GroupSet(tags, collections)
 
@@ -399,7 +400,7 @@ class LinkProcessorWorkerTest {
             coVerify(exactly = 1) { processor.generateThumbnail() }
             coVerify(exactly = 1) { processor.generateScreenshot() }
             coVerify(exactly = 1) { processor.html }
-            coVerify(exactly = 1) { processor.keywords }
+            coVerify(exactly = 1) { processor.extractLinkContent() }
 
             verify(exactly = 1) { resourceManager.saveTempFile(url, thumb.image, ResourceType.THUMBNAIL, thumb.extension) }
             verify(exactly = 1) {

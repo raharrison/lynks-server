@@ -13,6 +13,7 @@ import link.YoutubeLinkProcessor
 import notify.Notification
 import notify.NotifyService
 import resource.*
+import resource.ResourceType.*
 import suggest.Suggestion
 import java.time.LocalDate
 import java.util.*
@@ -55,7 +56,7 @@ class LinkProcessorWorker(
     private suspend fun processLinkPersist(link: Link, resourceSet: EnumSet<ResourceType>, process: Boolean) {
         try {
             val movedResources = resourceManager.moveTempFiles(link.id, link.url)
-            findExistingDocumentContent(movedResources)?.also {
+            findExistingReadableContent(movedResources)?.also {
                 link.content = it
             }
             val shouldProcess = process && movedResources.isEmpty()
@@ -100,51 +101,41 @@ class LinkProcessorWorker(
             return
 
         proc.init()
-        val thumb = if (resourceSet.contains(ResourceType.THUMBNAIL)) async { proc.generateThumbnail() } else null
-        val screen = if (resourceSet.contains(ResourceType.SCREENSHOT)) async { proc.generateScreenshot() } else null
+        val thumb = if (resourceSet.contains(THUMBNAIL)) async { proc.generateThumbnail() } else null
+        val screen = if (resourceSet.contains(SCREENSHOT)) async { proc.generateScreenshot() } else null
 
-        if (resourceSet.contains(ResourceType.DOCUMENT)) {
-            link.content = proc.content
+        if (resourceSet.contains(DOCUMENT)) {
+            val linkContent = proc.extractLinkContent()
+            linkContent.content?.let {
+                link.content = linkContent.content
+                saveResource(link.id, READABLE, HTML, it.toByteArray())
+            }
             proc.html?.let {
-                resourceManager.saveGeneratedResource(
-                    link.id,
-                    createResourceFileName(ResourceType.DOCUMENT, HTML),
-                    ResourceType.DOCUMENT,
-                    it.toByteArray()
-                )
+                saveResource(link.id, DOCUMENT, HTML, it.toByteArray())
             }
         }
-        if (resourceSet.contains(ResourceType.THUMBNAIL)) {
+        if (resourceSet.contains(THUMBNAIL)) {
             thumb?.await()?.let {
-                resourceManager.saveGeneratedResource(
-                    link.id,
-                    createResourceFileName(ResourceType.THUMBNAIL, it.extension),
-                    ResourceType.THUMBNAIL,
-                    it.image
-                )
+                saveResource(link.id, THUMBNAIL, it.extension, it.image)
             }
         }
-        if (resourceSet.contains(ResourceType.SCREENSHOT)) {
+        if (resourceSet.contains(SCREENSHOT)) {
             screen?.await()?.let {
-                resourceManager.saveGeneratedResource(
-                    link.id,
-                    createResourceFileName(ResourceType.SCREENSHOT, it.extension),
-                    ResourceType.SCREENSHOT,
-                    it.image
-                )
+                saveResource(link.id, SCREENSHOT, it.extension, it.image)
             }
         }
     }
 
-    private fun findExistingDocumentContent(resources: List<Resource>): String? {
-        return resources.find { it.type == ResourceType.DOCUMENT }?.let {
+    private fun saveResource(id: String, type: ResourceType, extension: String, data: ByteArray): Resource {
+        val date = LocalDate.now().toString()
+        val resourceFileName =  "${type.name.toLowerCase()}-$date.${extension}"
+        return resourceManager.saveGeneratedResource(id, resourceFileName, type, data)
+    }
+
+    private fun findExistingReadableContent(resources: List<Resource>): String? {
+        return resources.find { it.type == GENERATED }?.let {
             return resourceManager.getResourceAsFile(it.id)?.second?.readText()
         }
-    }
-
-    private fun createResourceFileName(type: ResourceType, extension: String): String {
-        val date = LocalDate.now().toString()
-        return "${type.name.toLowerCase()}-$date.${extension}"
     }
 
     private suspend fun processLinkSuggest(url: String, deferred: CompletableDeferred<Suggestion>) {
@@ -157,21 +148,21 @@ class LinkProcessorWorker(
                         val thumb = async { proc.generateThumbnail() }
                         val screen = async { proc.generateScreenshot() }
                         val thumbPath = thumb.await()
-                            ?.let { resourceManager.saveTempFile(url, it.image, ResourceType.THUMBNAIL, it.extension) }
+                            ?.let { resourceManager.saveTempFile(url, it.image, THUMBNAIL, it.extension) }
                         val screenPath = screen.await()
-                            ?.let { resourceManager.saveTempFile(url, it.image, ResourceType.SCREENSHOT, it.extension) }
+                            ?.let { resourceManager.saveTempFile(url, it.image, SCREENSHOT, it.extension) }
                         proc.html?.let {
                             resourceManager.saveTempFile(
                                 url,
                                 it.toByteArray(),
-                                ResourceType.DOCUMENT,
+                                DOCUMENT,
                                 HTML
                             )
                         }
-                        val content = proc.content
-                        val matchedGroups = groupSetService.matchWithContent(content)
+                        val linkContent = proc.extractLinkContent()
+                        val matchedGroups = groupSetService.matchWithContent(linkContent.content)
                         log.info("Link processing worker completing suggestion request for url={}", url)
-                        deferred.complete(Suggestion(proc.resolvedUrl, proc.title, thumbPath, screenPath, it.keywords,
+                        deferred.complete(Suggestion(proc.resolvedUrl, linkContent.title, thumbPath, screenPath, linkContent.keywords,
                             matchedGroups.tags, matchedGroups.collections))
                     }
                 }

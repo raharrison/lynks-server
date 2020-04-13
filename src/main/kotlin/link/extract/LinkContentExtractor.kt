@@ -5,7 +5,7 @@ import resource.ResourceManager
 import util.*
 import java.nio.file.Files
 
-class ContentExtractor(private val resourceManager: ResourceManager) {
+class ContentExtractor(private val resourceManager: ResourceManager = ResourceManager()) {
 
     private val log = loggerFor<ContentExtractor>()
 

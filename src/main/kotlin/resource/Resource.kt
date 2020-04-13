@@ -30,11 +30,9 @@ data class Resource(
 ): IdBasedCreatedEntity
 
 enum class ResourceType {
-    UPLOAD, SCREENSHOT, THUMBNAIL, DOCUMENT, GENERATED;
+    UPLOAD, SCREENSHOT, THUMBNAIL, DOCUMENT, READABLE, GENERATED;
 
     companion object {
-        fun all() = EnumSet.allOf(ResourceType::class.java)
+        fun all(): EnumSet<ResourceType> = EnumSet.allOf(ResourceType::class.java)
     }
 }
-
-// files/{entryId}/{id}
