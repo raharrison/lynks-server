@@ -344,13 +344,13 @@ class LinkProcessorWorkerTest {
 
             val thumb = ImageResource(byteArrayOf(1, 2, 3), "jpg")
             val screen = ImageResource(byteArrayOf(4, 5, 6), "png")
-            val html = "<html>"
+            val html = "<html><body><p>article content<p></body></html>"
             val processor = mockk<LinkProcessor>(relaxUnitFun = true)
 
             val thumbPath = "thumbPath"
             val screenPath = "screenPath"
             val resolvedUrl = "resolvedUrl"
-            val content = "some content"
+            val content = "article content"
             val title = "title"
             val keywords = setOf("search", "other", "important")
             val tags = listOf(
@@ -414,15 +414,9 @@ class LinkProcessorWorkerTest {
             coVerify(exactly = 1) { processor.extractLinkContent() }
 
             verify(exactly = 1) { resourceManager.saveTempFile(url, thumb.image, ResourceType.THUMBNAIL, thumb.extension) }
-            verify(exactly = 1) {
-                resourceManager.saveTempFile(
-                    url,
-                    screen.image,
-                    ResourceType.SCREENSHOT,
-                    screen.extension
-                )
-            }
+            verify(exactly = 1) { resourceManager.saveTempFile(url, screen.image, ResourceType.SCREENSHOT, screen.extension) }
             verify(exactly = 1) { resourceManager.saveTempFile(url, html.toByteArray(), ResourceType.DOCUMENT, HTML) }
+            verify(exactly = 1) { resourceManager.saveTempFile(url, content.toByteArray(), ResourceType.READABLE, HTML) }
         }
 
         @Test

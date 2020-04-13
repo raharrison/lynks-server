@@ -153,14 +153,12 @@ class LinkProcessorWorker(
                         val screenPath = screen.await()
                             ?.let { resourceManager.saveTempFile(url, it.image, SCREENSHOT, it.extension) }
                         proc.html?.let {
-                            resourceManager.saveTempFile(
-                                url,
-                                it.toByteArray(),
-                                DOCUMENT,
-                                HTML
-                            )
+                            resourceManager.saveTempFile(url, it.toByteArray(), DOCUMENT, HTML)
                         }
                         val linkContent = proc.extractLinkContent()
+                        linkContent.content?.let {
+                            resourceManager.saveTempFile(url, it.toByteArray(), READABLE, HTML)
+                        }
                         val matchedGroups = groupSetService.matchWithContent(linkContent.content)
                         log.info("Link processing worker completing suggestion request for url={}", url)
                         deferred.complete(Suggestion(proc.resolvedUrl, linkContent.title, thumbPath, screenPath, linkContent.keywords,
