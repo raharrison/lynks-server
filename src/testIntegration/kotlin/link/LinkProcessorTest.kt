@@ -23,11 +23,12 @@ class LinkProcessorTest: ServerTest() {
 
         processors.first().use {
             it.init()
-            assertThat(it.title).isEqualTo("Ryan Harrison - My blog, portfolio and technology related ramblings")
+            val linkContent = it.extractLinkContent()
+            assertThat(linkContent.title).isEqualTo("My blog, portfolio and technology related ramblings")
+            assertThat(linkContent.content).isNotBlank()
+            assertThat(linkContent.keywords).contains("technology", "programming", "java", "blog", "code", "software")
             assertThat(it.html).isNotBlank()
-            assertThat(it.content).isNotBlank()
             assertThat(it.resolvedUrl).isEqualTo("$url/")
-            assertThat(it.keywords).contains("technology", "programming", "java", "blog", "code", "software")
             assertThat(it.matches()).isTrue()
 
             val screen = it.generateScreenshot()

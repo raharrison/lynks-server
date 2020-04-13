@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.node.ArrayNode
 import common.BaseProperties
 import kotlinx.coroutines.runBlocking
+import link.extract.LinkContent
 import resource.JPG
 import resource.ResourceRetriever
 import task.YoutubeDlTask
@@ -47,21 +48,23 @@ class YoutubeLinkProcessor(private val url: String, private val retriever: Resou
         return null
     }
 
-    override val html: String? = null
-    override val content: String? = null
+    override suspend fun extractLinkContent(): LinkContent {
+        val title = videoInfo.value?.get("title")?.asText() ?: ""
+        val keywords = extractKeywords()
+        return LinkContent(title = title, keywords = keywords)
+    }
 
-    override val title: String get() = videoInfo.value?.get("title")?.asText() ?: ""
+    private fun extractKeywords(): Set<String> {
+        val keywords = videoInfo.value?.get("keywords")
+        if (keywords is ArrayNode) {
+            return keywords.map { it.textValue() }.toSet()
+        }
+        return emptySet()
+    }
+
+    override val html: String? = null
 
     override val resolvedUrl: String get() = url
-
-    override val keywords: Set<String>
-        get() {
-            val keywords = videoInfo.value?.get("keywords")
-            if (keywords is ArrayNode) {
-                return keywords.map { it.textValue() }.toSet()
-            }
-            return emptySet()
-        }
 
     override fun close() {
     }

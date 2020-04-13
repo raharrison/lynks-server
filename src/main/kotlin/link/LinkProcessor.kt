@@ -1,17 +1,14 @@
 package link
 
-import com.chimbori.crux.articles.Article
-import com.chimbori.crux.articles.ArticleExtractor
 import common.BaseProperties
 import io.webfolder.cdp.AdaptiveProcessManager
 import io.webfolder.cdp.Launcher
 import io.webfolder.cdp.event.Events
 import io.webfolder.cdp.event.network.ResponseReceived
 import io.webfolder.cdp.session.Session
-import resource.JPG
-import resource.PDF
-import resource.PNG
-import resource.ResourceType
+import link.extract.ContentExtractor
+import link.extract.LinkContent
+import resource.*
 import task.DiscussionFinderTask
 import task.LinkProcessingTask
 import task.LinkSummarizerTask
@@ -56,27 +53,19 @@ interface LinkProcessor : AutoCloseable {
         props.addTask("Generate Summary", LinkSummarizerTask.build())
     }
 
+    suspend fun extractLinkContent(): LinkContent
+
     val html: String?
-
-    val content: String?
-
-    val title: String
 
     val resolvedUrl: String
 
-    val keywords: Set<String>
-
 }
-
-private val log = loggerFor<DefaultLinkProcessor>()
 
 open class DefaultLinkProcessor(private val url: String) : LinkProcessor {
 
-    private var session: Session? = null
+    private val log = loggerFor<DefaultLinkProcessor>()
 
-    private val article = lazy {
-        extractArticle()
-    }
+    private var session: Session? = null
 
     override suspend fun init() {
         session = connectSession(url)
@@ -106,14 +95,6 @@ open class DefaultLinkProcessor(private val url: String) : LinkProcessor {
             session.close()
             throw IllegalArgumentException("Could not navigate to $url")
         }
-    }
-
-    private fun extractArticle(): Article {
-        log.info("Performing article extraction for url={}", resolvedUrl)
-        return ArticleExtractor.with(resolvedUrl, html)
-            .extractMetadata()
-            .extractContent()
-            .article()
     }
 
     companion object {
@@ -182,15 +163,14 @@ open class DefaultLinkProcessor(private val url: String) : LinkProcessor {
         )
     }
 
+    override suspend fun extractLinkContent(): LinkContent {
+        val extractor = ContentExtractor(ResourceManager()) // TODO: Cleanup
+        return extractor.extractContent(resolvedUrl, html)
+    }
+
     override val html: String get() = session?.content ?: throw sessionNotInit()
 
-    override val content: String? get() = article.value.document.toString()
-
-    override val title: String get() = session?.title ?: throw sessionNotInit()
-
     override val resolvedUrl: String get() = session?.location ?: throw sessionNotInit()
-
-    override val keywords: Set<String> get() = article.value.keywords.toSet()
 
     private fun sessionNotInit() = IllegalStateException("Web session has not been initialised")
 

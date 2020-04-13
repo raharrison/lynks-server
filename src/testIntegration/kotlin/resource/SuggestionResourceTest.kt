@@ -35,7 +35,7 @@ class SuggestionResourceTest: ServerTest() {
                 .then()
                 .extract().`as`(Suggestion::class.java)
         assertThat(suggestion.url).isEqualTo("https://ryanharrison.co.uk/")
-        assertThat(suggestion.title).isEqualTo("Ryan Harrison - My blog, portfolio and technology related ramblings")
+        assertThat(suggestion.title).isEqualTo("My blog, portfolio and technology related ramblings")
         assertThat(suggestion.screenshot).isNotNull()
         assertThat(suggestion.thumbnail).isNotNull()
         assertThat(suggestion.keywords).isNotEmpty()

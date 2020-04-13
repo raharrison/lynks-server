@@ -22,32 +22,31 @@ class YoutubeLinkProcessorTest {
     fun testGetAttributes() = runBlocking {
         processor.use {
             assertThat(processor.html).isNull()
-            assertThat(processor.content).isNull()
             assertThat(processor.resolvedUrl).isEqualTo(url)
             assertThat(processor.printPage()).isNull()
         }
     }
 
     @Test
-    fun testGetTitle() {
+    fun testGetTitle() = runBlocking {
         val vidInfo = this.javaClass.getResource("/get_video_info.txt").readText()
         coEvery { retriever.getString(any()) } returns vidInfo
-        assertThat(processor.title).isEqualTo("Savoy - How U Like Me Now (feat. Roniit) [Monstercat Release]")
+        assertThat(processor.extractLinkContent().title).isEqualTo("Savoy - How U Like Me Now (feat. Roniit) [Monstercat Release]")
         coVerify(exactly = 1) { retriever.getString(any()) }
     }
 
     @Test
-    fun testGetKeywords() {
+    fun testGetKeywords() = runBlocking {
         val vidInfo = this.javaClass.getResource("/get_video_info.txt").readText()
         coEvery { retriever.getString(any()) } returns vidInfo
-        assertThat(processor.keywords).hasSizeGreaterThan(5)
+        assertThat(processor.extractLinkContent().keywords).hasSizeGreaterThan(5)
         coVerify(exactly = 1) { retriever.getString(any()) }
     }
 
     @Test
-    fun testGetTitleBadInfo() {
+    fun testGetTitleBadInfo() = runBlocking {
         coEvery { retriever.getString(any()) } returns null
-        assertThat(processor.title).isEmpty()
+        assertThat(processor.extractLinkContent().title).isEmpty()
     }
 
     @Test
