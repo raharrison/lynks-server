@@ -58,17 +58,16 @@ class LinkProcessorWorkerTest {
 
             val thumb = ImageResource(byteArrayOf(1, 2, 3), "jpg")
             val screen = ImageResource(byteArrayOf(4, 5, 6), "png")
-            val html = "<html>"
-            val content = "article content"
+            val html = "<html><body><p>article content<p></body></html>"
             val processor = mockk<LinkProcessor>(relaxUnitFun = true)
-            val linkContent = LinkContent("title", content)
+            val linkContent = LinkContent("title", html)
 
             coEvery { notifyService.accept(any(), ofType(Link::class)) } just Runs
             coEvery { processor.generateThumbnail() } returns thumb
             coEvery { processor.generateScreenshot() } returns screen
-            coEvery { processor.html } returns html
             coEvery { processor.extractLinkContent() } returns linkContent
             coEvery { processor.enrich(link.props) } just Runs
+            coEvery { processor.html } returns html
             every { processor.close() } just Runs
 
             coEvery { processorFactory.createProcessors(link.url) } returns listOf(processor)
@@ -96,7 +95,7 @@ class LinkProcessorWorkerTest {
             verify(exactly = 1) { linkService.mergeProps(eq("id1"), any()) }
             verify(exactly = 1) { linkService.update(link) }
             coVerify(exactly = 1) { notifyService.accept(any(), ofType(Link::class)) }
-            assertThat(link.content).isEqualTo(content)
+            assertThat(link.content).isEqualTo("article content")
 
             coVerify(exactly = 1) { processor.generateThumbnail() }
             coVerify(exactly = 1) { processor.generateScreenshot() }
@@ -125,6 +124,14 @@ class LinkProcessorWorkerTest {
                     match { it.startsWith("document") },
                     ResourceType.DOCUMENT,
                     html.toByteArray()
+                )
+            }
+            verify(exactly = 1) {
+                resourceManager.saveGeneratedResource(
+                    link.id,
+                    match { it.startsWith("readable") },
+                    ResourceType.READABLE,
+                    linkContent.content?.toByteArray() ?: throw IllegalStateException("cannot be null")
                 )
             }
             verify(exactly = 1) { entryAuditService.acceptAuditEvent(link.id, any(), any()) }
@@ -179,6 +186,9 @@ class LinkProcessorWorkerTest {
             verify(exactly = 0) {
                 resourceManager.saveGeneratedResource(link.id, any(), ResourceType.DOCUMENT, any())
             }
+            verify(exactly = 0) {
+                resourceManager.saveGeneratedResource(link.id, any(), ResourceType.READABLE, any())
+            }
             verify(exactly = 1) {
                 resourceManager.saveGeneratedResource(
                     link.id,
@@ -194,9 +204,9 @@ class LinkProcessorWorkerTest {
         fun testDefaultPersistAlreadyProcessed() = runBlocking(TestCoroutineContext()) {
             val link = Link("id1", "title", "google.com", "google.com", "", 100, 100)
 
-            val docResource = Resource("rid", "id1","name", "html", ResourceType.DOCUMENT, 10, 123, 123)
+            val docResource = Resource("rid", "id1","name", "html", ResourceType.READABLE, 10, 123, 123)
             withContext(Dispatchers.IO) {
-                Files.write(resourcePath, byteArrayOf(1, 2))
+                Files.writeString(resourcePath, "<html><body><p>article content<p></body></html>")
             }
 
             val processor = mockk<LinkProcessor>(relaxUnitFun = true)
@@ -215,6 +225,7 @@ class LinkProcessorWorkerTest {
             channel.send(PersistLinkProcessingRequest(link, ResourceType.all(), true))
             channel.close()
 
+            assertThat(link.content).isEqualTo("article content")
             coVerify(exactly = 1) { processorFactory.createProcessors(link.url) }
             verify(exactly = 1) { processor.close() }
             verify(exactly = 1) { linkService.mergeProps(eq("id1"), any()) }

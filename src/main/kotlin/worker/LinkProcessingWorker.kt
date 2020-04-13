@@ -10,6 +10,7 @@ import kotlinx.coroutines.coroutineScope
 import link.DefaultLinkProcessor
 import link.LinkProcessor
 import link.YoutubeLinkProcessor
+import link.extract.ExtractUtils
 import notify.Notification
 import notify.NotifyService
 import resource.*
@@ -57,7 +58,7 @@ class LinkProcessorWorker(
         try {
             val movedResources = resourceManager.moveTempFiles(link.id, link.url)
             findExistingReadableContent(movedResources)?.also {
-                link.content = it
+                link.content = ExtractUtils.extractTextFromHtmlDoc(it)
             }
             val shouldProcess = process && movedResources.isEmpty()
 
@@ -107,7 +108,7 @@ class LinkProcessorWorker(
         if (resourceSet.contains(DOCUMENT)) {
             val linkContent = proc.extractLinkContent()
             linkContent.content?.let {
-                link.content = linkContent.content
+                link.content = ExtractUtils.extractTextFromHtmlDoc(it)
                 saveResource(link.id, READABLE, HTML, it.toByteArray())
             }
             proc.html?.let {
@@ -133,7 +134,7 @@ class LinkProcessorWorker(
     }
 
     private fun findExistingReadableContent(resources: List<Resource>): String? {
-        return resources.find { it.type == GENERATED }?.let {
+        return resources.find { it.type == READABLE }?.let {
             return resourceManager.getResourceAsFile(it.id)?.second?.readText()
         }
     }
