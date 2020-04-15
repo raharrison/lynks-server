@@ -195,7 +195,7 @@ class LinkResourceTest: ServerTest() {
 
     @Test
     fun testGetVersion() {
-        val newLink = NewLink(null, "title4", "gmail.com")
+        val newLink = NewLink(null, "title4", "gmail.com", emptyList(), emptyList(), false)
         val created = given()
                 .contentType(ContentType.JSON)
                 .body(newLink)
@@ -211,7 +211,7 @@ class LinkResourceTest: ServerTest() {
         assertThat(created.dateCreated).isEqualTo(created.dateUpdated)
 
         // update
-        val updateLink = NewLink(created.id, "edited", "google.com")
+        val updateLink = NewLink(created.id, "edited", "google.com", emptyList(), emptyList(), false)
         val updated = given()
                 .contentType(ContentType.JSON)
                 .body(updateLink)

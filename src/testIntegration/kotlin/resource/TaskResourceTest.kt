@@ -16,7 +16,7 @@ class TaskResourceTest: ServerTest() {
     fun createEntries() {
         val props = BaseProperties()
         props.addTask(TaskDefinition("t1", "dummy", LinkProcessingTask::class.qualifiedName!!))
-        createDummyEntry("e1", "title1", "ryanharrison.co.uk", EntryType.LINK, props)
+        createDummyEntry("e11", "title1", "https://ryanharrison.co.uk", EntryType.LINK, props)
     }
 
     @Test
@@ -28,14 +28,14 @@ class TaskResourceTest: ServerTest() {
 
     @Test
     fun testInvalidTaskId() {
-        post("/entry/{eid}/task/{tid}", "e1", "invalid")
+        post("/entry/{eid}/task/{tid}", "e11", "invalid")
                 .then()
                 .statusCode(404)
     }
 
     @Test
     fun testRunValidTask() {
-        post("/entry/{eid}/task/{tid}", "e1", "t1")
+        post("/entry/{eid}/task/{tid}", "e11", "t1")
                 .then()
                 .statusCode(200)
     }
