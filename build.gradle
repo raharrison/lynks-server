@@ -12,7 +12,7 @@ buildscript {
     ext.logback_version = '1.2.3'
     ext.konf_version = '0.22.1'
     ext.guava_version = '29.0-jre'
-    ext.commonslang_version = '3.9'
+    ext.commonslang_version = '3.10'
     ext.crux_version = '2.2.0'
     ext.jsoup_version = '1.9.2'
     ext.cdp4j_version = '3.0.15'
