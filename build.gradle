@@ -1,23 +1,27 @@
 buildscript {
-    ext.kotlin_version = '1.3.70'
+    ext.kotlin_version = '1.3.72'
     ext.ktor_version = '1.3.2'
 
-    ext.exposed_version = '0.23.1'
-    ext.h2_version = '1.4.199'
-    ext.hikari_version = '3.4.2'
+    ext.exposed_version = '0.26.1'
+    ext.h2_version = '1.4.200'
+    ext.hikari_version = '3.4.5'
 
     ext.flexmark_version = '0.61.0'
-    ext.handlebars_version = '4.1.2'
+    ext.handlebars_version = '4.2.0'
     ext.commons_email_version = '1.5'
-
     ext.logback_version = '1.2.3'
     ext.konf_version = '0.22.1'
-    ext.guava_version = '28.2-jre'
+    ext.guava_version = '29.0-jre'
+    ext.commonslang_version = '3.9'
+    ext.crux_version = '2.2.0'
+    ext.jsoup_version = '1.9.2'
+    ext.cdp4j_version = '3.0.15'
+    ext.skedule_version = '0.4.0'
 
-    ext.rest_assured_version = '4.2.0'
-    ext.junit_version = '5.5.2'
-    ext.assertj_version = '3.15.0'
-    ext.mockk_version = '1.9.3'
+    ext.rest_assured_version = '4.3.1'
+    ext.junit_version = '5.6.2'
+    ext.assertj_version = '3.16.1'
+    ext.mockk_version = '1.10.0'
 
     repositories {
         mavenCentral()
@@ -96,13 +100,13 @@ dependencies {
     implementation "com.vladsch.flexmark:flexmark-ext-tables:$flexmark_version"
     implementation "com.vladsch.flexmark:flexmark-ext-autolink:$flexmark_version"
 
-    implementation "io.webfolder:cdp4j:3.0.15"
+    implementation "io.webfolder:cdp4j:$cdp4j_version"
 
-    implementation "com.github.chimbori:crux:2.2.0"
-    implementation "org.apache.commons:commons-lang3:3.9"
-    implementation "org.jsoup:jsoup:1.9.2"
+    implementation "com.github.chimbori:crux:$crux_version"
+    implementation "org.apache.commons:commons-lang3:$commonslang_version"
+    implementation "org.jsoup:jsoup:$jsoup_version"
 
-    implementation 'com.github.shyiko.skedule:skedule:0.4.0'
+    implementation 'com.github.shyiko.skedule:skedule:$skedule_version'
     implementation "com.google.guava:guava:$guava_version"
     implementation "com.github.jknack:handlebars:$handlebars_version"
     implementation "org.apache.commons:commons-email:$commons_email_version"
