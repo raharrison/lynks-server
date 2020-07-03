@@ -3,7 +3,7 @@ buildscript {
     ext.ktor_version = '1.3.2'
 
     ext.exposed_version = '0.26.1'
-    ext.h2_version = '1.4.200'
+    ext.h2_version = '1.4.199'
     ext.hikari_version = '3.4.5'
 
     ext.flexmark_version = '0.61.0'
@@ -106,7 +106,7 @@ dependencies {
     implementation "org.apache.commons:commons-lang3:$commonslang_version"
     implementation "org.jsoup:jsoup:$jsoup_version"
 
-    implementation 'com.github.shyiko.skedule:skedule:$skedule_version'
+    implementation "com.github.shyiko.skedule:skedule:$skedule_version"
     implementation "com.google.guava:guava:$guava_version"
     implementation "com.github.jknack:handlebars:$handlebars_version"
     implementation "org.apache.commons:commons-email:$commons_email_version"
