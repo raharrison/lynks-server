@@ -42,7 +42,9 @@ class LinkContentExtractorTest  {
         assertThat(linkContent.title).isEqualTo(title)
         assertThat(linkContent.imageUrl).isNotNull()
         assertThat(linkContent.keywords).hasSize(7).contains("kotlin", "github", "actions", "build", "java")
-        assertThat(linkContent.content).doesNotContain("<html>").doesNotContain("<script>").doesNotStartWith(title)
+        assertThat(linkContent.rawContent).isEqualTo(rawHtml)
+        assertThat(linkContent.extractedContent).doesNotContain("<html>").doesNotContain("<script>")
+            .doesNotStartWith(title)
     }
 
     @Test
@@ -65,7 +67,9 @@ class LinkContentExtractorTest  {
         assertThat(linkContent.title).isEqualTo(title)
         assertThat(linkContent.imageUrl).isNotNull()
         assertThat(linkContent.keywords).hasSize(7).contains("kotlin", "github", "actions", "build", "java")
-        assertThat(linkContent.content).doesNotContain("<html>").doesNotContain("<script>").doesNotStartWith(title)
+        assertThat(linkContent.rawContent).isEqualTo(rawHtml)
+        assertThat(linkContent.extractedContent).doesNotContain("<html>").doesNotContain("<script>")
+            .doesNotStartWith(title)
     }
 
 }

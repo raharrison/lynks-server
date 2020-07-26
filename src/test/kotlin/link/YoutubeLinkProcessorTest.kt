@@ -9,8 +9,10 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.entry
 import org.junit.jupiter.api.Test
 import resource.ResourceRetriever
+import resource.ResourceType
 import task.LinkProcessingTask
 import task.YoutubeDlTask
+import java.util.*
 
 class YoutubeLinkProcessorTest {
 
@@ -21,9 +23,8 @@ class YoutubeLinkProcessorTest {
     @Test
     fun testGetAttributes() = runBlocking {
         processor.use {
-            assertThat(processor.html).isNull()
             assertThat(processor.resolvedUrl).isEqualTo(url)
-            assertThat(processor.printPage()).isNull()
+            Unit
         }
     }
 
@@ -31,7 +32,7 @@ class YoutubeLinkProcessorTest {
     fun testGetTitle() = runBlocking {
         val vidInfo = this.javaClass.getResource("/get_video_info.txt").readText()
         coEvery { retriever.getString(any()) } returns vidInfo
-        assertThat(processor.extractLinkContent().title).isEqualTo("Savoy - How U Like Me Now (feat. Roniit) [Monstercat Release]")
+        assertThat(processor.linkContent.title).isEqualTo("Savoy - How U Like Me Now (feat. Roniit) [Monstercat Release]")
         coVerify(exactly = 1) { retriever.getString(any()) }
     }
 
@@ -39,14 +40,14 @@ class YoutubeLinkProcessorTest {
     fun testGetKeywords() = runBlocking {
         val vidInfo = this.javaClass.getResource("/get_video_info.txt").readText()
         coEvery { retriever.getString(any()) } returns vidInfo
-        assertThat(processor.extractLinkContent().keywords).hasSizeGreaterThan(5)
+        assertThat(processor.linkContent.keywords).hasSizeGreaterThan(5)
         coVerify(exactly = 1) { retriever.getString(any()) }
     }
 
     @Test
     fun testGetTitleBadInfo() = runBlocking {
         coEvery { retriever.getString(any()) } returns null
-        assertThat(processor.extractLinkContent().title).isEmpty()
+        assertThat(processor.linkContent.title).isEmpty()
     }
 
     @Test
@@ -59,23 +60,27 @@ class YoutubeLinkProcessorTest {
 
     @Test
     fun testGenerateThumbnail() = runBlocking {
-        val img = byteArrayOf(1,2,3,4,5)
+        val img = byteArrayOf(1, 2, 3, 4, 5)
         coEvery { retriever.getFile(any()) } returns img
-        val thumb = processor.generateThumbnail()
-        assertThat(thumb).isNotNull
-        assertThat(thumb?.extension).isEqualTo("jpg")
-        assertThat(thumb?.image).isEqualTo(img)
+        val resourceSet = EnumSet.of(ResourceType.THUMBNAIL)
+        val processedResources = processor.process(resourceSet)
+        assertThat(processedResources).hasSize(1)
+        val thumb = processedResources[ResourceType.THUMBNAIL] as GeneratedImageResource
+        assertThat(thumb.extension).isEqualTo("jpg")
+        assertThat(thumb.image).isEqualTo(img)
         Unit
     }
 
     @Test
-    fun testGenerateScreenshot() = runBlocking {
-        val img = byteArrayOf(5,6,7,8,9)
+    fun testGeneratePreview() = runBlocking {
+        val img = byteArrayOf(5, 6, 7, 8, 9)
         coEvery { retriever.getFile(any()) } returns img
-        val thumb = processor.generateScreenshot()
-        assertThat(thumb).isNotNull
-        assertThat(thumb?.extension).isEqualTo("jpg")
-        assertThat(thumb?.image).isEqualTo(img)
+        val resourceSet = EnumSet.of(ResourceType.PREVIEW)
+        val processedResources = processor.process(resourceSet)
+        assertThat(processedResources).hasSize(1)
+        val preview = processedResources[ResourceType.PREVIEW] as GeneratedImageResource
+        assertThat(preview.extension).isEqualTo("jpg")
+        assertThat(preview.image).isEqualTo(img)
         Unit
     }
 
@@ -83,7 +88,8 @@ class YoutubeLinkProcessorTest {
     fun testEnrichAttributes() = runBlocking {
         val props = BaseProperties()
         processor.enrich(props)
-        assertThat(props.attributes).hasSize(1).containsExactly(entry("embedUrl", "https://www.youtube.com/embed/DAiEUeM8Uv0"))
+        assertThat(props.attributes).hasSize(1)
+            .containsExactly(entry("embedUrl", "https://www.youtube.com/embed/DAiEUeM8Uv0"))
         Unit
     }
 
@@ -91,8 +97,10 @@ class YoutubeLinkProcessorTest {
     fun testEnrichTasks() = runBlocking {
         val props = BaseProperties()
         processor.enrich(props)
-        assertThat(props.tasks).extracting("description").contains("Process Link", "Download Audio", "Download Video (max 720p)", "Download Video (max 1080p)")
-        assertThat(props.tasks).extracting("className").contains(LinkProcessingTask::class.qualifiedName, YoutubeDlTask::class.qualifiedName)
+        assertThat(props.tasks).extracting("description")
+            .contains("Process Link", "Download Audio", "Download Video (max 720p)", "Download Video (max 1080p)")
+        assertThat(props.tasks).extracting("className")
+            .contains(LinkProcessingTask::class.qualifiedName, YoutubeDlTask::class.qualifiedName)
         val types = props.tasks.mapNotNull {
             it.input["type"]
         }

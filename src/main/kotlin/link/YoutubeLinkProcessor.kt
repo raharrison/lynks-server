@@ -4,18 +4,25 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.node.ArrayNode
 import common.BaseProperties
 import kotlinx.coroutines.runBlocking
+import link.extract.ExtractionPolicy
 import link.extract.LinkContent
 import resource.JPG
 import resource.ResourceRetriever
+import resource.ResourceType
 import task.YoutubeDlTask
 import util.JsonMapper
 import util.URLUtils
 import util.loggerFor
 import java.net.URLEncoder
+import java.util.*
 
 private val log = loggerFor<YoutubeLinkProcessor>()
 
-class YoutubeLinkProcessor(private val url: String, private val retriever: ResourceRetriever) : LinkProcessor {
+class YoutubeLinkProcessor(
+    extractionPolicy: ExtractionPolicy,
+    url: String,
+    private val retriever: ResourceRetriever
+) : LinkProcessor(extractionPolicy, url, retriever) {
 
     private lateinit var videoId: String
 
@@ -48,12 +55,6 @@ class YoutubeLinkProcessor(private val url: String, private val retriever: Resou
         return null
     }
 
-    override suspend fun extractLinkContent(): LinkContent {
-        val title = videoInfo.value?.get("title")?.asText() ?: ""
-        val keywords = extractKeywords()
-        return LinkContent(title = title, keywords = keywords)
-    }
-
     private fun extractKeywords(): Set<String> {
         val keywords = videoInfo.value?.get("keywords")
         if (keywords is ArrayNode) {
@@ -62,14 +63,35 @@ class YoutubeLinkProcessor(private val url: String, private val retriever: Resou
         return emptySet()
     }
 
-    override val html: String? = null
-
     override val resolvedUrl: String get() = url
 
     override fun close() {
     }
 
     override fun matches(): Boolean = URLUtils.extractSource(url) == "youtube.com"
+
+    override val linkContent: LinkContent by lazy {
+        val title = videoInfo.value?.get("title")?.asText() ?: ""
+        val keywords = extractKeywords()
+        LinkContent(title = title, keywords = keywords)
+    }
+
+    override suspend fun process(resourceSet: EnumSet<ResourceType>): Map<ResourceType, GeneratedResource> {
+        val generatedResources = mutableMapOf<ResourceType, GeneratedResource>()
+
+        if (resourceSet.contains(ResourceType.THUMBNAIL)) {
+            generateThumbnail()?.let {
+                generatedResources[ResourceType.THUMBNAIL] = it
+            }
+        }
+        if (resourceSet.contains(ResourceType.PREVIEW)) {
+            generatePreview()?.let {
+                generatedResources[ResourceType.PREVIEW] = it
+            }
+        }
+
+        return generatedResources
+    }
 
     private fun embedUrl(): String = "https://www.youtube.com/embed/${extractVideoId()}"
 
@@ -80,19 +102,17 @@ class YoutubeLinkProcessor(private val url: String, private val retriever: Resou
         return retriever.getString(url)
     }
 
-    override suspend fun generateThumbnail(): ImageResource? {
+    private suspend fun generateThumbnail(): GeneratedImageResource? {
         log.info("Capturing thumbnail for Youtube video videoId={}", videoId)
         val dl = "https://img.youtube.com/vi/$videoId/mqdefault.jpg"
-        return retriever.getFile(dl)?.let { ImageResource(it, JPG) }
+        return retriever.getFile(dl)?.let { GeneratedImageResource(it, JPG) }
     }
 
-    override suspend fun generateScreenshot(): ImageResource? {
-        log.info("Capturing screenshot for Youtube video videoId={}", videoId)
+    private suspend fun generatePreview(): GeneratedImageResource? {
+        log.info("Capturing preview for Youtube video videoId={}", videoId)
         val dl = "https://img.youtube.com/vi/$videoId/maxresdefault.jpg"
-        return retriever.getFile(dl)?.let { ImageResource(it, JPG) }
+        return retriever.getFile(dl)?.let { GeneratedImageResource(it, JPG) }
     }
-
-    override suspend fun printPage(): ImageResource? = null
 
     override suspend fun enrich(props: BaseProperties) {
         super.enrich(props)

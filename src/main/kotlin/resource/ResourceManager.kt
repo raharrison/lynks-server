@@ -75,7 +75,23 @@ class ResourceManager {
         return emptyList()
     }
 
-    fun saveGeneratedResource(id: String = RandomUtils.generateUid(), entryId: String, name: String, extension: String, type: ResourceType, size: Long): Resource {
+    fun deleteTempFiles(src: String) {
+        val tempPath = constructTempPath(src)
+        if (Files.exists(tempPath)) {
+            FileUtils.deleteDirectories(listOf(tempPath))
+            log.info("Temp files deleted for src={}", src)
+        }
+        log.debug("No temporary files to move for src={}", src)
+    }
+
+    fun saveGeneratedResource(
+        id: String = RandomUtils.generateUid(),
+        entryId: String,
+        name: String,
+        extension: String,
+        type: ResourceType,
+        size: Long
+    ): Resource {
         val time = System.currentTimeMillis()
         return transaction {
             Resources.insert {

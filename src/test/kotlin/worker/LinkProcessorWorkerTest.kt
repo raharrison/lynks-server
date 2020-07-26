@@ -13,7 +13,8 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
-import link.ImageResource
+import link.GeneratedGeneratedImageResource
+import link.GeneratedImageResource
 import link.LinkProcessor
 import link.extract.LinkContent
 import notify.NotifyService
@@ -56,8 +57,8 @@ class LinkProcessorWorkerTest {
         fun testDefaultPersistAllTypes() = runBlocking(TestCoroutineContext()) {
             val link = Link("id1", "title", "google.com", "google.com", "", 100, 100)
 
-            val thumb = ImageResource(byteArrayOf(1, 2, 3), "jpg")
-            val screen = ImageResource(byteArrayOf(4, 5, 6), "png")
+            val thumb = GeneratedImageResource(byteArrayOf(1, 2, 3), "jpg")
+            val screen = GeneratedImageResource(byteArrayOf(4, 5, 6), "png")
             val html = "<html><body><p>article content<p></body></html>"
             val processor = mockk<LinkProcessor>(relaxUnitFun = true)
             val linkContent = LinkContent("title", html)
@@ -141,7 +142,7 @@ class LinkProcessorWorkerTest {
         fun testDefaultPersistSingleType() = runBlocking(TestCoroutineContext()) {
             val link = Link("id1", "title", "google.com", "google.com", "", 100, 100)
 
-            val screen = ImageResource(byteArrayOf(4, 5, 6), "png")
+            val screen = GeneratedImageResource(byteArrayOf(4, 5, 6), "png")
             val processor = mockk<LinkProcessor>(relaxUnitFun = true)
 
             coEvery { notifyService.accept(any(), ofType(Link::class)) } just Runs
@@ -342,8 +343,8 @@ class LinkProcessorWorkerTest {
         fun testDefaultSuggest() = runBlocking(TestCoroutineContext()) {
             val url = "google.com"
 
-            val thumb = ImageResource(byteArrayOf(1, 2, 3), "jpg")
-            val screen = ImageResource(byteArrayOf(4, 5, 6), "png")
+            val thumb = GeneratedImageResource(byteArrayOf(1, 2, 3), "jpg")
+            val screen = GeneratedImageResource(byteArrayOf(4, 5, 6), "png")
             val html = "<html><body><p>article content<p></body></html>"
             val processor = mockk<LinkProcessor>(relaxUnitFun = true)
 

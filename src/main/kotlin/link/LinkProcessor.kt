@@ -6,72 +6,64 @@ import io.webfolder.cdp.Launcher
 import io.webfolder.cdp.event.Events
 import io.webfolder.cdp.event.network.ResponseReceived
 import io.webfolder.cdp.session.Session
+import kotlinx.coroutines.runBlocking
+import link.extract.ExtractionPolicy
+import link.extract.FullLinkContentExtractor
 import link.extract.LinkContent
-import link.extract.LinkContentExtractor
-import resource.JPG
-import resource.PDF
-import resource.PNG
-import resource.ResourceType
+import link.extract.PartialLinkContentExtractor
+import resource.*
+import resource.ResourceType.*
 import task.DiscussionFinderTask
 import task.LinkProcessingTask
 import task.LinkSummarizerTask
+import util.FileUtils
+import util.ImageUtils
 import util.loggerFor
-import java.awt.Color
-import java.awt.Image
-import java.awt.image.BufferedImage
-import java.io.ByteArrayInputStream
-import java.io.ByteArrayOutputStream
 import java.util.*
-import javax.imageio.ImageIO
 
-data class ImageResource(val image: ByteArray, val extension: String) {
+abstract class LinkProcessor(
+    protected val extractionPolicy: ExtractionPolicy,
+    protected val url: String,
+    protected val resourceRetriever: ResourceRetriever
+) :
+    AutoCloseable {
 
-    override fun equals(other: Any?): Boolean {
-        if (other != null && other is ImageResource) {
-            return image contentEquals other.image && extension == other.extension
-        }
-        return false
-    }
+    abstract suspend fun init()
 
-    override fun hashCode(): Int {
-        return Objects.hash(image.contentHashCode(), extension)
-    }
-}
+    abstract fun matches(): Boolean
 
-interface LinkProcessor : AutoCloseable {
+    abstract val linkContent: LinkContent
 
-    suspend fun init()
+    abstract suspend fun process(resourceSet: EnumSet<ResourceType>): Map<ResourceType, GeneratedResource>
 
-    fun matches(): Boolean
-
-    suspend fun generateThumbnail(): ImageResource?
-
-    suspend fun generateScreenshot(): ImageResource?
-
-    suspend fun printPage(): ImageResource?
-
-    suspend fun enrich(props: BaseProperties) {
+    open suspend fun enrich(props: BaseProperties) {
         props.addTask("Process Link", LinkProcessingTask.build())
         props.addTask("Find Discussions", DiscussionFinderTask.build())
-        props.addTask("Generate Summary", LinkSummarizerTask.build())
     }
 
-    suspend fun extractLinkContent(): LinkContent
-
-    val html: String?
-
-    val resolvedUrl: String
+    abstract val resolvedUrl: String
 
 }
 
-open class DefaultLinkProcessor(private val url: String) : LinkProcessor {
+open class DefaultLinkProcessor(
+    extractionPolicy: ExtractionPolicy,
+    url: String,
+    resourceRetriever: ResourceRetriever
+) :
+    LinkProcessor(extractionPolicy, url, resourceRetriever) {
 
     private val log = loggerFor<DefaultLinkProcessor>()
 
     private var session: Session? = null
 
+    private val html: String by lazy {
+        retrieveHtml()
+    }
+
     override suspend fun init() {
-        session = connectSession(url)
+        if (extractionPolicy == ExtractionPolicy.FULL) {
+            session = connectSession(url)
+        }
     }
 
     private fun connectSession(url: String): Session {
@@ -122,58 +114,123 @@ open class DefaultLinkProcessor(private val url: String) : LinkProcessor {
 
     override suspend fun enrich(props: BaseProperties) {
         super.enrich(props)
-        props.addTask("Generate Screenshot", LinkProcessingTask.build(ResourceType.SCREENSHOT))
-        props.addTask("Generate Document", LinkProcessingTask.build(ResourceType.DOCUMENT))
-        props.addTask("Generate Thumbnail", LinkProcessingTask.build(ResourceType.THUMBNAIL))
+        props.addTask("Generate Screenshot", LinkProcessingTask.build(SCREENSHOT))
+        props.addTask("Generate Document", LinkProcessingTask.build(DOCUMENT))
+        props.addTask("Generate Summary", LinkSummarizerTask.build())
     }
 
     override fun matches(): Boolean = true
 
-    override suspend fun generateThumbnail(): ImageResource {
-        if (session == null) throw sessionNotInit()
-        synchronized(session!!) {
-            log.info("Capturing thumbnail for url={}", resolvedUrl)
-            val screen = session?.command?.page?.captureScreenshot()
-            val img = ImageIO.read(ByteArrayInputStream(screen))
-            val scaledImage = img.getScaledInstance(640, 360, Image.SCALE_SMOOTH)
-            val imageBuff = BufferedImage(640, 360, BufferedImage.TYPE_INT_RGB)
-            imageBuff.graphics.drawImage(scaledImage, 0, 0, Color.BLACK, null)
-            imageBuff.graphics.dispose()
-            val buffer = ByteArrayOutputStream()
-            ImageIO.write(imageBuff, "jpg", buffer)
-            return ImageResource(buffer.toByteArray(), JPG)
+    override suspend fun process(resourceSet: EnumSet<ResourceType>): Map<ResourceType, GeneratedResource> {
+        val generatedResources = mutableMapOf<ResourceType, GeneratedResource>()
+
+        if (resourceSet.contains(PREVIEW) || resourceSet.contains(THUMBNAIL)) {
+            val preview = generatePreview(linkContent)
+            addResource(generatedResources, PREVIEW, preview)
+            addResource(generatedResources, THUMBNAIL, generateThumbnail(preview))
+        }
+        if (resourceSet.contains(READABLE)) {
+            linkContent.extractedContent?.let {
+                addResource(generatedResources, READABLE, GeneratedDocResource(it, HTML))
+            }
+        }
+        if (resourceSet.contains(SCREENSHOT)) {
+            addResource(generatedResources, SCREENSHOT, generateScreenshot())
+        }
+        if (resourceSet.contains(PAGE)) {
+            addResource(generatedResources, PAGE, GeneratedDocResource(html, HTML))
+        }
+        if (resourceSet.contains(DOCUMENT)) {
+            addResource(generatedResources, DOCUMENT, printPage())
+        }
+
+        return generatedResources
+    }
+
+    private fun addResource(
+        resources: MutableMap<ResourceType, GeneratedResource>,
+        resourceType: ResourceType,
+        resource: GeneratedResource?
+    ) {
+        if (resource != null) {
+            resources[resourceType] = resource
+        } else {
+            log.info("Generated resource for {} is empty, not adding to results", resourceType)
         }
     }
 
-    override suspend fun generateScreenshot(): ImageResource {
+    override val linkContent: LinkContent by lazy {
+        val linkContentExtractor =
+            if (extractionPolicy == ExtractionPolicy.FULL) FullLinkContentExtractor()
+            else PartialLinkContentExtractor()
+        linkContentExtractor.extractContent(resolvedUrl, html)
+    }
+
+    private suspend fun generatePreview(linkContent: LinkContent): GeneratedImageResource? {
+        if (extractionPolicy == ExtractionPolicy.FULL) {
+            if (session == null) throw sessionNotInit()
+            synchronized(session!!) {
+                log.info("Capturing thumbnail for url={}", resolvedUrl)
+                return session?.command?.page?.captureScreenshot()?.let {
+                    val image = ImageUtils.scaleToDimensions(it, 640, 360)
+                    return GeneratedImageResource(image, JPG)
+                }
+            }
+        } else if (linkContent.imageUrl != null) {
+            val mainImage = resourceRetriever.getFile(linkContent.imageUrl)
+            if (mainImage != null) {
+                val image = ImageUtils.scaleToDimensions(mainImage, 640, 360)
+                return GeneratedImageResource(image, FileUtils.getExtension(linkContent.imageUrl))
+            }
+        }
+        return null
+    }
+
+    private fun generateScreenshot(): GeneratedResource {
         if (session == null) throw sessionNotInit()
         synchronized(session!!) {
             log.info("Capturing full page screenshot for url={}", resolvedUrl)
-            return ImageResource(session?.captureScreenshot(true) ?: throw sessionNotInit(), PNG)
+            return GeneratedImageResource(session?.captureScreenshot(true) ?: throw sessionNotInit(), PNG)
         }
     }
 
-    override suspend fun printPage(): ImageResource? {
+    private fun generateThumbnail(preview: GeneratedImageResource?): GeneratedResource? {
+        if (preview == null) return null
+        val thumbnail = ImageUtils.cropImage(preview.image, 320, 180)
+        return GeneratedImageResource(thumbnail, preview.extension)
+    }
+
+    private fun printPage(): GeneratedResource {
         log.info("Capturing pdf for url={}", resolvedUrl)
-        return ImageResource(
+        return GeneratedImageResource(
             session?.command?.page?.printToPDF(
                 true, false, true,
                 0.9, 11.7, 16.5,
                 0.1, 0.1, 0.1, 0.1,
                 null, false, null, null, false
-            )
-                ?: throw sessionNotInit(), PDF
+            ) ?: throw sessionNotInit(), PDF
         )
     }
 
-    override suspend fun extractLinkContent(): LinkContent {
-        val extractor = LinkContentExtractor()
-        return extractor.extractContent(resolvedUrl, html)
+    private fun retrieveHtml(): String {
+        return if (extractionPolicy == ExtractionPolicy.FULL) {
+            session?.content ?: throw sessionNotInit()
+        } else {
+            return runBlocking {
+                resourceRetriever.getString(resolvedUrl)
+                    ?: throw java.lang.IllegalStateException("Unable to retrieve page details")
+            }
+        }
     }
 
-    override val html: String get() = session?.content ?: throw sessionNotInit()
-
-    override val resolvedUrl: String get() = session?.location ?: throw sessionNotInit()
+    override val resolvedUrl: String
+        get() {
+            return if (extractionPolicy == ExtractionPolicy.FULL) {
+                session?.location ?: throw sessionNotInit()
+            } else {
+                url
+            }
+        }
 
     private fun sessionNotInit() = IllegalStateException("Web session has not been initialised")
 

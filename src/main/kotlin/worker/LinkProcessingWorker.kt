@@ -5,16 +5,17 @@ import entry.EntryAuditService
 import entry.LinkService
 import group.GroupSetService
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
-import link.DefaultLinkProcessor
-import link.LinkProcessor
-import link.YoutubeLinkProcessor
+import link.*
 import link.extract.ExtractUtils
+import link.extract.ExtractionPolicy
 import notify.Notification
 import notify.NotifyService
-import resource.*
+import resource.Resource
+import resource.ResourceManager
+import resource.ResourceType
 import resource.ResourceType.*
+import resource.WebResourceRetriever
 import suggest.Suggestion
 import java.time.LocalDate
 import java.util.*
@@ -28,11 +29,21 @@ class SuggestLinkProcessingRequest(val url: String, val response: CompletableDef
     LinkProcessingRequest()
 
 class LinkProcessorFactory {
-    private val processors = listOf<(String) -> LinkProcessor> { YoutubeLinkProcessor(it, WebResourceRetriever()) }
+    private val retriever = WebResourceRetriever()
+    private val processors =
+        listOf<(ExtractionPolicy, String) -> LinkProcessor> { policy: ExtractionPolicy, url: String ->
+            YoutubeLinkProcessor(policy, url, retriever)
+        }
 
-    fun createProcessors(url: String): List<LinkProcessor> {
-        val processors = processors.asSequence().map { it(url) }.filter { it.matches() }.toList()
-        return if (processors.isNotEmpty()) processors else listOf(DefaultLinkProcessor(url))
+    fun createProcessors(url: String, extractionPolicy: ExtractionPolicy): List<LinkProcessor> {
+        val processors = processors.asSequence().map { it(extractionPolicy, url) }.filter { it.matches() }.toList()
+        return if (processors.isNotEmpty()) processors else listOf(
+            DefaultLinkProcessor(
+                extractionPolicy,
+                url,
+                retriever
+            )
+        )
     }
 }
 
@@ -56,17 +67,12 @@ class LinkProcessorWorker(
 
     private suspend fun processLinkPersist(link: Link, resourceSet: EnumSet<ResourceType>, process: Boolean) {
         try {
-            val movedResources = resourceManager.moveTempFiles(link.id, link.url)
-            findExistingReadableContent(movedResources)?.also {
-                link.content = ExtractUtils.extractTextFromHtmlDoc(it)
-            }
-            val shouldProcess = process && movedResources.isEmpty()
-
-            processorFactory.createProcessors(link.url).forEach {
+            resourceManager.deleteTempFiles(link.url)
+            processorFactory.createProcessors(link.url, ExtractionPolicy.FULL).forEach {
                 it.use { proc ->
                     coroutineScope {
                         proc.enrich(link.props)
-                        if (shouldProcess) {
+                        if (process) {
                             runPersistProcessor(link, resourceSet, proc)
                         }
                     }
@@ -102,67 +108,70 @@ class LinkProcessorWorker(
             return
 
         proc.init()
-        val thumb = if (resourceSet.contains(THUMBNAIL)) async { proc.generateThumbnail() } else null
-        val screen = if (resourceSet.contains(SCREENSHOT)) async { proc.generateScreenshot() } else null
 
-        if (resourceSet.contains(DOCUMENT)) {
-            val linkContent = proc.extractLinkContent()
-            linkContent.content?.let {
-                link.content = ExtractUtils.extractTextFromHtmlDoc(it)
-                saveResource(link.id, READABLE, HTML, it.toByteArray())
-            }
-            proc.html?.let {
-                saveResource(link.id, DOCUMENT, HTML, it.toByteArray())
-            }
-        }
-        if (resourceSet.contains(THUMBNAIL)) {
-            thumb?.await()?.let {
-                saveResource(link.id, THUMBNAIL, it.extension, it.image)
+        val generatedResources = proc.process(resourceSet)
+
+        generatedResources.forEach { entry ->
+            when (val resource = entry.value) {
+                is GeneratedImageResource -> saveResource(link.id, entry.key, resource.image, resource.extension)
+                is GeneratedDocResource -> saveResource(
+                    link.id,
+                    entry.key,
+                    resource.doc.toByteArray(),
+                    resource.extension
+                )
             }
         }
-        if (resourceSet.contains(SCREENSHOT)) {
-            screen?.await()?.let {
-                saveResource(link.id, SCREENSHOT, it.extension, it.image)
+
+        // find first readable or page resource and assign link content
+        generatedResources[READABLE] ?: generatedResources[PAGE]?.let {
+            if (it is GeneratedDocResource) {
+                link.content = ExtractUtils.extractTextFromHtmlDoc(it.doc)
             }
         }
     }
 
-    private fun saveResource(id: String, type: ResourceType, extension: String, data: ByteArray): Resource {
+    private fun saveResource(id: String, type: ResourceType, data: ByteArray, extension: String): Resource {
         val date = LocalDate.now().toString()
-        val resourceFileName =  "${type.name.toLowerCase()}-$date.${extension}"
+        val resourceFileName = "${type.name.toLowerCase()}-$date.${extension}"
         return resourceManager.saveGeneratedResource(id, resourceFileName, type, data)
-    }
-
-    private fun findExistingReadableContent(resources: List<Resource>): String? {
-        return resources.find { it.type == READABLE }?.let {
-            return resourceManager.getResourceAsFile(it.id)?.second?.readText()
-        }
     }
 
     private suspend fun processLinkSuggest(url: String, deferred: CompletableDeferred<Suggestion>) {
         try {
             log.info("Link processing worker executing suggestion request for url={}", url)
-            processorFactory.createProcessors(url).forEach { it ->
+            processorFactory.createProcessors(url, ExtractionPolicy.PARTIAL).forEach { it ->
                 it.use { proc ->
                     coroutineScope {
                         proc.init()
-                        val thumb = async { proc.generateThumbnail() }
-                        val screen = async { proc.generateScreenshot() }
-                        val thumbPath = thumb.await()
-                            ?.let { resourceManager.saveTempFile(url, it.image, THUMBNAIL, it.extension) }
-                        val screenPath = screen.await()
-                            ?.let { resourceManager.saveTempFile(url, it.image, SCREENSHOT, it.extension) }
-                        proc.html?.let {
-                            resourceManager.saveTempFile(url, it.toByteArray(), DOCUMENT, HTML)
+                        val resourceSet = EnumSet.of(PREVIEW, THUMBNAIL)
+                        val generatedResources = proc.process(resourceSet)
+                        val processedResources = generatedResources.mapValues { entry ->
+                            when (val resource = entry.value) {
+                                is GeneratedImageResource ->
+                                    resourceManager.saveTempFile(
+                                        url, resource.image, entry.key, resource.extension
+                                    )
+                                is GeneratedDocResource -> resourceManager.saveTempFile(
+                                    url, resource.doc.toByteArray(), entry.key, resource.extension
+                                )
+                            }
                         }
-                        val linkContent = proc.extractLinkContent()
-                        linkContent.content?.let {
-                            resourceManager.saveTempFile(url, it.toByteArray(), READABLE, HTML)
-                        }
-                        val matchedGroups = groupSetService.matchWithContent(linkContent.content)
+
+                        val linkContent = proc.linkContent
+                        val matchedGroups = groupSetService.matchWithContent(linkContent.extractedContent)
                         log.info("Link processing worker completing suggestion request for url={}", url)
-                        deferred.complete(Suggestion(proc.resolvedUrl, linkContent.title, thumbPath, screenPath, linkContent.keywords,
-                            matchedGroups.tags, matchedGroups.collections))
+                        deferred.complete(
+                            Suggestion(
+                                proc.resolvedUrl,
+                                linkContent.title,
+                                processedResources[THUMBNAIL],
+                                processedResources[PREVIEW],
+                                linkContent.keywords,
+                                matchedGroups.tags,
+                                matchedGroups.collections
+                            )
+                        )
                     }
                 }
             }
@@ -175,7 +184,7 @@ class LinkProcessorWorker(
     private suspend fun processActiveCheck(url: String, deferred: CompletableDeferred<Boolean>) {
         try {
             log.info("Link processing worker executing active check request for url={}", url)
-            processorFactory.createProcessors(url).forEach {
+            processorFactory.createProcessors(url, ExtractionPolicy.PARTIAL).forEach {
                 it.use { proc ->
                     coroutineScope {
                         proc.init()

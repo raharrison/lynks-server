@@ -19,18 +19,25 @@ object Resources : Table("RESOURCE") {
 }
 
 data class Resource(
-        override val id: String,
-        val entryId: String,
-        val name: String,
-        val extension: String,
-        val type: ResourceType,
-        val size: Long,
-        val dateCreated: Long,
-        val dateUpdated: Long
-): IdBasedCreatedEntity
+    override val id: String,
+    val entryId: String,
+    val name: String,
+    val extension: String,
+    val type: ResourceType,
+    val size: Long,
+    val dateCreated: Long,
+    val dateUpdated: Long
+) : IdBasedCreatedEntity
 
 enum class ResourceType {
-    UPLOAD, SCREENSHOT, THUMBNAIL, DOCUMENT, READABLE, GENERATED;
+    UPLOAD, // user uploaded
+    SCREENSHOT, // full page image screenshot
+    THUMBNAIL, // primary image from page or small screenshot
+    PREVIEW, // small partial page screenshot
+    PAGE, // full HTML page
+    DOCUMENT, // full page PDF
+    READABLE, // HTML with extracted text content
+    GENERATED; // task created
 
     companion object {
         fun all(): EnumSet<ResourceType> = EnumSet.allOf(ResourceType::class.java)
