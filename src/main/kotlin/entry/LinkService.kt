@@ -72,6 +72,7 @@ class LinkService(
         it[Entries.plainContent] = entry.url
         it[Entries.content] = entry.content
         it[Entries.src] = URLUtils.extractSource(entry.url)
+        it[Entries.thumbnailId] = entry.thumbnailId
         // explicitly not updating props to prevent overriding
     }
 

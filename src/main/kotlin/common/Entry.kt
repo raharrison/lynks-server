@@ -18,6 +18,7 @@ abstract class BaseEntries(name: String) : Table(name) {
     val props = json("PROPS", BaseProperties::class.java).nullable()
     abstract val version: Column<Int>
     val starred = bool("STARRED").default(false)
+    val thumbnailId = varchar("THUMBNAIL_ID", 12).nullable()
 }
 
 object Entries : BaseEntries("ENTRY") {
@@ -39,6 +40,7 @@ interface Entry : IdBasedCreatedEntity {
     val props: BaseProperties
     val tags: List<Tag>
     val collections: List<Collection>
+    var thumbnailId: String?
 }
 
 interface NewEntry : IdBasedNewEntity {

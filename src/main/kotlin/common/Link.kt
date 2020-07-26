@@ -15,7 +15,8 @@ data class Link(
     override val collections: List<Collection> = emptyList(),
     override val props: BaseProperties = BaseProperties(),
     override val version: Int = 0,
-    override val starred: Boolean = false
+    override val starred: Boolean = false,
+    override var thumbnailId: String? = null
 ) : Entry {
     @JvmField
     val type = EntryType.LINK
@@ -39,7 +40,8 @@ data class SlimLink(
     override val dateUpdated: Long,
     override val tags: List<Tag> = emptyList(),
     override val collections: List<Collection> = emptyList(),
-    override val starred: Boolean = false
+    override val starred: Boolean = false,
+    override val thumbnailId: String? = null
 ) : SlimEntry {
     @JvmField
     val type = EntryType.LINK

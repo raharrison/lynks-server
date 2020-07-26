@@ -9,4 +9,5 @@ interface SlimEntry : IdBasedCreatedEntity {
     val starred: Boolean
     val tags: List<Tag>
     val collections: List<Collection>
+    val thumbnailId: String?
 }

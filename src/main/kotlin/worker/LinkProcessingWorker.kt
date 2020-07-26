@@ -68,16 +68,18 @@ class LinkProcessorWorker(
     private suspend fun processLinkPersist(link: Link, resourceSet: EnumSet<ResourceType>, process: Boolean) {
         try {
             resourceManager.deleteTempFiles(link.url)
-            processorFactory.createProcessors(link.url, ExtractionPolicy.FULL).forEach {
+            val resources = processorFactory.createProcessors(link.url, ExtractionPolicy.FULL).flatMap {
                 it.use { proc ->
                     coroutineScope {
                         proc.enrich(link.props)
                         if (process) {
-                            runPersistProcessor(link, resourceSet, proc)
+                            return@coroutineScope runPersistProcessor(link, resourceSet, proc)
                         }
+                        return@coroutineScope emptyList<Resource>()
                     }
                 }
             }
+            link.thumbnailId = findThumbnail(resources)
             link.props.addAttribute("dead", false)
             linkService.mergeProps(link.id, link.props)
 
@@ -103,15 +105,22 @@ class LinkProcessorWorker(
         }
     }
 
-    private suspend fun runPersistProcessor(link: Link, resourceSet: EnumSet<ResourceType>, proc: LinkProcessor) {
+    private fun findThumbnail(resources: List<Resource>): String? {
+        return resources
+            .filter { it.type == THUMBNAIL }
+            .map { it.id }
+            .firstOrNull()
+    }
+
+    private suspend fun runPersistProcessor(link: Link, resourceSet: EnumSet<ResourceType>, proc: LinkProcessor): List<Resource> {
         if (resourceSet.isEmpty())
-            return
+            return emptyList()
 
         proc.init()
 
         val generatedResources = proc.process(resourceSet)
 
-        generatedResources.forEach { entry ->
+        val savedResources = generatedResources.map { entry ->
             when (val resource = entry.value) {
                 is GeneratedImageResource -> saveResource(link.id, entry.key, resource.image, resource.extension)
                 is GeneratedDocResource -> saveResource(
@@ -129,6 +138,7 @@ class LinkProcessorWorker(
                 link.content = ExtractUtils.extractTextFromHtmlDoc(it.doc)
             }
         }
+        return savedResources
     }
 
     private fun saveResource(id: String, type: ResourceType, data: ByteArray, extension: String): Resource {

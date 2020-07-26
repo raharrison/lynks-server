@@ -23,7 +23,8 @@ object RowMapper {
             collections = collections,
             props = row[table.props] ?: BaseProperties(),
             version = row[table.version],
-            starred = row[table.starred]
+            starred = row[table.starred],
+            thumbnailId = row[table.thumbnailId]
         )
     }
 
@@ -35,7 +36,8 @@ object RowMapper {
             dateUpdated = row[table.dateUpdated],
             tags = tags,
             collections = collections,
-            starred = row[table.starred]
+            starred = row[table.starred],
+            thumbnailId = row[table.thumbnailId]
         )
     }
 
@@ -51,7 +53,8 @@ object RowMapper {
             collections = collections,
             props = row[table.props] ?: BaseProperties(),
             version = row[table.version],
-            starred = row[table.starred]
+            starred = row[table.starred],
+            thumbnailId = row[table.thumbnailId]
         )
     }
 
@@ -62,7 +65,8 @@ object RowMapper {
             dateUpdated = row[table.dateUpdated],
             tags = tags,
             collections = collections,
-            starred = row[table.starred]
+            starred = row[table.starred],
+            thumbnailId = row[table.thumbnailId]
         )
     }
 
