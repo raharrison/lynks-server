@@ -4,7 +4,9 @@ import db.json
 import group.Collection
 import group.Tag
 import org.jetbrains.exposed.sql.Column
+import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.Table
+import resource.Resources
 
 abstract class BaseEntries(name: String) : Table(name) {
     val id = varchar("ID", 12)
@@ -18,16 +20,18 @@ abstract class BaseEntries(name: String) : Table(name) {
     val props = json("PROPS", BaseProperties::class.java).nullable()
     abstract val version: Column<Int>
     val starred = bool("STARRED").default(false)
-    val thumbnailId = varchar("THUMBNAIL_ID", 12).nullable()
+    abstract val thumbnailId: Column<String?>
 }
 
 object Entries : BaseEntries("ENTRY") {
     override val version = integer("VERSION").default(1)
+    override val thumbnailId = varchar("THUMBNAIL_ID", 12).references(Resources.id, ReferenceOption.SET_NULL).nullable()
     override val primaryKey = PrimaryKey(id)
 }
 
 object EntryVersions : BaseEntries("ENTRY_VERSION") {
     override val version = integer("VERSION").default(1)
+    override val thumbnailId = varchar("THUMBNAIL_ID", 12).references(Resources.id, ReferenceOption.SET_NULL).nullable()
     override val primaryKey = PrimaryKey(id, version)
 }
 

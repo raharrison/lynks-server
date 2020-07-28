@@ -5,6 +5,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.runBlocking
+import link.extract.ExtractionPolicy
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.entry
 import org.junit.jupiter.api.Test
@@ -52,10 +53,10 @@ class YoutubeLinkProcessorTest {
 
     @Test
     fun testMatches() {
-        assertThat(YoutubeLinkProcessor(url, retriever).matches()).isTrue()
-        assertThat(YoutubeLinkProcessor("http://youtube.com/something", retriever).matches()).isTrue()
-        assertThat(YoutubeLinkProcessor("http://youtu.com/watch?v=DAiEUeM8Uv0", retriever).matches()).isFalse()
-        assertThat(YoutubeLinkProcessor("http://google.com", retriever).matches()).isFalse()
+        assertThat(YoutubeLinkProcessor(ExtractionPolicy.FULL, url, retriever).matches()).isTrue()
+        assertThat(YoutubeLinkProcessor(ExtractionPolicy.FULL, "http://youtube.com/something", retriever).matches()).isTrue()
+        assertThat(YoutubeLinkProcessor(ExtractionPolicy.FULL, "http://youtu.com/watch?v=DAiEUeM8Uv0", retriever).matches()).isFalse()
+        assertThat(YoutubeLinkProcessor(ExtractionPolicy.FULL, "http://google.com", retriever).matches()).isFalse()
     }
 
     @Test
@@ -109,7 +110,7 @@ class YoutubeLinkProcessorTest {
     }
 
     private fun createProcessor(): YoutubeLinkProcessor = runBlocking {
-        YoutubeLinkProcessor(url, retriever).apply { init() }
+        YoutubeLinkProcessor(ExtractionPolicy.FULL, url, retriever).apply { init() }
     }
 
 }

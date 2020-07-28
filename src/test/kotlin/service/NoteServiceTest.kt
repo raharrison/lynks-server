@@ -7,7 +7,6 @@ import entry.NoteService
 import group.CollectionService
 import group.GroupSetService
 import group.TagService
-import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
@@ -16,6 +15,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import resource.ResourceManager
+import resource.ResourceType
 import util.createDummyCollection
 import util.createDummyTag
 
@@ -24,7 +24,7 @@ class NoteServiceTest : DatabaseTest() {
     private val tagService = TagService()
     private val collectionService = CollectionService()
     private val groupSetService = GroupSetService(tagService, collectionService)
-    private val resourceManager = mockk<ResourceManager>()
+    private val resourceManager = ResourceManager()
     private val entryAuditService = mockk<EntryAuditService>(relaxUnitFun = true)
     private val noteService = NoteService(groupSetService, entryAuditService, resourceManager)
 
@@ -35,7 +35,6 @@ class NoteServiceTest : DatabaseTest() {
         createDummyTag("t3", "tag3")
         createDummyCollection("c1", "col1")
         createDummyCollection("c2", "col2")
-        every { resourceManager.deleteAll(any()) } returns true
     }
 
     @Test
@@ -47,6 +46,7 @@ class NoteServiceTest : DatabaseTest() {
         assertThat(note.markdownText).isEqualTo("<p>content</p>\n")
         assertThat(note.dateUpdated).isPositive()
         assertThat(note.dateCreated).isEqualTo(note.dateUpdated)
+        assertThat(note.thumbnailId).isNull()
         verify { entryAuditService.acceptAuditEvent(note.id, any(), any()) }
     }
 
@@ -58,6 +58,7 @@ class NoteServiceTest : DatabaseTest() {
         assertThat(note.plainText).isEqualTo("content")
         assertThat(note.tags).hasSize(2).extracting("id").containsExactly("t1", "t2")
         assertThat(note.dateCreated).isEqualTo(note.dateUpdated)
+        assertThat(note.thumbnailId).isNull()
         verify { entryAuditService.acceptAuditEvent(note.id, any(), any()) }
     }
 
@@ -74,6 +75,7 @@ class NoteServiceTest : DatabaseTest() {
         assertThat(note.plainText).isEqualTo("content")
         assertThat(note.collections).hasSize(2).extracting("id").containsExactly("c1", "c2")
         assertThat(note.dateCreated).isEqualTo(note.dateUpdated)
+        assertThat(note.thumbnailId).isNull()
         verify { entryAuditService.acceptAuditEvent(note.id, any(), any()) }
     }
 
@@ -100,6 +102,7 @@ class NoteServiceTest : DatabaseTest() {
         assertThat(retrieved?.collections).isEqualTo(note2.collections)
         assertThat(retrieved?.plainText).isEqualTo(note2.plainText)
         assertThat(retrieved?.dateCreated).isEqualTo(note2.dateUpdated)
+        assertThat(retrieved?.thumbnailId).isNull()
     }
 
     @Test
@@ -249,6 +252,7 @@ class NoteServiceTest : DatabaseTest() {
         assertThat(newNote?.tags).hasSize(1)
         assertThat(newNote?.collections).hasSize(1)
         assertThat(newNote?.dateUpdated).isNotEqualTo(newNote?.dateCreated)
+        assertThat(newNote?.thumbnailId).isEqualTo(added1.thumbnailId)
         verify { entryAuditService.acceptAuditEvent(added1.id, any(), any()) }
 
         val oldNote = noteService.get(added1.id)
@@ -304,6 +308,7 @@ class NoteServiceTest : DatabaseTest() {
         assertThat(updated.title).isEqualTo("updated")
         assertThat(updated.dateUpdated).isEqualTo(updated.dateCreated)
         assertThat(added1.dateCreated).isNotEqualTo(updated.dateCreated)
+        assertThat(updated.thumbnailId).isEqualTo(added1.thumbnailId)
         verify { entryAuditService.acceptAuditEvent(added1.id, any(), any()) }
 
         assertThat(noteService.get(added1.id)?.title).isEqualTo("n1")
@@ -374,6 +379,7 @@ class NoteServiceTest : DatabaseTest() {
     @Test
     fun testVersioning() {
         val added = noteService.add(newNote("n1", "some content"))
+        resourceManager.saveGeneratedResource("r1", added.id, "resource name", "jpg", ResourceType.SCREENSHOT, 11)
         val version1 = noteService.get(added.id, 1)
         assertThat(added.version).isOne()
         assertThat(added).isEqualToIgnoringGivenFields(version1, "props")
@@ -394,17 +400,19 @@ class NoteServiceTest : DatabaseTest() {
         assertThat(first?.dateCreated).isEqualTo(first?.dateUpdated)
 
         // update directly
-        val updatedDirect = noteService.update(updated!!.copy(title = "new title"), true)
+        val updatedDirect = noteService.update(updated!!.copy(title = "new title", thumbnailId = "r1"), true)
         val version3 = noteService.get(added.id)
         assertThat(version3?.title).isEqualTo(updatedDirect?.title)
         assertThat(version3?.version).isEqualTo(3)
         assertThat(version3?.dateUpdated).isNotEqualTo(updated.dateUpdated)
+        assertThat(version3?.thumbnailId).isEqualTo(updatedDirect?.thumbnailId)
 
         // get version before
         val stepBack = noteService.get(added.id, 2)
         assertThat(stepBack?.version).isEqualTo(2)
         assertThat(stepBack?.title).isEqualTo(version2?.title)
         assertThat(stepBack?.dateUpdated).isNotEqualTo(version3?.dateUpdated)
+        assertThat(stepBack?.thumbnailId).isNotEqualTo(version3?.thumbnailId)
 
         // get current version
         val current = noteService.get(added.id)
@@ -412,6 +420,7 @@ class NoteServiceTest : DatabaseTest() {
         assertThat(current?.title).isEqualTo(version3?.title)
         assertThat(current?.dateUpdated).isNotEqualTo(stepBack?.dateUpdated)
         assertThat(current?.dateCreated).isNotEqualTo(version3?.dateUpdated)
+        assertThat(current?.thumbnailId).isEqualTo(version3?.thumbnailId)
     }
 
     @Test

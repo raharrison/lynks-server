@@ -37,6 +37,7 @@ class CascadingDeleteTest: DatabaseTest() {
         createDummyReminder("rem1", "id1", ReminderType.ADHOC, NotificationMethod.EMAIL,"message", System.currentTimeMillis().toString())
 
         resourceManager.saveGeneratedResource("r1", "id1", "resource name", "jpg", ResourceType.SCREENSHOT, 11)
+        updateDummyEntry("id1", "link1", 1, "r1") // add generated thumbnail resource id to entry
 
         linkService = LinkService(GroupSetService(tagService, collectionService), entryAuditService, resourceManager, mockk(relaxUnitFun = true))
         tagService.rebuild()
@@ -156,5 +157,13 @@ class CascadingDeleteTest: DatabaseTest() {
         assertThat(resourceManager.delete("r1")).isTrue()
 
         assertThat(linkService.get("id1")).isNotNull
+    }
+
+    @Test
+    fun testDeletingResourceSetsThumbnailIdToNull() {
+        assertThat(linkService.get("id1")?.thumbnailId).isEqualTo("r1")
+        assertThat(resourceManager.delete("r1")).isTrue()
+        assertThat(resourceManager.getResourcesFor("id1")).isEmpty()
+        assertThat(linkService.get("id1")?.thumbnailId).isNull()
     }
 }

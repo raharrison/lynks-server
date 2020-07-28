@@ -28,7 +28,7 @@ class SuggestionServiceTest {
         runBlocking {
             val response = service.processLink("google.com")
             assertThat(response).isEqualTo(suggestion)
-            assertThat(response.screenshot).isNull()
+            assertThat(response.preview).isNull()
             assertThat(response.thumbnail).isNull()
             assertThat(response.keywords).isEqualTo(keywords)
             assertThat(response.url).isEqualTo("google.com")

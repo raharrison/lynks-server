@@ -30,11 +30,12 @@ fun createDummyEntry(id: String, title: String, content: String, type: EntryType
     }
 }
 
-fun updateDummyEntry(id: String, title: String, version: Int) = transaction {
+fun updateDummyEntry(id: String, title: String, version: Int, thumbnailId: String? = null) = transaction {
     Entries.update({Entries.id eq id}) {
         it[Entries.title] = title
         it[Entries.version] = version
         it[Entries.dateUpdated] = System.currentTimeMillis()
+        it[Entries.thumbnailId] = thumbnailId
     }
 }
 

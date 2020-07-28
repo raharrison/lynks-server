@@ -1,10 +1,9 @@
-package link
+package link.summary
 
 import common.exception.ExecutionException
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.runBlocking
-import link.summary.LinkSummarizer
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.fail

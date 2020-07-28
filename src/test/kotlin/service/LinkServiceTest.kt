@@ -14,6 +14,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import resource.ResourceManager
+import resource.ResourceType
 import util.createDummyCollection
 import util.createDummyTag
 import worker.WorkerRegistry
@@ -23,7 +24,7 @@ class LinkServiceTest : DatabaseTest() {
     private val tagService = TagService()
     private val collectionService = CollectionService()
     private val groupSetService = GroupSetService(tagService, collectionService)
-    private val resourceManager = mockk<ResourceManager>()
+    private val resourceManager = ResourceManager()
     private val workerRegistry = mockk<WorkerRegistry>()
     private val entryAuditService = mockk<EntryAuditService>(relaxUnitFun = true)
     private lateinit var linkService: LinkService
@@ -37,7 +38,6 @@ class LinkServiceTest : DatabaseTest() {
         createDummyCollection("c1", "col1")
         createDummyCollection("c2", "col2")
 
-        every { resourceManager.deleteAll(any()) } returns true
         every { workerRegistry.acceptLinkWork(any()) } just Runs
         every { workerRegistry.acceptDiscussionWork(any()) } just Runs
         linkService = LinkService(groupSetService, entryAuditService, resourceManager, workerRegistry)
@@ -52,6 +52,7 @@ class LinkServiceTest : DatabaseTest() {
         assertThat(link.source).isEqualTo("google.com")
         assertThat(link.dateUpdated).isPositive()
         assertThat(link.dateCreated).isEqualTo(link.dateUpdated)
+        assertThat(link.thumbnailId).isNull()
         verify(exactly = 1) { workerRegistry.acceptLinkWork(any()) }
         verify(exactly = 1) { workerRegistry.acceptDiscussionWork(link.id) }
         verify(exactly = 1) { entryAuditService.acceptAuditEvent(link.id, any(), any()) }
@@ -65,6 +66,7 @@ class LinkServiceTest : DatabaseTest() {
         assertThat(link.url).isEqualTo("google.com")
         assertThat(link.tags).hasSize(2).extracting("id").containsExactly("t1", "t2")
         assertThat(link.dateCreated).isEqualTo(link.dateUpdated)
+        assertThat(link.thumbnailId).isNull()
         verify(exactly = 1) { entryAuditService.acceptAuditEvent(link.id, any(), any()) }
     }
 
@@ -76,6 +78,7 @@ class LinkServiceTest : DatabaseTest() {
         assertThat(link.url).isEqualTo("google.com")
         assertThat(link.collections).hasSize(2).extracting("id").containsExactly("c1", "c2")
         assertThat(link.dateCreated).isEqualTo(link.dateUpdated)
+        assertThat(link.thumbnailId).isNull()
         verify(exactly = 1) { entryAuditService.acceptAuditEvent(link.id, any(), any()) }
     }
 
@@ -121,6 +124,7 @@ class LinkServiceTest : DatabaseTest() {
         assertThat(retrieved?.collections).isEqualTo(link2.collections)
         assertThat(retrieved?.url).isEqualTo(link2.url)
         assertThat(retrieved?.dateCreated).isEqualTo(link2.dateUpdated)
+        assertThat(retrieved?.thumbnailId).isNull()
     }
 
     @Test
@@ -271,6 +275,7 @@ class LinkServiceTest : DatabaseTest() {
         assertThat(newLink?.tags).hasSize(1)
         assertThat(newLink?.collections).hasSize(1)
         assertThat(newLink?.dateUpdated).isNotEqualTo(newLink?.dateCreated)
+        assertThat(newLink?.thumbnailId).isEqualTo(added1.thumbnailId)
 
         val oldLink = linkService.get(added1.id)
         assertThat(oldLink?.id).isEqualTo(updated.id)
@@ -364,6 +369,7 @@ class LinkServiceTest : DatabaseTest() {
         assertThat(updated.url).isEqualTo("amazon.com")
         assertThat(updated.dateUpdated).isEqualTo(updated.dateCreated)
         assertThat(added1.dateCreated).isNotEqualTo(updated.dateCreated)
+        assertThat(updated.thumbnailId).isEqualTo(added1.thumbnailId)
         assertThat(linkService.get(added1.id)?.title).isEqualTo("n1")
         verify(exactly = 1) { entryAuditService.acceptAuditEvent(added1.id, any(), any()) }
         verify(exactly = 1) { entryAuditService.acceptAuditEvent(updated.id, any(), any()) }
@@ -430,6 +436,7 @@ class LinkServiceTest : DatabaseTest() {
     @Test
     fun testVersioning() {
         val added = linkService.add(newLink("n1", "google.com"))
+        resourceManager.saveGeneratedResource("r1", added.id, "resource name", "jpg", ResourceType.SCREENSHOT, 11)
         val version1 = linkService.get(added.id, 1)
         assertThat(added.version).isOne()
         assertThat(added).isEqualToIgnoringGivenFields(version1, "props")
@@ -450,17 +457,19 @@ class LinkServiceTest : DatabaseTest() {
         assertThat(first?.dateCreated).isEqualTo(first?.dateUpdated)
 
         // update directly
-        val updatedDirect = linkService.update(updated!!.copy(title = "new title"), true)
+        val updatedDirect = linkService.update(updated!!.copy(title = "new title", thumbnailId = "r1"), true)
         val version3 = linkService.get(added.id)
         assertThat(version3?.title).isEqualTo(updatedDirect?.title)
         assertThat(version3?.version).isEqualTo(3)
         assertThat(version3?.dateUpdated).isNotEqualTo(updated.dateUpdated)
+        assertThat(version3?.thumbnailId).isEqualTo(updatedDirect?.thumbnailId)
 
         // get version before
         val stepBack = linkService.get(added.id, 2)
         assertThat(stepBack?.version).isEqualTo(2)
         assertThat(stepBack?.title).isEqualTo(version2?.title)
         assertThat(stepBack?.dateUpdated).isNotEqualTo(version3?.dateUpdated)
+        assertThat(stepBack?.thumbnailId).isNotEqualTo(version3?.thumbnailId)
 
         // get current version
         val current = linkService.get(added.id)
@@ -468,6 +477,7 @@ class LinkServiceTest : DatabaseTest() {
         assertThat(current?.title).isEqualTo(version3?.title)
         assertThat(current?.dateUpdated).isNotEqualTo(stepBack?.dateUpdated)
         assertThat(current?.dateCreated).isNotEqualTo(version3?.dateUpdated)
+        assertThat(current?.thumbnailId).isEqualTo(version3?.thumbnailId)
     }
 
     @Test
@@ -543,16 +553,8 @@ class LinkServiceTest : DatabaseTest() {
         title: String,
         url: String,
         tags: List<String> = emptyList(),
-        cols: List<String> = emptyList()
-    ) = NewLink(id, title, url, tags, cols)
-
-    private fun newLink(
-        id: String,
-        title: String,
-        url: String,
-        tags: List<String> = emptyList(),
         cols: List<String> = emptyList(),
-        process: Boolean
+        process: Boolean = true
     ) = NewLink(id, title, url, tags, cols, process)
 
 }

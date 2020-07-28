@@ -1,6 +1,5 @@
-package link
+package link.extract
 
-import link.extract.ExtractUtils
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 

@@ -10,12 +10,11 @@ import group.GroupSetService
 import group.Tag
 import io.mockk.*
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withContext
-import link.GeneratedGeneratedImageResource
+import link.GeneratedDocResource
 import link.GeneratedImageResource
 import link.LinkProcessor
+import link.extract.ExtractionPolicy
 import link.extract.LinkContent
 import notify.NotifyService
 import org.assertj.core.api.Assertions.assertThat
@@ -56,52 +55,53 @@ class LinkProcessorWorkerTest {
         @Test
         fun testDefaultPersistAllTypes() = runBlocking(TestCoroutineContext()) {
             val link = Link("id1", "title", "google.com", "google.com", "", 100, 100)
+            val resourceSet = ResourceType.all()
 
             val thumb = GeneratedImageResource(byteArrayOf(1, 2, 3), "jpg")
             val screen = GeneratedImageResource(byteArrayOf(4, 5, 6), "png")
-            val html = "<html><body><p>article content<p></body></html>"
+            val html = GeneratedDocResource("<html><body><p>article content<p></body></html>", HTML)
             val processor = mockk<LinkProcessor>(relaxUnitFun = true)
-            val linkContent = LinkContent("title", html)
 
             coEvery { notifyService.accept(any(), ofType(Link::class)) } just Runs
-            coEvery { processor.generateThumbnail() } returns thumb
-            coEvery { processor.generateScreenshot() } returns screen
-            coEvery { processor.extractLinkContent() } returns linkContent
+            coEvery { processor.process(resourceSet) } returns mapOf(
+                ResourceType.THUMBNAIL to thumb,
+                ResourceType.SCREENSHOT to screen,
+                ResourceType.PAGE to html,
+                ResourceType.READABLE to html
+            )
             coEvery { processor.enrich(link.props) } just Runs
-            coEvery { processor.html } returns html
             every { processor.close() } just Runs
 
-            coEvery { processorFactory.createProcessors(link.url) } returns listOf(processor)
-            every { resourceManager.saveGeneratedResource(link.id, any(), any(), any()) } returns Resource(
-                "rid",
-                "eid",
-                "file1.txt",
-                "txt",
-                ResourceType.GENERATED,
-                12L,
-                12L,
-                12L
-            )
+            coEvery { processorFactory.createProcessors(link.url, ExtractionPolicy.FULL) } returns listOf(processor)
+            every { resourceManager.deleteTempFiles(link.url) } just Runs
+            every { resourceManager.saveGeneratedResource(link.id, any(), any(), any()) } answers {
+                Resource(
+                    "rid",
+                    firstArg(),
+                    secondArg(),
+                    "txt",
+                    thirdArg(),
+                    12L,
+                    12L,
+                    12L
+                )
+            }
+            link.thumbnailId = "rid"
             every { linkService.update(link) } returns link
             every { linkService.mergeProps(eq("id1"), any()) } just Runs
 
-            every { resourceManager.moveTempFiles(link.id, link.url) } returns emptyList()
-
             val channel = worker.apply { runner = this@runBlocking.coroutineContext }.worker()
-            channel.send(PersistLinkProcessingRequest(link, ResourceType.all(), true))
+            channel.send(PersistLinkProcessingRequest(link, resourceSet, true))
             channel.close()
 
-            coVerify(exactly = 1) { processorFactory.createProcessors(link.url) }
+            coVerify(exactly = 1) { processorFactory.createProcessors(link.url, ExtractionPolicy.FULL) }
             verify(exactly = 1) { processor.close() }
             verify(exactly = 1) { linkService.mergeProps(eq("id1"), any()) }
             verify(exactly = 1) { linkService.update(link) }
             coVerify(exactly = 1) { notifyService.accept(any(), ofType(Link::class)) }
             assertThat(link.content).isEqualTo("article content")
 
-            coVerify(exactly = 1) { processor.generateThumbnail() }
-            coVerify(exactly = 1) { processor.generateScreenshot() }
-            coVerify(exactly = 1) { processor.html }
-            coVerify(exactly = 1) { processor.extractLinkContent() }
+            coVerify(exactly = 1) { processor.process(resourceSet) }
 
             verify(exactly = 1) {
                 resourceManager.saveGeneratedResource(
@@ -122,9 +122,9 @@ class LinkProcessorWorkerTest {
             verify(exactly = 1) {
                 resourceManager.saveGeneratedResource(
                     link.id,
-                    match { it.startsWith("document") },
-                    ResourceType.DOCUMENT,
-                    html.toByteArray()
+                    match { it.startsWith("page") },
+                    ResourceType.PAGE,
+                    html.doc.toByteArray()
                 )
             }
             verify(exactly = 1) {
@@ -132,7 +132,7 @@ class LinkProcessorWorkerTest {
                     link.id,
                     match { it.startsWith("readable") },
                     ResourceType.READABLE,
-                    linkContent.content?.toByteArray() ?: throw IllegalStateException("cannot be null")
+                    html.doc.toByteArray()
                 )
             }
             verify(exactly = 1) { entryAuditService.acceptAuditEvent(link.id, any(), any()) }
@@ -141,16 +141,20 @@ class LinkProcessorWorkerTest {
         @Test
         fun testDefaultPersistSingleType() = runBlocking(TestCoroutineContext()) {
             val link = Link("id1", "title", "google.com", "google.com", "", 100, 100)
+            val resourceSet = EnumSet.of(ResourceType.SCREENSHOT)
 
             val screen = GeneratedImageResource(byteArrayOf(4, 5, 6), "png")
             val processor = mockk<LinkProcessor>(relaxUnitFun = true)
 
             coEvery { notifyService.accept(any(), ofType(Link::class)) } just Runs
-            coEvery { processor.generateScreenshot() } returns screen
+            coEvery { processor.process(resourceSet) } returns mapOf(
+                ResourceType.SCREENSHOT to screen
+            )
             coEvery { processor.enrich(link.props) } just Runs
             every { processor.close() } just Runs
 
-            coEvery { processorFactory.createProcessors(link.url) } returns listOf(processor)
+            coEvery { processorFactory.createProcessors(link.url, ExtractionPolicy.FULL) } returns listOf(processor)
+            every { resourceManager.deleteTempFiles(link.url) } just Runs
             every { resourceManager.saveGeneratedResource(link.id, any(), any(), any()) } returns Resource(
                 "rid",
                 "eid",
@@ -164,22 +168,17 @@ class LinkProcessorWorkerTest {
             every { linkService.update(link) } returns link
             every { linkService.mergeProps(eq("id1"), any()) } just Runs
 
-            every { resourceManager.moveTempFiles(link.id, link.url) } returns emptyList()
-
             val channel = worker.apply { runner = this@runBlocking.coroutineContext }.worker()
-            channel.send(PersistLinkProcessingRequest(link, EnumSet.of(ResourceType.SCREENSHOT), true))
+            channel.send(PersistLinkProcessingRequest(link, resourceSet, true))
             channel.close()
 
-            coVerify(exactly = 1) { processorFactory.createProcessors(link.url) }
+            coVerify(exactly = 1) { processorFactory.createProcessors(link.url, ExtractionPolicy.FULL) }
             verify(exactly = 1) { processor.close() }
             verify(exactly = 1) { linkService.mergeProps(eq("id1"), any()) }
             verify(exactly = 1) { linkService.update(link) }
             coVerify(exactly = 1) { notifyService.accept(any(), ofType(Link::class)) }
 
-            coVerify(exactly = 0) { processor.generateThumbnail() }
-            coVerify(exactly = 1) { processor.generateScreenshot() }
-            coVerify(exactly = 0) { processor.html }
-            coVerify(exactly = 0) { processor.extractLinkContent() }
+            coVerify(exactly = 1) { processor.process(resourceSet) }
 
             verify(exactly = 0) {
                 resourceManager.saveGeneratedResource(link.id, any(), ResourceType.THUMBNAIL, any())
@@ -202,46 +201,6 @@ class LinkProcessorWorkerTest {
         }
 
         @Test
-        fun testDefaultPersistAlreadyProcessed() = runBlocking(TestCoroutineContext()) {
-            val link = Link("id1", "title", "google.com", "google.com", "", 100, 100)
-
-            val docResource = Resource("rid", "id1","name", "html", ResourceType.READABLE, 10, 123, 123)
-            withContext(Dispatchers.IO) {
-                Files.writeString(resourcePath, "<html><body><p>article content<p></body></html>")
-            }
-
-            val processor = mockk<LinkProcessor>(relaxUnitFun = true)
-            coEvery { notifyService.accept(any(), ofType(Link::class)) } just Runs
-            coEvery { processor.enrich(link.props) } just Runs
-            every { processor.close() } just Runs
-
-            coEvery { processorFactory.createProcessors(link.url) } returns listOf(processor)
-            every { linkService.update(link) } returns link
-            every { linkService.mergeProps(eq("id1"), any()) } just Runs
-
-            every { resourceManager.moveTempFiles(link.id, link.url) } returns listOf(docResource)
-            every { resourceManager.getResourceAsFile(docResource.id) } returns Pair(docResource, resourcePath.toFile())
-
-            val channel = worker.apply { runner = this@runBlocking.coroutineContext }.worker()
-            channel.send(PersistLinkProcessingRequest(link, ResourceType.all(), true))
-            channel.close()
-
-            assertThat(link.content).isEqualTo("article content")
-            coVerify(exactly = 1) { processorFactory.createProcessors(link.url) }
-            verify(exactly = 1) { processor.close() }
-            verify(exactly = 1) { linkService.mergeProps(eq("id1"), any()) }
-            verify(exactly = 1) { linkService.update(link) }
-            coVerify(exactly = 1) { notifyService.accept(any(), ofType(Link::class)) }
-
-            coVerify(exactly = 0) { processor.generateThumbnail() }
-            coVerify(exactly = 0) { processor.generateScreenshot() }
-            coVerify(exactly = 0) { processor.html }
-            coVerify(exactly = 0) { processor.extractLinkContent() }
-            verify(exactly = 0) { resourceManager.saveGeneratedResource(any(), any(), any(), any()) }
-            verify(exactly = 1) { entryAuditService.acceptAuditEvent(link.id, any(), any()) }
-        }
-
-        @Test
         fun testDefaultPersistNoProcessFlag() = runBlocking(TestCoroutineContext()) {
             val link = Link("id1", "title", "google.com", "google.com", "", 100, 100)
 
@@ -250,26 +209,22 @@ class LinkProcessorWorkerTest {
             coEvery { processor.enrich(link.props) } just Runs
             every { processor.close() } just Runs
 
-            coEvery { processorFactory.createProcessors(link.url) } returns listOf(processor)
+            coEvery { processorFactory.createProcessors(link.url, ExtractionPolicy.FULL) } returns listOf(processor)
             every { linkService.update(link) } returns link
             every { linkService.mergeProps(eq("id1"), any()) } just Runs
-
-            every { resourceManager.moveTempFiles(link.id, link.url) } returns emptyList()
+            every { resourceManager.deleteTempFiles(link.url) } just Runs
 
             val channel = worker.apply { runner = this@runBlocking.coroutineContext }.worker()
             channel.send(PersistLinkProcessingRequest(link, ResourceType.all(), false))
             channel.close()
 
-            coVerify(exactly = 1) { processorFactory.createProcessors(link.url) }
+            coVerify(exactly = 1) { processorFactory.createProcessors(link.url, ExtractionPolicy.FULL) }
             verify(exactly = 1) { processor.close() }
             verify(exactly = 1) { linkService.mergeProps(eq("id1"), any()) }
             verify(exactly = 1) { linkService.update(link) }
             coVerify(exactly = 0) { notifyService.accept(any(), ofType(Link::class)) }
 
-            coVerify(exactly = 0) { processor.generateThumbnail() }
-            coVerify(exactly = 0) { processor.generateScreenshot() }
-            coVerify(exactly = 0) { processor.html }
-            coVerify(exactly = 0) { processor.extractLinkContent() }
+            coVerify(exactly = 0) { processor.process(any()) }
             verify(exactly = 0) { resourceManager.saveGeneratedResource(any(), any(), any(), any()) }
             verify(exactly = 0) { entryAuditService.acceptAuditEvent(link.id, any(), any()) }
         }
@@ -280,26 +235,22 @@ class LinkProcessorWorkerTest {
 
             val processor = mockk<LinkProcessor>(relaxUnitFun = true)
 
-            coEvery { processorFactory.createProcessors(link.url) } returns listOf(processor)
+            coEvery { processorFactory.createProcessors(link.url, ExtractionPolicy.FULL) } returns listOf(processor)
             every { linkService.update(link) } returns link
             every { linkService.mergeProps(eq("id1"), any()) } just Runs
-
-            every { resourceManager.moveTempFiles(link.id, link.url) } returns emptyList()
+            every { resourceManager.deleteTempFiles(link.url) } just Runs
 
             val channel = worker.apply { runner = this@runBlocking.coroutineContext }.worker()
             channel.send(PersistLinkProcessingRequest(link, EnumSet.noneOf(ResourceType::class.java), true))
             channel.close()
 
-            coVerify(exactly = 1) { processorFactory.createProcessors(link.url) }
+            coVerify(exactly = 1) { processorFactory.createProcessors(link.url, ExtractionPolicy.FULL) }
             verify(exactly = 1) { processor.close() }
             verify(exactly = 1) { linkService.mergeProps(eq("id1"), any()) }
             verify(exactly = 1) { linkService.update(link) }
             coVerify(exactly = 1) { notifyService.accept(any(), ofType(Link::class)) }
 
-            coVerify(exactly = 0) { processor.generateThumbnail() }
-            coVerify(exactly = 0) { processor.generateScreenshot() }
-            coVerify(exactly = 0) { processor.html }
-            coVerify(exactly = 0) { processor.extractLinkContent() }
+            coVerify(exactly = 0) { processor.process(any()) }
             verify(exactly = 0) { resourceManager.saveGeneratedResource(any(), any(), any(), any()) }
             verify(exactly = 1) { entryAuditService.acceptAuditEvent(link.id, any(), any()) }
         }
@@ -311,21 +262,19 @@ class LinkProcessorWorkerTest {
             val exception = RuntimeException("error during computation")
             val processor = mockk<LinkProcessor>(relaxUnitFun = true)
             coEvery { notifyService.accept(any(), null) } just Runs
-            coEvery { processor.generateThumbnail() } throws exception
-            coEvery { processor.generateScreenshot() } returns null
+            coEvery { processor.process(any()) } throws exception
             every { processor.close() } just Runs
 
-            coEvery { processorFactory.createProcessors(link.url) } returns listOf(processor)
+            coEvery { processorFactory.createProcessors(link.url, ExtractionPolicy.FULL) } returns listOf(processor)
             every { linkService.update(link) } returns link
             every { linkService.mergeProps(eq("id1"), any()) } just Runs
-
-            every { resourceManager.moveTempFiles(link.id, link.url) } returns emptyList()
+            every { resourceManager.deleteTempFiles(link.url) } just Runs
 
             val channel = worker.apply { runner = this@runBlocking.coroutineContext }.worker()
             channel.send(PersistLinkProcessingRequest(link, ResourceType.all(), true))
             channel.close()
 
-            coVerify(exactly = 1) { processorFactory.createProcessors(link.url) }
+            coVerify(exactly = 1) { processorFactory.createProcessors(link.url, ExtractionPolicy.FULL) }
             verify(exactly = 1) { processor.close() }
             verify(exactly = 0) { linkService.update(link) }
             verify(exactly = 1) { linkService.mergeProps(eq("id1"), any()) }
@@ -342,10 +291,9 @@ class LinkProcessorWorkerTest {
         @Test
         fun testDefaultSuggest() = runBlocking(TestCoroutineContext()) {
             val url = "google.com"
-
+            val resourceSet = EnumSet.of(ResourceType.PREVIEW, ResourceType.THUMBNAIL)
             val thumb = GeneratedImageResource(byteArrayOf(1, 2, 3), "jpg")
             val screen = GeneratedImageResource(byteArrayOf(4, 5, 6), "png")
-            val html = "<html><body><p>article content<p></body></html>"
             val processor = mockk<LinkProcessor>(relaxUnitFun = true)
 
             val thumbPath = "thumbPath"
@@ -362,17 +310,18 @@ class LinkProcessorWorkerTest {
                 Collection("c1", "col1", mutableSetOf(), 124L, 1234L),
                 Collection("c2", "col2", mutableSetOf(), 124L, 1234L)
             )
-            val linkContent = LinkContent(title, content, null, keywords)
+            val linkContent = LinkContent(title, content, content, "imgUrl", keywords)
 
-            coEvery { processor.generateThumbnail() } returns thumb
-            coEvery { processor.generateScreenshot() } returns screen
-            coEvery { processor.html } returns html
-            coEvery { processor.extractLinkContent() } returns linkContent
+            coEvery { processor.process(resourceSet) } returns mapOf(
+                ResourceType.THUMBNAIL to thumb,
+                ResourceType.PREVIEW to screen
+            )
+            coEvery { processor.linkContent } returns linkContent
             every { processor.resolvedUrl } returns resolvedUrl
             every { processor.close() } just Runs
             every { groupSetService.matchWithContent(content) } returns GroupSet(tags, collections)
 
-            coEvery { processorFactory.createProcessors(url) } returns listOf(processor)
+            coEvery { processorFactory.createProcessors(url, ExtractionPolicy.PARTIAL) } returns listOf(processor)
             every {
                 resourceManager.saveTempFile(
                     url,
@@ -385,12 +334,10 @@ class LinkProcessorWorkerTest {
                 resourceManager.saveTempFile(
                     url,
                     screen.image,
-                    ResourceType.SCREENSHOT,
+                    ResourceType.PREVIEW,
                     screen.extension
                 )
             } returns screenPath
-            every { resourceManager.saveTempFile(url, html.toByteArray(), ResourceType.DOCUMENT, HTML) } returns screenPath
-            every { resourceManager.saveTempFile(url, content.toByteArray(), ResourceType.READABLE, HTML) } returns screenPath
 
             val deferred = CompletableDeferred<Suggestion>()
             val channel = worker.apply { runner = this@runBlocking.coroutineContext }.worker()
@@ -401,24 +348,20 @@ class LinkProcessorWorkerTest {
             assertThat(suggestion.title).isEqualTo(title)
             assertThat(suggestion.url).isEqualTo(resolvedUrl)
             assertThat(suggestion.thumbnail).isEqualTo(thumbPath)
-            assertThat(suggestion.screenshot).isEqualTo(screenPath)
+            assertThat(suggestion.preview).isEqualTo(screenPath)
             assertThat(suggestion.keywords).isEqualTo(keywords)
             assertThat(suggestion.tags).isEqualTo(tags)
             assertThat(suggestion.collections).isEqualTo(collections)
 
-            coVerify(exactly = 1) { processorFactory.createProcessors(url) }
+            coVerify(exactly = 1) { processorFactory.createProcessors(url, ExtractionPolicy.PARTIAL) }
             verify(exactly = 1) { processor.close() }
 
             coVerify(exactly = 1) { groupSetService.matchWithContent(content) }
-            coVerify(exactly = 1) { processor.generateThumbnail() }
-            coVerify(exactly = 1) { processor.generateScreenshot() }
-            coVerify(exactly = 1) { processor.html }
-            coVerify(exactly = 1) { processor.extractLinkContent() }
+            coVerify(exactly = 1) { processor.process(resourceSet) }
+            coVerify(exactly = 1) { processor.linkContent }
 
             verify(exactly = 1) { resourceManager.saveTempFile(url, thumb.image, ResourceType.THUMBNAIL, thumb.extension) }
-            verify(exactly = 1) { resourceManager.saveTempFile(url, screen.image, ResourceType.SCREENSHOT, screen.extension) }
-            verify(exactly = 1) { resourceManager.saveTempFile(url, html.toByteArray(), ResourceType.DOCUMENT, HTML) }
-            verify(exactly = 1) { resourceManager.saveTempFile(url, content.toByteArray(), ResourceType.READABLE, HTML) }
+            verify(exactly = 1) { resourceManager.saveTempFile(url, screen.image, ResourceType.PREVIEW, screen.extension) }
         }
 
         @Test
@@ -428,10 +371,10 @@ class LinkProcessorWorkerTest {
             val processor = mockk<LinkProcessor>(relaxUnitFun = true)
 
             val exception = RuntimeException("error during computation")
-            coEvery { processor.generateThumbnail() } throws exception
+            coEvery { processor.process(any()) } throws exception
             every { processor.close() } just Runs
 
-            coEvery { processorFactory.createProcessors(url) } returns listOf(processor)
+            coEvery { processorFactory.createProcessors(url, ExtractionPolicy.PARTIAL) } returns listOf(processor)
 
             val deferred = CompletableDeferred<Suggestion>()
             val channel = worker.apply { runner = this@runBlocking.coroutineContext }.worker()
@@ -440,11 +383,10 @@ class LinkProcessorWorkerTest {
 
             assertThat(deferred.getCompletionExceptionOrNull()?.message).isEqualTo(exception.message)
 
-            coVerify(exactly = 1) { processorFactory.createProcessors(url) }
+            coVerify(exactly = 1) { processorFactory.createProcessors(url, ExtractionPolicy.PARTIAL) }
             verify(exactly = 1) { processor.close() }
 
-            coVerify(exactly = 1) { processor.generateThumbnail() }
-            coVerify(exactly = 0) { processor.html }
+            coVerify(exactly = 1) { processor.process(any()) }
             verify(exactly = 0) { resourceManager.saveTempFile(any(), any(), any(), any()) }
         }
     }
@@ -458,7 +400,7 @@ class LinkProcessorWorkerTest {
             val processor = mockk<LinkProcessor>(relaxUnitFun = true)
             every { processor.close() } just Runs
 
-            coEvery { processorFactory.createProcessors(url) } returns listOf(processor)
+            coEvery { processorFactory.createProcessors(url, ExtractionPolicy.PARTIAL) } returns listOf(processor)
 
             val deferred = CompletableDeferred<Boolean>()
             val channel = worker.apply { runner = this@runBlocking.coroutineContext }.worker()
@@ -468,7 +410,7 @@ class LinkProcessorWorkerTest {
             val active = deferred.await()
             assertThat(active).isTrue()
 
-            coVerify(exactly = 1) { processorFactory.createProcessors(url) }
+            coVerify(exactly = 1) { processorFactory.createProcessors(url, ExtractionPolicy.PARTIAL) }
             verify(exactly = 1) { processor.close() }
         }
 
@@ -482,7 +424,7 @@ class LinkProcessorWorkerTest {
             coEvery { processor.init() } throws exception
             every { processor.close() } just Runs
 
-            coEvery { processorFactory.createProcessors(url) } returns listOf(processor)
+            coEvery { processorFactory.createProcessors(url, ExtractionPolicy.PARTIAL) } returns listOf(processor)
 
             val deferred = CompletableDeferred<Boolean>()
             val channel = worker.apply { runner = this@runBlocking.coroutineContext }.worker()
@@ -492,7 +434,7 @@ class LinkProcessorWorkerTest {
             val active = deferred.await()
             assertThat(active).isFalse()
 
-            coVerify(exactly = 1) { processorFactory.createProcessors(url) }
+            coVerify(exactly = 1) { processorFactory.createProcessors(url, ExtractionPolicy.PARTIAL) }
             verify(exactly = 1) { processor.close() }
         }
     }

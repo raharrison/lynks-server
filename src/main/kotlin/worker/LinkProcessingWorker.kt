@@ -133,7 +133,7 @@ class LinkProcessorWorker(
         }
 
         // find first readable or page resource and assign link content
-        generatedResources[READABLE] ?: generatedResources[PAGE]?.let {
+        (generatedResources[READABLE] ?: generatedResources[PAGE])?.let {
             if (it is GeneratedDocResource) {
                 link.content = ExtractUtils.extractTextFromHtmlDoc(it.doc)
             }

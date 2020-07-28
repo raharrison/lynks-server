@@ -7,7 +7,7 @@ data class Suggestion(
     val url: String,
     val title: String? = null,
     val thumbnail: String? = null,
-    val screenshot: String? = null,
+    val preview: String? = null,
     val keywords: Set<String> = emptySet(),
     val tags: List<Tag> = emptyList(),
     val collections: List<Collection> = emptyList()

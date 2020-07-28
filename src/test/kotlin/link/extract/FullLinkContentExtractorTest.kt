@@ -1,8 +1,7 @@
-package link
+package link.extract
 
 import common.exception.ExecutionException
 import io.mockk.*
-import link.extract.LinkContentExtractor
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import resource.ResourceManager
@@ -10,10 +9,10 @@ import util.ExecUtils
 import util.Result
 import java.nio.file.Files
 
-class LinkContentExtractorTest  {
+class FullLinkContentExtractorTest  {
 
     private val resourceManager = spyk<ResourceManager>()
-    private val contentExtractor = LinkContentExtractor(resourceManager)
+    private val contentExtractor = FullLinkContentExtractor(resourceManager)
 
     private val url = "https://ryanharrison.co.uk/2020/04/12/kotlin-java-ci-with-github-actions.html"
     private val rawHtml = this.javaClass.getResource("/content_extract_raw.html").readText()
