@@ -2,7 +2,6 @@ package worker
 
 import common.inject.ServiceProvider
 import kotlinx.coroutines.channels.SendChannel
-import resource.WebResourceRetriever
 import task.Task
 import task.TaskContext
 import user.Preferences
@@ -13,7 +12,7 @@ class WorkerRegistry {
         with(serviceProvider) {
             linkWorker = LinkProcessorWorker(get(), get(), get(), get(), get()).worker()
             discussionWorker = DiscussionFinderWorker(get(),
-                    WebResourceRetriever(), get(), get()).worker()
+                    get(), get(), get()).worker()
             taskWorker = TaskRunnerWorker(get(), get()).worker()
             unreadDigestWorker = UnreadLinkDigestWorker(get(), get(), get(), get()).worker()
             fileCleanupWorker = TempFileCleanupWorker(get(), get(), get()).worker()

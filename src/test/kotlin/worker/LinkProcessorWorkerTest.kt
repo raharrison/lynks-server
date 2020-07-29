@@ -14,6 +14,7 @@ import kotlinx.coroutines.runBlocking
 import link.GeneratedDocResource
 import link.GeneratedImageResource
 import link.LinkProcessor
+import link.LinkProcessorFactory
 import link.extract.ExtractionPolicy
 import link.extract.LinkContent
 import notify.NotifyService

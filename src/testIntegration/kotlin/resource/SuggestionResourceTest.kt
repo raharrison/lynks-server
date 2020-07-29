@@ -34,13 +34,13 @@ class SuggestionResourceTest: ServerTest() {
                 .post("/suggest")
                 .then()
                 .extract().`as`(Suggestion::class.java)
-        assertThat(suggestion.url).isEqualTo("https://ryanharrison.co.uk/")
-        assertThat(suggestion.title).isEqualTo("My blog, portfolio and technology related ramblings")
-        assertThat(suggestion.screenshot).isNotNull()
+        assertThat(suggestion.url).isEqualTo("https://ryanharrison.co.uk")
+        assertThat(suggestion.title).isEqualTo("Ryan Harrison - My blog, portfolio and technology related ramblings")
+        assertThat(suggestion.preview).isNotNull()
         assertThat(suggestion.thumbnail).isNotNull()
         assertThat(suggestion.keywords).isNotEmpty()
 
-        retrieveTempResource(suggestion.screenshot)
+        retrieveTempResource(suggestion.preview)
         retrieveTempResource(suggestion.thumbnail)
     }
 
@@ -53,7 +53,7 @@ class SuggestionResourceTest: ServerTest() {
                 .extract().`as`(Suggestion::class.java)
         assertThat(suggestion.url).isEqualTo("https://www.youtube.com/watch?v=DAiEUeM8Uv0")
         assertThat(suggestion.title).isEqualTo("Savoy - How U Like Me Now (feat. Roniit) [Monstercat Release]")
-        assertThat(suggestion.screenshot).isNull()
+        assertThat(suggestion.preview).isNull()
         assertThat(suggestion.thumbnail).isNotNull()
         assertThat(suggestion.keywords).isNotEmpty()
 

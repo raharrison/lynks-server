@@ -6,7 +6,10 @@ import entry.LinkService
 import group.GroupSetService
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.coroutineScope
-import link.*
+import link.GeneratedDocResource
+import link.GeneratedImageResource
+import link.LinkProcessor
+import link.LinkProcessorFactory
 import link.extract.ExtractUtils
 import link.extract.ExtractionPolicy
 import notify.Notification
@@ -15,7 +18,6 @@ import resource.Resource
 import resource.ResourceManager
 import resource.ResourceType
 import resource.ResourceType.*
-import resource.WebResourceRetriever
 import suggest.Suggestion
 import java.time.LocalDate
 import java.util.*
@@ -27,25 +29,6 @@ class PersistLinkProcessingRequest(val link: Link, val resourceSet: EnumSet<Reso
 class ActiveLinkCheckingRequest(val url: String, val response: CompletableDeferred<Boolean>) : LinkProcessingRequest()
 class SuggestLinkProcessingRequest(val url: String, val response: CompletableDeferred<Suggestion>) :
     LinkProcessingRequest()
-
-class LinkProcessorFactory {
-    private val retriever = WebResourceRetriever()
-    private val processors =
-        listOf<(ExtractionPolicy, String) -> LinkProcessor> { policy: ExtractionPolicy, url: String ->
-            YoutubeLinkProcessor(policy, url, retriever)
-        }
-
-    fun createProcessors(url: String, extractionPolicy: ExtractionPolicy): List<LinkProcessor> {
-        val processors = processors.asSequence().map { it(extractionPolicy, url) }.filter { it.matches() }.toList()
-        return if (processors.isNotEmpty()) processors else listOf(
-            DefaultLinkProcessor(
-                extractionPolicy,
-                url,
-                retriever
-            )
-        )
-    }
-}
 
 class LinkProcessorWorker(
     private val resourceManager: ResourceManager,
