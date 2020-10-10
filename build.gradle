@@ -69,7 +69,6 @@ compileTestIntegrationKotlin {
 
 repositories {
     jcenter()
-    maven { url = "https://jitpack.io" }
 }
 
 test {
@@ -102,7 +101,7 @@ dependencies {
 
     implementation "io.webfolder:cdp4j:$cdp4j_version"
 
-    implementation "com.github.chimbori:crux:$crux_version"
+    implementation "com.chimbori.crux:crux:$crux_version"
     implementation "org.apache.commons:commons-lang3:$commonslang_version"
     implementation "org.jsoup:jsoup:$jsoup_version"
 

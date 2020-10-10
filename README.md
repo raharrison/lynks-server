@@ -2,7 +2,7 @@
 
 ## Lynks Server - Self-hosted link and note manager
 
-**Updated for Kotlin 1.3.70 + Ktor 1.3.2 + Exposed 0.23.1**
+**Updated for Kotlin 1.4.10 + Ktor 1.4.1 + Exposed 0.27.1**
 
 Server side for the Lynks project offering backend web services for entry management. Accompanied by lynks-ui project for front-end.
 
