@@ -47,7 +47,8 @@ class UnreadLinkDigestWorkerTest {
                 .apply { runner = context }.worker()
         context.triggerActions() // to get to initial delay
 
-        context.advanceTimeBy(7, TimeUnit.DAYS)
+        context.advanceTimeBy(8, TimeUnit.DAYS)
+        context.triggerActions()
 
         worker.close()
         verify { linkService.getUnread() }
@@ -65,6 +66,7 @@ class UnreadLinkDigestWorkerTest {
         context.triggerActions()
 
         context.advanceTimeBy(7, TimeUnit.DAYS)
+        context.triggerActions()
 
         worker.close()
         verify(exactly = 0) { notifyService.sendEmail(any(), any()) }
