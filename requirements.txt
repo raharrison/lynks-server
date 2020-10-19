@@ -1,5 +1,5 @@
 chardet==3.0.4
 cssselect==1.1.0
-lxml==4.5.2
+lxml==4.6.1
 readability-lxml==0.8.1
 youtube-dl==2020.9.20
