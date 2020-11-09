@@ -20,7 +20,7 @@ buildscript {
 
     ext.rest_assured_version = '4.3.1'
     ext.junit_version = '5.7.0'
-    ext.assertj_version = '3.17.2'
+    ext.assertj_version = '3.18.0'
     ext.mockk_version = '1.10.2'
 
     repositories {
