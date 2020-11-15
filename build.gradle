@@ -11,7 +11,7 @@ buildscript {
     ext.commons_email_version = '1.5'
     ext.logback_version = '1.2.3'
     ext.konf_version = '0.23.0'
-    ext.guava_version = '29.0-jre'
+    ext.guava_version = '30.0-jre'
     ext.commonslang_version = '3.11'
     ext.crux_version = '2.2.0'
     ext.jsoup_version = '1.9.2'
