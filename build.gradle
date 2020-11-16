@@ -18,7 +18,7 @@ buildscript {
     ext.cdp4j_version = '3.0.15'
     ext.skedule_version = '0.4.0'
 
-    ext.rest_assured_version = '4.3.1'
+    ext.rest_assured_version = '4.3.2'
     ext.junit_version = '5.7.0'
     ext.assertj_version = '3.18.1'
     ext.mockk_version = '1.10.2'
