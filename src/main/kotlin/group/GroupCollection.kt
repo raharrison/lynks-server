@@ -2,7 +2,6 @@ package group
 
 import com.google.common.collect.HashMultimap
 import com.google.common.collect.Multimap
-import kotlin.collections.Collection
 
 class GroupCollection<T: Grouping<T>> {
 
@@ -26,6 +25,7 @@ class GroupCollection<T: Grouping<T>> {
     private fun processGroup(group: T) {
         groupLookup[group.id] = group
         groupTree.putAll(group, traverseChildren(group, mutableSetOf()))
+        group.path = generatePath(group)
         for (child in group.children) {
             groupParents[child.id] = group
             processGroup(child)
@@ -41,12 +41,21 @@ class GroupCollection<T: Grouping<T>> {
     }
 
     private fun traverseParents(id: String, block: (T) -> Unit) {
-        if(groupParents.containsKey(id)) {
-            groupParents[id]?.also{
+        if (groupParents.containsKey(id)) {
+            groupParents[id]?.also {
                 block(groupParents[id]!!)
                 traverseParents(it.id, block)
             }
         }
+    }
+
+    private fun generatePath(group: T): String {
+        return groupParents[group.id]?.let {
+            if (it.path == null) {
+                it.path = generatePath(it)
+            }
+            it.path + "/" + group.name
+        } ?: group.name
     }
 
     fun group(id: String): T? = groupLookup[id]
@@ -62,6 +71,7 @@ class GroupCollection<T: Grouping<T>> {
             groupParents[group.id] = parentGroup
         }
         traverseParents(group.id) { groupTree.put(it, group) }
+        group.path = generatePath(group)
         return group
     }
 
@@ -85,6 +95,7 @@ class GroupCollection<T: Grouping<T>> {
         }
         val current = group(group.id)!!
         current.name = group.name
+        current.path = generatePath(current)
         current.children = group.children
         current.dateUpdated = group.dateUpdated
         current.dateCreated = group.dateCreated

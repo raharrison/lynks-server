@@ -22,10 +22,11 @@ class TagService : GroupService<Tag, NewTag>(GroupType.TAG) {
 
     override fun toModel(row: ResultRow): Tag {
         return Tag(
-                id = row[Groups.id],
-                name = row[Groups.name],
-                dateCreated = row[Groups.dateCreated],
-                dateUpdated = row[Groups.dateUpdated]
+            id = row[Groups.id],
+            name = row[Groups.name],
+            path = row[Groups.name],
+            dateCreated = row[Groups.dateCreated],
+            dateUpdated = row[Groups.dateUpdated]
         )
     }
 

@@ -57,11 +57,13 @@ class CollectionServiceTest : DatabaseTest() {
         val collection = collectionService.get("c1")
         assertThat(collection?.id).isEqualTo("c1")
         assertThat(collection?.name).isEqualTo("col1")
+        assertThat(collection?.path).isEqualTo("col1")
         assertThat(collection?.children).isEmpty()
 
         val col2 = collectionService.get("c2")
         assertThat(col2?.id).isEqualTo("c2")
         assertThat(col2?.name).isEqualTo("col2")
+        assertThat(col2?.path).isEqualTo("col2")
         assertThat(col2?.children).hasSize(2).extracting("id").containsExactlyInAnyOrder("c3", "c4")
     }
 
@@ -132,6 +134,7 @@ class CollectionServiceTest : DatabaseTest() {
     fun testCreateCollectionNoParent() {
         val created = collectionService.add(NewCollection(null, "newCollection", null))
         assertThat(created.name).isEqualTo("newCollection")
+        assertThat(created.path).isEqualTo("newCollection")
         assertThat(created.children).isEmpty()
 
         assertThat(collectionService.getAll()).hasSize(3).extracting("id").contains(created.id)
@@ -145,6 +148,7 @@ class CollectionServiceTest : DatabaseTest() {
     fun testCreateCollectionWithParent() {
         val created = collectionService.add(NewCollection(null, "newCollection", "c1"))
         assertThat(created.name).isEqualTo("newCollection")
+        assertThat(created.path).isEqualTo("col1/newCollection")
         assertThat(created.children).isEmpty()
 
         assertThat(collectionService.getAll()).hasSize(2)
@@ -180,6 +184,7 @@ class CollectionServiceTest : DatabaseTest() {
         assertThat(updated).isEqualTo(retr)
         assertThat(retr).isNotNull
         assertThat(retr?.name).isEqualTo("updated")
+        assertThat(retr?.path).isEqualTo("updated")
         assertThat(retr?.dateUpdated).isNotEqualTo(current?.dateUpdated)
         assertThat(retr?.dateCreated).isEqualTo(current?.dateCreated)
         assertThat(retr?.dateCreated).isNotEqualTo(retr?.dateUpdated)
@@ -191,6 +196,7 @@ class CollectionServiceTest : DatabaseTest() {
         val retr = collectionService.get("c1")
         assertThat(retr).isEqualTo(col)
         assertThat(retr?.children).isEmpty()
+        assertThat(retr?.path).isEqualTo("col2/col3/col5/col8/col1")
         assertThat(collectionService.getAll()).hasSize(1)
         val parent = collectionService.get("c8")
         assertThat(parent?.children).hasSize(1).extracting("id").containsExactly("c1")
@@ -198,6 +204,7 @@ class CollectionServiceTest : DatabaseTest() {
         val noParent = collectionService.update(NewCollection("c3", "col3"))
         val retr2 = collectionService.get("c3")
         assertThat(retr2).isEqualTo(noParent)
+        assertThat(retr2?.path).isEqualTo("col3")
         assertThat(retr2?.children).hasSize(2)
         assertThat(collectionService.getAll()).hasSize(2).extracting("id").containsExactly("c2", "c3")
 

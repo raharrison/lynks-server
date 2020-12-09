@@ -45,6 +45,7 @@ class TagResourceTest : ServerTest() {
                 .extract().to<Tag>()
         assertThat(tag1.id).isEqualTo("t1")
         assertThat(tag1.name).isEqualTo("tag1")
+        assertThat(tag1.path).isEqualTo("tag1")
     }
 
     @Test
@@ -76,6 +77,7 @@ class TagResourceTest : ServerTest() {
                 .statusCode(201)
                 .extract().to<Tag>()
         assertThat(created.name).isEqualTo("tag10")
+        assertThat(created.path).isEqualTo("tag10")
         assertThat(created.dateCreated).isEqualTo(created.dateUpdated)
         val retrieved = get("/tag/{id}", created.id)
                 .then()
@@ -96,6 +98,7 @@ class TagResourceTest : ServerTest() {
                 .extract().to<Tag>()
         assertThat(updated.id).isEqualTo("t2")
         assertThat(updated.name).isEqualTo("updated")
+        assertThat(updated.path).isEqualTo("updated")
         assertThat(updated.dateUpdated).isNotEqualTo(updated.dateCreated)
         val retrieved = get("/tag/{id}", updated.id)
                 .then()

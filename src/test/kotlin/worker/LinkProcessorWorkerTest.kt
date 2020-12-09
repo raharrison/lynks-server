@@ -304,12 +304,12 @@ class LinkProcessorWorkerTest {
             val title = "title"
             val keywords = setOf("search", "other", "important")
             val tags = listOf(
-                Tag("t1", "tag1", 124L, 1234L),
-                Tag("t2", "tag2", 124L, 1234L)
+                Tag("t1", "tag1", null, 124L, 1234L),
+                Tag("t2", "tag2", null, 124L, 1234L)
             )
             val collections = listOf(
-                Collection("c1", "col1", mutableSetOf(), 124L, 1234L),
-                Collection("c2", "col2", mutableSetOf(), 124L, 1234L)
+                Collection("c1", "col1", null, mutableSetOf(), 124L, 1234L),
+                Collection("c2", "col2", null, mutableSetOf(), 124L, 1234L)
             )
             val linkContent = LinkContent(title, content, content, "imgUrl", keywords)
 

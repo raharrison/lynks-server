@@ -36,10 +36,12 @@ class TagServiceTest : DatabaseTest() {
         val tag = tagService.get("t1")
         assertThat(tag?.id).isEqualTo("t1")
         assertThat(tag?.name).isEqualTo("tag1")
+        assertThat(tag?.path).isEqualTo("tag1")
 
         val tag2 = tagService.get("t2")
         assertThat(tag2?.id).isEqualTo("t2")
         assertThat(tag2?.name).isEqualTo("tag2")
+        assertThat(tag2?.path).isEqualTo("tag2")
     }
 
     @Test
@@ -81,6 +83,7 @@ class TagServiceTest : DatabaseTest() {
     fun testCreateTagNoParent() {
         val created = tagService.add(NewTag(null, "newTag"))
         assertThat(created.name).isEqualTo("newTag")
+        assertThat(created.path).isEqualTo("newTag")
         assertThat(created.dateCreated).isEqualTo(created.dateUpdated)
 
         assertThat(tagService.getAll()).hasSize(4).extracting("id").contains(created.id)
@@ -109,6 +112,7 @@ class TagServiceTest : DatabaseTest() {
         assertThat(updated).isEqualTo(retr)
         assertThat(retr).isNotNull
         assertThat(retr?.name).isEqualTo("updated")
+        assertThat(retr?.path).isEqualTo("updated")
         assertThat(retr?.dateUpdated).isNotEqualTo(current?.dateUpdated)
         assertThat(retr?.dateCreated).isEqualTo(current?.dateCreated)
         assertThat(retr?.dateCreated).isNotEqualTo(retr?.dateUpdated)

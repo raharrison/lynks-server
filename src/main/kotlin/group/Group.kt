@@ -25,6 +25,7 @@ object EntryGroups: Table("ENTRY_GROUP") {
 
 interface Grouping<T>: IdBasedCreatedEntity {
     var name: String
+    var path: String?
     var children: MutableSet<T>
     var dateCreated: Long
     var dateUpdated: Long
@@ -35,10 +36,11 @@ interface Grouping<T>: IdBasedCreatedEntity {
 class GroupSet(val tags: List<Tag> = emptyList(), val collections: List<Collection> = emptyList())
 
 data class Tag(
-        override val id: String,
-        override var name: String,
-        override var dateCreated: Long,
-        override var dateUpdated: Long
+    override val id: String,
+    override var name: String,
+    override var path: String?,
+    override var dateCreated: Long,
+    override var dateUpdated: Long
 ): Grouping<Tag> {
 
     override var children: MutableSet<Tag> = mutableSetOf()
@@ -57,11 +59,12 @@ data class NewTag(
 
 
 data class Collection(
-        override val id: String,
-        override var name: String,
-        override var children: MutableSet<Collection>,
-        override var dateCreated: Long,
-        override var dateUpdated: Long
+    override val id: String,
+    override var name: String,
+    override var path: String?,
+    override var children: MutableSet<Collection>,
+    override var dateCreated: Long,
+    override var dateUpdated: Long
 ): Grouping<Collection> {
     override fun hashCode(): Int = id.hashCode()
     override fun equals(other: Any?): Boolean = if (other is Collection) id == other.id else false

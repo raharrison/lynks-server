@@ -24,11 +24,12 @@ class CollectionService : GroupService<Collection, NewCollection>(GroupType.COLL
 
     override fun toModel(row: ResultRow): Collection {
         return Collection(
-                id = row[Groups.id],
-                name = row[Groups.name],
-                children = getGroupChildren(row[Groups.id]),
-                dateCreated = row[Groups.dateCreated],
-                dateUpdated = row[Groups.dateUpdated]
+            id = row[Groups.id],
+            name = row[Groups.name],
+            path = null,
+            children = getGroupChildren(row[Groups.id]),
+            dateCreated = row[Groups.dateCreated],
+            dateUpdated = row[Groups.dateUpdated]
         )
     }
 

@@ -65,6 +65,7 @@ class CollectionResourceTest : ServerTest() {
                 .extract().to<Collection>()
         assertThat(col1.id).isEqualTo("c1")
         assertThat(col1.name).isEqualTo("col1")
+        assertThat(col1.path).isEqualTo("col1")
         assertThat(col1.children).isEmpty()
 
         val col2 = get("/collection/{id}", "c2")
@@ -73,6 +74,7 @@ class CollectionResourceTest : ServerTest() {
                 .extract().to<Collection>()
         assertThat(col2.id).isEqualTo("c2")
         assertThat(col2.name).isEqualTo("col2")
+        assertThat(col2.path).isEqualTo("col2")
         assertThat(col2.children).hasSize(2).extracting("id").containsExactlyInAnyOrder("c3", "c4")
     }
 
@@ -113,6 +115,7 @@ class CollectionResourceTest : ServerTest() {
                 .statusCode(201)
                 .extract().to<Collection>()
         assertThat(created.name).isEqualTo("col10")
+        assertThat(created.path).isEqualTo("col10")
         assertThat(created.children).isEmpty()
         assertThat(created.dateCreated).isEqualTo(created.dateUpdated)
         val retrieved = get("/collection/{id}", created.id)
@@ -135,6 +138,7 @@ class CollectionResourceTest : ServerTest() {
                 .extract().to<Collection>()
         assertThat(updated.id).isEqualTo("c7")
         assertThat(updated.name).isEqualTo("updated")
+        assertThat(updated.path).isEqualTo("updated")
         assertThat(updated.children).isEmpty()
         assertThat(updated.dateUpdated).isNotEqualTo(updated.dateCreated)
         val retrieved = get("/collection/{id}", updated.id)

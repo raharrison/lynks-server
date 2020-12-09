@@ -2,7 +2,6 @@ package service
 
 import common.exception.InvalidModelException
 import group.*
-import group.Collection
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -20,10 +19,10 @@ class GroupSetServiceTest {
     fun testGetGroupsIn() {
         val ids = listOf("t1", "t2", "c1")
         val tags = listOf(
-            Tag("t1", "tag1", 124L, 1234L),
-            Tag("t2", "tag2", 124L, 1234L)
+            Tag("t1", "tag1", "tag1", 124L, 1234L),
+            Tag("t2", "tag2", "tag2", 124L, 1234L)
         )
-        val collections = listOf(Collection("c1", "col1", mutableSetOf(), 124L, 1234L))
+        val collections = listOf(Collection("c1", "col1", "col1", mutableSetOf(), 124L, 1234L))
 
         every { tagService.getIn(ids) } returns tags
         every { collectionService.getIn(ids) } returns collections
@@ -38,18 +37,18 @@ class GroupSetServiceTest {
 
     @Test
     fun testAssertGroupsSucceeds() {
-        every { tagService.get("t1") } returns Tag("t1", "tag1", 124L, 1234L)
-        every { tagService.get("t2") } returns Tag("t2", "tag2", 124L, 1234L)
-        every { collectionService.get("c1") } returns Collection("c1", "col1", mutableSetOf(), 124L, 1234L)
+        every { tagService.get("t1") } returns Tag("t1", "tag1", "tag1", 124L, 1234L)
+        every { tagService.get("t2") } returns Tag("t2", "tag2", "tag2", 124L, 1234L)
+        every { collectionService.get("c1") } returns Collection("c1", "col1", "col1", mutableSetOf(), 124L, 1234L)
 
         groupSetService.assertGroups(listOf("t1", "t2"), listOf("c1"))
     }
 
     @Test
     fun testAssertGroupsFailsMissingTag() {
-        every { tagService.get("t1") } returns Tag("t1", "tag1", 124L, 1234L)
+        every { tagService.get("t1") } returns Tag("t1", "tag1", "tag1", 124L, 1234L)
         every { tagService.get("t2") } returns null
-        every { collectionService.get("t2") } returns Collection("c1", "col1", mutableSetOf(), 124L, 1234L)
+        every { collectionService.get("t2") } returns Collection("c1", "col1", "col1", mutableSetOf(), 124L, 1234L)
 
         assertThrows<InvalidModelException> {
             groupSetService.assertGroups(listOf("t1", "t2"), listOf("c1"))
@@ -58,7 +57,7 @@ class GroupSetServiceTest {
 
     @Test
     fun testAssertGroupsFailsMissingCollection() {
-        every { tagService.get("t1") } returns Tag("t1", "tag1", 124L, 1234L)
+        every { tagService.get("t1") } returns Tag("t1", "tag1", "tag1", 124L, 1234L)
         every { collectionService.get("c1") } returns null
 
         assertThrows<InvalidModelException> {
@@ -69,10 +68,10 @@ class GroupSetServiceTest {
     @Test
     fun testGetSubtrees() {
         val tags = listOf(
-            Tag("t1", "tag1", 124L, 1234L),
-            Tag("t2", "tag2", 124L, 1234L)
+            Tag("t1", "tag1", "tag1", 124L, 1234L),
+            Tag("t2", "tag2", "tag1", 124L, 1234L)
         )
-        val collections = listOf(Collection("c1", "col1", mutableSetOf(), 124L, 1234L))
+        val collections = listOf(Collection("c1", "col1", "col1", mutableSetOf(), 124L, 1234L))
 
         every { tagService.subtree("t1") } returns tags
         every { collectionService.subtree("c1") } returns collections
@@ -98,12 +97,12 @@ class GroupSetServiceTest {
     @Test
     fun testMatchWithContent() {
         every { tagService.sequence() } returns sequenceOf(
-            Tag("t1", "tag1", 124L, 1234L),
-            Tag("t2", "tag2", 124L, 1234L)
+            Tag("t1", "tag1", "tag1", 124L, 1234L),
+            Tag("t2", "tag2", "tag2", 124L, 1234L)
         )
         every { collectionService.sequence() } returns sequenceOf(
-            Collection("c1", "col1", mutableSetOf(), 124L, 1234L),
-            Collection("c2", "col2", mutableSetOf(), 124L, 1234L)
+            Collection("c1", "col1", "col1", mutableSetOf(), 124L, 1234L),
+            Collection("c2", "col2", "col2", mutableSetOf(), 124L, 1234L)
         )
 
         val content = "some content tag1 along with tag2 and col1 are relevant"
