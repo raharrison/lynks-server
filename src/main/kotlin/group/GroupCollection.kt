@@ -2,6 +2,7 @@ package group
 
 import com.google.common.collect.HashMultimap
 import com.google.common.collect.Multimap
+import kotlin.collections.Collection
 
 class GroupCollection<T: Grouping<T>> {
 
