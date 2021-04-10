@@ -2,16 +2,11 @@ package resource
 
 import common.Environment
 import common.exception.InvalidModelException
-import io.ktor.application.call
-import io.ktor.http.ContentType
-import io.ktor.http.HttpStatusCode
+import io.ktor.application.*
+import io.ktor.http.*
 import io.ktor.http.content.*
-import io.ktor.http.defaultForFilePath
-import io.ktor.request.receive
-import io.ktor.request.receiveMultipart
-import io.ktor.response.header
-import io.ktor.response.respond
-import io.ktor.response.respondFile
+import io.ktor.request.*
+import io.ktor.response.*
 import io.ktor.routing.*
 
 fun Route.resources(resourceManager: ResourceManager) {
@@ -27,7 +22,7 @@ fun Route.resources(resourceManager: ResourceManager) {
 
     route("/entry/{entryId}/resource") {
 
-        get("/") {
+        get {
             val id = call.parameters["entryId"]!!
             call.respond(resourceManager.getResourcesFor(id))
         }
@@ -51,12 +46,12 @@ fun Route.resources(resourceManager: ResourceManager) {
             else call.respond(HttpStatusCode.NotFound)
         }
 
-        post("/") {
+        post {
             val entryId = call.parameters["entryId"]!!
             val multipart = call.receiveMultipart()
             var res: Resource? = null
             multipart.forEachPart { part ->
-                if(part is PartData.FileItem) {
+                if (part is PartData.FileItem) {
                     val name = part.originalFileName!!
                     res = resourceManager.saveUploadedResource(entryId, name, part.streamProvider())
                 }
@@ -66,10 +61,10 @@ fun Route.resources(resourceManager: ResourceManager) {
             else call.respond(HttpStatusCode.Created, res!!)
         }
 
-        put("/") {
+        put {
             val resource = call.receive<Resource>()
             val updated = resourceManager.updateResource(resource)
-            if(updated == null) call.respond(HttpStatusCode.NotFound)
+            if (updated == null) call.respond(HttpStatusCode.NotFound)
             else call.respond(HttpStatusCode.OK, updated)
         }
 

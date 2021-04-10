@@ -1,16 +1,16 @@
 package group
 
-import io.ktor.application.call
-import io.ktor.http.HttpStatusCode
-import io.ktor.request.receive
-import io.ktor.response.respond
+import io.ktor.application.*
+import io.ktor.http.*
+import io.ktor.request.*
+import io.ktor.response.*
 import io.ktor.routing.*
 
 fun Route.tag(tagService: TagService) {
 
     route("/tag") {
 
-        get("/") {
+        get {
             call.respond(tagService.getAll())
         }
 
@@ -20,15 +20,15 @@ fun Route.tag(tagService: TagService) {
             else call.respond(tag)
         }
 
-        post("/") {
+        post {
             val tag = call.receive<NewTag>()
             call.respond(HttpStatusCode.Created, tagService.add(tag))
         }
 
-        put("/") {
+        put {
             val tag = call.receive<NewTag>()
             val updated = tagService.update(tag)
-            if(updated == null) call.respond(HttpStatusCode.NotFound)
+            if (updated == null) call.respond(HttpStatusCode.NotFound)
             else call.respond(HttpStatusCode.OK, updated)
         }
 

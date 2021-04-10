@@ -2,11 +2,10 @@ package entry
 
 import common.NewLink
 import common.exception.InvalidModelException
-import io.ktor.application.call
-import io.ktor.http.HttpStatusCode
-import io.ktor.request.receive
-import io.ktor.response.respond
-import io.ktor.response.respondRedirect
+import io.ktor.application.*
+import io.ktor.http.*
+import io.ktor.request.*
+import io.ktor.response.*
 import io.ktor.routing.*
 import util.URLUtils
 import util.pageRequest
@@ -17,7 +16,7 @@ fun Route.link(linkService: LinkService) {
 
     route("/link") {
 
-        get("/") {
+        get {
             call.respond(linkService.get(call.pageRequest()))
         }
 
@@ -35,16 +34,16 @@ fun Route.link(linkService: LinkService) {
             else call.respond(link)
         }
 
-        post("/") {
+        post {
             val link = call.receive<NewLink>()
-            if(!checkLink(link)) throw InvalidModelException("Invalid URL")
+            if (!checkLink(link)) throw InvalidModelException("Invalid URL")
             else call.respond(HttpStatusCode.Created, linkService.add(link))
         }
 
-        put("/") {
+        put {
             val link = call.receive<NewLink>()
             val updated = linkService.update(link)
-            if(!checkLink(link)) throw InvalidModelException("Invalid URL")
+            if (!checkLink(link)) throw InvalidModelException("Invalid URL")
             else {
                 if (updated == null) call.respond(HttpStatusCode.NotFound)
                 else call.respond(HttpStatusCode.OK, updated)

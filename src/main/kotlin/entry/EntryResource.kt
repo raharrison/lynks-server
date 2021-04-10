@@ -1,12 +1,9 @@
 package entry
 
-import io.ktor.application.call
-import io.ktor.http.HttpStatusCode
-import io.ktor.response.respond
-import io.ktor.routing.Route
-import io.ktor.routing.get
-import io.ktor.routing.post
-import io.ktor.routing.route
+import io.ktor.application.*
+import io.ktor.http.*
+import io.ktor.response.*
+import io.ktor.routing.*
 import reminder.ReminderService
 import util.pageRequest
 
@@ -14,7 +11,7 @@ fun Route.entry(entryService: EntryService, reminderService: ReminderService, en
 
     route("/entry") {
 
-        get("/") {
+        get {
             call.respond(entryService.get(call.pageRequest()))
         }
 

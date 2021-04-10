@@ -1,16 +1,16 @@
 package group
 
-import io.ktor.application.call
-import io.ktor.http.HttpStatusCode
-import io.ktor.request.receive
-import io.ktor.response.respond
+import io.ktor.application.*
+import io.ktor.http.*
+import io.ktor.request.*
+import io.ktor.response.*
 import io.ktor.routing.*
 
 fun Route.collection(collectionService: CollectionService) {
 
     route("/collection") {
 
-        get("/") {
+        get {
             call.respond(collectionService.getAll())
         }
 
@@ -20,15 +20,15 @@ fun Route.collection(collectionService: CollectionService) {
             else call.respond(collection)
         }
 
-        post("/") {
+        post {
             val collection = call.receive<NewCollection>()
             call.respond(HttpStatusCode.Created, collectionService.add(collection))
         }
 
-        put("/") {
+        put {
             val collection = call.receive<NewCollection>()
             val updated = collectionService.update(collection)
-            if(updated == null) call.respond(HttpStatusCode.NotFound)
+            if (updated == null) call.respond(HttpStatusCode.NotFound)
             else call.respond(HttpStatusCode.OK, updated)
         }
 

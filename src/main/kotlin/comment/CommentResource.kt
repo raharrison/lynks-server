@@ -1,9 +1,9 @@
 package comment
 
-import io.ktor.application.call
-import io.ktor.http.HttpStatusCode
-import io.ktor.request.receive
-import io.ktor.response.respond
+import io.ktor.application.*
+import io.ktor.http.*
+import io.ktor.request.*
+import io.ktor.response.*
 import io.ktor.routing.*
 import util.pageRequest
 
@@ -11,7 +11,7 @@ fun Route.comment(commentService: CommentService) {
 
     route("/entry/{entryId}/comments") {
 
-        get("/") {
+        get {
             val page = call.pageRequest()
             val id = call.parameters["entryId"]!!
             call.respond(commentService.getCommentsFor(id, page))
@@ -25,17 +25,17 @@ fun Route.comment(commentService: CommentService) {
             else call.respond(comment)
         }
 
-        post("/") {
+        post {
             val comment = call.receive<NewComment>()
             val entryId = call.parameters["entryId"]!!
             call.respond(HttpStatusCode.Created, commentService.addComment(entryId, comment))
         }
 
-        put("/") {
+        put {
             val comment = call.receive<NewComment>()
             val entryId = call.parameters["entryId"]!!
             val updated = commentService.updateComment(entryId, comment)
-            if(updated == null) call.respond(HttpStatusCode.NotFound)
+            if (updated == null) call.respond(HttpStatusCode.NotFound)
             else call.respond(HttpStatusCode.OK, updated)
         }
 

@@ -1,10 +1,10 @@
 package entry
 
 import common.NewNote
-import io.ktor.application.call
-import io.ktor.http.HttpStatusCode
-import io.ktor.request.receive
-import io.ktor.response.respond
+import io.ktor.application.*
+import io.ktor.http.*
+import io.ktor.request.*
+import io.ktor.response.*
 import io.ktor.routing.*
 import util.pageRequest
 
@@ -12,7 +12,7 @@ fun Route.note(noteService: NoteService) {
 
     route("/note") {
 
-        get("/") {
+        get {
             call.respond(noteService.get(call.pageRequest()))
         }
 
@@ -30,12 +30,12 @@ fun Route.note(noteService: NoteService) {
             else call.respond(note)
         }
 
-        post("/") {
+        post {
             val note = call.receive<NewNote>()
             call.respond(HttpStatusCode.Created, noteService.add(note))
         }
 
-        put("/") {
+        put {
             val note = call.receive<NewNote>()
             val updated = noteService.update(note)
             if (updated == null) call.respond(HttpStatusCode.NotFound)

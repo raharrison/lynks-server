@@ -1,16 +1,16 @@
 package reminder
 
-import io.ktor.application.call
-import io.ktor.http.HttpStatusCode
-import io.ktor.request.receive
-import io.ktor.response.respond
+import io.ktor.application.*
+import io.ktor.http.*
+import io.ktor.request.*
+import io.ktor.response.*
 import io.ktor.routing.*
 
 fun Route.reminder(reminderService: ReminderService) {
 
     route("/reminder") {
 
-        get("/") {
+        get {
             call.respond(reminderService.getAllReminders())
         }
 
@@ -21,12 +21,12 @@ fun Route.reminder(reminderService: ReminderService) {
             else call.respond(reminder)
         }
 
-        post("/") {
+        post {
             val reminder = call.receive<NewReminder>()
             call.respond(HttpStatusCode.Created, reminderService.addReminder(reminder))
         }
 
-        put("/") {
+        put {
             val reminder = call.receive<NewReminder>()
             val updated = reminderService.updateReminder(reminder)
             if (updated == null) call.respond(HttpStatusCode.NotFound)
