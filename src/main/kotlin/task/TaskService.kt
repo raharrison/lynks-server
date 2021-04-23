@@ -8,6 +8,7 @@ import util.loggerFor
 import worker.WorkerRegistry
 import kotlin.reflect.KMutableProperty1
 import kotlin.reflect.full.findAnnotation
+import kotlin.reflect.full.isSubclassOf
 import kotlin.reflect.full.memberProperties
 import kotlin.reflect.full.primaryConstructor
 import kotlin.reflect.jvm.jvmErasure
@@ -34,7 +35,11 @@ class TaskService(private val entryService: EntryService,
     @Suppress("UNCHECKED_CAST")
     private fun convertToConcreteTask(taskId: String, eid: String, def: TaskDefinition): Task<TaskContext> {
         val clazz = Class.forName(def.className).kotlin
-        return (clazz.primaryConstructor?.call(taskId, eid) as Task<TaskContext>).also(::autowire)
+        if (clazz.isSubclassOf(Task::class)) {
+            return (clazz.primaryConstructor?.call(taskId, eid) as Task<TaskContext>).also(::autowire)
+        } else {
+            throw IllegalArgumentException("Task must be a subclass of: " + Task::class.qualifiedName)
+        }
     }
 
     private fun autowire(task: Task<TaskContext>) {

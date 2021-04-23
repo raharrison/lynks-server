@@ -10,6 +10,7 @@ import io.mockk.*
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import task.LinkProcessingTask
 import task.TaskService
 import worker.WorkerRegistry
@@ -67,7 +68,14 @@ class TaskServiceTest {
     @Test
     fun testNoTaskReturnsFalse() {
         val props = BaseProperties()
-        props.addTask(TaskDefinition("task1", "description", LinkProcessingTask::class.qualifiedName!!, mapOf("k1" to "v1")))
+        props.addTask(
+            TaskDefinition(
+                "task1",
+                "description",
+                LinkProcessingTask::class.qualifiedName!!,
+                mapOf("k1" to "v1")
+            )
+        )
         val entry = Link("entry1", "title", "google.com", "src", "", 1234, 1234, emptyList(), emptyList(), props)
         every { entryService.get("entry1") } returns entry
 
@@ -76,4 +84,16 @@ class TaskServiceTest {
         verify(exactly = 1) { entryService.get("entry1") }
     }
 
+    @Test
+    fun testRunInvalidTaskClassThrows() {
+        val props = BaseProperties().apply {
+            addTask(TaskDefinition("task1", "description", TaskService::class.qualifiedName!!, mapOf("k1" to "v1")))
+        }
+        val entry = Link("entry1", "title", "google.com", "src", "", 1234, 1234L, emptyList(), emptyList(), props)
+        every { entryService.get("entry1") } returns entry
+
+        assertThrows<IllegalArgumentException> {
+            taskService.runTask("entry1", "task1")
+        }
+    }
 }
