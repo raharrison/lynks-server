@@ -4,8 +4,8 @@ import comment.CommentService
 import comment.NewComment
 import common.DatabaseTest
 import common.EntryType
-import common.PageRequest
-import common.SortDirection
+import common.page.PageRequest
+import common.page.SortDirection
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -69,18 +69,18 @@ class CommentServiceTest : DatabaseTest() {
 
     @Test
     fun testGetCommentsForEntry() {
-        assertThat(commentService.getCommentsFor("invalid")).isEmpty()
+        assertThat(commentService.getCommentsFor("invalid").content).isEmpty()
 
         commentService.addComment("e1", newComment(content = "comment content 1"))
         commentService.addComment("e1", newComment(content = "comment content 2"))
 
-        val comments = commentService.getCommentsFor("e1")
+        val comments = commentService.getCommentsFor("e1").content
         assertThat(comments).hasSize(2)
         assertThat(comments).extracting("id").doesNotHaveDuplicates()
         assertThat(comments).extracting("entryId").containsOnly("e1")
         assertThat(comments).extracting("plainText").contains("comment content 1")
 
-        assertThat(commentService.getCommentsFor("e2")).isEmpty()
+        assertThat(commentService.getCommentsFor("e2").content).isEmpty()
     }
 
     @Test
@@ -91,23 +91,32 @@ class CommentServiceTest : DatabaseTest() {
         Thread.sleep(10)
         commentService.addComment("e1", newComment(content = "comment content 3"))
 
-        var comments = commentService.getCommentsFor("e1", PageRequest(0, 1))
-        assertThat(comments).hasSize(1)
-        assertThat(comments).extracting("plainText").containsOnly("comment content 1")
+        var comments = commentService.getCommentsFor("e1", PageRequest(1, 1))
+        assertThat(comments.content).hasSize(1)
+        assertThat(comments.page).isEqualTo(1L)
+        assertThat(comments.size).isEqualTo(1)
+        assertThat(comments.total).isEqualTo(3)
+        assertThat(comments.content).extracting("plainText").containsOnly("comment content 1")
 
-        comments = commentService.getCommentsFor("e1", PageRequest(1, 1))
-        assertThat(comments).hasSize(1)
-        assertThat(comments).extracting("plainText").containsOnly("comment content 2")
+        comments = commentService.getCommentsFor("e1", PageRequest(2, 1))
+        assertThat(comments.content).hasSize(1)
+        assertThat(comments.page).isEqualTo(2L)
+        assertThat(comments.size).isEqualTo(1)
+        assertThat(comments.total).isEqualTo(3)
+        assertThat(comments.content).extracting("plainText").containsOnly("comment content 2")
 
-        comments = commentService.getCommentsFor("e1", PageRequest(0, 3))
-        assertThat(comments).hasSize(3)
+        comments = commentService.getCommentsFor("e1", PageRequest(1, 3))
+        assertThat(comments.content).hasSize(3)
+        assertThat(comments.page).isEqualTo(1L)
+        assertThat(comments.size).isEqualTo(3)
+        assertThat(comments.total).isEqualTo(3)
 
-        comments = commentService.getCommentsFor("e1", PageRequest(4, 3))
-        assertThat(comments).isEmpty()
-
-        comments = commentService.getCommentsFor("e1", PageRequest(0, 10))
-        assertThat(comments).hasSize(3)
-        assertThat(comments).extracting("id").doesNotHaveDuplicates()
+        comments = commentService.getCommentsFor("e1", PageRequest(1, 10))
+        assertThat(comments.content).hasSize(3)
+        assertThat(comments.page).isEqualTo(1L)
+        assertThat(comments.size).isEqualTo(10)
+        assertThat(comments.total).isEqualTo(3)
+        assertThat(comments.content).extracting("id").doesNotHaveDuplicates()
     }
 
     @Test
@@ -118,11 +127,17 @@ class CommentServiceTest : DatabaseTest() {
         Thread.sleep(10)
         val c3 = commentService.addComment("e1", newComment(content = "comment content 3"))
 
-        var comments = commentService.getCommentsFor("e1", PageRequest(0, 10, sort = "dateCreated", direction = SortDirection.DESC))
-        assertThat(comments).extracting("id").containsExactly(c3.id, c2.id, c1.id)
+        var comments = commentService.getCommentsFor("e1", PageRequest(1, 10, sort = "dateCreated", direction = SortDirection.DESC))
+        assertThat(comments.content).extracting("id").containsExactly(c3.id, c2.id, c1.id)
+        assertThat(comments.page).isEqualTo(1L)
+        assertThat(comments.size).isEqualTo(10)
+        assertThat(comments.total).isEqualTo(3)
 
-        comments = commentService.getCommentsFor("e1", PageRequest(0, 10, sort = "dateCreated", direction = SortDirection.ASC))
-        assertThat(comments).extracting("id").containsExactly(c1.id, c2.id, c3.id)
+        comments = commentService.getCommentsFor("e1", PageRequest(1, 10, sort = "dateCreated", direction = SortDirection.ASC))
+        assertThat(comments.content).extracting("id").containsExactly(c1.id, c2.id, c3.id)
+        assertThat(comments.page).isEqualTo(1L)
+        assertThat(comments.size).isEqualTo(10)
+        assertThat(comments.total).isEqualTo(3)
     }
 
     @Test
@@ -135,12 +150,12 @@ class CommentServiceTest : DatabaseTest() {
         assertThat(commentService.deleteComment("e1", "e1")).isFalse()
         assertThat(commentService.deleteComment(added1.entryId, added1.id)).isTrue()
 
-        assertThat(commentService.getCommentsFor("e1")).hasSize(1)
+        assertThat(commentService.getCommentsFor("e1").content).hasSize(1)
         assertThat(commentService.getComment(added1.entryId, added1.id)).isNull()
 
         assertThat(commentService.deleteComment(added2.entryId, added2.id)).isTrue()
 
-        assertThat(commentService.getCommentsFor("e1")).isEmpty()
+        assertThat(commentService.getCommentsFor("e1").content).isEmpty()
         assertThat(commentService.getComment(added2.entryId, added2.id)).isNull()
     }
 
@@ -174,7 +189,7 @@ class CommentServiceTest : DatabaseTest() {
         assertThat(added1.id).isNotEqualTo(updated.id)
         assertThat(updated.dateCreated).isEqualTo(updated.dateUpdated)
 
-        val comments = commentService.getCommentsFor("e1")
+        val comments = commentService.getCommentsFor("e1").content
         assertThat(comments).hasSize(2)
         assertThat(comments).extracting("id").containsOnly(added1.id, updated.id)
     }

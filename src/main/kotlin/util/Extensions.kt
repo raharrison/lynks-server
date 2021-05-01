@@ -1,7 +1,7 @@
 package util
 
-import common.PageRequest
-import common.SortDirection
+import common.page.PageRequest
+import common.page.SortDirection
 import io.ktor.application.ApplicationCall
 import org.jetbrains.exposed.sql.*
 import org.slf4j.Logger
@@ -13,10 +13,10 @@ fun Query.combine(block: SqlExpressionBuilder.() -> Op<Boolean>): Query {
 }
 
 fun ApplicationCall.pageRequest(): PageRequest {
-    val offset: Long = request.queryParameters["offset"]?.toLong() ?: 0
-    val limit: Int = request.queryParameters["limit"]?.toInt() ?: 25
+    val page: Long = request.queryParameters["page"]?.toLong() ?: 1
+    val size: Int = request.queryParameters["size"]?.toInt() ?: 25
     val tag: String? = request.queryParameters["tag"]
-    return PageRequest(offset, limit, tag)
+    return PageRequest(page, size, tag)
 }
 
 fun Path.toUrlString(): String {

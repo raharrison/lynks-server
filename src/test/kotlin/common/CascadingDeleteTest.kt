@@ -93,17 +93,17 @@ class CascadingDeleteTest: DatabaseTest() {
 
     @Test
     fun testDeletingCommentDoesntDeleteEntry() {
-        assertThat(commentService.getCommentsFor("id1")).hasSize(1)
+        assertThat(commentService.getCommentsFor("id1").content).hasSize(1)
         assertThat(commentService.deleteComment("id1", "c1")).isTrue()
-        assertThat(commentService.getCommentsFor("id1")).isEmpty()
+        assertThat(commentService.getCommentsFor("id1").content).isEmpty()
         assertThat(linkService.get("id1")).isNotNull
     }
 
     @Test
     fun testDeletingEntryDeletesComments() {
-        assertThat(commentService.getCommentsFor("id1")).hasSize(1)
+        assertThat(commentService.getCommentsFor("id1").content).hasSize(1)
         assertThat(linkService.delete("id1")).isTrue()
-        assertThat(commentService.getCommentsFor("id1")).isEmpty()
+        assertThat(commentService.getCommentsFor("id1").content).isEmpty()
         assertThat(linkService.get("id1")).isNull()
     }
 

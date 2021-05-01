@@ -2,6 +2,8 @@ package service
 
 import common.*
 import common.exception.InvalidModelException
+import common.page.PageRequest
+import common.page.SortDirection
 import entry.EntryAuditService
 import entry.LinkService
 import group.CollectionService
@@ -140,24 +142,33 @@ class LinkServiceTest : DatabaseTest() {
         Thread.sleep(10)
         linkService.add(newLink("n3", "netflix.com", listOf("t1", "t2"), listOf("c1")))
 
-        var links = linkService.get(PageRequest(0, 1))
-        assertThat(links).hasSize(1)
-        assertThat(links).extracting("source").containsOnly("netflix.com")
-        assertThat(links).extracting("title").containsOnly("n3")
+        var links = linkService.get(PageRequest(1, 1))
+        assertThat(links.content).hasSize(1)
+        assertThat(links.page).isEqualTo(1L)
+        assertThat(links.size).isEqualTo(1)
+        assertThat(links.total).isEqualTo(3)
+        assertThat(links.content).extracting("source").containsOnly("netflix.com")
+        assertThat(links.content).extracting("title").containsOnly("n3")
 
-        links = linkService.get(PageRequest(1, 1))
-        assertThat(links).hasSize(1)
-        assertThat(links).extracting("title").containsOnly("n2")
+        links = linkService.get(PageRequest(2, 1))
+        assertThat(links.content).hasSize(1)
+        assertThat(links.page).isEqualTo(2L)
+        assertThat(links.size).isEqualTo(1)
+        assertThat(links.total).isEqualTo(3)
+        assertThat(links.content).extracting("title").containsOnly("n2")
 
-        links = linkService.get(PageRequest(0, 3))
-        assertThat(links).hasSize(3)
+        links = linkService.get(PageRequest(1, 3))
+        assertThat(links.content).hasSize(3)
+        assertThat(links.page).isEqualTo(1L)
+        assertThat(links.size).isEqualTo(3)
+        assertThat(links.total).isEqualTo(3)
 
-        links = linkService.get(PageRequest(4, 3))
-        assertThat(links).isEmpty()
-
-        links = linkService.get(PageRequest(0, 10))
-        assertThat(links).hasSize(3)
-        assertThat(links).extracting("title").doesNotHaveDuplicates()
+        links = linkService.get(PageRequest(1, 10))
+        assertThat(links.content).hasSize(3)
+        assertThat(links.page).isEqualTo(1L)
+        assertThat(links.size).isEqualTo(10)
+        assertThat(links.total).isEqualTo(3)
+        assertThat(links.content).extracting("title").doesNotHaveDuplicates()
     }
 
     @Test
@@ -168,11 +179,11 @@ class LinkServiceTest : DatabaseTest() {
         Thread.sleep(10)
         linkService.add(newLink("n3", "netflix.com", listOf("t1", "t2"), listOf("c1")))
 
-        val links = linkService.get(PageRequest(0, 10, sort = "dateCreated", direction = SortDirection.ASC))
-        assertThat(links).extracting("title").containsExactly("n1", "n2", "n3")
+        val links = linkService.get(PageRequest(1, 10, sort = "dateCreated", direction = SortDirection.ASC))
+        assertThat(links.content).extracting("title").containsExactly("n1", "n2", "n3")
 
-        val links2 = linkService.get(PageRequest(0, 10, sort = "dateCreated", direction = SortDirection.DESC))
-        assertThat(links2).extracting("title").containsExactly("n3", "n2", "n1")
+        val links2 = linkService.get(PageRequest(1, 10, sort = "dateCreated", direction = SortDirection.DESC))
+        assertThat(links2.content).extracting("title").containsExactly("n3", "n2", "n1")
     }
 
     @Test
@@ -183,24 +194,24 @@ class LinkServiceTest : DatabaseTest() {
         linkService.add(newLink("l4", "fb.com"))
 
         val onlyTags = linkService.get(PageRequest(tag = "t1"))
-        assertThat(onlyTags).hasSize(2)
-        assertThat(onlyTags).extracting("title").containsExactlyInAnyOrder("l1", "l2")
+        assertThat(onlyTags.content).hasSize(2)
+        assertThat(onlyTags.content).extracting("title").containsExactlyInAnyOrder("l1", "l2")
 
         val onlyTags2 = linkService.get(PageRequest(tag = "t2"))
-        assertThat(onlyTags2).hasSize(1)
-        assertThat(onlyTags2).extracting("title").containsExactlyInAnyOrder("l1")
+        assertThat(onlyTags2.content).hasSize(1)
+        assertThat(onlyTags2.content).extracting("title").containsExactlyInAnyOrder("l1")
 
         val onlyCollections = linkService.get(PageRequest(collection = "c1"))
-        assertThat(onlyCollections).hasSize(1)
-        assertThat(onlyCollections).extracting("title").containsExactlyInAnyOrder("l1")
+        assertThat(onlyCollections.content).hasSize(1)
+        assertThat(onlyCollections.content).extracting("title").containsExactlyInAnyOrder("l1")
 
         val onlyCollections2 = linkService.get(PageRequest(collection = "c2"))
-        assertThat(onlyCollections2).hasSize(1)
-        assertThat(onlyCollections2).extracting("title").containsExactlyInAnyOrder("l3")
+        assertThat(onlyCollections2.content).hasSize(1)
+        assertThat(onlyCollections2.content).extracting("title").containsExactlyInAnyOrder("l3")
 
         val both = linkService.get(PageRequest(tag = "t1", collection = "c1"))
-        assertThat(both).hasSize(1)
-        assertThat(both).extracting("title").containsExactlyInAnyOrder("l1")
+        assertThat(both.content).hasSize(1)
+        assertThat(both.content).extracting("title").containsExactlyInAnyOrder("l1")
     }
 
     @Test
@@ -251,12 +262,12 @@ class LinkServiceTest : DatabaseTest() {
         assertThat(linkService.delete("e1")).isFalse()
         assertThat(linkService.delete(added1.id)).isTrue()
 
-        assertThat(linkService.get()).hasSize(1)
+        assertThat(linkService.get().content).hasSize(1)
         assertThat(linkService.get(added1.id)).isNull()
 
         assertThat(linkService.delete(added2.id)).isTrue()
 
-        assertThat(linkService.get()).isEmpty()
+        assertThat(linkService.get().content).isEmpty()
         assertThat(linkService.get(added2.id)).isNull()
     }
 

@@ -2,6 +2,8 @@ package service
 
 import common.*
 import common.exception.InvalidModelException
+import common.page.PageRequest
+import common.page.SortDirection
 import entry.EntryAuditService
 import entry.NoteService
 import group.CollectionService
@@ -118,23 +120,32 @@ class NoteServiceTest : DatabaseTest() {
         Thread.sleep(10)
         noteService.add(newNote("n3", "content3", listOf("t1", "t2"), listOf("c1")))
 
-        var notes = noteService.get(PageRequest(0, 1))
-        assertThat(notes).hasSize(1)
-        assertThat(notes).extracting("title").containsOnly("n3")
+        var notes = noteService.get(PageRequest(1, 1))
+        assertThat(notes.content).hasSize(1)
+        assertThat(notes.page).isEqualTo(1L)
+        assertThat(notes.size).isEqualTo(1)
+        assertThat(notes.total).isEqualTo(3)
+        assertThat(notes.content).extracting("title").containsOnly("n3")
 
-        notes = noteService.get(PageRequest(1, 1))
-        assertThat(notes).hasSize(1)
-        assertThat(notes).extracting("title").containsOnly("n2")
+        notes = noteService.get(PageRequest(2, 1))
+        assertThat(notes.content).hasSize(1)
+        assertThat(notes.page).isEqualTo(2L)
+        assertThat(notes.size).isEqualTo(1)
+        assertThat(notes.total).isEqualTo(3)
+        assertThat(notes.content).extracting("title").containsOnly("n2")
 
-        notes = noteService.get(PageRequest(0, 3))
-        assertThat(notes).hasSize(3)
+        notes = noteService.get(PageRequest(1, 3))
+        assertThat(notes.content).hasSize(3)
+        assertThat(notes.page).isEqualTo(1L)
+        assertThat(notes.size).isEqualTo(3)
+        assertThat(notes.total).isEqualTo(3)
 
-        notes = noteService.get(PageRequest(4, 3))
-        assertThat(notes).isEmpty()
-
-        notes = noteService.get(PageRequest(0, 10))
-        assertThat(notes).hasSize(3)
-        assertThat(notes).extracting("title").doesNotHaveDuplicates()
+        notes = noteService.get(PageRequest(1, 10))
+        assertThat(notes.content).hasSize(3)
+        assertThat(notes.page).isEqualTo(1L)
+        assertThat(notes.size).isEqualTo(10)
+        assertThat(notes.total).isEqualTo(3)
+        assertThat(notes.content).extracting("title").doesNotHaveDuplicates()
     }
 
     @Test
@@ -145,11 +156,11 @@ class NoteServiceTest : DatabaseTest() {
         Thread.sleep(10)
         noteService.add(newNote("n3", "content3", listOf("t1", "t2"), listOf("c1")))
 
-        val notes = noteService.get(PageRequest(0, 10, sort = "dateCreated", direction = SortDirection.ASC))
-        assertThat(notes).extracting("title").containsExactly("n1", "n2", "n3")
+        val notes = noteService.get(PageRequest(1, 10, sort = "dateCreated", direction = SortDirection.ASC))
+        assertThat(notes.content).extracting("title").containsExactly("n1", "n2", "n3")
 
-        val notes2 = noteService.get(PageRequest(0, 10, sort = "dateCreated", direction = SortDirection.DESC))
-        assertThat(notes2).extracting("title").containsExactly("n3", "n2", "n1")
+        val notes2 = noteService.get(PageRequest(1, 10, sort = "dateCreated", direction = SortDirection.DESC))
+        assertThat(notes2.content).extracting("title").containsExactly("n3", "n2", "n1")
     }
 
     @Test
@@ -160,24 +171,24 @@ class NoteServiceTest : DatabaseTest() {
         noteService.add(newNote("n4", "content3"))
 
         val onlyTags = noteService.get(PageRequest(tag = "t1"))
-        assertThat(onlyTags).hasSize(2)
-        assertThat(onlyTags).extracting("title").containsExactlyInAnyOrder("n1", "n2")
+        assertThat(onlyTags.content).hasSize(2)
+        assertThat(onlyTags.content).extracting("title").containsExactlyInAnyOrder("n1", "n2")
 
         val onlyTags2 = noteService.get(PageRequest(tag = "t2"))
-        assertThat(onlyTags2).hasSize(1)
-        assertThat(onlyTags2).extracting("title").containsExactlyInAnyOrder("n1")
+        assertThat(onlyTags2.content).hasSize(1)
+        assertThat(onlyTags2.content).extracting("title").containsExactlyInAnyOrder("n1")
 
         val onlyCollections = noteService.get(PageRequest(collection = "c1"))
-        assertThat(onlyCollections).hasSize(1)
-        assertThat(onlyCollections).extracting("title").containsExactlyInAnyOrder("n1")
+        assertThat(onlyCollections.content).hasSize(1)
+        assertThat(onlyCollections.content).extracting("title").containsExactlyInAnyOrder("n1")
 
         val onlyCollections2 = noteService.get(PageRequest(collection = "c2"))
-        assertThat(onlyCollections2).hasSize(1)
-        assertThat(onlyCollections2).extracting("title").containsExactlyInAnyOrder("n3")
+        assertThat(onlyCollections2.content).hasSize(1)
+        assertThat(onlyCollections2.content).extracting("title").containsExactlyInAnyOrder("n3")
 
         val both = noteService.get(PageRequest(tag = "t1", collection = "c1"))
-        assertThat(both).hasSize(1)
-        assertThat(both).extracting("title").containsExactlyInAnyOrder("n1")
+        assertThat(both.content).hasSize(1)
+        assertThat(both.content).extracting("title").containsExactlyInAnyOrder("n1")
     }
 
     @Test
@@ -228,12 +239,12 @@ class NoteServiceTest : DatabaseTest() {
         assertThat(noteService.delete("e1")).isFalse()
         assertThat(noteService.delete(added1.id)).isTrue()
 
-        assertThat(noteService.get()).hasSize(1)
+        assertThat(noteService.get().content).hasSize(1)
         assertThat(noteService.get(added1.id)).isNull()
 
         assertThat(noteService.delete(added2.id)).isTrue()
 
-        assertThat(noteService.get()).isEmpty()
+        assertThat(noteService.get().content).isEmpty()
         assertThat(noteService.get(added2.id)).isNull()
     }
 

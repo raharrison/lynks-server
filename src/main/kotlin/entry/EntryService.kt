@@ -1,6 +1,9 @@
 package entry
 
 import common.*
+import common.page.DefaultPageRequest
+import common.page.Page
+import common.page.PageRequest
 import db.EntryRepository
 import group.GroupSet
 import group.GroupSetService
@@ -46,7 +49,7 @@ class EntryService(
         throw NotImplementedError()
     }
 
-    fun search(term: String, page: PageRequest = DefaultPageRequest): List<SlimEntry> = transaction {
+    fun search(term: String, page: PageRequest = DefaultPageRequest): Page<SlimEntry> = transaction {
         val conn = (TransactionManager.current().connection as JdbcConnectionImpl).connection
         conn.prepareStatement("SELECT * FROM FT_SEARCH_DATA(?, 0, 0)").use { prep ->
             prep.setString(1, term)

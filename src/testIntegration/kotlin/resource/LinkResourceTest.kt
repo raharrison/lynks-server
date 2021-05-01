@@ -4,6 +4,7 @@ import common.EntryType
 import common.Link
 import common.NewLink
 import common.ServerTest
+import common.page.Page
 import io.restassured.RestAssured.*
 import io.restassured.http.ContentType
 import org.assertj.core.api.Assertions.assertThat
@@ -50,7 +51,7 @@ class LinkResourceTest: ServerTest() {
         val retrieved = get("/link/{id}", created.id)
                 .then()
                 .extract().to<Link>()
-        assertThat(created).isEqualToIgnoringGivenFields(retrieved, "props")
+        assertThat(created).usingRecursiveComparison().ignoringFields("props").isEqualTo(retrieved)
     }
 
     @Test
@@ -133,7 +134,7 @@ class LinkResourceTest: ServerTest() {
         assertThat(updated.dateCreated).isNotEqualTo(updated.dateUpdated)
         val retrieved = get("/link/{id}", "e3")
                 .then().extract().to<Link>()
-        assertThat(retrieved).isEqualToIgnoringGivenFields(updated, "dateUpdated", "props")
+        assertThat(retrieved).usingRecursiveComparison().ignoringFields("props", "dateUpdated").isEqualTo(updated)
     }
 
     @Test
@@ -168,22 +169,27 @@ class LinkResourceTest: ServerTest() {
                 .get("/link")
                 .then()
                 .statusCode(200)
-                .extract().to<List<Link>>()
-        assertThat(links).hasSize(2).extracting("id").doesNotHaveDuplicates()
+                .extract().to<Page<Link>>()
+        assertThat(links.page).isEqualTo(1)
+        assertThat(links.total).isEqualTo(2)
+        assertThat(links.content).hasSize(2).extracting("id").doesNotHaveDuplicates()
     }
 
     @Test
     fun testLinkPaging() {
         val links = given()
-                .queryParam("offset", 1)
-                .queryParam("limit", 1)
+                .queryParam("page", 2)
+                .queryParam("size", 1)
                 .When()
                 .get("/link")
                 .then()
                 .statusCode(200)
-                .extract().to<List<Link>>()
+                .extract().to<Page<Link>>()
         // newest link first
-        assertThat(links).hasSize(1).extracting("id").containsExactly("e1")
+        assertThat(links.page).isEqualTo(2)
+        assertThat(links.size).isEqualTo(1)
+        assertThat(links.total).isEqualTo(2)
+        assertThat(links.content).hasSize(1).extracting("id").containsExactly("e1")
     }
 
     @Test

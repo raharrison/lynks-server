@@ -4,6 +4,7 @@ import comment.Comment
 import comment.NewComment
 import common.EntryType
 import common.ServerTest
+import common.page.Page
 import io.restassured.RestAssured.*
 import io.restassured.http.ContentType
 import org.assertj.core.api.Assertions.assertThat
@@ -128,23 +129,27 @@ class CommentResourceTest: ServerTest() {
         val comments = get("/entry/{entryId}/comments", "e1")
                 .then()
                 .statusCode(200)
-                .extract().to<List<Comment>>()
-        assertThat(comments).hasSize(2).extracting("id").containsExactlyInAnyOrder("c1", "c3")
+                .extract().to<Page<Comment>>()
+        assertThat(comments.page).isEqualTo(1)
+        assertThat(comments.total).isEqualTo(2)
+        assertThat(comments.content).hasSize(2).extracting("id").containsExactlyInAnyOrder("c1", "c3")
     }
 
     @Test
     fun testCommentPaging() {
         val comments = given()
-                .queryParam("offset", 1)
-                .queryParam("limit", 1)
+                .queryParam("page", 2)
+                .queryParam("size", 1)
                 .When()
                 .get("/entry/{entryId}/comments", "e1")
                 .then()
                 .statusCode(200)
-                .extract().to<List<Comment>>()
+                .extract().to<Page<Comment>>()
         // newest comment first
-        assertThat(comments).hasSize(1).extracting("id").containsExactly("c3")
+        assertThat(comments.page).isEqualTo(2)
+        assertThat(comments.size).isEqualTo(1)
+        assertThat(comments.total).isEqualTo(2)
+        assertThat(comments.content).hasSize(1).extracting("id").containsExactly("c3")
     }
-
 
 }

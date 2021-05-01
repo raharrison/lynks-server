@@ -4,6 +4,7 @@ import common.EntryType
 import common.NewNote
 import common.Note
 import common.ServerTest
+import common.page.Page
 import io.restassured.RestAssured.*
 import io.restassured.http.ContentType
 import org.assertj.core.api.Assertions.assertThat
@@ -49,7 +50,7 @@ class NoteResourceTest: ServerTest() {
         val retrieved = get("/note/{id}", created.id)
                 .then()
                 .extract().to<Note>()
-        assertThat(created).isEqualToIgnoringGivenFields(retrieved, "props")
+        assertThat(created).usingRecursiveComparison().ignoringFields("props").isEqualTo(retrieved)
     }
 
     @Test
@@ -132,7 +133,7 @@ class NoteResourceTest: ServerTest() {
         assertThat(updated.dateCreated).isNotEqualTo(updated.dateUpdated)
         val retrieved = get("/note/{id}", "e2")
                 .then().extract().to<Note>()
-        assertThat(retrieved).isEqualToIgnoringGivenFields(updated, "dateUpdated", "props")
+        assertThat(retrieved).usingRecursiveComparison().ignoringFields("props", "dateUpdated").isEqualTo(updated)
     }
 
     @Test
@@ -167,22 +168,27 @@ class NoteResourceTest: ServerTest() {
                 .get("/note")
                 .then()
                 .statusCode(200)
-                .extract().to<List<Note>>()
-        assertThat(notes).hasSize(2).extracting("id").doesNotHaveDuplicates()
+                .extract().to<Page<Note>>()
+        assertThat(notes.page).isEqualTo(1)
+        assertThat(notes.total).isEqualTo(2)
+        assertThat(notes.content).hasSize(2).extracting("id").doesNotHaveDuplicates()
     }
 
     @Test
     fun testNotePaging() {
         val notes = given()
-                .queryParam("offset", 1)
-                .queryParam("limit", 1)
+                .queryParam("page", 2)
+                .queryParam("size", 1)
                 .When()
                 .get("/note")
                 .then()
                 .statusCode(200)
-                .extract().to<List<Note>>()
+                .extract().to<Page<Note>>()
         // newest note first
-        assertThat(notes).hasSize(1).extracting("id").containsExactly("e2")
+        assertThat(notes.page).isEqualTo(2)
+        assertThat(notes.size).isEqualTo(1)
+        assertThat(notes.total).isEqualTo(2)
+        assertThat(notes.content).hasSize(1).extracting("id").containsExactly("e2")
     }
 
     @Test

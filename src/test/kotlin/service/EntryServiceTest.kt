@@ -1,6 +1,8 @@
 package service
 
 import common.*
+import common.page.PageRequest
+import common.page.SortDirection
 import entry.EntryAuditService
 import entry.EntryService
 import group.CollectionService
@@ -57,57 +59,69 @@ class EntryServiceTest: DatabaseTest() {
     @Test
     fun testGetAll() {
         val retrieved = entryService.get()
-        assertThat(retrieved).hasSize(3)
-        assertThat(retrieved).extracting("id").containsExactlyInAnyOrder("id1", "id2", "id3")
-        assertThat(retrieved).hasAtLeastOneElementOfType(SlimNote::class.java)
-        assertThat(retrieved).hasAtLeastOneElementOfType(SlimLink::class.java)
+        assertThat(retrieved.content).hasSize(3)
+        assertThat(retrieved.page).isEqualTo(1L)
+        assertThat(retrieved.total).isEqualTo(3)
+        assertThat(retrieved.content).extracting("id").containsExactlyInAnyOrder("id1", "id2", "id3")
+        assertThat(retrieved.content).hasAtLeastOneElementOfType(SlimNote::class.java)
+        assertThat(retrieved.content).hasAtLeastOneElementOfType(SlimLink::class.java)
     }
 
     @Test
     fun testGetByIds() {
         val retrieved = entryService.get(listOf("id2", "id3"))
-        assertThat(retrieved).hasSize(2)
-        assertThat(retrieved).extracting("id").containsExactlyInAnyOrder("id2", "id3")
+        assertThat(retrieved.content).hasSize(2)
+        assertThat(retrieved.page).isEqualTo(1L)
+        assertThat(retrieved.total).isEqualTo(2)
+        assertThat(retrieved.content).extracting("id").containsExactlyInAnyOrder("id2", "id3")
     }
 
     @Test
     fun testGetByIdsAndPaged() {
-        val retrieved = entryService.get(listOf("id1", "id2", "id3"), PageRequest(1, 1))
-        assertThat(retrieved).hasSize(1)
-        assertThat(retrieved).extracting("id").containsExactlyInAnyOrder("id2")
+        val retrieved = entryService.get(listOf("id1", "id2", "id3"), PageRequest(2, 1))
+        assertThat(retrieved.content).hasSize(1)
+        assertThat(retrieved.page).isEqualTo(2L)
+        assertThat(retrieved.size).isEqualTo(1)
+        assertThat(retrieved.total).isEqualTo(3)
+        assertThat(retrieved.content).extracting("id").containsExactlyInAnyOrder("id2")
     }
 
     @Test
     fun testPaging() {
         // order by date updated
-        val retrieved = entryService.get(PageRequest(2))
-        assertThat(retrieved).hasSize(1)
-        assertThat(retrieved).extracting("id").containsExactly("id1")
-        assertThat(retrieved).hasOnlyElementsOfType(SlimLink::class.java)
+        val retrieved = entryService.get(PageRequest(1, 1))
+        assertThat(retrieved.content).hasSize(1)
+        assertThat(retrieved.page).isEqualTo(1L)
+        assertThat(retrieved.total).isEqualTo(3)
+        assertThat(retrieved.content).extracting("id").containsExactly("id3")
+        assertThat(retrieved.content).hasOnlyElementsOfType(SlimNote::class.java)
 
-        val retrieved2 = entryService.get(PageRequest(0, 1))
-        assertThat(retrieved2).hasSize(1)
-        assertThat(retrieved2).extracting("id").containsExactly("id3")
-        assertThat(retrieved2).hasOnlyElementsOfType(SlimNote::class.java)
+        val retrieved2 = entryService.get(PageRequest(3, 1))
+        assertThat(retrieved2.content).hasSize(1)
+        assertThat(retrieved2.page).isEqualTo(3L)
+        assertThat(retrieved2.size).isEqualTo(1)
+        assertThat(retrieved2.total).isEqualTo(3)
+        assertThat(retrieved2.content).extracting("id").containsExactly("id1")
+        assertThat(retrieved2.content).hasOnlyElementsOfType(SlimLink::class.java)
     }
 
     @Test
     fun testSearchSortOrdering() {
         val retrieved = entryService.get(PageRequest(0, 10, sort = "dateCreated", direction = SortDirection.ASC))
-        assertThat(retrieved).extracting("id").containsExactly("id1", "id2", "id3")
+        assertThat(retrieved.content).extracting("id").containsExactly("id1", "id2", "id3")
 
         val retrieved2 = entryService.get(PageRequest(0, 10, sort = "dateCreated", direction = SortDirection.DESC))
-        assertThat(retrieved2).extracting("id").containsExactly("id3", "id2", "id1")
+        assertThat(retrieved2.content).extracting("id").containsExactly("id3", "id2", "id1")
     }
 
     @Test
     fun testSearchTitle() {
-        val entries = entryService.search("note")
+        val entries = entryService.search("note").content
         assertThat(entries).hasSize(2)
         assertThat(entries).extracting("id").containsExactlyInAnyOrder("id2", "id3")
         assertThat(entries).hasOnlyElementsOfType(SlimNote::class.java)
 
-        val entries2 = entryService.search("link")
+        val entries2 = entryService.search("link").content
         assertThat(entries2).hasSize(1)
         assertThat(entries2).extracting("id").containsExactly("id1")
         assertThat(entries2).hasOnlyElementsOfType(SlimLink::class.java)
@@ -115,7 +129,7 @@ class EntryServiceTest: DatabaseTest() {
 
     @Test
     fun testSearchMultipleResults() {
-        val entries = entryService.search("content")
+        val entries = entryService.search("content").content
         assertThat(entries).hasSize(2)
         assertThat(entries).extracting("id").containsExactlyInAnyOrder("id1", "id2")
         assertThat(entries).hasAtLeastOneElementOfType(SlimNote::class.java)
@@ -125,7 +139,7 @@ class EntryServiceTest: DatabaseTest() {
     @Test
     fun testSearchNoResults() {
         val entries = entryService.search("nothing")
-        assertThat(entries).isEmpty()
+        assertThat(entries.content).isEmpty()
     }
 
     @Test

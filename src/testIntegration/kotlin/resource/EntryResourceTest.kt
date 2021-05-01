@@ -1,6 +1,7 @@
 package resource
 
 import common.*
+import common.page.Page
 import io.restassured.RestAssured.*
 import notify.NotificationMethod
 import org.assertj.core.api.Assertions.assertThat
@@ -70,31 +71,39 @@ class EntryResourceTest : ServerTest() {
         val entries = get("/entry")
             .then()
             .statusCode(200)
-            .extract().to<List<Entry>>()
-        assertThat(entries).hasSize(4).extracting("id").containsExactlyInAnyOrder("e1", "e2", "e3", "e4")
+            .extract().to<Page<Entry>>()
+        assertThat(entries.page).isEqualTo(1)
+        assertThat(entries.total).isEqualTo(4)
+        assertThat(entries.content).hasSize(4).extracting("id").containsExactlyInAnyOrder("e1", "e2", "e3", "e4")
     }
 
     @Test
     fun testGetPaged() {
         val entries = given()
-            .queryParam("offset", 1)
-            .queryParam("limit", 1)
+            .queryParam("page", 2)
+            .queryParam("size", 1)
             .When()
             .get("/entry")
             .then()
             .statusCode(200)
-            .extract().to<List<Entry>>()
-        assertThat(entries).hasSize(1).extracting("id").containsExactly("e3")
+            .extract().to<Page<Entry>>()
+        assertThat(entries.page).isEqualTo(2)
+        assertThat(entries.size).isEqualTo(1)
+        assertThat(entries.total).isEqualTo(4)
+        assertThat(entries.content).hasSize(1).extracting("id").containsExactly("e3")
 
         val entries2 = given()
-            .queryParam("offset", 1)
-            .queryParam("limit", 5)
+            .queryParam("page", 2)
+            .queryParam("size", 2)
             .When()
             .get("/entry")
             .then()
             .statusCode(200)
-            .extract().to<List<Entry>>()
-        assertThat(entries2).hasSize(3).extracting("id").containsExactlyInAnyOrder("e1", "e2", "e3")
+            .extract().to<Page<Entry>>()
+        assertThat(entries2.page).isEqualTo(2)
+        assertThat(entries2.size).isEqualTo(2)
+        assertThat(entries2.total).isEqualTo(4)
+        assertThat(entries2.content).hasSize(2).extracting("id").containsExactlyInAnyOrder("e1", "e2")
     }
 
     @Test
@@ -105,8 +114,9 @@ class EntryResourceTest : ServerTest() {
             .get("/entry/search")
             .then()
             .statusCode(200)
-            .extract().to<List<Entry>>()
-        assertThat(entries).isEmpty()
+            .extract().to<Page<Entry>>()
+        assertThat(entries.page).isEqualTo(1)
+        assertThat(entries.content).isEmpty()
     }
 
     @Test
@@ -117,8 +127,9 @@ class EntryResourceTest : ServerTest() {
             .get("/entry/search")
             .then()
             .statusCode(200)
-            .extract().to<List<Entry>>()
-        assertThat(entries).hasSize(2).extracting("id").containsExactlyInAnyOrder("e1", "e3")
+            .extract().to<Page<Entry>>()
+        assertThat(entries.page).isEqualTo(1)
+        assertThat(entries.content).hasSize(2).extracting("id").containsExactlyInAnyOrder("e1", "e3")
     }
 
     @Test
@@ -129,22 +140,25 @@ class EntryResourceTest : ServerTest() {
             .get("/entry/search")
             .then()
             .statusCode(200)
-            .extract().to<List<Entry>>()
-        assertThat(entries).hasSize(3).extracting("id").containsExactlyInAnyOrder("e1", "e2", "e4")
+            .extract().to<Page<Entry>>()
+        assertThat(entries.page).isEqualTo(1)
+        assertThat(entries.content).hasSize(3).extracting("id").containsExactlyInAnyOrder("e1", "e2", "e4")
     }
 
     @Test
     fun testSearchPaging() {
         val entries = given()
-            .queryParam("offset", 1)
-            .queryParam("limit", 1)
+            .queryParam("page", 2)
+            .queryParam("size", 1)
             .queryParam("q", "content")
             .When()
             .get("/entry/search")
             .then()
             .statusCode(200)
-            .extract().to<List<Entry>>()
-        assertThat(entries).hasSize(1).extracting("id").containsExactly("e2")
+            .extract().to<Page<Entry>>()
+        assertThat(entries.page).isEqualTo(2)
+        assertThat(entries.size).isEqualTo(1)
+        assertThat(entries.content).hasSize(1).extracting("id").containsExactly("e2")
     }
 
     @Test

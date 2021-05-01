@@ -1,6 +1,10 @@
 package db
 
 import common.*
+import common.page.DefaultPageRequest
+import common.page.Page
+import common.page.PageRequest
+import common.page.SortDirection
 import entry.EntryAuditService
 import group.EntryGroups
 import group.GroupSet
@@ -14,6 +18,7 @@ import util.RandomUtils
 import util.combine
 import util.findColumn
 import util.orderBy
+import kotlin.math.max
 
 abstract class EntryRepository<T : Entry, S : SlimEntry, in U : NewEntry>(
     private val groupSetService: GroupSetService,
@@ -29,21 +34,27 @@ abstract class EntryRepository<T : Entry, S : SlimEntry, in U : NewEntry>(
 
     fun get(id: String, version: Int): T? = transaction {
         getBaseQuery(EntryVersions, EntryVersions).combine {
-                EntryVersions.id eq id and
-                        (EntryVersions.version eq version)
-            }
+            EntryVersions.id eq id and
+                (EntryVersions.version eq version)
+        }
             .mapNotNull { toModel(it, EntryVersions) }
             .singleOrNull()
     }
 
-    fun get(page: PageRequest = DefaultPageRequest): List<S> = transaction {
-        resolveEntryRows(createPagedQuery(page).toList())
+    fun get(pageRequest: PageRequest = DefaultPageRequest): Page<S> = transaction {
+        val queries = createPagedQuery(pageRequest)
+        Page.of(resolveEntryRows(queries.first.toList()), pageRequest, queries.second.count())
     }
 
-    fun get(ids: List<String>, page: PageRequest = DefaultPageRequest): List<S> = transaction {
-        if (ids.isEmpty()) emptyList()
+    fun get(ids: List<String>, pageRequest: PageRequest = DefaultPageRequest): Page<S> = transaction {
+        if (ids.isEmpty()) Page.empty()
         else {
-            resolveEntryRows(createPagedQuery(page).combine { Entries.id inList ids }.toList())
+            val queries = createPagedQuery(pageRequest)
+            Page.of(
+                resolveEntryRows(queries.first.combine { Entries.id inList ids }.toList()),
+                pageRequest,
+                queries.second.combine { Entries.id inList ids }.count()
+            )
         }
     }
 
@@ -52,35 +63,36 @@ abstract class EntryRepository<T : Entry, S : SlimEntry, in U : NewEntry>(
         return rows.map { toSlimModel(it, groups.getOrDefault(it[Entries.id], GroupSet())) }
     }
 
-    private fun createPagedQuery(page: PageRequest): Query {
+    private fun createPagedQuery(pageRequest: PageRequest): Pair<Query, Query> {
         var table: ColumnSet = Entries
 
         val tagTable = EntryGroups.alias("tags")
         val collectionTable = EntryGroups.alias("collections")
-        if (page.tag != null) {
+        if (pageRequest.tag != null) {
             table = table.innerJoin(tagTable, { Entries.id }, { tagTable[EntryGroups.entryId] })
         }
-        if (page.collection != null) {
+        if (pageRequest.collection != null) {
             table = table.innerJoin(collectionTable, { Entries.id }, { collectionTable[EntryGroups.entryId] })
         }
 
-        var query = getBaseQuery(table)
-        val subtrees = groupSetService.subtrees(page.tag, page.collection)
+        var baseQuery = getBaseQuery(table)
+        val subtrees = groupSetService.subtrees(pageRequest.tag, pageRequest.collection)
 
-        if(subtrees.tags.isNotEmpty()) {
-            query = query.combine { tagTable[EntryGroups.groupId].inList(subtrees.tags.map { it.id }) }
+        if (subtrees.tags.isNotEmpty()) {
+            baseQuery = baseQuery.combine { tagTable[EntryGroups.groupId].inList(subtrees.tags.map { it.id }) }
         }
-        if(subtrees.collections.isNotEmpty()) {
-            query = query.combine { collectionTable[EntryGroups.groupId].inList(subtrees.collections.map { it.id }) }
+        if (subtrees.collections.isNotEmpty()) {
+            baseQuery = baseQuery.combine { collectionTable[EntryGroups.groupId].inList(subtrees.collections.map { it.id }) }
         }
 
-        val sortColumn = Entries.findColumn(page.sort) ?: Entries.dateUpdated
-        val sortOrder = page.direction ?: SortDirection.DESC
+        val sortColumn = Entries.findColumn(pageRequest.sort) ?: Entries.dateUpdated
+        val sortOrder = pageRequest.direction ?: SortDirection.DESC
 
-        return query.apply {
+        return Pair(baseQuery.copy().apply {
             orderBy(sortColumn, sortOrder)
-            limit(page.limit, page.offset)
-        }
+            distinct
+            limit(pageRequest.size, max(0, (pageRequest.page - 1) * pageRequest.size))
+        }, baseQuery)
     }
 
     open fun add(entry: U): T {
