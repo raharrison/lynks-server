@@ -52,19 +52,11 @@ task testIntegration(type: Test) {
     classpath = sourceSets.testIntegration.runtimeClasspath
 }
 
-sourceCompatibility = 1.8
-compileKotlin {
-    kotlinOptions.jvmTarget = "1.8"
-}
 compileTestKotlin {
     kotlinOptions {
         suppressWarnings = true
-        jvmTarget = "1.8"
         freeCompilerArgs += '-Xopt-in=kotlin.RequiresOptIn'
     }
-}
-compileTestIntegrationKotlin {
-    kotlinOptions.jvmTarget = "1.8"
 }
 
 repositories {
