@@ -8,7 +8,7 @@ import javax.mail.internet.InternetAddress
 object URLUtils {
 
     fun extractSource(url: String): String {
-        var uri = url.toLowerCase()
+        var uri = url.lowercase()
         if (!uri.startsWith("http://") and !uri.startsWith("https://")) {
             uri = "http://$url"
         }

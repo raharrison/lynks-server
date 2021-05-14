@@ -126,7 +126,7 @@ class LinkProcessorWorker(
 
     private fun saveResource(id: String, type: ResourceType, data: ByteArray, extension: String): Resource {
         val date = LocalDate.now().toString()
-        val resourceFileName = "${type.name.toLowerCase()}-$date.${extension}"
+        val resourceFileName = "${type.name.lowercase()}-$date.${extension}"
         return resourceManager.saveGeneratedResource(id, resourceFileName, type, data)
     }
 

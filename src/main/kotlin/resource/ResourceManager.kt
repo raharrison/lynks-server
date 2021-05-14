@@ -63,7 +63,7 @@ class ResourceManager {
             Files.list(target).use { it ->
                 it.forEach {
                     val filename = FileUtils.removeExtension(it.fileName.toString())
-                    val type = ResourceType.valueOf(filename.toUpperCase().split("-")[0])
+                    val type = ResourceType.valueOf(filename.uppercase().split("-")[0])
                     val generatedResource = saveGeneratedResource(entryId, type, it)
                     generatedResources.add(generatedResource)
                 }
@@ -128,7 +128,7 @@ class ResourceManager {
         val extension = FileUtils.getExtension(name)
         val target = constructPath(entryId, id, extension)
         val size = Files.size(path)
-        log.info("Moving {} resource from={} to={} entry={}", type.name.toLowerCase(), path.toString(), target.toString(), entryId)
+        log.info("Moving {} resource from={} to={} entry={}", type.name.lowercase(), path.toString(), target.toString(), entryId)
         Files.move(path, target)
         return saveGeneratedResource(id, entryId, name, extension, type, size)
     }
@@ -155,7 +155,7 @@ class ResourceManager {
 
     private fun constructTempPath(name: String, type: ResourceType, extension: String): Path {
         val date = LocalDate.now().toString()
-        return Paths.get(Environment.server.resourceTempPath, FileUtils.createTempFileName(name), "${type.toString().toLowerCase()}-$date.$extension")
+        return Paths.get(Environment.server.resourceTempPath, FileUtils.createTempFileName(name), "${type.toString().lowercase()}-$date.$extension")
     }
 
     private fun constructTempPath(name: String, extension: String): Path {

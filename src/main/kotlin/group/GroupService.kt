@@ -13,7 +13,7 @@ abstract class GroupService<T : Grouping<T>, in U : IdBasedNewEntity>(private va
     private val log = LoggerFactory.getLogger(this::class.java)
 
     private val collection by lazy {
-        log.info("Building group tree for {}s", groupType.name.toLowerCase())
+        log.info("Building group tree for {}s", groupType.name.lowercase())
         GroupCollection<T>().apply { build(queryAllGroups()) }
     }
 
@@ -32,7 +32,7 @@ abstract class GroupService<T : Grouping<T>, in U : IdBasedNewEntity>(private va
     }
 
     fun rebuild() {
-        log.info("Rebuilding group tree for {}s", groupType.name.toLowerCase())
+        log.info("Rebuilding group tree for {}s", groupType.name.lowercase())
         collection.build(queryAllGroups())
     }
 

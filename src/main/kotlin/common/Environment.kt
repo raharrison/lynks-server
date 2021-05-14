@@ -50,7 +50,7 @@ object Environment {
         val smmryApikey: String? = config[ExternalSpec.smmryApiKey]
     )
 
-    val mode: ConfigMode = ConfigMode.valueOf(System.getProperty("CONFIG_MODE")?.toUpperCase() ?: "DEV")
+    val mode: ConfigMode = ConfigMode.valueOf(System.getProperty("CONFIG_MODE")?.uppercase() ?: "DEV")
 
     init {
         log.info("Using config mode: $mode")
@@ -61,7 +61,7 @@ object Environment {
         addSpec(MailSpec)
         addSpec(ExternalSpec)
     }
-        .from.json.resource("${mode.toString().toLowerCase()}.json")
+        .from.json.resource("${mode.toString().lowercase()}.json")
         .from.json.file(System.getProperty("CONFIG_FILE") ?: "lynks.config.json", optional = true)
         .from.env()
         .from.systemProperties()
