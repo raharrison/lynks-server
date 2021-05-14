@@ -61,6 +61,7 @@ object Environment {
         addSpec(MailSpec)
         addSpec(ExternalSpec)
     }
+        .from.json.resource("default.json")
         .from.json.resource("${mode.toString().lowercase()}.json")
         .from.json.file(System.getProperty("CONFIG_FILE") ?: "lynks.config.json", optional = true)
         .from.env()

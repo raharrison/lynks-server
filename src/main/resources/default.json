@@ -1,0 +1,14 @@
+{
+    "server": {
+        "driver": "org.h2.Driver",
+        "port": 8080,
+        "rootPath": "/api",
+        "resourceBasePath": "media/test",
+        "resourceTempPath": "media/test/temp"
+    },
+    "mail": {
+        "enabled": false,
+        "server": "localhost",
+        "port": 1025
+    }
+}

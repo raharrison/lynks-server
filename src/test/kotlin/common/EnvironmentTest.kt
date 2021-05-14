@@ -17,33 +17,17 @@ class EnvironmentTest {
 
     @Test
     fun testEnvironmentServerProperties() {
-        val file = this.javaClass.getResource("/test.json").readText()
+        val file = this.javaClass.getResource("/test.json")?.readText()
         val node = JsonMapper.defaultMapper.readTree(file).get("server")
 
         val db = node.get("database").textValue()
-        val driver = node.get("driver").textValue()
         val resPath = node.get("resourceBasePath").textValue()
         val tempPath = node.get("resourceTempPath").textValue()
 
         assertThat(db).isEqualTo(Environment.server.database)
-        assertThat(driver).isEqualTo(Environment.server.driver)
-        assertThat(Environment.server.port).isEqualTo(8080)
+        assertThat(8080).isEqualTo(Environment.server.port)
         assertThat(resPath).isEqualTo(Environment.server.resourceBasePath)
         assertThat(tempPath).isEqualTo(Environment.server.resourceTempPath)
-    }
-
-    @Test
-    fun testEnvironmentMailProperties() {
-        val file = this.javaClass.getResource("/test.json").readText()
-        val node = JsonMapper.defaultMapper.readTree(file).get("mail")
-
-        val enabled = node.get("enabled").booleanValue()
-        val server = node.get("server").textValue()
-        val port = node.get("port").intValue()
-
-        assertThat(enabled).isEqualTo(Environment.mail.enabled)
-        assertThat(server).isEqualTo(Environment.mail.server)
-        assertThat(port).isEqualTo(Environment.mail.port)
     }
 
 }
