@@ -1,19 +1,19 @@
 package notify
 
-import com.google.common.collect.Sets
 import common.Environment
-import io.ktor.http.cio.websocket.Frame
+import io.ktor.http.cio.websocket.*
 import kotlinx.coroutines.channels.SendChannel
 import org.apache.commons.mail.HtmlEmail
 import user.UserService
 import util.JsonMapper.defaultMapper
 import util.loggerFor
+import java.util.concurrent.ConcurrentHashMap
 
 private val log = loggerFor<NotifyService>()
 
 class NotifyService(private val userService: UserService) {
 
-    private val notifiers = Sets.newConcurrentHashSet<SendChannel<Frame>>()
+    private val notifiers = ConcurrentHashMap.newKeySet<SendChannel<Frame>>()
 
     suspend fun accept(notify: Notification, body: Any?) {
         log.info("Accepting ${notify.type} notification: ${notify.message}")

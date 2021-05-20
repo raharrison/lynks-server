@@ -1,6 +1,7 @@
 package util
 
 import com.google.common.hash.Hashing
+import java.io.File
 import java.nio.charset.Charset
 import java.nio.file.Files
 import java.nio.file.Path
@@ -29,11 +30,15 @@ object FileUtils {
     }
 
     fun removeExtension(name: String): String {
-        return com.google.common.io.Files.getNameWithoutExtension(name)
+        val fileName= File(name).name
+        val dotIndex = fileName.lastIndexOf('.')
+        return if (dotIndex == -1) fileName else fileName.substring(0, dotIndex)
     }
 
     fun getExtension(name: String): String {
-        return com.google.common.io.Files.getFileExtension(name)
+        val fileName = File(name).name
+        val dotIndex = fileName.lastIndexOf('.')
+        return if (dotIndex == -1) "" else fileName.substring(dotIndex + 1)
     }
 
     fun directoriesOlderThan(path: Path, days: Long): List<Path> {
