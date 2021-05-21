@@ -1,27 +1,40 @@
 package task
 
+import common.Environment
 import common.exception.ExecutionException
 import entry.EntryAuditService
 import io.mockk.*
 import kotlinx.coroutines.runBlocking
+import org.apache.commons.lang3.SystemUtils
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.entry
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import resource.Resource
 import resource.ResourceManager
+import resource.ResourceRetriever
 import resource.ResourceType
 import util.ExecUtils
+import util.FileUtils
 import util.Result
 import java.nio.file.Paths
 
 class YoutubeDlTaskTest {
 
     private val resourceManager = mockk<ResourceManager>()
+    private val resourceRetriever = mockk<ResourceRetriever>()
     private val entryAuditService = mockk<EntryAuditService>(relaxUnitFun = true)
 
     private val youtubeDlTask = YoutubeDlTask("tid", "eid").also {
         it.resourceManager = resourceManager
+        it.resourceRetriever = resourceRetriever
         it.entryAuditService = entryAuditService
+    }
+
+    @AfterEach
+    fun setup() {
+        FileUtils.deleteDirectories(listOf(Paths.get(Environment.resource.binaryBasePath)))
     }
 
     @Test
@@ -43,10 +56,12 @@ class YoutubeDlTaskTest {
     }
 
     @Test
-    fun testProcess() {
+    fun testProcessDownloadYoutubeDl() {
         val url = "youtube.com/watch?v=1234"
         val type = YoutubeDlTask.YoutubeDlDownload.BEST_AUDIO
         val context = youtubeDlTask.createContext(mapOf("url" to url, "type" to type.toString()))
+
+        coEvery { resourceRetriever.getFileResult(any()) } returns Result.Success(byteArrayOf(1, 2, 3))
 
         val name = "greatvid.webm"
         val commandResult = """
@@ -65,7 +80,7 @@ class YoutubeDlTaskTest {
                 path = path
             )
         } returns
-                Resource("rid", "eid", name, "", ResourceType.UPLOAD, 1, 1, 1)
+            Resource("rid", "eid", name, "", ResourceType.UPLOAD, 1, 1, 1)
 
         mockkObject(ExecUtils)
 
@@ -75,9 +90,11 @@ class YoutubeDlTaskTest {
             youtubeDlTask.process(context)
         }
 
+        coVerify(exactly = 1) { resourceRetriever.getFileResult(any()) }
+
         verify(exactly = 1) {
             ExecUtils.executeCommand(match {
-                it.startsWith("youtube-dl") && it.endsWith(url)
+                it.contains(Paths.get(Environment.resource.binaryBasePath, "youtube-dl").toString()) && it.endsWith(url)
             })
         }
 
@@ -101,6 +118,10 @@ class YoutubeDlTaskTest {
         val type = YoutubeDlTask.YoutubeDlDownload.BEST_VIDEO
         val context = youtubeDlTask.createContext(mapOf("url" to url, "type" to type.toString()))
 
+        val binaryName = "youtube-dl${if (SystemUtils.IS_OS_WINDOWS) ".exe" else ""}"
+        val binaryPath = Paths.get(Environment.resource.binaryBasePath, binaryName)
+        FileUtils.writeToFile(binaryPath, byteArrayOf(1, 2, 3))
+
         every { resourceManager.constructPath("eid", any()) } returns Paths.get("file.webm")
 
         mockkObject(ExecUtils)
@@ -113,6 +134,7 @@ class YoutubeDlTaskTest {
 
         unmockkObject(ExecUtils)
 
+        coVerify(exactly = 0) { resourceRetriever.getFileResult(any()) }
         verify(exactly = 1) { resourceManager.constructPath("eid", any()) }
         verify(exactly = 1) { entryAuditService.acceptAuditEvent("eid", any(), any()) }
     }
@@ -123,6 +145,7 @@ class YoutubeDlTaskTest {
         val type = YoutubeDlTask.YoutubeDlDownload.BEST_VIDEO_TRANSCODE
         val context = youtubeDlTask.createContext(mapOf("url" to url, "type" to type.toString()))
 
+        coEvery { resourceRetriever.getFileResult(any()) } returns Result.Success(byteArrayOf(1, 2, 3))
         every { resourceManager.constructPath("eid", any()) } returns Paths.get("video.webm")
         mockkObject(ExecUtils)
 
@@ -137,5 +160,22 @@ class YoutubeDlTaskTest {
         verify(exactly = 0) {
             resourceManager.saveGeneratedResource(any(), any(), any())
         }
+    }
+
+    @Test
+    fun testDownloadYoutubeDlFailed() {
+        val url = "youtube.com/watch?v=1234"
+        val type = YoutubeDlTask.YoutubeDlDownload.BEST_VIDEO_TRANSCODE
+        val context = youtubeDlTask.createContext(mapOf("url" to url, "type" to type.toString()))
+        val exception = ExecutionException("failed")
+
+        coEvery { resourceRetriever.getFileResult(any()) } returns Result.Failure(exception)
+
+        runBlocking {
+            assertThrows<ExecutionException> {
+                youtubeDlTask.process(context)
+            }
+        }
+
     }
 }

@@ -34,3 +34,4 @@ build/
 /media
 lynksdb.*
 lynks.config.json
+/bin
