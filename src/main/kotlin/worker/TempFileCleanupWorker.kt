@@ -38,7 +38,7 @@ class TempFileCleanupWorker(
 
         while (true) {
             try {
-                val dirs = FileUtils.directoriesOlderThan(Paths.get(Environment.server.resourceTempPath), MAX_FILE_AGE)
+                val dirs = FileUtils.directoriesOlderThan(Paths.get(Environment.resource.resourceTempPath), MAX_FILE_AGE)
                 log.info("Temp file cleanup worker removing {} dirs: {}", dirs.size, dirs)
                 FileUtils.deleteDirectories(dirs)
             } finally {

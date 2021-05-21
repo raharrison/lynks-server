@@ -16,18 +16,26 @@ object Environment {
         val database by required<String>()
         val driver by required<String>()
         val port by optional(8080)
-        val resourceBasePath by required<String>()
-        val resourceTempPath by required<String>()
-        val rootPath by optional("/api")
+        val rootPath by required<String>()
     }
 
     data class Server(
         val database: String = config[ServerSpec.database],
         val driver: String = config[ServerSpec.driver],
         val port: Int = config[ServerSpec.port],
-        val resourceBasePath: String = config[ServerSpec.resourceBasePath],
-        val resourceTempPath: String = config[ServerSpec.resourceTempPath],
         val rootPath: String = config[ServerSpec.rootPath]
+    )
+
+    private object ResourceSpec: ConfigSpec("resource") {
+        val resourceBasePath by required<String>()
+        val resourceTempPath by required<String>()
+        val binaryBasePath by required<String>()
+    }
+
+    data class Resource(
+        val resourceBasePath: String = config[ResourceSpec.resourceBasePath],
+        val resourceTempPath: String = config[ResourceSpec.resourceTempPath],
+        val binaryBasePath: String = config[ResourceSpec.binaryBasePath]
     )
 
     private object MailSpec : ConfigSpec("mail") {
@@ -44,10 +52,12 @@ object Environment {
 
     private object ExternalSpec : ConfigSpec("external") {
         val smmryApiKey by optional<String?>(null)
+        val youtubeDlHost by required<String>()
     }
 
     data class External(
-        val smmryApikey: String? = config[ExternalSpec.smmryApiKey]
+        val smmryApikey: String? = config[ExternalSpec.smmryApiKey],
+        val youtubeDlHost: String = config[ExternalSpec.youtubeDlHost]
     )
 
     val mode: ConfigMode = ConfigMode.valueOf(System.getProperty("CONFIG_MODE")?.uppercase() ?: "DEV")
@@ -58,6 +68,7 @@ object Environment {
 
     private val config = Config {
         addSpec(ServerSpec)
+        addSpec(ResourceSpec)
         addSpec(MailSpec)
         addSpec(ExternalSpec)
     }
@@ -68,6 +79,7 @@ object Environment {
         .from.systemProperties()
 
     val server = Server()
+    val resource = Resource()
     val mail = Mail()
     val external = External()
 }

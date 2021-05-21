@@ -12,7 +12,7 @@ import io.ktor.routing.*
 fun Route.resources(resourceManager: ResourceManager) {
 
     static("temp") {
-        files(Environment.server.resourceTempPath)
+        files(Environment.resource.resourceTempPath)
     }
 
     fun deriveMimeType(filename: String): String {

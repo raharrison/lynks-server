@@ -44,7 +44,7 @@ class ResourceManager {
         val path = constructTempPath(src, type, extension)
         FileUtils.writeToFile(path, data)
         log.info("Temporary resource saved at {} src={} type={}", path.toString(), src, type)
-        return Paths.get(Environment.server.resourceTempPath).relativize(path).toUrlString()
+        return Paths.get(Environment.resource.resourceTempPath).relativize(path).toUrlString()
     }
 
     fun createTempFile(src: String, extension: String): TempFile {
@@ -57,7 +57,7 @@ class ResourceManager {
         val tempPath = constructTempPath(src)
         if (Files.exists(tempPath)) {
             log.info("Moving temporary files for entry={} src={}", entryId, src)
-            val target = Paths.get(Environment.server.resourceBasePath, entryId)
+            val target = Paths.get(Environment.resource.resourceBasePath, entryId)
             val generatedResources = mutableListOf<Resource>()
             Files.move(tempPath, target)
             Files.list(target).use { it ->
@@ -146,7 +146,7 @@ class ResourceManager {
         return saveGeneratedResource(id, entryId, name, ext, ResourceType.UPLOAD, file.length())
     }
 
-    fun constructPath(entryId: String, id: String = RandomUtils.generateUid()): Path = Paths.get(Environment.server.resourceBasePath, entryId, id)
+    fun constructPath(entryId: String, id: String = RandomUtils.generateUid()): Path = Paths.get(Environment.resource.resourceBasePath, entryId, id)
 
     private fun constructPath(entryId: String, id: String, extension: String): Path {
         val resId = if (extension.isNotEmpty()) "$id.$extension" else id
@@ -155,14 +155,14 @@ class ResourceManager {
 
     private fun constructTempPath(name: String, type: ResourceType, extension: String): Path {
         val date = LocalDate.now().toString()
-        return Paths.get(Environment.server.resourceTempPath, FileUtils.createTempFileName(name), "${type.toString().lowercase()}-$date.$extension")
+        return Paths.get(Environment.resource.resourceTempPath, FileUtils.createTempFileName(name), "${type.toString().lowercase()}-$date.$extension")
     }
 
     private fun constructTempPath(name: String, extension: String): Path {
-        return Paths.get(Environment.server.resourceTempPath, FileUtils.createTempFileName(name), "${RandomUtils.generateUid()}.$extension")
+        return Paths.get(Environment.resource.resourceTempPath, FileUtils.createTempFileName(name), "${RandomUtils.generateUid()}.$extension")
     }
 
-    private fun constructTempPath(name: String) = Paths.get(Environment.server.resourceTempPath, FileUtils.createTempFileName(name))
+    private fun constructTempPath(name: String) = Paths.get(Environment.resource.resourceTempPath, FileUtils.createTempFileName(name))
 
     fun updateResource(resource: Resource): Resource? {
         val id = resource.id

@@ -2,13 +2,19 @@
     "server": {
         "driver": "org.h2.Driver",
         "port": 8080,
-        "rootPath": "/api",
+        "rootPath": "/api"
+    },
+    "resource": {
         "resourceBasePath": "media/test",
-        "resourceTempPath": "media/test/temp"
+        "resourceTempPath": "media/test/temp",
+        "binaryBasePath": "bin"
     },
     "mail": {
         "enabled": false,
         "server": "localhost",
         "port": 1025
+    },
+    "external": {
+        "youtubeDlHost": "https://yt-dl.org/downloads/latest"
     }
 }

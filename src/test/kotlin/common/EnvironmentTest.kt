@@ -21,13 +21,22 @@ class EnvironmentTest {
         val node = JsonMapper.defaultMapper.readTree(file).get("server")
 
         val db = node.get("database").textValue()
+        val defaultPort = 8080
+
+        assertThat(db).isEqualTo(Environment.server.database)
+        assertThat(defaultPort).isEqualTo(Environment.server.port)
+    }
+
+    @Test
+    fun testEnvironmentResourceProperties() {
+        val file = this.javaClass.getResource("/test.json")?.readText()
+        val node = JsonMapper.defaultMapper.readTree(file).get("resource")
+
         val resPath = node.get("resourceBasePath").textValue()
         val tempPath = node.get("resourceTempPath").textValue()
 
-        assertThat(db).isEqualTo(Environment.server.database)
-        assertThat(8080).isEqualTo(Environment.server.port)
-        assertThat(resPath).isEqualTo(Environment.server.resourceBasePath)
-        assertThat(tempPath).isEqualTo(Environment.server.resourceTempPath)
+        assertThat(resPath).isEqualTo(Environment.resource.resourceBasePath)
+        assertThat(tempPath).isEqualTo(Environment.resource.resourceTempPath)
     }
 
 }

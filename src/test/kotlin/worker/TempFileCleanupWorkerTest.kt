@@ -23,8 +23,8 @@ import java.util.concurrent.TimeUnit
 
 class TempFileCleanupWorkerTest {
 
-    private val oldFile = Paths.get(Environment.server.resourceTempPath, "e1", "f1")
-    private val newFile = Paths.get(Environment.server.resourceTempPath, "e2", "f2")
+    private val oldFile = Paths.get(Environment.resource.resourceTempPath, "e1", "f1")
+    private val newFile = Paths.get(Environment.resource.resourceTempPath, "e2", "f2")
 
     private val userService = mockk<UserService>()
     private val notifyService = mockk<NotifyService>()
@@ -32,7 +32,7 @@ class TempFileCleanupWorkerTest {
 
     @AfterEach
     fun cleanUp() {
-        Paths.get(Environment.server.resourceTempPath).toFile().deleteRecursively()
+        Paths.get(Environment.resource.resourceTempPath).toFile().deleteRecursively()
     }
 
     @BeforeEach
@@ -43,7 +43,7 @@ class TempFileCleanupWorkerTest {
     }
 
     private fun createTempFiles() {
-        Paths.get(Environment.server.resourceTempPath).toFile().deleteRecursively()
+        Paths.get(Environment.resource.resourceTempPath).toFile().deleteRecursively()
         Files.createDirectories(oldFile.parent)
         Files.createFile(oldFile)
         val oldTime = Instant.now().minus(15, ChronoUnit.DAYS)
