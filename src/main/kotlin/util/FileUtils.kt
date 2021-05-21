@@ -1,15 +1,17 @@
 package util
 
-import com.google.common.hash.Hashing
 import java.io.File
-import java.nio.charset.Charset
+import java.math.BigInteger
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.attribute.BasicFileAttributes
+import java.security.MessageDigest
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
 object FileUtils {
+
+    private val sha256Digest = MessageDigest.getInstance("SHA-256")
 
     fun writeToFile(path: Path, data: ByteArray) {
         val parentPath = path.parent
@@ -26,7 +28,8 @@ object FileUtils {
     }
 
     fun createTempFileName(src: String): String {
-        return Hashing.murmur3_128().hashString(src, Charset.defaultCharset()).toString()
+        return BigInteger(1, sha256Digest.digest(src.toByteArray()))
+            .toString(16).padStart(32, '0')
     }
 
     fun removeExtension(name: String): String {
