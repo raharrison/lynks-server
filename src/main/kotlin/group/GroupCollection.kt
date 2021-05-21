@@ -1,13 +1,11 @@
 package group
 
-import com.google.common.collect.HashMultimap
-import com.google.common.collect.Multimap
 import kotlin.collections.Collection
 
 class GroupCollection<T: Grouping<T>> {
 
     // group : [children]
-    private val groupTree: Multimap<T, T> = HashMultimap.create()
+    private val groupTree: MutableMap<T, MutableSet<T>> = mutableMapOf()
 
     // id : group
     private val groupLookup: MutableMap<String, T> = mutableMapOf()
@@ -25,7 +23,7 @@ class GroupCollection<T: Grouping<T>> {
 
     private fun processGroup(group: T) {
         groupLookup[group.id] = group
-        groupTree.putAll(group, traverseChildren(group, mutableSetOf()))
+        groupTree.getOrPut(group) { mutableSetOf() }.addAll(traverseChildren(group, mutableSetOf()))
         group.path = generatePath(group)
         for (child in group.children) {
             groupParents[child.id] = group
@@ -67,11 +65,10 @@ class GroupCollection<T: Grouping<T>> {
         groupLookup[group.id] = group
         parent?.also {
             val parentGroup = group(parent)!!
-            groupTree.put(group, parentGroup)
             parentGroup.children.add(group)
             groupParents[group.id] = parentGroup
         }
-        traverseParents(group.id) { groupTree.put(it, group) }
+        traverseParents(group.id) { groupTree.getOrPut(it) { mutableSetOf() }.add(group) }
         group.path = generatePath(group)
         return group
     }
@@ -104,8 +101,9 @@ class GroupCollection<T: Grouping<T>> {
     }
 
     fun subtree(id: String): MutableCollection<T> {
-        val group = group(id)
-        return groupTree[group].also { if(group != null) it.add(group) }
+        return group(id)?.let { group ->
+            return groupTree.getValue(group).toMutableSet().also { it.add(group) }
+        } ?: mutableSetOf()
     }
 
     fun rootGroups(): Collection<T> = groupLookup.values.filter { !groupParents.containsKey(it.id) }
@@ -114,10 +112,10 @@ class GroupCollection<T: Grouping<T>> {
 
     fun delete(id: String) {
         val group = groupLookup[id]
-        groupTree.removeAll(id)
+        groupTree.remove(group)
         groupLookup.remove(id)
         group?.children?.forEach{ delete(it.id) }
-        traverseParents(id) { groupTree.remove(it, group) }
+        traverseParents(id) { groupTree[it]?.remove(group) }
         groupParents[id]?.also {
             it.children.remove(group)
             groupParents.remove(id)
