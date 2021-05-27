@@ -2,6 +2,7 @@ package service
 
 import common.exception.InvalidModelException
 import group.*
+import group.Collection
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -105,7 +106,7 @@ class GroupSetServiceTest {
             Collection("c2", "col2", "col2", mutableSetOf(), 124L, 1234L)
         )
 
-        val content = "some content tag1 along with tag2 and col1 are relevant"
+        val content = "some content tag1 along with tAG2 and col1 are relevant"
         val set = groupSetService.matchWithContent(content)
         assertThat(set.tags).hasSize(2).extracting("id").containsExactly("t1", "t2")
         assertThat(set.collections).hasSize(1).extracting("id").containsExactly("c1")
