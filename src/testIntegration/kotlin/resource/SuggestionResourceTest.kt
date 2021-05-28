@@ -47,15 +47,15 @@ class SuggestionResourceTest: ServerTest() {
     @Test
     fun testYoutubeSuggestion() {
         val suggestion = given()
-                .body("https://www.youtube.com/watch?v=DAiEUeM8Uv0")
+                .body("https://www.youtube.com/watch?v=JGvk4M0Rfxo")
                 .post("/suggest")
                 .then()
                 .extract().`as`(Suggestion::class.java)
-        assertThat(suggestion.url).isEqualTo("https://www.youtube.com/watch?v=DAiEUeM8Uv0")
-        assertThat(suggestion.title).isEqualTo("Savoy - How U Like Me Now (feat. Roniit) [Monstercat Release]")
-        assertThat(suggestion.preview).isNull()
+        assertThat(suggestion.url).isEqualTo("https://www.youtube.com/watch?v=JGvk4M0Rfxo")
+        assertThat(suggestion.title).isEqualTo("Welcome to Kotlin by JetBrains!")
+        assertThat(suggestion.preview).isNotNull()
         assertThat(suggestion.thumbnail).isNotNull()
-        assertThat(suggestion.keywords).isNotEmpty()
+        assertThat(suggestion.keywords).isEmpty()
 
         retrieveTempResource(suggestion.thumbnail)
     }

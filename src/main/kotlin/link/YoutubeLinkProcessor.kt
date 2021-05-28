@@ -9,7 +9,6 @@ import task.YoutubeDlTask
 import util.JsonMapper
 import util.URLUtils
 import util.loggerFor
-import java.net.URLEncoder
 import java.util.*
 
 private val log = loggerFor<YoutubeLinkProcessor>()
@@ -98,14 +97,14 @@ class YoutubeLinkProcessor(
 
     private suspend fun downloadVideoInfo(): String? {
         log.info("Retrieving video info for Youtube video id={}", videoId)
-        val eurl = URLEncoder.encode("https://youtube.googleapis.com/v/$videoId", Charsets.UTF_8)
-        val url = "https://youtube.com/get_video_info?video_id=$videoId&el=embedded&eurl=$eurl&hl=en"
+        val url = "https://www.youtube.com/get_video_info?html5=1&video_id=$videoId"
         return webResourceRetriever.getString(url)
     }
 
     private suspend fun generateThumbnail(): GeneratedResource? {
         log.info("Capturing thumbnail for Youtube video videoId={}", videoId)
-        val dl = "https://img.youtube.com/vi/$videoId/mqdefault.jpg"
+        val dl = "http://i3.ytimg.com/vi/$videoId/mqdefault.jpg"
+        // "https://img.youtube.com/vi/$videoId/mqdefault.jpg"
         return webResourceRetriever.getFile(dl)?.let {
             val savedFile = resourceManager.saveTempFile(url, it, ResourceType.THUMBNAIL, JPG)
             GeneratedResource(ResourceType.THUMBNAIL, savedFile, JPG)
@@ -114,7 +113,8 @@ class YoutubeLinkProcessor(
 
     private suspend fun generatePreview(): GeneratedResource? {
         log.info("Capturing preview for Youtube video videoId={}", videoId)
-        val dl = "https://img.youtube.com/vi/$videoId/maxresdefault.jpg"
+        val dl = "http://i3.ytimg.com/vi/$videoId/maxresdefault.jpg"
+        // "https://img.youtube.com/vi/$videoId/maxresdefault.jpg"
         return webResourceRetriever.getFile(dl)?.let {
             val savedFile = resourceManager.saveTempFile(url, it, ResourceType.PREVIEW, JPG)
             GeneratedResource(ResourceType.PREVIEW, savedFile, JPG)

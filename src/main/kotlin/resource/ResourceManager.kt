@@ -157,7 +157,9 @@ class ResourceManager {
     }
 
     fun constructTempUrlFromPath(path: String): String {
-        return Paths.get(Environment.resource.resourceTempPath).toAbsolutePath().relativize(Path.of(path)).toUrlString()
+        val resolvedPath = Path.of(path)
+        return if(resolvedPath.isAbsolute) Paths.get(Environment.resource.resourceTempPath).toAbsolutePath().relativize(Path.of(path)).toUrlString()
+        else Paths.get(Environment.resource.resourceTempPath).relativize(Path.of(path)).toUrlString()
     }
 
     fun constructTempPath(name: String): Path = Paths.get(Environment.resource.resourceTempPath, FileUtils.createTempFileName(name))

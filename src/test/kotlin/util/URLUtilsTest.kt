@@ -6,7 +6,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import util.URLUtils.extractQueryParams
 import util.URLUtils.extractSource
-import java.net.URISyntaxException
 
 class URLUtilsTest {
 
@@ -48,8 +47,8 @@ class URLUtilsTest {
     }
 
     @Test
-    fun testQueryParamInvalidUri() {
-        assertThrows<URISyntaxException> { extractQueryParams("invalid query") }
+    fun testQueryParamNoParamsPresent() {
+        assertThat(extractQueryParams("nothing here")).isEmpty()
     }
 
     @Test
