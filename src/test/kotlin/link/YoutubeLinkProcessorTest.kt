@@ -1,16 +1,15 @@
 package link
 
 import common.BaseProperties
-import io.mockk.coEvery
-import io.mockk.coVerify
-import io.mockk.mockk
+import io.mockk.*
 import kotlinx.coroutines.runBlocking
-import link.extract.ExtractionPolicy
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.entry
 import org.junit.jupiter.api.Test
-import resource.ResourceRetriever
+import resource.JPG
+import resource.ResourceManager
 import resource.ResourceType
+import resource.WebResourceRetriever
 import task.LinkProcessingTask
 import task.YoutubeDlTask
 import java.util.*
@@ -18,71 +17,69 @@ import java.util.*
 class YoutubeLinkProcessorTest {
 
     private val url = "http://youtube.com/watch?v=DAiEUeM8Uv0"
-    private val retriever = mockk<ResourceRetriever>()
+    private val retriever = mockk<WebResourceRetriever>()
+    private val resourceManager = mockk<ResourceManager>()
     private val processor = createProcessor()
 
     @Test
-    fun testGetAttributes() = runBlocking {
+    fun testGetAttributes() {
         processor.use {
-            assertThat(processor.resolvedUrl).isEqualTo(url)
-            Unit
+            assertThat(processor.url).isEqualTo(url)
         }
     }
 
     @Test
-    fun testGetTitle() = runBlocking {
+    fun testSuggest() = runBlocking {
         val vidInfo = this.javaClass.getResource("/get_video_info.txt").readText()
         coEvery { retriever.getString(any()) } returns vidInfo
-        assertThat(processor.linkContent.title).isEqualTo("Savoy - How U Like Me Now (feat. Roniit) [Monstercat Release]")
-        coVerify(exactly = 1) { retriever.getString(any()) }
-    }
-
-    @Test
-    fun testGetKeywords() = runBlocking {
-        val vidInfo = this.javaClass.getResource("/get_video_info.txt").readText()
-        coEvery { retriever.getString(any()) } returns vidInfo
-        assertThat(processor.linkContent.keywords).hasSizeGreaterThan(5)
+        val suggestResponse = processor.suggest(EnumSet.noneOf(ResourceType::class.java))
+        assertThat(suggestResponse.details.url).isEqualTo(url)
+        assertThat(suggestResponse.details.keywords).hasSizeGreaterThan(5)
+        assertThat(suggestResponse.details.title).isEqualTo("Savoy - How U Like Me Now (feat. Roniit) [Monstercat Release]")
         coVerify(exactly = 1) { retriever.getString(any()) }
     }
 
     @Test
     fun testGetTitleBadInfo() = runBlocking {
         coEvery { retriever.getString(any()) } returns null
-        assertThat(processor.linkContent.title).isEmpty()
+        val suggestResponse = processor.suggest(EnumSet.noneOf(ResourceType::class.java))
+        assertThat(suggestResponse.details.title).isEmpty()
     }
 
     @Test
     fun testMatches() {
-        assertThat(YoutubeLinkProcessor(ExtractionPolicy.FULL, url, retriever).matches()).isTrue()
-        assertThat(YoutubeLinkProcessor(ExtractionPolicy.FULL, "http://youtube.com/something", retriever).matches()).isTrue()
-        assertThat(YoutubeLinkProcessor(ExtractionPolicy.FULL, "http://youtu.com/watch?v=DAiEUeM8Uv0", retriever).matches()).isFalse()
-        assertThat(YoutubeLinkProcessor(ExtractionPolicy.FULL, "http://google.com", retriever).matches()).isFalse()
+        assertThat(YoutubeLinkProcessor(url, retriever, resourceManager).matches()).isTrue()
+        assertThat(YoutubeLinkProcessor("http://youtube.com/something", retriever, resourceManager).matches()).isTrue()
+        assertThat(YoutubeLinkProcessor("http://youtu.com/watch?v=DAiEUeM8Uv0", retriever, resourceManager).matches()).isFalse()
+        assertThat(YoutubeLinkProcessor("http://google.com", retriever, resourceManager).matches()).isFalse()
     }
 
     @Test
     fun testGenerateThumbnail() = runBlocking {
         val img = byteArrayOf(1, 2, 3, 4, 5)
+        every { resourceManager.saveTempFile(url, img, ResourceType.THUMBNAIL, JPG) } returns "thumbPath"
         coEvery { retriever.getFile(any()) } returns img
         val resourceSet = EnumSet.of(ResourceType.THUMBNAIL)
-        val processedResources = processor.process(resourceSet)
+        val processedResources = processor.scrapeResources(resourceSet)
         assertThat(processedResources).hasSize(1)
-        val thumb = processedResources[ResourceType.THUMBNAIL] as GeneratedImageResource
-        assertThat(thumb.extension).isEqualTo("jpg")
-        assertThat(thumb.image).isEqualTo(img)
-        Unit
+        val thumb = processedResources.find { it.resourceType == ResourceType.THUMBNAIL }
+        assertThat(thumb?.extension).isEqualTo("jpg")
+        assertThat(thumb?.targetPath).isEqualTo("thumbPath")
+        verify(exactly = 1) { resourceManager.saveTempFile(url, img, ResourceType.THUMBNAIL, JPG) }
     }
 
     @Test
     fun testGeneratePreview() = runBlocking {
         val img = byteArrayOf(5, 6, 7, 8, 9)
+        every { resourceManager.saveTempFile(url, img, ResourceType.PREVIEW, JPG) } returns "previewPath"
         coEvery { retriever.getFile(any()) } returns img
         val resourceSet = EnumSet.of(ResourceType.PREVIEW)
-        val processedResources = processor.process(resourceSet)
+        val processedResources = processor.scrapeResources(resourceSet)
         assertThat(processedResources).hasSize(1)
-        val preview = processedResources[ResourceType.PREVIEW] as GeneratedImageResource
-        assertThat(preview.extension).isEqualTo("jpg")
-        assertThat(preview.image).isEqualTo(img)
-        Unit
+        val preview = processedResources.find { it.resourceType == ResourceType.PREVIEW }
+        assertThat(preview?.extension).isEqualTo("jpg")
+        assertThat(preview?.targetPath).isEqualTo("previewPath")
+        verify(exactly = 1) { resourceManager.saveTempFile(url, img, ResourceType.PREVIEW, JPG) }
     }
 
     @Test
@@ -110,7 +107,7 @@ class YoutubeLinkProcessorTest {
     }
 
     private fun createProcessor(): YoutubeLinkProcessor = runBlocking {
-        YoutubeLinkProcessor(ExtractionPolicy.FULL, url, retriever).apply { init() }
+        YoutubeLinkProcessor(url, retriever, resourceManager).apply { init() }
     }
 
 }

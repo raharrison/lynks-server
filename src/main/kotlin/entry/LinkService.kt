@@ -53,7 +53,7 @@ class LinkService(
 
     override fun add(entry: NewLink): Link {
         val link = super.add(entry)
-        workerRegistry.acceptLinkWork(PersistLinkProcessingRequest(link, ResourceType.all(), entry.process))
+        workerRegistry.acceptLinkWork(PersistLinkProcessingRequest(link, ResourceType.linkBaseline(), entry.process))
         if (entry.process)
             workerRegistry.acceptDiscussionWork(link.id)
         return link
@@ -61,7 +61,7 @@ class LinkService(
 
     override fun update(entry: NewLink): Link? {
         return super.update(entry)?.also {
-            workerRegistry.acceptLinkWork(PersistLinkProcessingRequest(it, ResourceType.all(), entry.process))
+            workerRegistry.acceptLinkWork(PersistLinkProcessingRequest(it, ResourceType.linkBaseline(), entry.process))
             if (entry.process)
                 workerRegistry.acceptDiscussionWork(it.id)
         }

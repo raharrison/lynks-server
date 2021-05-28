@@ -114,7 +114,7 @@ class DiscussionFinderWorker(
         }
     }
 
-    private fun encode(s: String): String = URLEncoder.encode(s, "UTF-8")
+    private fun encode(s: String): String = URLEncoder.encode(s, Charsets.UTF_8)
 
     private suspend fun hackerNewsDiscussions(url: String): List<Discussion> {
         val base = "http://hn.algolia.com/api/v1/search?query=%s&restrictSearchableAttributes=url"

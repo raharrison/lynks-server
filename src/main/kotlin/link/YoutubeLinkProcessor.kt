@@ -4,11 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.node.ArrayNode
 import common.BaseProperties
 import kotlinx.coroutines.runBlocking
-import link.extract.ExtractionPolicy
-import link.extract.LinkContent
-import resource.JPG
-import resource.ResourceRetriever
-import resource.ResourceType
+import resource.*
 import task.YoutubeDlTask
 import util.JsonMapper
 import util.URLUtils
@@ -19,10 +15,11 @@ import java.util.*
 private val log = loggerFor<YoutubeLinkProcessor>()
 
 class YoutubeLinkProcessor(
-    extractionPolicy: ExtractionPolicy,
     url: String,
-    private val retriever: ResourceRetriever
-) : LinkProcessor(extractionPolicy, url, retriever) {
+    webResourceRetriever: WebResourceRetriever,
+    resourceManager: ResourceManager
+) :
+    LinkProcessor(url, webResourceRetriever, resourceManager) {
 
     private lateinit var videoId: String
 
@@ -63,20 +60,12 @@ class YoutubeLinkProcessor(
         return emptySet()
     }
 
-    override val resolvedUrl: String get() = url
-
     override fun close() {
     }
 
     override fun matches(): Boolean = URLUtils.extractSource(url) == "youtube.com"
 
-    override val linkContent: LinkContent by lazy {
-        val title = videoInfo.value?.get("title")?.asText() ?: ""
-        val keywords = extractKeywords()
-        LinkContent(title = title, keywords = keywords)
-    }
-
-    override suspend fun process(resourceSet: EnumSet<ResourceType>): Map<ResourceType, GeneratedResource> {
+    private suspend fun generateResources(resourceSet: EnumSet<ResourceType>): Map<ResourceType, GeneratedResource> {
         val generatedResources = mutableMapOf<ResourceType, GeneratedResource>()
 
         if (resourceSet.contains(ResourceType.THUMBNAIL)) {
@@ -93,25 +82,43 @@ class YoutubeLinkProcessor(
         return generatedResources
     }
 
+    override suspend fun scrapeResources(resourceSet: EnumSet<ResourceType>): List<GeneratedResource> {
+        return generateResources(resourceSet).values.toList()
+    }
+
+    override suspend fun suggest(resourceSet: EnumSet<ResourceType>): SuggestResponse {
+        val resources = generateResources(resourceSet)
+        val title = videoInfo.value?.get("title")?.asText() ?: ""
+        val keywords = extractKeywords()
+        val linkDetails = LinkDetails(url, title, keywords)
+        return SuggestResponse(linkDetails, resources.values.toList())
+    }
+
     private fun embedUrl(): String = "https://www.youtube.com/embed/${extractVideoId()}"
 
     private suspend fun downloadVideoInfo(): String? {
         log.info("Retrieving video info for Youtube video id={}", videoId)
-        val eurl = URLEncoder.encode("https://youtube.googleapis.com/v/$videoId", "UTF-8")
+        val eurl = URLEncoder.encode("https://youtube.googleapis.com/v/$videoId", Charsets.UTF_8)
         val url = "https://youtube.com/get_video_info?video_id=$videoId&el=embedded&eurl=$eurl&hl=en"
-        return retriever.getString(url)
+        return webResourceRetriever.getString(url)
     }
 
-    private suspend fun generateThumbnail(): GeneratedImageResource? {
+    private suspend fun generateThumbnail(): GeneratedResource? {
         log.info("Capturing thumbnail for Youtube video videoId={}", videoId)
         val dl = "https://img.youtube.com/vi/$videoId/mqdefault.jpg"
-        return retriever.getFile(dl)?.let { GeneratedImageResource(it, JPG) }
+        return webResourceRetriever.getFile(dl)?.let {
+            val savedFile = resourceManager.saveTempFile(url, it, ResourceType.THUMBNAIL, JPG)
+            GeneratedResource(ResourceType.THUMBNAIL, savedFile, JPG)
+        }
     }
 
-    private suspend fun generatePreview(): GeneratedImageResource? {
+    private suspend fun generatePreview(): GeneratedResource? {
         log.info("Capturing preview for Youtube video videoId={}", videoId)
         val dl = "https://img.youtube.com/vi/$videoId/maxresdefault.jpg"
-        return retriever.getFile(dl)?.let { GeneratedImageResource(it, JPG) }
+        return webResourceRetriever.getFile(dl)?.let {
+            val savedFile = resourceManager.saveTempFile(url, it, ResourceType.PREVIEW, JPG)
+            GeneratedResource(ResourceType.PREVIEW, savedFile, JPG)
+        }
     }
 
     override suspend fun enrich(props: BaseProperties) {

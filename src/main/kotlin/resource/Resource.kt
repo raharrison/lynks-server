@@ -36,10 +36,11 @@ enum class ResourceType {
     PREVIEW, // small partial page screenshot
     PAGE, // full HTML page
     DOCUMENT, // full page PDF
-    READABLE, // HTML with extracted text content
+    READABLE_DOC, // extracted formatted readable content
+    READABLE_TEXT, // extracted text content only
     GENERATED; // task created
 
     companion object {
-        fun all(): EnumSet<ResourceType> = EnumSet.allOf(ResourceType::class.java)
+        fun linkBaseline(): EnumSet<ResourceType> = EnumSet.of(SCREENSHOT, THUMBNAIL, PREVIEW, PAGE, DOCUMENT, READABLE_DOC, READABLE_TEXT)
     }
 }

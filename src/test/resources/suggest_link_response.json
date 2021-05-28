@@ -1,0 +1,31 @@
+{
+    "details": {
+        "url": "https://deepu.tech/memory-management-in-jvm/",
+        "title": "Demystifying Java Virtual Machine Memory Management",
+        "keywords": [
+            "first",
+            "second"
+        ],
+        "description": "I aim to demystify the concepts behind memory management and take a look at memory management in some of the modern programming languages.",
+        "image": "https://i.imgur.com/Kv9ichJ.gif",
+        "author": "Bob Smith",
+        "published": "2021-05-20T07:26:37+00:00"
+    },
+    "resources": [
+        {
+            "resourceType": "PREVIEW",
+            "targetPath": "/media/preview_1622150268034.jpg",
+            "extension": "jpg"
+        },
+        {
+            "resourceType": "THUMBNAIL",
+            "targetPath": "/media/thumbnail_1622150268048.jpg",
+            "extension": "jpg"
+        },
+        {
+            "resourceType": "READABLE_TEXT",
+            "targetPath": "/media/readable_text_1622150268591.txt",
+            "extension": "txt"
+        }
+    ]
+}

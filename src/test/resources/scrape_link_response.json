@@ -1,0 +1,32 @@
+[
+    {
+        "resourceType": "SCREENSHOT",
+        "targetPath": "/media/screenshot_1622149653975.png",
+        "extension": "png"
+    },
+    {
+        "resourceType": "PREVIEW",
+        "targetPath": "/media/preview_1622149655100.jpg",
+        "extension": "jpg"
+    },
+    {
+        "resourceType": "THUMBNAIL",
+        "targetPath": "/media/thumbnail_1622149655115.jpg",
+        "extension": "jpg"
+    },
+    {
+        "resourceType": "DOCUMENT",
+        "targetPath": "/media/document_1622149655132.pdf",
+        "extension": "pdf"
+    },
+    {
+        "resourceType": "PAGE",
+        "targetPath": "/media/page_1622149656186.html",
+        "extension": "html"
+    },
+    {
+        "resourceType": "READABLE_TEXT",
+        "targetPath": "/media/readable_text_1622149656774.txt",
+        "extension": "txt"
+    }
+]

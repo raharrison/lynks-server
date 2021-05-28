@@ -2,12 +2,14 @@ package resource
 
 import common.exception.ExecutionException
 import kotlinx.coroutines.future.await
+import util.JsonMapper
 import util.Result
 import util.loggerFor
 import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
+import java.util.concurrent.CompletableFuture
 
 interface ResourceRetriever {
 
@@ -53,14 +55,35 @@ class WebResourceRetriever : ResourceRetriever {
         val request = createGetRequest(location)
         log.info("Retrieving data at web location: {}", location)
         val future = client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
-        future.await().let {
-            log.info("Retrieved status code: {} from: {}", it.statusCode(), location)
-            if (it.statusCode() == 200) Result.Success(it.body())
-            else Result.Failure(ExecutionException("Bad response code from remote data request", it.statusCode()))
-        }
+        handleAsyncResponseAsResult(location, future)
     } catch (e: Exception) {
         log.error("Error retrieving data at web location: {}", location, e)
         Result.Failure(ExecutionException("Error occurred retrieving remote data: " + e.message))
+    }
+
+    suspend fun postStringResult(location: String, body: Any): Result<String, ExecutionException> = try {
+        val json = JsonMapper.defaultMapper.writeValueAsString(body)
+        val request = HttpRequest.newBuilder(URI.create(location))
+            .POST(HttpRequest.BodyPublishers.ofString(json))
+            .header("Content-Type", "application/json")
+            .build()
+        log.info("Posting data to web location: {}", location)
+        val future = client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+        handleAsyncResponseAsResult(location, future)
+    } catch (e: Exception) {
+        log.error("Error posting data to web location: {}", location, e)
+        Result.Failure(ExecutionException("Error occurred posting to endpoint: " + e.message))
+    }
+
+    private suspend fun handleAsyncResponseAsResult(
+        location: String,
+        future: CompletableFuture<HttpResponse<String>>
+    ): Result<String, ExecutionException> {
+        return future.await().let {
+            log.info("Retrieved status code: {} from: {}", it.statusCode(), location)
+            if (it.statusCode() == 200) Result.Success(it.body())
+            else Result.Failure(ExecutionException("Bad response code from remote data request: " + it.body(), it.statusCode()))
+        }
     }
 
     private fun createGetRequest(location: String): HttpRequest {

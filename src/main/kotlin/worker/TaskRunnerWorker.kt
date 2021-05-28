@@ -1,6 +1,7 @@
 package worker
 
 import entry.EntryAuditService
+import notify.Notification
 import notify.NotifyService
 import task.Task
 import task.TaskContext
@@ -12,7 +13,7 @@ class TaskRunnerWorker(notifyService: NotifyService, entryAuditService: EntryAud
 
     override suspend fun doWork(input: TaskRunnerRequest) {
         input.task.process(input.context)
-        sendNotification()
+        sendNotification(Notification.processed("Task submitted for processing"))
     }
 
 }

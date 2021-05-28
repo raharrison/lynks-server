@@ -53,11 +53,13 @@ object Environment {
     private object ExternalSpec : ConfigSpec("external") {
         val smmryApiKey by optional<String?>(null)
         val youtubeDlHost by required<String>()
+        val scraperHost by optional<String?>(null)
     }
 
     data class External(
         val smmryApikey: String? = config[ExternalSpec.smmryApiKey],
-        val youtubeDlHost: String = config[ExternalSpec.youtubeDlHost]
+        val youtubeDlHost: String = config[ExternalSpec.youtubeDlHost],
+        val scraperHost: String? = config[ExternalSpec.scraperHost]
     )
 
     val mode: ConfigMode = ConfigMode.valueOf(System.getProperty("CONFIG_MODE")?.uppercase() ?: "DEV")

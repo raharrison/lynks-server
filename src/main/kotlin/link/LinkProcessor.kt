@@ -1,34 +1,34 @@
 package link
 
 import common.BaseProperties
-import link.extract.ExtractionPolicy
-import link.extract.LinkContent
-import resource.ResourceRetriever
+import resource.GeneratedResource
+import resource.ResourceManager
 import resource.ResourceType
+import resource.WebResourceRetriever
 import task.DiscussionFinderTask
 import task.LinkProcessingTask
 import java.util.*
 
 abstract class LinkProcessor(
-    protected val extractionPolicy: ExtractionPolicy,
-    protected val url: String,
-    protected val resourceRetriever: ResourceRetriever
+    val url: String,
+    protected val webResourceRetriever: WebResourceRetriever,
+    protected val resourceManager: ResourceManager
 ) :
     AutoCloseable {
 
-    abstract suspend fun init()
+    open suspend fun init() {}
+
+    override fun close() {}
 
     abstract fun matches(): Boolean
 
-    abstract val linkContent: LinkContent
+    abstract suspend fun scrapeResources(resourceSet: EnumSet<ResourceType>): List<GeneratedResource>
 
-    abstract suspend fun process(resourceSet: EnumSet<ResourceType>): Map<ResourceType, GeneratedResource>
+    abstract suspend fun suggest(resourceSet: EnumSet<ResourceType>): SuggestResponse
 
     open suspend fun enrich(props: BaseProperties) {
         props.addTask("Process Link", LinkProcessingTask.build())
         props.addTask("Find Discussions", DiscussionFinderTask.build())
     }
-
-    abstract val resolvedUrl: String
 
 }

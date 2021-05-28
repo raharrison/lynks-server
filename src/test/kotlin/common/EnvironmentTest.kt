@@ -39,4 +39,14 @@ class EnvironmentTest {
         assertThat(tempPath).isEqualTo(Environment.resource.resourceTempPath)
     }
 
+    @Test
+    fun testEnvironmentExternalProperties() {
+        val file = this.javaClass.getResource("/test.json")?.readText()
+        val node = JsonMapper.defaultMapper.readTree(file).get("external")
+
+        val smmryApiKey = node.get("smmryApiKey").textValue()
+
+        assertThat(smmryApiKey).isEqualTo(Environment.external.smmryApikey)
+    }
+
 }

@@ -5,8 +5,8 @@
         "rootPath": "/api"
     },
     "resource": {
-        "resourceBasePath": "media/test",
-        "resourceTempPath": "media/test/temp",
+        "resourceBasePath": "media",
+        "resourceTempPath": "media/temp",
         "binaryBasePath": "bin"
     },
     "mail": {
@@ -15,6 +15,7 @@
         "port": 1025
     },
     "external": {
-        "youtubeDlHost": "https://yt-dl.org/downloads/latest"
+        "youtubeDlHost": "https://yt-dl.org/downloads/latest",
+        "scraperHost": "http://localhost:3000/api"
     }
 }

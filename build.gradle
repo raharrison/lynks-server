@@ -90,16 +90,11 @@ dependencies {
     implementation "com.vladsch.flexmark:flexmark-ext-tables:$flexmark_version"
     implementation "com.vladsch.flexmark:flexmark-ext-autolink:$flexmark_version"
 
-    implementation "io.webfolder:cdp4j:$cdp4j_version"
-
-    implementation "com.chimbori.crux:crux:$crux_version"
-    implementation "org.apache.commons:commons-lang3:$commonslang_version"
-    implementation "org.jsoup:jsoup:$jsoup_version"
-
     implementation "com.github.shyiko.skedule:skedule:$skedule_version"
     implementation "com.github.jknack:handlebars:$handlebars_version"
     implementation "org.apache.commons:commons-email:$commons_email_version"
 
+    implementation "org.apache.commons:commons-lang3:$commonslang_version"
     implementation "ch.qos.logback:logback-classic:$logback_version"
     implementation "com.uchuhimo:konf-core:$konf_version"
 

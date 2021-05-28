@@ -6,20 +6,19 @@ import entry.LinkService
 import group.GroupSetService
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.coroutineScope
-import link.GeneratedDocResource
-import link.GeneratedImageResource
 import link.LinkProcessor
 import link.LinkProcessorFactory
-import link.extract.ExtractUtils
-import link.extract.ExtractionPolicy
 import notify.Notification
 import notify.NotifyService
+import resource.GeneratedResource
 import resource.Resource
 import resource.ResourceManager
 import resource.ResourceType
 import resource.ResourceType.*
 import suggest.Suggestion
-import java.time.LocalDate
+import util.Normalize
+import java.nio.file.Files
+import java.nio.file.Path
 import java.util.*
 
 sealed class LinkProcessingRequest
@@ -38,7 +37,7 @@ class LinkProcessorWorker(
     entryAuditService: EntryAuditService
 ) : ChannelBasedWorker<LinkProcessingRequest>(notifyService, entryAuditService) {
 
-    internal var processorFactory = LinkProcessorFactory()
+    internal var processorFactory = LinkProcessorFactory(resourceManager = resourceManager)
 
     override suspend fun doWork(input: LinkProcessingRequest) {
         when (input) {
@@ -51,7 +50,7 @@ class LinkProcessorWorker(
     private suspend fun processLinkPersist(link: Link, resourceSet: EnumSet<ResourceType>, process: Boolean) {
         try {
             resourceManager.deleteTempFiles(link.url)
-            val resources = processorFactory.createProcessors(link.url, ExtractionPolicy.FULL).flatMap {
+            val resources = processorFactory.createProcessors(link.url).flatMap {
                 it.use { proc ->
                     coroutineScope {
                         proc.enrich(link.props)
@@ -101,66 +100,52 @@ class LinkProcessorWorker(
 
         proc.init()
 
-        val generatedResources = proc.process(resourceSet)
+        val scrapedResources = proc.scrapeResources(resourceSet)
+        val resourcesByType = scrapedResources.associateBy { it.resourceType }
+        val generatedResources = mutableMapOf<ResourceType, GeneratedResource>()
 
-        val savedResources = generatedResources.map { entry ->
-            when (val resource = entry.value) {
-                is GeneratedImageResource -> saveResource(link.id, entry.key, resource.image, resource.extension)
-                is GeneratedDocResource -> saveResource(
-                    link.id,
-                    entry.key,
-                    resource.doc.toByteArray(),
-                    resource.extension
-                )
+        resourceSet.forEach {
+            if (resourcesByType.containsKey(it) && it != READABLE_TEXT) {
+                generatedResources[it] = resourcesByType.getValue(it)
+            } else {
+                log.info("Generated resource for {} is empty, not adding to results", it)
             }
         }
+        val savedResources = resourceManager.migrateGeneratedResources(link.id, generatedResources.values.toList())
 
-        // find first readable or page resource and assign link content
-        (generatedResources[READABLE] ?: generatedResources[PAGE])?.let {
-            if (it is GeneratedDocResource) {
-                link.content = ExtractUtils.extractTextFromHtmlDoc(it.doc)
-            }
+        // find readable resource and assign link content for searching
+        resourcesByType[READABLE_TEXT]?.let {
+            val readableContent = Files.readString(Path.of(it.targetPath))
+            link.content = Normalize.normalize(readableContent)
         }
+
         return savedResources
-    }
-
-    private fun saveResource(id: String, type: ResourceType, data: ByteArray, extension: String): Resource {
-        val date = LocalDate.now().toString()
-        val resourceFileName = "${type.name.lowercase()}-$date.${extension}"
-        return resourceManager.saveGeneratedResource(id, resourceFileName, type, data)
     }
 
     private suspend fun processLinkSuggest(url: String, deferred: CompletableDeferred<Suggestion>) {
         try {
             log.info("Link processing worker executing suggestion request for url={}", url)
-            processorFactory.createProcessors(url, ExtractionPolicy.PARTIAL).forEach { it ->
+            processorFactory.createProcessors(url).forEach { it ->
                 it.use { proc ->
                     coroutineScope {
                         proc.init()
-                        val resourceSet = EnumSet.of(PREVIEW, THUMBNAIL)
-                        val generatedResources = proc.process(resourceSet)
-                        val processedResources = generatedResources.mapValues { entry ->
-                            when (val resource = entry.value) {
-                                is GeneratedImageResource ->
-                                    resourceManager.saveTempFile(
-                                        url, resource.image, entry.key, resource.extension
-                                    )
-                                is GeneratedDocResource -> resourceManager.saveTempFile(
-                                    url, resource.doc.toByteArray(), entry.key, resource.extension
-                                )
-                            }
-                        }
+                        val resourceSet = EnumSet.of(PREVIEW, THUMBNAIL, READABLE_TEXT)
+                        val suggestionResponse = proc.suggest(resourceSet)
+                        val resourcesByType = suggestionResponse.resources.associateBy { it.resourceType }
 
-                        val linkContent = proc.linkContent
-                        val matchedGroups = groupSetService.matchWithContent(linkContent.extractedContent)
+                        val extractedContent = resourcesByType[READABLE_TEXT]?.let {
+                            val readableContent = Files.readString(Path.of(it.targetPath))
+                            Normalize.normalize(readableContent)
+                        }
+                        val matchedGroups = groupSetService.matchWithContent(extractedContent)
                         log.info("Link processing worker completing suggestion request for url={}", url)
                         deferred.complete(
                             Suggestion(
-                                proc.resolvedUrl,
-                                linkContent.title,
-                                processedResources[THUMBNAIL],
-                                processedResources[PREVIEW],
-                                linkContent.keywords,
+                                suggestionResponse.details.url,
+                                suggestionResponse.details.title,
+                                resourcesByType[THUMBNAIL]?.let { resourceManager.constructTempUrlFromPath(it.targetPath) },
+                                resourcesByType[PREVIEW]?.let { resourceManager.constructTempUrlFromPath(it.targetPath) },
+                                suggestionResponse.details.keywords,
                                 matchedGroups.tags,
                                 matchedGroups.collections
                             )
@@ -177,7 +162,7 @@ class LinkProcessorWorker(
     private suspend fun processActiveCheck(url: String, deferred: CompletableDeferred<Boolean>) {
         try {
             log.info("Link processing worker executing active check request for url={}", url)
-            processorFactory.createProcessors(url, ExtractionPolicy.PARTIAL).forEach {
+            processorFactory.createProcessors(url).forEach {
                 it.use { proc ->
                     coroutineScope {
                         proc.init()

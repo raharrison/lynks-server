@@ -20,6 +20,13 @@ object FileUtils {
         Files.write(path, data)
     }
 
+    fun moveFile(from: Path, to: Path) {
+        val parentPath = to.parent
+        if (!Files.exists(parentPath))
+            Files.createDirectories(parentPath)
+        Files.move(from, to)
+    }
+
     fun deleteWithParentIfEmpty(path: Path) {
         Files.deleteIfExists(path)
         if (path.parent.toFile().list()?.isEmpty() == true) {

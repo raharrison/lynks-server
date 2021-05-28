@@ -1,22 +1,27 @@
 package link
 
-import link.extract.ExtractionPolicy
+import resource.ResourceManager
 import resource.WebResourceRetriever
 
-class LinkProcessorFactory(private val retriever: WebResourceRetriever = WebResourceRetriever()) {
+class LinkProcessorFactory(
+    private val retriever: WebResourceRetriever = WebResourceRetriever(),
+    private val resourceManager: ResourceManager
+) {
     private val processors =
-        listOf<(ExtractionPolicy, String) -> LinkProcessor> { policy: ExtractionPolicy, url: String ->
-            YoutubeLinkProcessor(policy, url, retriever)
+        listOf<(String) -> LinkProcessor> { url: String ->
+            YoutubeLinkProcessor(url, retriever, resourceManager)
         }
 
-    fun createProcessors(url: String, extractionPolicy: ExtractionPolicy): List<LinkProcessor> {
-        val processors = processors.asSequence().map { it(extractionPolicy, url) }.filter { it.matches() }.toList()
-        return if (processors.isNotEmpty()) processors else listOf(
-            DefaultLinkProcessor(
-                extractionPolicy,
-                url,
-                retriever
+    fun createProcessors(url: String): List<LinkProcessor> {
+        val processors = processors.asSequence().map { it(url) }.filter { it.matches() }.toList()
+        return processors.ifEmpty {
+            listOf(
+                DefaultLinkProcessor(
+                    url,
+                    retriever,
+                    resourceManager
+                )
             )
-        )
+        }
     }
 }

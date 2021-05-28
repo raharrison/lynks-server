@@ -57,7 +57,7 @@ class ResourceManagerTest: DatabaseTest() {
         assertThat(docPath).startsWith(Environment.resource.resourceTempPath)
         val docFile = fileName(docPath)
         assertThat(getExtension(docFile)).isEqualTo(HTML)
-        assertThat(removeExtension(docFile)).startsWith(ResourceType.DOCUMENT.toString().toLowerCase())
+        assertThat(removeExtension(docFile)).startsWith(ResourceType.DOCUMENT.toString().lowercase())
 
         // create thumbnail
         val thumb = byteArrayOf(6,7,8,9,10)
@@ -69,7 +69,7 @@ class ResourceManagerTest: DatabaseTest() {
         assertThat(thumbPath).startsWith(Environment.resource.resourceTempPath)
         val thumbFile = fileName(thumbPath)
         assertThat(getExtension(thumbFile)).isEqualTo(JPG)
-        assertThat(removeExtension(thumbFile)).startsWith(ResourceType.THUMBNAIL.toString().toLowerCase())
+        assertThat(removeExtension(thumbFile)).startsWith(ResourceType.THUMBNAIL.toString().lowercase())
 
         // parent dir contains 2 files
         val folder = Paths.get(thumbPath).parent
@@ -124,12 +124,19 @@ class ResourceManagerTest: DatabaseTest() {
         val data2 = byteArrayOf(6,7,8,9,10)
         val path1 = resourceManager.saveTempFile("youtube.com", data1, ResourceType.DOCUMENT, HTML)
                 .let { tempFileToFullPath(it).toUrlString() }
-        val path2 = resourceManager.saveTempFile("youtube.com", data2, ResourceType.THUMBNAIL, JPG)
-                .let { tempFileToFullPath(it).toUrlString() }
-        val path3 = resourceManager.saveTempFile("twitter.com", data2, ResourceType.THUMBNAIL, JPG)
+        val path2 = resourceManager.saveTempFile("twitter.com", data2, ResourceType.THUMBNAIL, JPG)
                 .let { tempFileToFullPath(it).toUrlString() }
 
-        assertThat(resourceManager.moveTempFiles("eid", "youtube.com")).isNotEmpty()
+        val generatedResources = listOf(
+            GeneratedResource(ResourceType.DOCUMENT, path1, HTML),
+            GeneratedResource(ResourceType.THUMBNAIL, path2, JPG),
+        )
+        val migratedResources = resourceManager.migrateGeneratedResources("eid", generatedResources)
+        assertThat(migratedResources).hasSize(2)
+        assertThat(migratedResources).extracting("id").doesNotHaveDuplicates()
+        assertThat(migratedResources).extracting("entryId").containsOnly("eid")
+        assertThat(migratedResources).extracting("extension").containsOnly(HTML, JPG)
+        assertThat(migratedResources).extracting("extension").containsOnly(HTML, JPG)
 
         // check resources generated
         val resources = resourceManager.getResourcesFor("eid")
@@ -137,7 +144,7 @@ class ResourceManagerTest: DatabaseTest() {
         for (resource in resources) {
             assertThat(resource.entryId).isEqualTo("eid")
             assertThat(resource.dateUpdated).isEqualTo(resource.dateCreated)
-            assertThat(resource.name).startsWith(resource.type.name.toLowerCase())
+            assertThat(resource.name).startsWith(resource.type.name.lowercase())
             when(resource.type) {
                 ResourceType.DOCUMENT -> {
                     assertThat(resource.extension).isEqualTo(HTML)
@@ -159,12 +166,13 @@ class ResourceManagerTest: DatabaseTest() {
         // check temp files
         assertThat(fileExists(path1)).isFalse()
         assertThat(fileExists(path2)).isFalse()
-        assertThat(fileExists(path3)).isTrue()
     }
 
     @Test
-    fun testMoveTempFileDoesntExist() {
-        assertThat(resourceManager.moveTempFiles("eid", "nothing")).isEmpty()
+    fun testMigrateResourcesDoesntExist() {
+        val generatedResources = listOf(GeneratedResource(ResourceType.THUMBNAIL, "invalid.txt", TEXT))
+        val resources = resourceManager.migrateGeneratedResources("eid", generatedResources)
+        assertThat(resources).isEmpty()
     }
 
     @Test

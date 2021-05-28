@@ -16,7 +16,7 @@ import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
-import java.time.LocalDate
+import kotlin.io.path.exists
 
 private val log = loggerFor<ResourceManager>()
 
@@ -53,26 +53,19 @@ class ResourceManager {
         return TempFile(src, extension, path)
     }
 
-    fun moveTempFiles(entryId: String, src: String): List<Resource> {
-        val tempPath = constructTempPath(src)
-        if (Files.exists(tempPath)) {
-            log.info("Moving temporary files for entry={} src={}", entryId, src)
-            val target = Paths.get(Environment.resource.resourceBasePath, entryId)
-            val generatedResources = mutableListOf<Resource>()
-            Files.move(tempPath, target)
-            Files.list(target).use { it ->
-                it.forEach {
-                    val filename = FileUtils.removeExtension(it.fileName.toString())
-                    val type = ResourceType.valueOf(filename.uppercase().split("-")[0])
-                    val generatedResource = saveGeneratedResource(entryId, type, it)
-                    generatedResources.add(generatedResource)
-                }
-                log.info("{} temp files moved for entry={}", generatedResources.size, entryId)
+    fun migrateGeneratedResources(entryId: String, generatedResources: List<GeneratedResource>): List<Resource> {
+        val resources = mutableListOf<Resource>()
+        log.info("Migrating {} temporary resources for entry={}", generatedResources.size, entryId)
+        for (generatedResource in generatedResources) {
+            val tempResourcePath = Path.of(generatedResource.targetPath)
+            if (tempResourcePath.exists()) {
+                val savedResource = saveGeneratedResource(entryId, generatedResource.resourceType, tempResourcePath)
+                resources.add(savedResource)
+            } else {
+                log.warn("Generated resource for entry={} at {} does not exist", entryId, generatedResource.targetPath)
             }
-            return generatedResources
         }
-        log.debug("No temporary files to move for entry={}", entryId)
-        return emptyList()
+        return resources
     }
 
     fun deleteTempFiles(src: String) {
@@ -80,8 +73,9 @@ class ResourceManager {
         if (Files.exists(tempPath)) {
             FileUtils.deleteDirectories(listOf(tempPath))
             log.info("Temp files deleted for src={}", src)
+        } else {
+            log.debug("No temporary files to remove for src={}", src)
         }
-        log.debug("No temporary files to move for src={}", src)
     }
 
     fun saveGeneratedResource(
@@ -129,7 +123,7 @@ class ResourceManager {
         val target = constructPath(entryId, id, extension)
         val size = Files.size(path)
         log.info("Moving {} resource from={} to={} entry={}", type.name.lowercase(), path.toString(), target.toString(), entryId)
-        Files.move(path, target)
+        FileUtils.moveFile(path, target)
         return saveGeneratedResource(id, entryId, name, extension, type, size)
     }
 
@@ -154,7 +148,7 @@ class ResourceManager {
     }
 
     private fun constructTempPath(name: String, type: ResourceType, extension: String): Path {
-        val date = LocalDate.now().toString()
+        val date = System.currentTimeMillis()
         return Paths.get(Environment.resource.resourceTempPath, FileUtils.createTempFileName(name), "${type.toString().lowercase()}-$date.$extension")
     }
 
@@ -162,7 +156,11 @@ class ResourceManager {
         return Paths.get(Environment.resource.resourceTempPath, FileUtils.createTempFileName(name), "${RandomUtils.generateUid()}.$extension")
     }
 
-    private fun constructTempPath(name: String) = Paths.get(Environment.resource.resourceTempPath, FileUtils.createTempFileName(name))
+    fun constructTempUrlFromPath(path: String): String {
+        return Paths.get(Environment.resource.resourceTempPath).toAbsolutePath().relativize(Path.of(path)).toUrlString()
+    }
+
+    fun constructTempPath(name: String): Path = Paths.get(Environment.resource.resourceTempPath, FileUtils.createTempFileName(name))
 
     fun updateResource(resource: Resource): Resource? {
         val id = resource.id
