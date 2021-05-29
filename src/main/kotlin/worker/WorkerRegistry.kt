@@ -28,23 +28,23 @@ class WorkerRegistry {
     private lateinit var reminderWorker: SendChannel<ReminderWorkerRequest>
 
     fun acceptLinkWork(request: LinkProcessingRequest) {
-        linkWorker.offer(request)
+        linkWorker.trySend(request)
     }
 
     fun acceptTaskWork(task: Task<TaskContext>, context: TaskContext) {
-        taskWorker.offer(TaskRunnerRequest(task, context))
+        taskWorker.trySend(TaskRunnerRequest(task, context))
     }
 
     fun acceptDiscussionWork(linkId: String) {
-        discussionWorker.offer(DiscussionFinderWorkerRequest(linkId))
+        discussionWorker.trySend(DiscussionFinderWorkerRequest(linkId))
     }
 
     fun acceptReminderWork(request: ReminderWorkerRequest) {
-        reminderWorker.offer(request)
+        reminderWorker.trySend(request)
     }
 
     fun onUserPreferenceChange(preferences: Preferences) {
-        unreadDigestWorker.offer(UnreadLinkDigestWorkerRequest(preferences))
-        fileCleanupWorker.offer(TempFileCleanupWorkerRequest(preferences))
+        unreadDigestWorker.trySend(UnreadLinkDigestWorkerRequest(preferences))
+        fileCleanupWorker.trySend(TempFileCleanupWorkerRequest(preferences))
     }
 }
