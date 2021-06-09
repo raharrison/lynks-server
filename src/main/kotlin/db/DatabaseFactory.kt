@@ -62,7 +62,12 @@ class DatabaseFactory {
         val flyway = Flyway.configure()
             .dataSource(datasource)
             .load()
-        flyway.migrate()
+        try {
+            flyway.migrate()
+        } catch (e: Exception) {
+            log.error("Exception running flyway migration", e)
+            throw e
+        }
         log.info("Flyway migration has finished")
     }
 
