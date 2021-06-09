@@ -37,15 +37,17 @@ class DatabaseFactory {
         if (Environment.mode == ConfigMode.TEST) {
             // no connection pooling
             log.info("In test mode, not using connection pooling")
-            Database.connect(Environment.database.url)
+            Database.connect(Environment.database.url, user = Environment.database.user, password = Environment.database.password)
         } else {
             Database.connect(hikari())
         }
 
         transaction {
             create(*tables.toTypedArray())
-            enableSearch()
-            enableTriggers()
+            if(Environment.database.dialect == DatabaseDialect.H2) {
+                enableSearch()
+                enableTriggers()
+            }
         }
         connected = true
     }
@@ -54,6 +56,8 @@ class DatabaseFactory {
         val config = HikariConfig()
         config.driverClassName = Environment.database.dialect.driver
         config.jdbcUrl = Environment.database.url
+        config.username = Environment.database.user
+        config.password = Environment.database.password
         config.maximumPoolSize = 3
         config.isAutoCommit = false
         config.transactionIsolation = "TRANSACTION_REPEATABLE_READ"

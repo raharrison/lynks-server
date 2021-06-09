@@ -26,15 +26,15 @@ object Environment {
     private object DatabaseSpec: ConfigSpec("database") {
         val dialect by required<DatabaseDialect>(description = "type of database: either H2 or POSTGRES")
         val url by required<String>(description = "url of the database to connect to")
-        val user by optional<String?>(null, description = "database user")
-        val password by optional<String?>(null, description = "database password")
+        val user by optional("", description = "database user")
+        val password by optional("", description = "database password")
     }
 
     data class Database(
         val dialect: DatabaseDialect = config[DatabaseSpec.dialect],
         val url: String = config[DatabaseSpec.url],
-        val user: String? = config[DatabaseSpec.user],
-        val password: String? = config[DatabaseSpec.password],
+        val user: String = config[DatabaseSpec.user],
+        val password: String = config[DatabaseSpec.password],
     )
 
     private object ResourceSpec: ConfigSpec("resource") {

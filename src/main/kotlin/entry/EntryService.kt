@@ -4,6 +4,7 @@ import common.*
 import common.page.DefaultPageRequest
 import common.page.Page
 import common.page.PageRequest
+import db.DatabaseDialect
 import db.EntryRepository
 import group.GroupSet
 import group.GroupSetService
@@ -51,15 +52,29 @@ class EntryService(
 
     fun search(term: String, page: PageRequest = DefaultPageRequest): Page<SlimEntry> = transaction {
         val conn = (TransactionManager.current().connection as JdbcConnectionImpl).connection
-        conn.prepareStatement("SELECT * FROM FT_SEARCH_DATA(?, 0, 0)").use { prep ->
-            prep.setString(1, term)
-            prep.executeQuery().use { set ->
-                val keys = mutableListOf<String>()
-                while (set.next()) {
-                    val res = set.getArray("KEYS")
-                    (res.array as Array<*>).forEach { keys.add(it.toString()) }
+        if(Environment.database.dialect == DatabaseDialect.H2) {
+            conn.prepareStatement("SELECT * FROM FT_SEARCH_DATA(?, 0, 0)").use { prep ->
+                prep.setString(1, term)
+                prep.executeQuery().use { set ->
+                    val keys = mutableListOf<String>()
+                    while (set.next()) {
+                        val res = set.getArray("KEYS")
+                        (res.array as Array<*>).forEach { keys.add(it.toString()) }
+                    }
+                    get(keys, page)
                 }
-                get(keys, page)
+            }
+        } else {
+            conn.prepareStatement("SELECT ID FROM ENTRY WHERE TITLE LIKE ? OR PLAIN_CONTENT LIKE ?").use { prep ->
+                prep.setString(1, "%$term%")
+                prep.setString(2, "%$term%")
+                prep.executeQuery().use { set ->
+                    val keys = mutableListOf<String>()
+                    while (set.next()) {
+                        keys.add(set.getString("ID"))
+                    }
+                    get(keys, page)
+                }
             }
         }
     }

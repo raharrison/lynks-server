@@ -33,7 +33,7 @@ class EntryServiceTest: DatabaseTest() {
         Thread.sleep(10)// prevent having same creation timestamp
         createDummyEntry("id2", "note1", "note content", EntryType.NOTE)
         Thread.sleep(10)
-        createDummyEntry("id3", "note2", "note content2", EntryType.NOTE)
+        createDummyEntry("id3", "note2", "note content second", EntryType.NOTE)
     }
 
     @Test
@@ -130,8 +130,8 @@ class EntryServiceTest: DatabaseTest() {
     @Test
     fun testSearchMultipleResults() {
         val entries = entryService.search("content").content
-        assertThat(entries).hasSize(2)
-        assertThat(entries).extracting("id").containsExactlyInAnyOrder("id1", "id2")
+        assertThat(entries).hasSize(3)
+        assertThat(entries).extracting("id").containsExactlyInAnyOrder("id1", "id2", "id3")
         assertThat(entries).hasAtLeastOneElementOfType(SlimNote::class.java)
         assertThat(entries).hasAtLeastOneElementOfType(SlimLink::class.java)
     }
