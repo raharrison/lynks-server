@@ -34,7 +34,7 @@ open class DefaultLinkProcessor(
     private data class ScrapeRequest(val url: String, val resourceTypes: List<ResourceType>, val targetPath: String)
 
     override suspend fun scrapeResources(resourceSet: EnumSet<ResourceType>): List<GeneratedResource> {
-        val targetPath = resourceManager.constructTempPath(url)
+        val targetPath = resourceManager.constructTempBasePath(url)
         val scrapeUrl = Environment.external.scraperHost + "/scrape"
         val scrapeRequest = ScrapeRequest(url, resourceSet.toList(), targetPath.absolutePathString())
 
@@ -45,7 +45,7 @@ open class DefaultLinkProcessor(
     }
 
     override suspend fun suggest(resourceSet: EnumSet<ResourceType>): SuggestResponse {
-        val targetPath = resourceManager.constructTempPath(url)
+        val targetPath = resourceManager.constructTempBasePath(url)
         val suggestUrl = Environment.external.scraperHost + "/suggest"
         val suggestRequest = ScrapeRequest(url, resourceSet.toList(), targetPath.absolutePathString())
 

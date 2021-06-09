@@ -25,6 +25,7 @@ abstract class BaseEntries(name: String) : Table(name) {
 
 object Entries : BaseEntries("ENTRY") {
     override val version = integer("VERSION").default(1)
+    // as override to avoid cyclic foreign key issues between entries and resources
     override val thumbnailId = varchar("THUMBNAIL_ID", 12).references(Resources.id, ReferenceOption.SET_NULL).nullable()
     override val primaryKey = PrimaryKey(id)
 }

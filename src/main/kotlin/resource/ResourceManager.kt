@@ -41,14 +41,14 @@ class ResourceManager {
     }
 
     fun saveTempFile(src: String, data: ByteArray, type: ResourceType, extension: String): String {
-        val path = constructTempPath(src, type, extension)
+        val path = constructTempBasePath(src, type, extension)
         FileUtils.writeToFile(path, data)
         log.info("Temporary resource saved at {} src={} type={}", path.toString(), src, type)
         return Paths.get(Environment.resource.resourceTempPath).relativize(path).toUrlString()
     }
 
     fun createTempFile(src: String, extension: String): TempFile {
-        val path = constructTempPath(src, extension)
+        val path = constructTempBasePath(src, extension)
         log.info("Temp file created at {}", path.toUrlString())
         return TempFile(src, extension, path)
     }
@@ -69,7 +69,7 @@ class ResourceManager {
     }
 
     fun deleteTempFiles(src: String) {
-        val tempPath = constructTempPath(src)
+        val tempPath = constructTempBasePath(src)
         if (Files.exists(tempPath)) {
             FileUtils.deleteDirectories(listOf(tempPath))
             log.info("Temp files deleted for src={}", src)
@@ -140,19 +140,19 @@ class ResourceManager {
         return saveGeneratedResource(id, entryId, name, ext, ResourceType.UPLOAD, file.length())
     }
 
-    fun constructPath(entryId: String, id: String = RandomUtils.generateUid()): Path = Paths.get(Environment.resource.resourceBasePath, entryId, id)
+    internal fun constructPath(entryId: String, id: String = RandomUtils.generateUid()): Path = Paths.get(Environment.resource.resourceBasePath, entryId, id)
 
     private fun constructPath(entryId: String, id: String, extension: String): Path {
         val resId = if (extension.isNotEmpty()) "$id.$extension" else id
         return constructPath(entryId, resId)
     }
 
-    private fun constructTempPath(name: String, type: ResourceType, extension: String): Path {
+    private fun constructTempBasePath(name: String, type: ResourceType, extension: String): Path {
         val date = System.currentTimeMillis()
         return Paths.get(Environment.resource.resourceTempPath, FileUtils.createTempFileName(name), "${type.toString().lowercase()}-$date.$extension")
     }
 
-    private fun constructTempPath(name: String, extension: String): Path {
+    private fun constructTempBasePath(name: String, extension: String): Path {
         return Paths.get(Environment.resource.resourceTempPath, FileUtils.createTempFileName(name), "${RandomUtils.generateUid()}.$extension")
     }
 
@@ -162,7 +162,7 @@ class ResourceManager {
         else Paths.get(Environment.resource.resourceTempPath).relativize(Path.of(path)).toUrlString()
     }
 
-    fun constructTempPath(name: String): Path = Paths.get(Environment.resource.resourceTempPath, FileUtils.createTempFileName(name))
+    fun constructTempBasePath(name: String): Path = Paths.get(Environment.resource.resourceTempPath, FileUtils.createTempFileName(name))
 
     fun updateResource(resource: Resource): Resource? {
         val id = resource.id
