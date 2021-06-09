@@ -17,14 +17,20 @@ class EnvironmentTest {
 
     @Test
     fun testEnvironmentServerProperties() {
-        val file = this.javaClass.getResource("/test.json")?.readText()
-        val node = JsonMapper.defaultMapper.readTree(file).get("server")
-
-        val db = node.get("database").textValue()
         val defaultPort = 8080
-
-        assertThat(db).isEqualTo(Environment.server.database)
         assertThat(defaultPort).isEqualTo(Environment.server.port)
+    }
+
+    @Test
+    fun testEnvironmentDatabaseProperties() {
+        val file = this.javaClass.getResource("/test.json")?.readText()
+        val node = JsonMapper.defaultMapper.readTree(file).get("database")
+
+        val dialect = node.get("dialect").textValue()
+        val url = node.get("url").textValue()
+
+        assertThat(dialect).isEqualTo(Environment.database.dialect.toString())
+        assertThat(url).isEqualTo(Environment.database.url)
     }
 
     @Test
@@ -44,8 +50,10 @@ class EnvironmentTest {
         val file = this.javaClass.getResource("/test.json")?.readText()
         val node = JsonMapper.defaultMapper.readTree(file).get("external")
 
+        val scraperHost = node.get("scraperHost").textValue()
         val smmryApiKey = node.get("smmryApiKey").textValue()
 
+        assertThat(scraperHost).isEqualTo(Environment.external.scraperHost)
         assertThat(smmryApiKey).isEqualTo(Environment.external.smmryApikey)
     }
 

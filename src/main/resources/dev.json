@@ -1,5 +1,6 @@
 {
-    "server": {
-        "database": "jdbc:h2:./lynksdb;AUTO_SERVER=TRUE"
+    "database": {
+        "dialect": "H2",
+        "url": "jdbc:h2:./lynksdb;AUTO_SERVER=TRUE"
     }
 }

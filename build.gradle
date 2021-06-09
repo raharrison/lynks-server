@@ -2,8 +2,9 @@ buildscript {
     ext.kotlin_version = '1.5.10'
     ext.ktor_version = '1.6.0'
 
-    ext.exposed_version = '0.31.1'
     ext.h2_version = '1.4.199'
+    ext.postgres_version = '42.2.20'
+    ext.exposed_version = '0.31.1'
     ext.hikari_version = '4.0.3'
 
     ext.flexmark_version = '0.62.2'
@@ -74,6 +75,7 @@ dependencies {
     implementation "io.ktor:ktor-websockets:$ktor_version"
 
     implementation "com.h2database:h2:$h2_version"
+    implementation "org.postgresql:postgresql:$postgres_version"
     implementation "org.jetbrains.exposed:exposed-core:$exposed_version"
     implementation "org.jetbrains.exposed:exposed-jdbc:$exposed_version"
     implementation "com.zaxxer:HikariCP:$hikari_version"

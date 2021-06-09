@@ -1,6 +1,5 @@
 {
     "server": {
-        "driver": "org.h2.Driver",
         "port": 8080,
         "rootPath": "/api"
     },
