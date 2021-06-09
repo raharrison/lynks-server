@@ -12,7 +12,7 @@ abstract class DatabaseTest {
     @BeforeEach
     fun before() {
         if(!databaseFactory.connected) {
-            databaseFactory.connect()
+            databaseFactory.connectAndMigrate()
         }
         databaseFactory.resetAll()
     }

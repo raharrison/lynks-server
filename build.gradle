@@ -6,6 +6,7 @@ buildscript {
     ext.postgres_version = '42.2.20'
     ext.exposed_version = '0.31.1'
     ext.hikari_version = '4.0.3'
+    ext.flyway_version = '7.9.2'
 
     ext.flexmark_version = '0.62.2'
     ext.handlebars_version = '4.2.0'
@@ -79,6 +80,7 @@ dependencies {
     implementation "org.jetbrains.exposed:exposed-core:$exposed_version"
     implementation "org.jetbrains.exposed:exposed-jdbc:$exposed_version"
     implementation "com.zaxxer:HikariCP:$hikari_version"
+    implementation "org.flywaydb:flyway-core:$flyway_version"
 
     implementation "com.vladsch.flexmark:flexmark:$flexmark_version"
     implementation "com.vladsch.flexmark:flexmark-ext-gfm-strikethrough:$flexmark_version"

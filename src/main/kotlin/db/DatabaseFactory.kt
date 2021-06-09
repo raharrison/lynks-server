@@ -3,20 +3,23 @@ package db
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import comment.Comments
-import common.*
+import common.Entries
+import common.EntryAudit
+import common.EntryVersions
+import common.Environment
 import group.EntryGroups
 import group.Groups
+import org.flywaydb.core.Flyway
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils.create
 import org.jetbrains.exposed.sql.deleteAll
-import org.jetbrains.exposed.sql.statements.jdbc.JdbcConnectionImpl
-import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.jetbrains.exposed.sql.transactions.transaction
 import reminder.Reminders
 import resource.Resources
 import user.UserPreferences
 import util.loggerFor
 import worker.WorkerSchedules
+import javax.sql.DataSource
 
 val log = loggerFor<DatabaseFactory>()
 
@@ -31,24 +34,13 @@ class DatabaseFactory {
         Groups, EntryGroups, WorkerSchedules
     )
 
-    fun connect() {
-        log.info("Initialising database {}", Environment.database.dialect)
+    fun connectAndMigrate() {
+        log.info("Initialising database with dialect: {}", Environment.database.dialect)
 
-        if (Environment.mode == ConfigMode.TEST) {
-            // no connection pooling
-            log.info("In test mode, not using connection pooling")
-            Database.connect(Environment.database.url, user = Environment.database.user, password = Environment.database.password)
-        } else {
-            Database.connect(hikari())
-        }
+        val pool = hikari()
+        Database.connect(pool)
+        runFlyway(pool)
 
-        transaction {
-            create(*tables.toTypedArray())
-            if(Environment.database.dialect == DatabaseDialect.H2) {
-                enableSearch()
-                enableTriggers()
-            }
-        }
         connected = true
     }
 
@@ -65,30 +57,17 @@ class DatabaseFactory {
         return HikariDataSource(config)
     }
 
-    private fun enableTriggers() {
-        val conn = (TransactionManager.current().connection as JdbcConnectionImpl).connection
-        conn.createStatement().use {
-            it.execute(
-                "CREATE TRIGGER IF NOT EXISTS ENTRY_VERS_INS AFTER INSERT ON ENTRY " +
-                        "FOR EACH ROW CALL \"${EntryVersionTrigger::class.qualifiedName}\""
-            )
-            it.execute(
-                "CREATE TRIGGER IF NOT EXISTS ENTRY_VERS_UPD AFTER UPDATE ON ENTRY " +
-                        "FOR EACH ROW CALL \"${EntryVersionTrigger::class.qualifiedName}\""
-            )
-        }
+    private fun runFlyway(datasource: DataSource) {
+        log.info("Flyway migration has started")
+        val flyway = Flyway.configure()
+            .dataSource(datasource)
+            .load()
+        flyway.migrate()
+        log.info("Flyway migration has finished")
     }
 
-    private fun enableSearch() {
-        // execute if db file doesn't already exist, otherwise test mode uses in-memory db
-        if (Environment.mode == ConfigMode.TEST) {
-            val conn = (TransactionManager.current().connection as JdbcConnectionImpl).connection
-            conn.createStatement().use {
-                it.execute("CREATE ALIAS IF NOT EXISTS FT_INIT FOR \"org.h2.fulltext.FullText.init\";")
-                it.execute("CALL FT_INIT()")
-                it.execute("CALL FT_CREATE_INDEX('PUBLIC', 'ENTRY', 'TITLE,PLAIN_CONTENT');")
-            }
-        }
+    fun createAll(): Unit = transaction {
+        create(*tables.toTypedArray())
     }
 
     fun resetAll(): Unit = transaction {

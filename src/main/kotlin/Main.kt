@@ -8,20 +8,15 @@ import common.inject.ServiceProvider
 import db.DatabaseFactory
 import entry.*
 import group.*
-import io.ktor.application.Application
-import io.ktor.application.call
-import io.ktor.application.install
+import io.ktor.application.*
 import io.ktor.features.*
-import io.ktor.http.ContentType
-import io.ktor.http.HttpMethod
-import io.ktor.http.HttpStatusCode
-import io.ktor.jackson.JacksonConverter
-import io.ktor.response.respond
-import io.ktor.routing.Routing
-import io.ktor.routing.route
-import io.ktor.server.engine.embeddedServer
-import io.ktor.server.netty.Netty
-import io.ktor.websocket.WebSockets
+import io.ktor.http.*
+import io.ktor.jackson.*
+import io.ktor.response.*
+import io.ktor.routing.*
+import io.ktor.server.engine.*
+import io.ktor.server.netty.*
+import io.ktor.websocket.*
 import notify.NotifyService
 import notify.notify
 import reminder.ReminderService
@@ -56,7 +51,7 @@ fun Application.module() {
         ConfigMode.PROD -> installProdFeatures()
     }
 
-    DatabaseFactory().connect()
+    DatabaseFactory().connectAndMigrate()
 
     val workerRegistry = WorkerRegistry()
     val serviceProvider = ServiceProvider().apply {
