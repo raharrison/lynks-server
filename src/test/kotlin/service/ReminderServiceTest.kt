@@ -174,7 +174,7 @@ class ReminderServiceTest : DatabaseTest() {
         assertThat(updated?.notifyMethod).isEqualTo(NotificationMethod.BOTH)
         assertThat(updated?.message).isEqualTo("message2")
         assertThat(updated?.spec).isEqualTo("500")
-        assertThat(updated?.dateCreated).isNotEqualTo(updated?.dateUpdated)
+        assertThat(updated?.dateCreated).isLessThanOrEqualTo(updated?.dateUpdated)
         assertThat(reminderService.get(res1.reminderId)).isEqualTo(updated)
 
         // cannot update entryId

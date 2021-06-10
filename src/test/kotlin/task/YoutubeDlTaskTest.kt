@@ -11,10 +11,7 @@ import org.assertj.core.api.Assertions.entry
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import resource.Resource
-import resource.ResourceManager
-import resource.ResourceRetriever
-import resource.ResourceType
+import resource.*
 import util.ExecUtils
 import util.FileUtils
 import util.Result
@@ -71,7 +68,7 @@ class YoutubeDlTaskTest {
             """.trimIndent()
 
         val path = Paths.get(name)
-        every { resourceManager.constructPath("eid", any()) } returns path
+        every { resourceManager.constructTempBasePath("eid") } returns path
 
         every {
             resourceManager.saveGeneratedResource(
@@ -82,6 +79,7 @@ class YoutubeDlTaskTest {
         } returns
             Resource("rid", "eid", name, "", ResourceType.UPLOAD, 1, 1, 1)
 
+        every { resourceManager.migrateGeneratedResources("eid", any()) } returns emptyList()
         mockkObject(ExecUtils)
 
         every { ExecUtils.executeCommand(any()) } returns Result.Success(commandResult)
@@ -100,15 +98,11 @@ class YoutubeDlTaskTest {
 
         unmockkObject(ExecUtils)
 
-        verify(exactly = 1) {
-            resourceManager.saveGeneratedResource(
-                entryId = "eid",
-                type = ResourceType.GENERATED,
-                path = path
-            )
-        }
+        verify(exactly = 1) { resourceManager.migrateGeneratedResources("eid", match {
+            it.size == 1 && it[0] == GeneratedResource(ResourceType.GENERATED, path.toString(), FileUtils.getExtension(path.toString()))
+        }) }
 
-        verify(exactly = 1) { resourceManager.constructPath("eid", any()) }
+        verify(exactly = 1) { resourceManager.constructTempBasePath("eid") }
         verify(exactly = 1) { entryAuditService.acceptAuditEvent("eid", any(), any()) }
     }
 
@@ -122,7 +116,7 @@ class YoutubeDlTaskTest {
         val binaryPath = Paths.get(Environment.resource.binaryBasePath, binaryName)
         FileUtils.writeToFile(binaryPath, byteArrayOf(1, 2, 3))
 
-        every { resourceManager.constructPath("eid", any()) } returns Paths.get("file.webm")
+        every { resourceManager.constructTempBasePath("eid") } returns Paths.get("file.webm")
 
         mockkObject(ExecUtils)
 
@@ -135,7 +129,8 @@ class YoutubeDlTaskTest {
         unmockkObject(ExecUtils)
 
         coVerify(exactly = 0) { resourceRetriever.getFileResult(any()) }
-        verify(exactly = 1) { resourceManager.constructPath("eid", any()) }
+        verify(exactly = 1) { resourceManager.constructTempBasePath("eid") }
+        verify(exactly = 0) { resourceManager.migrateGeneratedResources("eid", any()) }
         verify(exactly = 1) { entryAuditService.acceptAuditEvent("eid", any(), any()) }
     }
 
@@ -146,7 +141,7 @@ class YoutubeDlTaskTest {
         val context = youtubeDlTask.createContext(mapOf("url" to url, "type" to type.toString()))
 
         coEvery { resourceRetriever.getFileResult(any()) } returns Result.Success(byteArrayOf(1, 2, 3))
-        every { resourceManager.constructPath("eid", any()) } returns Paths.get("video.webm")
+        every { resourceManager.constructTempBasePath("eid") } returns Paths.get("video.webm")
         mockkObject(ExecUtils)
 
         every { ExecUtils.executeCommand(any()) } returns Result.Success("invalid")
@@ -157,9 +152,7 @@ class YoutubeDlTaskTest {
 
         unmockkObject(ExecUtils)
 
-        verify(exactly = 0) {
-            resourceManager.saveGeneratedResource(any(), any(), any())
-        }
+        verify(exactly = 0) { resourceManager.migrateGeneratedResources("eid", any()) }
     }
 
     @Test

@@ -44,7 +44,7 @@ class ResourceManager {
         val path = constructTempBasePath(src, type, extension)
         FileUtils.writeToFile(path, data)
         log.info("Temporary resource saved at {} src={} type={}", path.toString(), src, type)
-        return Paths.get(Environment.resource.resourceTempPath).relativize(path).toUrlString()
+        return path.toAbsolutePath().toUrlString()
     }
 
     fun createTempFile(src: String, extension: String): TempFile {
@@ -159,7 +159,7 @@ class ResourceManager {
     fun constructTempUrlFromPath(path: String): String {
         val resolvedPath = Path.of(path)
         return if(resolvedPath.isAbsolute) Paths.get(Environment.resource.resourceTempPath).toAbsolutePath().relativize(Path.of(path)).toUrlString()
-        else Paths.get(Environment.resource.resourceTempPath).relativize(Path.of(path)).toUrlString()
+        else return Path.of(path).toUrlString()
     }
 
     fun constructTempBasePath(name: String): Path = Paths.get(Environment.resource.resourceTempPath, FileUtils.createTempFileName(name))

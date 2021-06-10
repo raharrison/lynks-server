@@ -6,6 +6,7 @@ import entry.EntryAuditService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.apache.commons.lang3.SystemUtils
+import resource.GeneratedResource
 import resource.ResourceManager
 import resource.ResourceRetriever
 import resource.ResourceType
@@ -31,35 +32,37 @@ class YoutubeDlTask(id: String, entryId: String) : Task<YoutubeDlTask.YoutubeDlT
     @Inject
     lateinit var entryAuditService: EntryAuditService
 
+    private data class OutputMatchDef(val prefix: String, val findFirst: Boolean)
+
+    private val outputMatchDefs = listOf(
+        OutputMatchDef("[ffmpeg] Merging formats into", false),
+        OutputMatchDef("[download] Destination:", true)
+    )
+
     override suspend fun process(context: YoutubeDlTaskContext) {
         val youtubeDlBinaryPath = resolveYoutubeDl()
-        val outputTemplate = "-o \"${resourceManager.constructPath(entryId, "%(name)s.%(ext)s")}\""
+        val tempPath = resourceManager.constructTempBasePath(entryId).resolve("%(title)s.%(ext)s")
+        val outputTemplate = "-o \"${tempPath.absolutePathString()}\""
 
+        // TODO: Validate context url for security
         log.info("Executing YoutubeDl task entry={} type={}", entryId, context.type)
         val command = when (context.type) {
-            YoutubeDlDownload.BEST_AUDIO -> "$youtubeDlBinaryPath -f bestaudio/best $outputTemplate ${context.url}"
-            YoutubeDlDownload.BEST_VIDEO -> "$youtubeDlBinaryPath -f best $outputTemplate ${context.url}"
-            YoutubeDlDownload.BEST_VIDEO_TRANSCODE -> "$youtubeDlBinaryPath -f bestvideo[height<=?1080]+bestaudio/best $outputTemplate ${context.url}"
+            YoutubeDlDownload.BEST_AUDIO -> "$youtubeDlBinaryPath -f \"bestaudio/best\" $outputTemplate ${context.url}"
+            YoutubeDlDownload.BEST_VIDEO -> "$youtubeDlBinaryPath -f \"best\" $outputTemplate ${context.url}"
+            YoutubeDlDownload.BEST_VIDEO_TRANSCODE -> "$youtubeDlBinaryPath -f \"bestvideo[height<=?1080]+bestaudio/best\" $outputTemplate ${context.url}"
         }
 
         when (val result = ExecUtils.executeCommand(command)) {
             is Result.Success -> {
-                // find destination
-                val prefix = "[download] Destination:"
-                val filename = result.value.lines().singleOrNull {
-                    it.startsWith(prefix)
-                }
+                val filename = findOutputFile(result.value.lines())
                 // error or file already exists
                 if (filename != null) {
-                    log.debug("YoutubeDl task found destination filename={}", filename)
-                    val file = File(filename.removePrefix(prefix).trim())
-                    resourceManager.saveGeneratedResource(
-                            entryId = entryId,
-                            type = ResourceType.GENERATED,
-                            path = file.toPath()
-                    )
+                    log.info("YoutubeDl task found destination filename={}", filename)
+                    val extension = FileUtils.getExtension(filename)
+                    val generatedResources = listOf(GeneratedResource(ResourceType.GENERATED, filename, extension))
+                    resourceManager.migrateGeneratedResources(entryId, generatedResources)
                     entryAuditService.acceptAuditEvent(entryId, YoutubeDlTask::class.simpleName,
-                        "Youtube download task execution succeeded, created: " + file.name)
+                        "Youtube download task execution succeeded, created: " + File(filename).name)
                 } else {
                     log.error("No filename found in YoutubeDl output - command likely failed")
                 }
@@ -75,6 +78,22 @@ class YoutubeDlTask(id: String, entryId: String) : Task<YoutubeDlTask.YoutubeDlT
                     "Youtube download task execution failed")
             }
         }
+    }
+
+    // TODO: handle case where file already exists
+    private fun findOutputFile(lines: List<String>): String? {
+        var match: String? = null
+        for (matchDef in outputMatchDefs) {
+            match = if(matchDef.findFirst) {
+                lines.firstOrNull { it.startsWith(matchDef.prefix) }
+            } else {
+                lines.lastOrNull { it.startsWith(matchDef.prefix) }
+            }
+            if(match != null) {
+                return match.removePrefix(matchDef.prefix).trim().trim('"')
+            }
+        }
+        return match
     }
 
     private suspend fun resolveYoutubeDl(): String {

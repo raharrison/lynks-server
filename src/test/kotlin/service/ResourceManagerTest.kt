@@ -54,7 +54,7 @@ class ResourceManagerTest: DatabaseTest() {
         assertThat(fileExists(docPath)).isTrue()
         assertFileContents(docPath, doc)
 
-        assertThat(docPath).startsWith(Environment.resource.resourceTempPath)
+        assertThat(docPath).contains(Environment.resource.resourceTempPath)
         val docFile = fileName(docPath)
         assertThat(getExtension(docFile)).isEqualTo(HTML)
         assertThat(removeExtension(docFile)).startsWith(ResourceType.DOCUMENT.toString().lowercase())
@@ -66,7 +66,7 @@ class ResourceManagerTest: DatabaseTest() {
         assertThat(fileExists(thumbPath)).isTrue()
         assertFileContents(thumbPath, thumb)
 
-        assertThat(thumbPath).startsWith(Environment.resource.resourceTempPath)
+        assertThat(thumbPath).contains(Environment.resource.resourceTempPath)
         val thumbFile = fileName(thumbPath)
         assertThat(getExtension(thumbFile)).isEqualTo(JPG)
         assertThat(removeExtension(thumbFile)).startsWith(ResourceType.THUMBNAIL.toString().lowercase())
