@@ -35,3 +35,4 @@ build/
 lynksdb.*
 lynks.config.json
 /bin
+.env
