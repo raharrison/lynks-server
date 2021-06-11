@@ -34,4 +34,11 @@ object Normalize {
         return normalizeEntities(normalizeSpaces(str)).trim()
     }
 
+    fun removeStopwords(str: String): String {
+        val stopwords = javaClass.getResource("/stopwords/stopwords.txt").readText().lines().toSet()
+        val words = str.lowercase().split(" ").toMutableList()
+        words.removeAll(stopwords)
+        return words.joinToString(" ")
+    }
+
 }
