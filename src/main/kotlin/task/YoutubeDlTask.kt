@@ -10,10 +10,7 @@ import resource.GeneratedResource
 import resource.ResourceManager
 import resource.ResourceRetriever
 import resource.ResourceType
-import util.ExecUtils
-import util.FileUtils
-import util.Result
-import util.loggerFor
+import util.*
 import java.io.File
 import java.nio.file.Paths
 import kotlin.io.path.absolutePathString
@@ -32,19 +29,31 @@ class YoutubeDlTask(id: String, entryId: String) : Task<YoutubeDlTask.YoutubeDlT
     @Inject
     lateinit var entryAuditService: EntryAuditService
 
-    private data class OutputMatchDef(val prefix: String, val findFirst: Boolean)
-
-    private val outputMatchDefs = listOf(
-        OutputMatchDef("[ffmpeg] Merging formats into", false),
-        OutputMatchDef("[download] Destination:", true)
+    private val outputLogFileMatchers: List<(List<String>) -> String?> = listOf(
+        { lines ->
+            val suffix = "has already been downloaded and merged"
+            lines.lastOrNull { it.endsWith(suffix) }?.removePrefix("[download]")?.removeSuffix(suffix)
+        },
+        { lines ->
+            val suffix = "has already been downloaded"
+            lines.lastOrNull { it.endsWith(suffix) }?.removePrefix("[download]")?.removeSuffix(suffix)
+        },
+        { lines ->
+            val prefix = "[ffmpeg] Merging formats into"
+            lines.lastOrNull { it.startsWith(prefix) }?.removePrefix(prefix)
+        },
+        { lines ->
+            val prefix = "[download] Destination:"
+            lines.firstOrNull { it.startsWith(prefix) }?.removePrefix(prefix)
+        }
     )
 
     override suspend fun process(context: YoutubeDlTaskContext) {
+        validateContextUrl(context.url)
         val youtubeDlBinaryPath = resolveYoutubeDl()
-        val tempPath = resourceManager.constructTempBasePath(entryId).resolve("%(title)s.%(ext)s")
+        val tempPath = resourceManager.constructTempBasePath(entryId).resolve("%(title)s.f%(format_id)s.%(ext)s")
         val outputTemplate = "-o \"${tempPath.absolutePathString()}\""
 
-        // TODO: Validate context url for security
         log.info("Executing YoutubeDl task entry={} type={}", entryId, context.type)
         val command = when (context.type) {
             YoutubeDlDownload.BEST_AUDIO -> "$youtubeDlBinaryPath -f \"bestaudio/best\" $outputTemplate ${context.url}"
@@ -54,7 +63,8 @@ class YoutubeDlTask(id: String, entryId: String) : Task<YoutubeDlTask.YoutubeDlT
 
         when (val result = ExecUtils.executeCommand(command)) {
             is Result.Success -> {
-                val filename = findOutputFile(result.value.lines())
+                // TODO: handle case where file already exists
+                val filename = outputLogFileMatchers.firstNotNullOfOrNull { it(result.value.lines()) }?.trim()?.trim('"')
                 // error or file already exists
                 if (filename != null) {
                     log.info("YoutubeDl task found destination filename={}", filename)
@@ -80,20 +90,10 @@ class YoutubeDlTask(id: String, entryId: String) : Task<YoutubeDlTask.YoutubeDlT
         }
     }
 
-    // TODO: handle case where file already exists
-    private fun findOutputFile(lines: List<String>): String? {
-        var match: String? = null
-        for (matchDef in outputMatchDefs) {
-            match = if(matchDef.findFirst) {
-                lines.firstOrNull { it.startsWith(matchDef.prefix) }
-            } else {
-                lines.lastOrNull { it.startsWith(matchDef.prefix) }
-            }
-            if(match != null) {
-                return match.removePrefix(matchDef.prefix).trim().trim('"')
-            }
+    private fun validateContextUrl(url: String) {
+        if(!URLUtils.isValidUrl(url) || URLUtils.extractSource(url) != "youtube.com") {
+            throw IllegalArgumentException("Invalid url passed to YoutubeDlTask")
         }
-        return match
     }
 
     private suspend fun resolveYoutubeDl(): String {

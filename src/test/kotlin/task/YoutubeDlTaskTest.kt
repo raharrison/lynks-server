@@ -169,6 +169,19 @@ class YoutubeDlTaskTest {
                 youtubeDlTask.process(context)
             }
         }
+    }
+
+    @Test
+    fun testInvalidContextUrl() {
+        val url = "bad input"
+        val type = YoutubeDlTask.YoutubeDlDownload.BEST_VIDEO_TRANSCODE
+        val context = youtubeDlTask.createContext(mapOf("url" to url, "type" to type.toString()))
+
+        runBlocking {
+            assertThrows<IllegalArgumentException> {
+                youtubeDlTask.process(context)
+            }
+        }
 
     }
 }
