@@ -108,7 +108,7 @@ class GroupCollection<T: Grouping<T>> {
 
     fun rootGroups(): Collection<T> = groupLookup.values.filter { !groupParents.containsKey(it.id) }
 
-    fun all(): Collection<T> = groupLookup.values
+    fun all(): Collection<T> = groupLookup.values.toList()
 
     fun delete(id: String) {
         val group = groupLookup[id]

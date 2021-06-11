@@ -29,17 +29,11 @@ class GroupSetService(private val tagService: TagService, private val collection
         if(content == null) {
             return GroupSet()
         }
+        val words = content.lowercase().split(" ").toSet()
         return GroupSet(
-            tagService.sequence().filter { isMatch(content, it) }.toList(),
-            collectionService.sequence().filter { isMatch(content, it) }.toList()
+            tagService.sequence().filter { words.contains(it.name.lowercase()) }.toList(),
+            collectionService.sequence().filter { words.contains(it.name.lowercase()) }.toList(),
         )
     }
-
-    private fun isMatch(content: String, grouping: Grouping<*>): Boolean {
-        // simple search for group as a word wrapped by spaces
-        val toMatch = " ${grouping.name} "
-        return content.contains(toMatch, ignoreCase = true)
-    }
-
 
 }
