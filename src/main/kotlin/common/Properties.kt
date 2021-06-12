@@ -39,6 +39,8 @@ open class BaseProperties {
         return definition
     }
 
+    fun clearTasks() = tasks.clear()
+
     fun getTask(id: String): TaskDefinition? = tasks.find { it.id == id }
 
     fun merge(newProps: BaseProperties): BaseProperties {

@@ -29,7 +29,18 @@ class PropertiesTest {
     }
 
     @Test
-    fun testAddDuplicateTestOverwrites() {
+    fun testClearTasks() {
+        val props = BaseProperties()
+        val def1 = props.addTask("desc1", TaskBuilder(Task::class, TaskContext()))
+        assertThat(props.getTask(def1.id)).isNotNull
+        props.clearTasks()
+        val def2 = props.addTask("desc2", TaskBuilder(Task::class, TaskContext()))
+        assertThat(props.getTask(def1.id)).isNull()
+        assertThat(props.getTask(def2.id)).isNotNull
+    }
+
+    @Test
+    fun testAddDuplicateTaskOverwrites() {
         val props = BaseProperties()
         val def = props.addTask("desc", TaskBuilder(Task::class, TaskContext()))
         val task = props.getTask(def.id)

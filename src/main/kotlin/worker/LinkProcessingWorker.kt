@@ -50,6 +50,7 @@ class LinkProcessorWorker(
     private suspend fun processLinkPersist(link: Link, resourceSet: EnumSet<ResourceType>, process: Boolean) {
         try {
             resourceManager.deleteTempFiles(link.url)
+            link.props.clearTasks()
             val resources = processorFactory.createProcessors(link.url).flatMap {
                 it.use { proc ->
                     coroutineScope {
