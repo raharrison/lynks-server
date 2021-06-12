@@ -8,6 +8,7 @@ import io.ktor.http.content.*
 import io.ktor.request.*
 import io.ktor.response.*
 import io.ktor.routing.*
+import util.FileUtils
 
 fun Route.resources(resourceManager: ResourceManager) {
 
@@ -18,6 +19,37 @@ fun Route.resources(resourceManager: ResourceManager) {
     fun deriveMimeType(filename: String): String {
         val contentType = ContentType.defaultForFilePath(filename)
         return contentType.withoutParameters().toString()
+    }
+
+    route("/imageUpload") {
+        post {
+            val multipart = call.receiveMultipart()
+            var partData: PartData.FileItem? = null
+            multipart.forEachPart { part ->
+                if (part is PartData.FileItem) {
+                    partData = part
+                } else {
+                    part.dispose()
+                }
+            }
+            partData?.let {
+                val extension = FileUtils.getExtension(partData!!.originalFileName!!)
+                if (listOf("jpg", "jpeg", "png").contains(extension.lowercase())) {
+                    val data = partData!!.streamProvider().readBytes()
+                    if (data.size > 1024 * 1024 * 5) { // 5MB
+                        call.respond(HttpStatusCode.PayloadTooLarge, ImageUploadErrorResponse("fileTooLarge"))
+                    } else {
+                        val file = resourceManager.saveTempFile("imageUpload", data, ResourceType.UPLOAD, extension)
+                        val uploadFilePath =
+                            "${Environment.server.rootPath}/temp/${resourceManager.constructTempUrlFromPath(file)}"
+                        partData!!.dispose()
+                        call.respond(HttpStatusCode.OK, ImageUploadResponse(ImageUploadFilePath(uploadFilePath)))
+                    }
+                } else {
+                    call.respond(HttpStatusCode.UnsupportedMediaType, ImageUploadErrorResponse("typeNotAllowed"))
+                }
+            } ?: call.respond(HttpStatusCode.BadRequest, ImageUploadErrorResponse("noFileGiven"))
+        }
     }
 
     route("/entry/{entryId}/resource") {
@@ -42,8 +74,7 @@ fun Route.resources(resourceManager: ResourceManager) {
             if (res != null) {
                 call.response.header("Content-Disposition", "inline; filename=\"${res.first.name}\"")
                 call.respondFile(res.second)
-            }
-            else call.respond(HttpStatusCode.NotFound)
+            } else call.respond(HttpStatusCode.NotFound)
         }
 
         post {
@@ -57,7 +88,7 @@ fun Route.resources(resourceManager: ResourceManager) {
                 }
                 part.dispose()
             }
-            if(res == null) throw InvalidModelException()
+            if (res == null) throw InvalidModelException()
             else call.respond(HttpStatusCode.Created, res!!)
         }
 

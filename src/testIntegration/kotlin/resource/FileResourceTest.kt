@@ -1,6 +1,7 @@
 package resource
 
 import common.EntryType
+import common.Environment
 import common.ServerTest
 import io.restassured.RestAssured.*
 import io.restassured.http.ContentType
@@ -14,6 +15,52 @@ class FileResourceTest : ServerTest() {
     @BeforeEach
     fun createEntries() {
         createDummyEntry("e1", "title1", "content1", EntryType.LINK)
+    }
+
+    @Test
+    fun testUploadImage() {
+        val filename = "image.png"
+        val content = byteArrayOf(1,2,3,4)
+        val result = given()
+            .multiPart("file", filename, content)
+            .When()
+            .post("/imageUpload")
+            .then()
+            .statusCode(200)
+            .extract().to<ImageUploadResponse>()
+        assertThat(result.data.filePath).isNotEmpty()
+        val path = result.data.filePath.removePrefix(Environment.server.rootPath)
+        val resource = get(path)
+            .then()
+            .statusCode(200)
+            .extract().asByteArray()
+        assertThat(resource).isEqualTo(content)
+    }
+
+    @Test
+    fun testUploadImageNoContent() {
+        val result = given()
+            .When()
+            .header("Content-Type", "multipart/form-data; boundary=&")
+            .post("/imageUpload")
+            .then()
+            .statusCode(400)
+            .extract().to<ImageUploadErrorResponse>()
+        assertThat(result.error).isEqualTo("noFileGiven")
+    }
+
+    @Test
+    fun testUploadImageInvalidType() {
+        val filename = "image.pdf"
+        val content = byteArrayOf(1,2,3,4)
+        val result = given()
+            .multiPart("file", filename, content)
+            .When()
+            .post("/imageUpload")
+            .then()
+            .statusCode(415)
+            .extract().to<ImageUploadErrorResponse>()
+        assertThat(result.error).isEqualTo("typeNotAllowed")
     }
 
     @Test
