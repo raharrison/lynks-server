@@ -7,6 +7,8 @@ import common.page.PageRequest
 import common.page.SortDirection
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
+import resource.ResourceManager
+import resource.TempImageMarkdownVisitor
 import util.RandomUtils
 import util.findColumn
 import util.loggerFor
@@ -16,7 +18,7 @@ import kotlin.math.max
 
 private val log = loggerFor<CommentService>()
 
-class CommentService {
+class CommentService(private val resourceManager: ResourceManager) {
 
     fun getComment(entryId: String, id: String): Comment? = transaction {
         Comments.select { Comments.id eq id and (Comments.entryId eq entryId) }.mapNotNull {
@@ -36,14 +38,23 @@ class CommentService {
         )
     }
 
+    private fun preprocess(eid: String, comment: NewComment) : NewComment {
+        val (replaced, markdown) = MarkdownUtils.visitAndReplaceNodes(comment.plainText, TempImageMarkdownVisitor(eid, resourceManager))
+        if(replaced > 0) {
+            return comment.copy(plainText = markdown)
+        }
+        return comment
+    }
+
     fun addComment(eId: String, comment: NewComment): Comment = transaction {
         val newId = RandomUtils.generateUid()
+        val processedComment = preprocess(eId, comment)
         val time = System.currentTimeMillis()
         Comments.insert {
             it[id] = newId
             it[entryId] = eId
-            it[plainText] = comment.plainText
-            it[markdownText] = MarkdownUtils.convertToMarkdown(comment.plainText)
+            it[plainText] = processedComment.plainText
+            it[markdownText] = MarkdownUtils.convertToMarkdown(processedComment.plainText)
             it[dateCreated] = time
             it[dateUpdated] = time
         }
@@ -57,9 +68,10 @@ class CommentService {
             addComment(entryId, comment)
         } else {
             transaction {
+                val processedComment = preprocess(entryId, comment)
                 val updated = Comments.update({ Comments.id eq id and (Comments.entryId eq entryId) }) {
-                    it[plainText] = comment.plainText
-                    it[markdownText] = MarkdownUtils.convertToMarkdown(comment.plainText)
+                    it[plainText] = processedComment.plainText
+                    it[markdownText] = MarkdownUtils.convertToMarkdown(processedComment.plainText)
                     it[dateUpdated] = System.currentTimeMillis()
                 }
                 if (updated > 0) getComment(entryId, id)!!

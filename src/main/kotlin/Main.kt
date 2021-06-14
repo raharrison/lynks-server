@@ -66,7 +66,7 @@ fun Application.module() {
         register(EntryService(get(), get(), get()))
         register(LinkService(get(), get(), get(), get()))
         register(NoteService(get(), get(), get()))
-        register(CommentService())
+        register(CommentService(get()))
         register(ReminderService(get()))
         register(SuggestionService(get()))
         register(TaskService(get(), this, get()))

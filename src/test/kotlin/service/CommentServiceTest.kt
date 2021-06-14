@@ -2,20 +2,27 @@ package service
 
 import comment.CommentService
 import comment.NewComment
-import common.DatabaseTest
-import common.EntryType
+import common.*
 import common.page.PageRequest
 import common.page.SortDirection
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import resource.Resource
+import resource.ResourceManager
+import resource.ResourceType
 import util.createDummyEntry
+import java.nio.file.Path
 import java.sql.SQLException
 
 class CommentServiceTest : DatabaseTest() {
 
-    private val commentService = CommentService()
+    private val resourceManager = mockk<ResourceManager>()
+    private val commentService = CommentService(resourceManager)
 
     @BeforeEach
     fun createEntries() {
@@ -42,6 +49,19 @@ class CommentServiceTest : DatabaseTest() {
         assertThat(added.entryId).isEqualTo("e1")
         assertThat(added.plainText).isEqualTo(plain)
         assertThat(added.markdownText).isEqualTo(markdown)
+        verify(exactly = 0) { resourceManager.migrateGeneratedResources("e1", any()) }
+    }
+
+    @Test
+    fun testCreateCommentWithTempImage() {
+        val plain = "something ![desc](${TEMP_URL}abc/one.png)"
+        val resource = Resource("rid", "eid", "one", "png", ResourceType.UPLOAD, 12, 123L, 123L)
+        every { resourceManager.constructTempBasePath(IMAGE_UPLOAD_BASE) } returns Path.of("migrated/")
+        every { resourceManager.migrateGeneratedResources("e1", any()) } returns listOf(resource)
+        val added = commentService.addComment("e1", newComment(content = plain))
+        assertThat(added.entryId).isEqualTo("e1")
+        assertThat(added.plainText).isEqualTo("something ![desc](${Environment.server.rootPath}/entry/e1/resource/${resource.id})")
+        verify(exactly = 1) { resourceManager.migrateGeneratedResources("e1", any()) }
     }
 
     @Test
@@ -177,6 +197,18 @@ class CommentServiceTest : DatabaseTest() {
         assertThat(oldComm?.entryId).isEqualTo("e1")
         assertThat(oldComm?.plainText).isEqualTo("changed")
         assertThat(oldComm?.dateUpdated).isNotEqualTo(oldComm?.dateCreated)
+    }
+
+    @Test
+    fun testUpdateExistingCommentWithTempImage() {
+        val added = commentService.addComment("e1", newComment(content = "comment content 1"))
+        val resource = Resource("rid", "e1", "one", "png", ResourceType.UPLOAD, 12, 123L, 123L)
+        every { resourceManager.constructTempBasePath(IMAGE_UPLOAD_BASE) } returns Path.of("migrated/")
+        every { resourceManager.migrateGeneratedResources("e1", any()) } returns listOf(resource)
+        val updated = commentService.updateComment("e1", newComment(added.id, "changed ![desc](${TEMP_URL}abc/one.png)"))
+        assertThat(updated?.entryId).isEqualTo("e1")
+        assertThat(updated?.plainText).isEqualTo("changed ![desc](${Environment.server.rootPath}/entry/e1/resource/${resource.id})")
+        verify(exactly = 1) { resourceManager.migrateGeneratedResources("e1", any()) }
     }
 
     @Test

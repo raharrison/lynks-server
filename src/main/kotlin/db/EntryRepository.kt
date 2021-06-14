@@ -20,7 +20,7 @@ import util.findColumn
 import util.orderBy
 import kotlin.math.max
 
-abstract class EntryRepository<T : Entry, S : SlimEntry, in U : NewEntry>(
+abstract class EntryRepository<T : Entry, S : SlimEntry, U : NewEntry>(
     private val groupSetService: GroupSetService,
     protected val entryAuditService: EntryAuditService,
     protected val resourceManager: ResourceManager
@@ -108,32 +108,35 @@ abstract class EntryRepository<T : Entry, S : SlimEntry, in U : NewEntry>(
                 }
             }
             entryAuditService.acceptAuditEvent(newId, serviceName, "Created")
-            get(newId)!!
+            postprocess(newId, entry)
         }
     }
 
-    open fun update(entry: U): T? {
+    open fun update(entry: U, newVersion: Boolean = true): T? {
         val id = entry.id
         return if (id == null) {
             add(entry)
         } else {
             groupSetService.assertGroups(entry.tags, entry.collections)
-            val serviceName = this::class.simpleName
             transaction {
                 val where = getBaseQuery().combine { Entries.id eq id }.where!!
                 val updated = Entries.update({ where }, body = {
                     toUpdate(entry)(it)
-                    with(SqlExpressionBuilder) {
-                        it.update(version, version + 1)
+                    if(newVersion) {
+                        with(SqlExpressionBuilder) {
+                            it.update(version, version + 1)
+                        }
                     }
                 })
                 if (updated > 0) {
                     updateGroupsForEntry(entry.tags + entry.collections, id)
-                    val updatedEntry = get(id)
-                    entryAuditService.acceptAuditEvent(
-                        id, serviceName,
-                        "Updated to version ${updatedEntry?.version}"
-                    )
+                    val updatedEntry = postprocess(id, entry)
+                    if (newVersion) {
+                        entryAuditService.acceptAuditEvent(
+                            id, this::class.simpleName,
+                            "Updated to version ${updatedEntry.version}"
+                        )
+                    }
                     updatedEntry
                 } else {
                     null
@@ -157,12 +160,12 @@ abstract class EntryRepository<T : Entry, S : SlimEntry, in U : NewEntry>(
         if (updated > 0) {
             updateGroupsForEntry(entry.tags.map { it.id } + entry.collections.map { it.id }, entry.id)
             val updatedEntry = get(entry.id)
-            if (newVersion)
+            if (newVersion) {
                 entryAuditService.acceptAuditEvent(
-                    id,
-                    this::class.simpleName,
+                    id, this::class.simpleName,
                     "Updated to version ${updatedEntry?.version}"
                 )
+            }
             updatedEntry
         } else {
             null
@@ -228,6 +231,8 @@ abstract class EntryRepository<T : Entry, S : SlimEntry, in U : NewEntry>(
             .map { it[EntryGroups.groupId] }
         return groupSetService.getIn(groupIds)
     }
+
+    protected open fun postprocess(eid: String, entry: U) : T = get(eid)!!
 
     protected abstract fun getBaseQuery(base: ColumnSet = Entries, where: BaseEntries = Entries): Query
 

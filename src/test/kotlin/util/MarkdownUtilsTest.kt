@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import util.markdown.EntryLinkInlineParserExtension
 import util.markdown.EntryLinkNode
+import util.markdown.MarkdownNodeVisitor
 import util.markdown.MarkdownUtils
 
 class MarkdownUtilsTest {
@@ -52,7 +53,7 @@ class MarkdownUtilsTest {
             <ul>
             <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" checked="checked" disabled="disabled" readonly="readonly" />&nbsp;finished</li>
             </ul>
-            
+
         """.trimIndent()
         )
         assertConvertEqual(
@@ -60,7 +61,7 @@ class MarkdownUtilsTest {
             <ul>
             <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" readonly="readonly" />&nbsp;unfinished</li>
             </ul>
-        
+
         """.trimIndent()
         )
     }
@@ -75,6 +76,47 @@ class MarkdownUtilsTest {
             "link is-@123",
             "<p>link is-@123</p>\n"
         )
+    }
+
+    @Test
+    fun testVisitAndReplaceNodes() {
+        val (replaced, markdown) = MarkdownUtils.visitAndReplaceNodes("first {second} {third}", object : MarkdownNodeVisitor {
+            override val pattern = "\\{(.+?)\\}"
+
+            override fun replace(match: MatchResult): String {
+                return match.groupValues[1]
+            }
+        })
+        assertThat(replaced).isEqualTo(2)
+        assertThat(markdown).isEqualTo("first second third")
+    }
+
+    @Test
+    fun testVisitAndReplaceNodesNoReplacement() {
+        val input = "first {second} {third}"
+        val (replaced, markdown) = MarkdownUtils.visitAndReplaceNodes(input, object : MarkdownNodeVisitor {
+            override val pattern = "\\{(.+?)\\}"
+
+            override fun replace(match: MatchResult): String? {
+                return null
+            }
+        })
+        assertThat(replaced).isZero()
+        assertThat(markdown).isEqualTo(input)
+    }
+
+    @Test
+    fun testVisitAndReplaceNodesNoMatches() {
+        val input = "first second third"
+        val (replaced, markdown) = MarkdownUtils.visitAndReplaceNodes(input, object : MarkdownNodeVisitor {
+            override val pattern = "\\{(.+?)\\}"
+
+            override fun replace(match: MatchResult): String {
+                return match.groupValues[1]
+            }
+        })
+        assertThat(replaced).isZero()
+        assertThat(markdown).isEqualTo(input)
     }
 
     @Nested

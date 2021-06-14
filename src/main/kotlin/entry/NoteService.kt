@@ -10,11 +10,20 @@ import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.statements.UpdateBuilder
 import resource.ResourceManager
+import resource.TempImageMarkdownVisitor
 import util.markdown.MarkdownUtils
 
 class NoteService(
     groupSetService: GroupSetService, entryAuditService: EntryAuditService, resourceManager: ResourceManager
 ) : EntryRepository<Note, SlimNote, NewNote>(groupSetService, entryAuditService, resourceManager) {
+
+    override fun postprocess(eid: String, entry: NewNote): Note {
+        val (replaced, markdown) = MarkdownUtils.visitAndReplaceNodes(entry.plainText, TempImageMarkdownVisitor(eid, resourceManager))
+        if(replaced > 0) {
+            return update(entry.copy(id = eid, plainText = markdown), newVersion = false)!!
+        }
+        return super.postprocess(eid, entry)
+    }
 
     override fun toModel(row: ResultRow, groups: GroupSet, table: BaseEntries): Note {
         return RowMapper.toNote(table, row, groups.tags, groups.collections)

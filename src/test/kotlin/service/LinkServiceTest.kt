@@ -450,14 +450,14 @@ class LinkServiceTest : DatabaseTest() {
         resourceManager.saveGeneratedResource("r1", added.id, "resource name", "jpg", ResourceType.SCREENSHOT, 11)
         val version1 = linkService.get(added.id, 1)
         assertThat(added.version).isOne()
-        assertThat(added).isEqualToIgnoringGivenFields(version1, "props")
+        assertThat(added).usingRecursiveComparison().ignoringFields("props").isEqualTo(version1)
         assertThat(added.dateUpdated).isEqualTo(added.dateCreated)
 
         // update via new entity
         val updated = linkService.update(newLink(added.id, "edited", "fb.com"))
         val version2 = linkService.get(added.id, 2)
         assertThat(updated?.version).isEqualTo(2)
-        assertThat(version2).isEqualToIgnoringGivenFields(updated, "props")
+        assertThat(version2).usingRecursiveComparison().ignoringFields("props").isEqualTo(updated)
         assertThat(version2?.title).isEqualTo("edited")
         assertThat(updated?.dateUpdated).isNotEqualTo(updated?.dateCreated)
 

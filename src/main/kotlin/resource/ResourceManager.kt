@@ -123,8 +123,9 @@ class ResourceManager {
         val target = constructPath(entryId, id, extension)
         val size = Files.size(path)
         log.info("Moving {} resource from={} to={} entry={}", type.name.lowercase(), path.toString(), target.toString(), entryId)
-        FileUtils.moveFile(path, target)
-        return saveGeneratedResource(id, entryId, name, extension, type, size)
+        return saveGeneratedResource(id, entryId, name, extension, type, size).also {
+            FileUtils.moveFile(path, target)
+        }
     }
 
     fun saveUploadedResource(entryId: String, name: String, input: InputStream): Resource {

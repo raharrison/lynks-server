@@ -22,7 +22,7 @@ class CascadingDeleteTest: DatabaseTest() {
     private val tagService = TagService()
     private val collectionService = CollectionService()
     private val resourceManager = ResourceManager()
-    private val commentService = CommentService()
+    private val commentService = CommentService(resourceManager)
     private val reminderService = ReminderService(mockk(relaxUnitFun = true))
     private val entryAuditService = EntryAuditService()
     private lateinit var linkService: LinkService
