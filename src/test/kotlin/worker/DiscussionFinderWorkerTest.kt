@@ -1,9 +1,6 @@
 package worker
 
-import common.BaseProperties
-import common.DatabaseTest
-import common.Link
-import common.TestCoroutineContext
+import common.*
 import entry.EntryAuditService
 import entry.LinkService
 import io.mockk.*
@@ -46,7 +43,7 @@ class DiscussionFinderWorkerTest: DatabaseTest() {
         worker.close()
 
         verify(exactly = 5) { linkService.get(link.id) }
-        assertThat(link.props.containsAttribute("discussions")).isFalse()
+        assertThat(link.props.containsAttribute(DISCUSSIONS_PROP)).isFalse()
 
         coVerify(exactly = 5 * 2) { retriever.getString(any()) }
         coVerify(exactly = 0) { notifyService.accept(any(), any()) }
@@ -66,8 +63,8 @@ class DiscussionFinderWorkerTest: DatabaseTest() {
 
         verify(exactly = 5) { linkService.get(link.id) }
         verify(exactly = 5) { linkService.mergeProps(eq(link.id), ofType(BaseProperties::class)) }
-        assertThat(propsSlot.captured.containsAttribute("discussions")).isTrue()
-        val discussions = propsSlot.captured.getAttribute("discussions") as List<Any?>
+        assertThat(propsSlot.captured.containsAttribute(DISCUSSIONS_PROP)).isTrue()
+        val discussions = propsSlot.captured.getAttribute(DISCUSSIONS_PROP) as List<Any?>
         assertThat(discussions).hasSize(6)
 
         assertThat(discussions).extracting("title")
@@ -98,8 +95,8 @@ class DiscussionFinderWorkerTest: DatabaseTest() {
         worker.close()
 
         verify(exactly = 5) { linkService.mergeProps(eq(link.id), ofType(BaseProperties::class)) }
-        assertThat(propsSlot.captured.containsAttribute("discussions")).isTrue()
-        val discussions = propsSlot.captured.getAttribute("discussions") as List<Any?>
+        assertThat(propsSlot.captured.containsAttribute(DISCUSSIONS_PROP)).isTrue()
+        val discussions = propsSlot.captured.getAttribute(DISCUSSIONS_PROP) as List<Any?>
         assertThat(discussions).hasSize(4)
 
         assertThat(discussions).extracting("title")
@@ -125,8 +122,8 @@ class DiscussionFinderWorkerTest: DatabaseTest() {
 
         verify(exactly = 2) { linkService.get(link.id) }
         verify(exactly = 2) { linkService.mergeProps(eq(link.id), ofType(BaseProperties::class)) }
-        assertThat(propsSlot.captured.containsAttribute("discussions")).isTrue()
-        assertThat(propsSlot.captured.getAttribute("discussions") as List<*>).hasSize(6)
+        assertThat(propsSlot.captured.containsAttribute(DISCUSSIONS_PROP)).isTrue()
+        assertThat(propsSlot.captured.getAttribute(DISCUSSIONS_PROP) as List<*>).hasSize(6)
 
         coVerify(exactly = 2 * 2) { retriever.getString(any()) }
         coVerify(exactly = 1) { notifyService.accept(any(), link) }
@@ -148,8 +145,8 @@ class DiscussionFinderWorkerTest: DatabaseTest() {
 
         verify(exactly = 2) { linkService.get(link.id) }
         verify(exactly = 2) { linkService.mergeProps(eq(link.id), ofType(BaseProperties::class)) }
-        assertThat(propsSlot.captured.containsAttribute("discussions")).isTrue()
-        assertThat(propsSlot.captured.getAttribute("discussions") as List<*>).hasSize(6)
+        assertThat(propsSlot.captured.containsAttribute(DISCUSSIONS_PROP)).isTrue()
+        assertThat(propsSlot.captured.getAttribute(DISCUSSIONS_PROP) as List<*>).hasSize(6)
 
         coVerify(exactly = 2 * 2) { retriever.getString(any()) }
         coVerify(exactly = 1) { notifyService.accept(any(), link) }
@@ -168,7 +165,7 @@ class DiscussionFinderWorkerTest: DatabaseTest() {
         worker.close()
 
         // ensure items not removed
-        val discussions = propsSlot.captured.getAttribute("discussions") as List<Any?>
+        val discussions = propsSlot.captured.getAttribute(DISCUSSIONS_PROP) as List<Any?>
         assertThat(discussions).hasSize(6)
         assertThat(discussions).extracting("url").doesNotHaveDuplicates()
 
@@ -192,7 +189,7 @@ class DiscussionFinderWorkerTest: DatabaseTest() {
 
         verify(exactly = 6) { linkService.get(link.id) }
         verify(exactly = 2) { linkService.mergeProps(eq(link.id), ofType(BaseProperties::class)) }
-        val discussions = propsSlot.captured.getAttribute("discussions") as List<Any?>
+        val discussions = propsSlot.captured.getAttribute(DISCUSSIONS_PROP) as List<Any?>
         assertThat(discussions).hasSize(6)
 
         coVerify(exactly = 6 * 2) { retriever.getString(any()) }

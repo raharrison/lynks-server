@@ -1,6 +1,9 @@
 package resource
 
 import common.Environment
+import common.IMAGE_UPLOAD_BASE
+import common.MAX_IMAGE_UPLOAD_BYTES
+import common.TEMP_URL
 import common.exception.InvalidModelException
 import io.ktor.application.*
 import io.ktor.http.*
@@ -36,12 +39,12 @@ fun Route.resources(resourceManager: ResourceManager) {
                 val extension = FileUtils.getExtension(partData!!.originalFileName!!)
                 if (listOf("jpg", "jpeg", "png").contains(extension.lowercase())) {
                     val data = partData!!.streamProvider().readBytes()
-                    if (data.size > 1024 * 1024 * 5) { // 5MB
+                    if (data.size > MAX_IMAGE_UPLOAD_BYTES) {
                         call.respond(HttpStatusCode.PayloadTooLarge, ImageUploadErrorResponse("fileTooLarge"))
                     } else {
-                        val file = resourceManager.saveTempFile("imageUpload", data, ResourceType.UPLOAD, extension)
+                        val file = resourceManager.saveTempFile(IMAGE_UPLOAD_BASE, data, ResourceType.UPLOAD, extension)
                         val uploadFilePath =
-                            "${Environment.server.rootPath}/temp/${resourceManager.constructTempUrlFromPath(file)}"
+                            "${TEMP_URL}${resourceManager.constructTempUrlFromPath(file)}"
                         partData!!.dispose()
                         call.respond(HttpStatusCode.OK, ImageUploadResponse(ImageUploadFilePath(uploadFilePath)))
                     }

@@ -503,20 +503,20 @@ class LinkServiceTest : DatabaseTest() {
     @Test
     fun testSetRead() {
         val added = linkService.add(newLink("n1", "google.com"))
-        assertThat(added.props.containsAttribute("read")).isFalse()
+        assertThat(added.props.containsAttribute(READ_LINK_PROP)).isFalse()
 
         val read = linkService.read(added.id, true)
-        assertThat(read?.props?.getAttribute("read")).isEqualTo(true)
+        assertThat(read?.props?.getAttribute(READ_LINK_PROP)).isEqualTo(true)
         // date and version is still the same
         assertThat(read?.version).isOne()
         assertThat(read?.dateUpdated).isEqualTo(added.dateUpdated)
 
         val unread = linkService.read(added.id, false)
-        assertThat(unread?.props?.getAttribute("read")).isEqualTo(false)
+        assertThat(unread?.props?.getAttribute(READ_LINK_PROP)).isEqualTo(false)
         assertThat(unread?.version).isOne()
         assertThat(unread?.dateUpdated).isEqualTo(added.dateUpdated)
 
-        assertThat(linkService.get(added.id)?.props?.getAttribute("read")).isEqualTo(false)
+        assertThat(linkService.get(added.id)?.props?.getAttribute(READ_LINK_PROP)).isEqualTo(false)
     }
 
     @Test
@@ -543,11 +543,11 @@ class LinkServiceTest : DatabaseTest() {
         val added = linkService.add(newLink("n1", "google.com"))
         assertThat(linkService.getDead()).isEmpty()
 
-        added.props.addAttribute("dead", true)
+        added.props.addAttribute(DEAD_LINK_PROP, true)
         linkService.mergeProps(added.id, added.props)
         assertThat(linkService.getDead()).hasSize(1).extracting("id").containsExactly(added.id)
 
-        added.props.addAttribute("dead", false)
+        added.props.addAttribute(DEAD_LINK_PROP, false)
         linkService.mergeProps(added.id, added.props)
         assertThat(linkService.getDead()).isEmpty()
     }

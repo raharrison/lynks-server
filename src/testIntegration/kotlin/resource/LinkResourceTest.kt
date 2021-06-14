@@ -1,9 +1,6 @@
 package resource
 
-import common.EntryType
-import common.Link
-import common.NewLink
-import common.ServerTest
+import common.*
 import common.page.Page
 import io.restassured.RestAssured.*
 import io.restassured.http.ContentType
@@ -268,13 +265,13 @@ class LinkResourceTest: ServerTest() {
                 .then()
                 .statusCode(200)
                 .extract().to<Link>()
-        assertThat(read.props.getAttribute("read")).isEqualTo(true)
+        assertThat(read.props.getAttribute(READ_LINK_PROP)).isEqualTo(true)
         assertThat(read.dateCreated).isEqualTo(read.dateUpdated)
         val retrieved = get("/link/{id}", "e1")
                 .then()
                 .statusCode(200)
                 .extract().to<Link>()
-        assertThat(retrieved.props.getAttribute("read")).isEqualTo(true)
+        assertThat(retrieved.props.getAttribute(READ_LINK_PROP)).isEqualTo(true)
     }
 
     @Test
@@ -283,13 +280,13 @@ class LinkResourceTest: ServerTest() {
                 .then()
                 .statusCode(200)
                 .extract().to<Link>()
-        assertThat(read.props.getAttribute("read")).isEqualTo(false)
+        assertThat(read.props.getAttribute(READ_LINK_PROP)).isEqualTo(false)
         assertThat(read.dateCreated).isEqualTo(read.dateUpdated)
         val retrieved = get("/link/{id}", "e1")
                 .then()
                 .statusCode(200)
                 .extract().to<Link>()
-        assertThat(retrieved.props.getAttribute("read")).isEqualTo(false)
+        assertThat(retrieved.props.getAttribute(READ_LINK_PROP)).isEqualTo(false)
     }
 
     @Test

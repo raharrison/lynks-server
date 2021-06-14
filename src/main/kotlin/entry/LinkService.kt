@@ -78,7 +78,7 @@ class LinkService(
 
     fun read(id: String, read: Boolean): Link? {
         val newProps = BaseProperties()
-        newProps.addAttribute("read", read)
+        newProps.addAttribute(READ_LINK_PROP, read)
         mergeProps(id, newProps)
         val readMessage = if (read) "read" else "unread"
         return get(id)?.also {
@@ -87,12 +87,12 @@ class LinkService(
     }
 
     fun getUnread(): List<Link> = transaction {
-        Entries.select { Entries.props.isNull() or (Entries.props notLike "%\"read\":true%") }
+        Entries.select { Entries.props.isNull() or (Entries.props notLike "%\"$READ_LINK_PROP\":true%") }
             .map { toModel(it) }
     }
 
     fun getDead(): List<Link> = transaction {
-        Entries.select { Entries.props like "%\"dead\":true%" }
+        Entries.select { Entries.props like "%\"$DEAD_LINK_PROP\":true%" }
             .map { toModel(it) }
     }
 

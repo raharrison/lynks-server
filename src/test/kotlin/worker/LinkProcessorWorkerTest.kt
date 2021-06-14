@@ -1,5 +1,6 @@
 package worker
 
+import common.DEAD_LINK_PROP
 import common.Environment
 import common.Link
 import common.TestCoroutineContext
@@ -210,7 +211,7 @@ class LinkProcessorWorkerTest {
             verify(exactly = 1) { linkService.mergeProps(eq("id1"), any()) }
             coVerify(exactly = 1) { notifyService.accept(any(), null) }
             verify(exactly = 1) { entryAuditService.acceptAuditEvent(link.id, any(), any()) }
-            assertThat(link.props.containsAttribute("dead")).isTrue()
+            assertThat(link.props.containsAttribute(DEAD_LINK_PROP)).isTrue()
 
             Unit
         }

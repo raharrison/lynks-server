@@ -1,6 +1,7 @@
 package worker
 
 import com.fasterxml.jackson.databind.JsonNode
+import common.DISCUSSIONS_PROP
 import entry.EntryAuditService
 import entry.LinkService
 import kotlinx.coroutines.time.delay
@@ -73,12 +74,12 @@ class DiscussionFinderWorker(
             }
             log.info("Found {} discussions for entry={}", discussions.size, link.id)
 
-            val current = if (link.props.containsAttribute("discussions"))
-                link.props.getAttribute("discussions") as List<*>
+            val current = if (link.props.containsAttribute(DISCUSSIONS_PROP))
+                link.props.getAttribute(DISCUSSIONS_PROP) as List<*>
             else emptyList<Any>()
 
             if (discussions.isNotEmpty()) {
-                link.props.addAttribute("discussions", discussions)
+                link.props.addAttribute(DISCUSSIONS_PROP, discussions)
                 linkService.mergeProps(link.id, link.props)
 
                 val difference = discussions.size - current.size

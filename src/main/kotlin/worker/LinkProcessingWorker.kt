@@ -1,5 +1,6 @@
 package worker
 
+import common.DEAD_LINK_PROP
 import common.Link
 import entry.EntryAuditService
 import entry.LinkService
@@ -63,7 +64,7 @@ class LinkProcessorWorker(
                 }
             }
             link.thumbnailId = findThumbnail(resources)
-            link.props.addAttribute("dead", false)
+            link.props.addAttribute(DEAD_LINK_PROP, false)
             linkService.mergeProps(link.id, link.props)
 
             val updatedLink = linkService.update(link)
@@ -79,7 +80,7 @@ class LinkProcessorWorker(
         } catch (e: Exception) {
             log.error("Link processing worker failed for entry={}", link.id, e)
             // mark as dead if processing failed
-            link.props.addAttribute("dead", System.currentTimeMillis())
+            link.props.addAttribute(DEAD_LINK_PROP, System.currentTimeMillis())
             linkService.mergeProps(link.id, link.props)
             log.info("Link processing worker marked link as dead after failure, sending notification entry={}", link.id)
             entryAuditService.acceptAuditEvent(link.id, LinkProcessorWorker::class.simpleName, "Link processing failed")
