@@ -251,5 +251,49 @@ class NoteResourceTest: ServerTest() {
         assertThat(current.dateCreated).isNotEqualTo(current.dateUpdated)
     }
 
+    @Test
+    fun testUpdateNoteNoNewVersion() {
+        val newNote = NewNote(null, "title5", "content5", emptyList())
+        val created = given()
+            .contentType(ContentType.JSON)
+            .body(newNote)
+            .When()
+            .post("/note")
+            .then()
+            .statusCode(201)
+            .extract().to<Note>()
+
+        assertThat(created.version).isOne()
+        assertThat(created.title).isEqualTo(newNote.title)
+        assertThat(created.plainText).isEqualTo(newNote.plainText)
+        assertThat(created.dateCreated).isEqualTo(created.dateUpdated)
+
+        // update no new version
+        val updateNote = NewNote(created.id, "edited", "new content", emptyList())
+        val updated = given()
+            .contentType(ContentType.JSON)
+            .body(updateNote)
+            .When()
+            .put("/note?newVersion=false")
+            .then()
+            .statusCode(200)
+            .extract().to<Note>()
+
+        assertThat(updated.title).isEqualTo(updateNote.title)
+        assertThat(updated.plainText).isEqualTo(updateNote.plainText)
+        assertThat(updated.version).isEqualTo(1)
+        assertThat(updated.dateCreated).isNotEqualTo(updated.dateUpdated)
+
+        // retrieve latest version
+        val current = get("/note/{id}", created.id)
+            .then()
+            .statusCode(200)
+            .extract().to<Note>()
+        assertThat(current.version).isEqualTo(1)
+        assertThat(current.title).isEqualTo(updateNote.title)
+        assertThat(current.plainText).isEqualTo(updateNote.plainText)
+        assertThat(current.dateCreated).isNotEqualTo(current.dateUpdated)
+    }
+
 
 }

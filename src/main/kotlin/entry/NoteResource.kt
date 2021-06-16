@@ -37,7 +37,8 @@ fun Route.note(noteService: NoteService) {
 
         put {
             val note = call.receive<NewNote>()
-            val updated = noteService.update(note)
+            val newVersion = call.parameters["newVersion"]?.let { it.toBoolean() } ?: true
+            val updated = noteService.update(note, newVersion)
             if (updated == null) call.respond(HttpStatusCode.NotFound)
             else call.respond(HttpStatusCode.OK, updated)
         }
