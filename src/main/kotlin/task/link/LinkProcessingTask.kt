@@ -1,8 +1,11 @@
-package task
+package task.link
 
 import common.inject.Inject
 import entry.LinkService
 import resource.ResourceType
+import task.Task
+import task.TaskBuilder
+import task.TaskContext
 import worker.PersistLinkProcessingRequest
 import worker.WorkerRegistry
 import java.util.*

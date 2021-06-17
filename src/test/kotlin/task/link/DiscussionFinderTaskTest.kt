@@ -1,4 +1,4 @@
-package task
+package task.link
 
 import common.Link
 import entry.LinkService
@@ -6,6 +6,7 @@ import io.mockk.*
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import task.TaskContext
 import worker.WorkerRegistry
 
 class DiscussionFinderTaskTest {

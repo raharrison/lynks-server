@@ -1,4 +1,4 @@
-package task
+package task.link
 
 import common.BaseProperties
 import common.Link
@@ -11,6 +11,7 @@ import link.summary.Summary
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import resource.ResourceRetriever
+import task.TaskContext
 import util.Result
 
 class LinkSummarizerTaskTest {

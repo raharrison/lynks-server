@@ -5,8 +5,8 @@ import resource.GeneratedResource
 import resource.ResourceManager
 import resource.ResourceType
 import resource.WebResourceRetriever
-import task.DiscussionFinderTask
-import task.LinkProcessingTask
+import task.link.DiscussionFinderTask
+import task.link.LinkProcessingTask
 import java.util.*
 
 abstract class LinkProcessor(

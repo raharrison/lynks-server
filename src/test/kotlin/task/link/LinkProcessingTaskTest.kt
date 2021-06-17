@@ -1,4 +1,4 @@
-package task
+package task.link
 
 import common.Link
 import entry.LinkService

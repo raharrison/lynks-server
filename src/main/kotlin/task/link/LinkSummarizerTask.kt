@@ -1,10 +1,13 @@
-package task
+package task.link
 
 import common.inject.Inject
 import entry.EntryAuditService
 import entry.LinkService
 import link.summary.LinkSummarizer
 import resource.ResourceRetriever
+import task.Task
+import task.TaskBuilder
+import task.TaskContext
 import util.Result
 import util.loggerFor
 

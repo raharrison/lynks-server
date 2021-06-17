@@ -11,8 +11,8 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import task.LinkProcessingTask
 import task.TaskService
+import task.link.LinkProcessingTask
 import worker.WorkerRegistry
 
 class TaskServiceTest {

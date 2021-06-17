@@ -7,8 +7,8 @@ import resource.GeneratedResource
 import resource.ResourceManager
 import resource.ResourceType
 import resource.WebResourceRetriever
-import task.LinkProcessingTask
-import task.LinkSummarizerTask
+import task.link.LinkProcessingTask
+import task.link.LinkSummarizerTask
 import util.JsonMapper
 import util.Result
 import java.util.*

@@ -5,7 +5,8 @@ import com.fasterxml.jackson.databind.node.ArrayNode
 import common.BaseProperties
 import kotlinx.coroutines.runBlocking
 import resource.*
-import task.YoutubeDlTask
+import task.youtube.YoutubeDlTask
+import task.youtube.YoutubeSubtitleTask
 import util.JsonMapper
 import util.URLUtils
 import util.loggerFor
@@ -134,5 +135,6 @@ class YoutubeLinkProcessor(
             "Download Video (max 1080p)",
             YoutubeDlTask.build(url, YoutubeDlTask.YoutubeDlDownload.BEST_VIDEO_TRANSCODE)
         )
+        props.addTask("Download Subtitles", YoutubeSubtitleTask.build())
     }
 }

@@ -7,7 +7,7 @@ import common.TaskDefinition
 import io.restassured.RestAssured.post
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import task.LinkProcessingTask
+import task.link.LinkProcessingTask
 import util.createDummyEntry
 
 class TaskResourceTest: ServerTest() {
