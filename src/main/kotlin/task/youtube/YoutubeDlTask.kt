@@ -1,20 +1,17 @@
-package task
+package task.youtube
 
-import common.Environment
 import common.inject.Inject
 import entry.EntryAuditService
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import org.apache.commons.lang3.SystemUtils
 import resource.GeneratedResource
 import resource.ResourceManager
-import resource.ResourceRetriever
 import resource.ResourceType
+import resource.WebResourceRetriever
+import task.Task
+import task.TaskBuilder
+import task.TaskContext
 import util.*
 import java.io.File
-import java.nio.file.Paths
 import kotlin.io.path.absolutePathString
-import kotlin.io.path.exists
 
 class YoutubeDlTask(id: String, entryId: String) : Task<YoutubeDlTask.YoutubeDlTaskContext>(id, entryId) {
 
@@ -24,7 +21,7 @@ class YoutubeDlTask(id: String, entryId: String) : Task<YoutubeDlTask.YoutubeDlT
     lateinit var resourceManager: ResourceManager
 
     @Inject
-    lateinit var resourceRetriever: ResourceRetriever
+    lateinit var resourceRetriever: WebResourceRetriever
 
     @Inject
     lateinit var entryAuditService: EntryAuditService
@@ -50,7 +47,7 @@ class YoutubeDlTask(id: String, entryId: String) : Task<YoutubeDlTask.YoutubeDlT
 
     override suspend fun process(context: YoutubeDlTaskContext) {
         validateContextUrl(context.url)
-        val youtubeDlBinaryPath = resolveYoutubeDl()
+        val youtubeDlBinaryPath = YoutubeDlResolver(resourceRetriever).resolveYoutubeDl()
         val tempPath = resourceManager.constructTempBasePath(entryId).resolve("%(title)s.f%(format_id)s.%(ext)s")
         val outputTemplate = "-o \"${tempPath.absolutePathString()}\""
 
@@ -63,9 +60,7 @@ class YoutubeDlTask(id: String, entryId: String) : Task<YoutubeDlTask.YoutubeDlT
 
         when (val result = ExecUtils.executeCommand(command)) {
             is Result.Success -> {
-                // TODO: handle case where file already exists
                 val filename = outputLogFileMatchers.firstNotNullOfOrNull { it(result.value.lines()) }?.trim()?.trim('"')
-                // error or file already exists
                 if (filename != null) {
                     log.info("YoutubeDl task found destination filename={}", filename)
                     val extension = FileUtils.getExtension(filename)
@@ -94,28 +89,6 @@ class YoutubeDlTask(id: String, entryId: String) : Task<YoutubeDlTask.YoutubeDlT
         if(!URLUtils.isValidUrl(url) || URLUtils.extractSource(url) != "youtube.com") {
             throw IllegalArgumentException("Invalid url passed to YoutubeDlTask")
         }
-    }
-
-    private suspend fun resolveYoutubeDl(): String {
-        val binaryName = "youtube-dl${if(SystemUtils.IS_OS_WINDOWS) ".exe" else ""}"
-        val binaryPath = Paths.get(Environment.resource.binaryBasePath, binaryName)
-        if(binaryPath.exists()) {
-            log.info("Youtube-dl binary resolved to {}", binaryPath)
-        } else {
-            val youtubeDlHost = Environment.external.youtubeDlHost
-            log.info("No youtube-dl binary found, retrieving from: {}", youtubeDlHost)
-            when(val result = resourceRetriever.getFileResult("${youtubeDlHost}/${binaryName}")) {
-                is Result.Failure -> throw result.reason
-                is Result.Success -> {
-                    val bytes = result.value
-                    withContext(Dispatchers.IO) {
-                        FileUtils.writeToFile(binaryPath, bytes)
-                    }
-                    log.info("Youtube-dl binary successfully saved to {}", binaryPath)
-                }
-            }
-        }
-        return binaryPath.absolutePathString()
     }
 
     override fun createContext(input: Map<String, String>): YoutubeDlTaskContext {

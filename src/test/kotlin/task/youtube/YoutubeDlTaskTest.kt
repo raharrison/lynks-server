@@ -1,4 +1,4 @@
-package task
+package task.youtube
 
 import common.Environment
 import common.exception.ExecutionException
@@ -20,7 +20,7 @@ import java.nio.file.Paths
 class YoutubeDlTaskTest {
 
     private val resourceManager = mockk<ResourceManager>()
-    private val resourceRetriever = mockk<ResourceRetriever>()
+    private val resourceRetriever = mockk<WebResourceRetriever>()
     private val entryAuditService = mockk<EntryAuditService>(relaxUnitFun = true)
 
     private val youtubeDlTask = YoutubeDlTask("tid", "eid").also {

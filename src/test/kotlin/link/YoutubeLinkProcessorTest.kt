@@ -10,8 +10,8 @@ import resource.JPG
 import resource.ResourceManager
 import resource.ResourceType
 import resource.WebResourceRetriever
-import task.LinkProcessingTask
-import task.YoutubeDlTask
+import task.link.LinkProcessingTask
+import task.youtube.YoutubeDlTask
 import java.util.*
 
 class YoutubeLinkProcessorTest {
