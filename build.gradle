@@ -4,7 +4,7 @@ buildscript {
 
     ext.h2_version = '1.4.199'
     ext.postgres_version = '42.2.20'
-    ext.exposed_version = '0.31.1'
+    ext.exposed_version = '0.32.1'
     ext.hikari_version = '4.0.3'
     ext.flyway_version = '7.9.2'
 
@@ -19,14 +19,14 @@ buildscript {
     ext.cdp4j_version = '3.0.15'
     ext.skedule_version = '0.4.0'
 
-    ext.rest_assured_version = '4.3.3'
+    ext.rest_assured_version = '4.4.0'
     ext.junit_version = '5.7.1'
     ext.assertj_version = '3.19.0'
     ext.mockk_version = '1.11.0'
 }
 
 plugins {
-    id 'org.jetbrains.kotlin.jvm' version '1.5.10'
+    id 'org.jetbrains.kotlin.jvm' version '1.5.21'
 }
 
 sourceSets {
