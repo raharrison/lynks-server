@@ -1,17 +1,17 @@
 buildscript {
-    ext.kotlin_version = '1.5.10'
-    ext.ktor_version = '1.6.0'
+    ext.kotlin_version = '1.5.21'
+    ext.ktor_version = '1.6.2'
 
     ext.h2_version = '1.4.199'
-    ext.postgres_version = '42.2.20'
+    ext.postgres_version = '42.2.23.jre7'
     ext.exposed_version = '0.32.1'
-    ext.hikari_version = '4.0.3'
-    ext.flyway_version = '7.9.2'
+    ext.hikari_version = '5.0.0'
+    ext.flyway_version = '7.11.2'
 
     ext.flexmark_version = '0.62.2'
     ext.handlebars_version = '4.2.0'
     ext.commons_email_version = '1.5'
-    ext.logback_version = '1.2.3'
+    ext.logback_version = '1.2.5'
     ext.konf_version = '1.1.2'
     ext.commonslang_version = '3.12.0'
     ext.crux_version = '2.2.0'
@@ -20,15 +20,15 @@ buildscript {
     ext.skedule_version = '0.4.0'
 
     ext.rest_assured_version = '4.4.0'
-    ext.junit_version = '5.7.1'
-    ext.assertj_version = '3.19.0'
-    ext.mockk_version = '1.11.0'
-    ext.wiremock_version = '2.28.0'
+    ext.junit_version = '5.7.2'
+    ext.assertj_version = '3.20.2'
+    ext.mockk_version = '1.12.0'
+    ext.wiremock_version = '2.29.1'
 }
 
 plugins {
     id 'application'
-    id 'org.jetbrains.kotlin.jvm' version '1.5.10'
+    id 'org.jetbrains.kotlin.jvm' version '1.5.21'
 }
 
 sourceSets {
