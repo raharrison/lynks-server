@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<tt xml:lang="en" xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata" xmlns:tts="http://www.w3.org/ns/ttml#styling" xmlns:ttp="http://www.w3.org/ns/ttml#parameter" ttp:profile="http://www.w3.org/TR/profile/sdp-us" >
+<head>
+<styling>
+<style xml:id="s1" tts:textAlign="center" tts:extent="90% 90%" tts:origin="5% 5%" tts:displayAlign="after"/>
+<style xml:id="s2" tts:fontSize=".72c" tts:backgroundColor="black" tts:color="white"/>
+</styling>
+<layout>
+<region xml:id="r1" style="s1"/>
+</layout>
+</head>
+<body region="r1">
+<div>
+<p begin="00:00:00.080" end="00:00:02.960" style="s2">Okay, I&#39;m just going to address the<br />elephant in the room as I start,</p>
+<p begin="00:00:04.080" end="00:00:08.080" style="s2">yep, we are three months into<br />Britain&#39;s third lockdown at the minute,</p>
+<p begin="00:00:08.080" end="00:00:11.280" style="s2">uh, I desperately need a haircut,<br />and there is a sideways wind here, so</p>
+<p begin="00:00:11.280" end="00:00:13.600" style="s2">we&#39;re just going to have to deal with<br />what&#39;s going on up here.</p>
+<p begin="00:00:13.600" end="00:00:16.080" style="s2">According to the manufacturer,<br />my hoodie is grey.</p>
+<p begin="00:00:16.080" end="00:00:16.800" style="s2">That was what I bought.</p>
+<p begin="00:00:16.800" end="00:00:18.400" style="s2">I picked the most generic colour possible.</p>
+<p begin="00:00:18.400" end="00:00:19.840" style="s2">It&#39;s not going to clash with<br />anything I film against,</p>
+<p begin="00:00:19.840" end="00:00:22.400" style="s2">it&#39;s not going to blend into<br />a green screen or a blue screen.</p>
+<p begin="00:00:22.400" end="00:00:25.520" style="s2">Although to be fair, if I am filming<br />under a blank grey sky,</p>
+<p begin="00:00:25.520" end="00:00:27.840" style="s2">it can make the shot<br />look a little dull.</p>
+<p begin="00:00:27.840" end="00:00:29.600" style="s2">But if I am filming against a grey sky,</p>
+<p begin="00:00:29.600" end="00:00:33.040" style="s2">and we compare the colors between<br />the clouds and my hoodie...</p>
+<p begin="00:00:33.040" end="00:00:36.640" style="s2">then this looks just a little<br />bit blue. Or maybe purple?</p>
+<p begin="00:00:36.640" end="00:00:38.480" style="s2">It looks a bit different in all those thumbnails.</p>
+<p begin="00:00:38.480" end="00:00:40.000" style="s2">I mean, technically those aren&#39;t<br />all the same hoodie,</p>
+<p begin="00:00:40.000" end="00:00:42.320" style="s2">I&#39;ve got several,<br />but they&#39;re all identical.</p>
+<p begin="00:00:42.320" end="00:00:44.800" style="s2">To explain the magical<br />color-changing hoodie,</p>
+<p begin="00:00:44.800" end="00:00:47.120" style="s2">we need to talk about<br />how color perception works,</p>
+<p begin="00:00:47.120" end="00:00:49.440" style="s2">and also about the<br />history of laundry.</p>
+<p begin="00:00:50.240" end="00:00:53.520" style="s2">First up: a brief run through what you<br />probably already know from school.</p>
+<p begin="00:00:53.520" end="00:00:55.680" style="s2">Electromagnetic radiation is a spectrum,</p>
+<p begin="00:00:55.680" end="00:01:00.160" style="s2">that includes x-rays and microwaves<br />and radio waves and visible light.</p>
+<p begin="00:01:00.160" end="00:01:03.280" style="s2">The difference between those<br />types of radiation is the wavelength.</p>
+<p begin="00:01:03.280" end="00:01:06.800" style="s2">We have special cells called &quot;cones&quot;<br />in the back of our eyes, three types of them,</p>
+<p begin="00:01:06.800" end="00:01:10.320" style="s2">and each type reacts to a<br />small set of different wavelengths.</p>
+<p begin="00:01:10.320" end="00:01:12.480" style="s2">Which are, oh-so-conveniently,</p>
+<p begin="00:01:12.480" end="00:01:15.520" style="s2">the wavelengths that the atmosphere<br />easily lets through.</p>
+<p begin="00:01:15.520" end="00:01:18.400" style="s2">The wavelengths for each type of cone<br />overlap a bit, it&#39;s not precise,</p>
+<p begin="00:01:18.400" end="00:01:22.320" style="s2">but it&#39;s roughly equivalent<br />to red, green and blue.</p>
+<p begin="00:01:22.320" end="00:01:27.040" style="s2">So if these cells notice radiation<br />but these mostly don&#39;t, you see blue.</p>
+<p begin="00:01:27.040" end="00:01:30.240" style="s2">If these and these do,<br />but these don&#39;t? Magenta.</p>
+<p begin="00:01:30.240" end="00:01:33.040" style="s2">And if all of them do,<br />at just the right balance?</p>
+<p begin="00:01:33.040" end="00:01:35.120" style="s2">Well, that&#39;ll be white, or grey.</p>
+<p begin="00:01:35.120" end="00:01:38.000" style="s2">But you have to remember that<br />color is not a real thing.</p>
+<p begin="00:01:38.000" end="00:01:40.960" style="s2">Colors are experiences,<br />the philosophical term is qualia,</p>
+<p begin="00:01:40.960" end="00:01:43.360" style="s2">your brain just creates<br />color in your head</p>
+<p begin="00:01:43.360" end="00:01:45.440" style="s2">based on the signals<br />it receives from those cells.</p>
+<p begin="00:01:45.440" end="00:01:46.400" style="s2">Depending on the context,</p>
+<p begin="00:01:46.400" end="00:01:51.120" style="s2">you can see the exact same wavelengths<br />as different colors, even at the same time.</p>
+<p begin="00:01:51.120" end="00:01:53.520" style="s2">There are a lot of optical illusions<br />that play with that.</p>
+<p begin="00:01:53.520" end="00:01:55.520" style="s2">Color perception isn&#39;t just about wavelengths,</p>
+<p begin="00:01:55.520" end="00:01:58.240" style="s2">it&#39;s about comparing those<br />wavelengths to everything around.</p>
+<p begin="00:01:58.880" end="00:02:01.120" style="s2">A camera doesn&#39;t do that,</p>
+<p begin="00:02:01.120" end="00:02:03.840" style="s2">as I shall now demonstrate<br />with a white wall.</p>
+<p begin="00:02:03.840" end="00:02:05.360" style="s2">It&#39;s daytime as I record this,</p>
+<p begin="00:02:05.360" end="00:02:08.240" style="s2">and the camera is set up for the<br />daytime light that&#39;s shining in.</p>
+<p begin="00:02:08.240" end="00:02:09.360" style="s2">Bright sunshine.</p>
+<p begin="00:02:09.360" end="00:02:12.400" style="s2">Now, there is an official, precise<br />definition of &quot;average sunlight&quot;,</p>
+<p begin="00:02:12.400" end="00:02:13.840" style="s2">it&#39;s called Illuminant D65,</p>
+<p begin="00:02:13.840" end="00:02:16.160" style="s2">it&#39;s meant to simulate the middle<br />of the day in Western Europe,</p>
+<p begin="00:02:16.160" end="00:02:18.560" style="s2">and if you&#39;d like to spend literal hours</p>
+<p begin="00:02:18.560" end="00:02:21.360" style="s2">going down a rabbit hole of<br />color theory that I couldn&#39;t understand,</p>
+<p begin="00:02:21.360" end="00:02:22.720" style="s2">you&#39;re welcome to use those keywords</p>
+<p begin="00:02:22.720" end="00:02:26.320" style="s2">as a starting point to your research,<br />but the basic idea is:</p>
+<p begin="00:02:26.320" end="00:02:28.240" style="s2">this wall is white, and therefore,</p>
+<p begin="00:02:28.240" end="00:02:31.200" style="s2">the colour that comes out of <br />your screen should also be white.</p>
+<p begin="00:02:31.840" end="00:02:35.120" style="s2">But if I come back at night, lit by <br />the artificial lighting in the room,</p>
+<p begin="00:02:35.120" end="00:02:37.840" style="s2">and I don&#39;t change the colour <br />settings on the camera...</p>
+<p begin="00:02:39.040" end="00:02:41.360" style="s2">...this looks very, very yellow.</p>
+<p begin="00:02:41.360" end="00:02:44.480" style="s2">Because artificial light usually<br />has less blue in it.</p>
+<p begin="00:02:44.480" end="00:02:47.280" style="s2">Maybe that&#39;s because it&#39;s imitating<br />old firelight and candlelight</p>
+<p begin="00:02:47.280" end="00:02:49.200" style="s2">and it feels more comfortable somehow.</p>
+<p begin="00:02:49.200" end="00:02:52.640" style="s2">Maybe it&#39;s just because that was<br />how old light bulbs happened to work.</p>
+<p begin="00:02:52.640" end="00:02:56.240" style="s2">That yellow-blue distinction<br />is called &quot;color temperature&quot;.</p>
+<p begin="00:02:56.240" end="00:02:57.920" style="s2">Yellow and blue are<br />complementary colors:</p>
+<p begin="00:02:57.920" end="00:03:00.720" style="s2">remove one and you&#39;ll start<br />to see more of the other.</p>
+<p begin="00:03:00.720" end="00:03:02.160" style="s2">If you&#39;re working with cameras,</p>
+<p begin="00:03:02.160" end="00:03:05.440" style="s2">color temperature is something<br />you have to watch out for,</p>
+<p begin="00:03:05.440" end="00:03:08.400" style="s2">because colors seen on a screen<br />are out of context,</p>
+<p begin="00:03:08.400" end="00:03:12.640" style="s2">the audience is used to seeing certain<br />wavelengths from their screen as &quot;white&quot;,</p>
+<p begin="00:03:12.640" end="00:03:15.120" style="s2">no matter the lighting used in the room.</p>
+<p begin="00:03:15.120" end="00:03:17.680" style="s2">So the video colors have to be<br />adjusted to match the light,</p>
+<p begin="00:03:17.680" end="00:03:19.520" style="s2">so this wall still looks white to you.</p>
+<p begin="00:03:19.520" end="00:03:23.120" style="s2">I didn&#39;t change the lighting just then,<br />only the color settings on my camera.</p>
+<p begin="00:03:23.120" end="00:03:25.120" style="s2">Or, actually, in my editing program.<br /> </p>
+<p begin="00:03:25.120" end="00:03:28.480" style="s2">But if I take these new settings <br />back to daytime and sunlight...</p>
+<p begin="00:03:29.680" end="00:03:32.160" style="s2">...it looks very, very blue in here.</p>
+<p begin="00:03:32.160" end="00:03:36.160" style="s2">To be clear, in person this is <br />always obviously a white wall.</p>
+<p begin="00:03:36.160" end="00:03:39.280" style="s2">Your brain establishes color from context.</p>
+<p begin="00:03:39.280" end="00:03:42.480" style="s2">Which is why my hoodie looks grey<br />against something brightly colored,</p>
+<p begin="00:03:43.040" end="00:03:45.760" style="s2">well, as brightly coloured as you can get<br />in the British countryside</p>
+<p begin="00:03:45.760" end="00:03:47.520" style="s2">when spring hasn&#39;t quite arrived yet,</p>
+<p begin="00:03:47.520" end="00:03:50.000" style="s2">but against something that&#39;s also grey or white...</p>
+<p begin="00:03:50.720" end="00:03:52.080" style="s2">...maybe not so much.</p>
+<p begin="00:03:52.080" end="00:03:54.240" style="s2">Because there&#39;s one other factor here:</p>
+<p begin="00:03:54.240" end="00:03:56.640" style="s2">if your clothing is slightly yellow,</p>
+<p begin="00:03:56.640" end="00:03:58.480" style="s2">it looks stained and tired.</p>
+<p begin="00:03:58.480" end="00:04:02.000" style="s2">Because usually, slightly yellow<br />clothing is stained and tired.</p>
+<p begin="00:04:02.000" end="00:04:04.800" style="s2">There used to be a common product<br />called &quot;laundry bluing&quot;.</p>
+<p begin="00:04:04.800" end="00:04:06.800" style="s2">It&#39;s mostly obsolete now<br />with modern detergents,</p>
+<p begin="00:04:06.800" end="00:04:08.720" style="s2">I actually couldn&#39;t find it in shops<br />around where I live,</p>
+<p begin="00:04:08.720" end="00:04:11.760" style="s2">but it added a hint of<br />blue dye to your washing.</p>
+<p begin="00:04:11.760" end="00:04:14.160" style="s2">If your white shirt is actually<br />very slightly blue,</p>
+<p begin="00:04:14.160" end="00:04:18.560" style="s2">it can trick the eye into thinking<br />that it&#39;s cleaner and brighter and whiter</p>
+<p begin="00:04:18.560" end="00:04:23.520" style="s2">than the actually-white shirt of the<br />person you&#39;re competing with for that promotion.</p>
+<p begin="00:04:23.520" end="00:04:25.920" style="s2">So maybe, if a company&#39;s selling a grey hoodie,</p>
+<p begin="00:04:25.920" end="00:04:28.880" style="s2">their customers will look better<br />and like the product a little bit more</p>
+<p begin="00:04:28.880" end="00:04:31.280" style="s2">if it is ever so slightly blue.</p>
+<p begin="00:04:31.280" end="00:04:32.560" style="s2">And as a personal choice,</p>
+<p begin="00:04:32.560" end="00:04:35.440" style="s2">when I tweak the color temperature<br />on my camera or in my editing program,</p>
+<p begin="00:04:35.440" end="00:04:40.240" style="s2">I&#39;m going to favor going just ever-so-slightly<br />towards blue, partly for that reason,</p>
+<p begin="00:04:40.240" end="00:04:41.840" style="s2">and partly because I like the way it looks.</p>
+<p begin="00:04:42.400" end="00:04:44.160" style="s2">Now, I would call this hoodie &quot;grey&quot;.</p>
+<p begin="00:04:44.160" end="00:04:45.840" style="s2">Even if it might seem to<br />have a bit of blue in it.</p>
+<p begin="00:04:45.840" end="00:04:47.120" style="s2">It&#39;s all subjective anyway.</p>
+<p begin="00:04:47.120" end="00:04:50.960" style="s2">But there is a way to get some sort<br />of definitive, objective answer.</p>
+<p begin="00:04:51.600" end="00:04:53.680" style="s2">A calibrated color sensor.</p>
+<p begin="00:04:53.680" end="00:04:57.280" style="s2">It will light up my hoodie<br />with very precise amounts of light,</p>
+<p begin="00:04:57.280" end="00:04:59.680" style="s2">and measure the wavelengths<br />that are coming back into its sensor.</p>
+<p begin="00:04:59.680" end="00:05:02.240" style="s2">Which means it can give me<br />calibrated color numbers,</p>
+<p begin="00:05:02.240" end="00:05:03.840" style="s2">but it&#39;ll also match the color</p>
+<p begin="00:05:03.840" end="00:05:06.880" style="s2">to the descriptive names<br />that paint companies use.</p>
+<p begin="00:05:06.880" end="00:05:11.440" style="s2">Which means that if I test it<br />on this spare hoodie, the color is...</p>
+<p begin="00:05:13.600" end="00:05:14.720" style="s2">...Amethyst Sky.</p>
+<p begin="00:05:16.800" end="00:05:18.400" style="s2">I&#39;m not sure that&#39;s helpful.</p>
+</div>
+</body>
+</tt>
