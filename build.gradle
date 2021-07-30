@@ -23,9 +23,11 @@ buildscript {
     ext.junit_version = '5.7.1'
     ext.assertj_version = '3.19.0'
     ext.mockk_version = '1.11.0'
+    ext.wiremock_version = '2.28.0'
 }
 
 plugins {
+    id 'application'
     id 'org.jetbrains.kotlin.jvm' version '1.5.10'
 }
 
@@ -67,6 +69,10 @@ test {
     }
 }
 
+application {
+    mainClass = "MainKt"
+}
+
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
     implementation "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
@@ -100,6 +106,6 @@ dependencies {
     testImplementation "org.junit.jupiter:junit-jupiter-api:$junit_version"
     testImplementation "org.assertj:assertj-core:$assertj_version"
     testImplementation "io.mockk:mockk:$mockk_version"
-    testImplementation "com.github.tomakehurst:wiremock-jre8:2.29.1"
+    testImplementation "com.github.tomakehurst:wiremock-jre8:$wiremock_version"
     testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit_version"
 }
