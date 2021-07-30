@@ -4,7 +4,7 @@ buildscript {
 
     ext.h2_version = '1.4.199'
     ext.postgres_version = '42.2.20'
-    ext.exposed_version = '0.31.1'
+    ext.exposed_version = '0.32.1'
     ext.hikari_version = '4.0.3'
     ext.flyway_version = '7.9.2'
 
