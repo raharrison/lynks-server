@@ -20,7 +20,7 @@ buildscript {
     ext.skedule_version = '0.4.0'
 
     ext.rest_assured_version = '4.4.0'
-    ext.junit_version = '5.7.1'
+    ext.junit_version = '5.7.2'
     ext.assertj_version = '3.19.0'
     ext.mockk_version = '1.11.0'
 }
