@@ -1,6 +1,7 @@
 package link
 
 import common.BaseProperties
+import common.exception.ExecutionException
 import io.mockk.*
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
@@ -12,6 +13,7 @@ import resource.ResourceType
 import resource.WebResourceRetriever
 import task.link.LinkProcessingTask
 import task.youtube.YoutubeDlTask
+import util.Result
 import java.util.*
 
 class YoutubeLinkProcessorTest {
@@ -31,17 +33,17 @@ class YoutubeLinkProcessorTest {
     @Test
     fun testSuggest() = runBlocking {
         val vidInfo = this.javaClass.getResource("/get_video_info.txt").readText()
-        coEvery { retriever.getString(any()) } returns vidInfo
+        coEvery { retriever.postStringResult(any(), any()) } returns Result.Success(vidInfo)
         val suggestResponse = processor.suggest(EnumSet.noneOf(ResourceType::class.java))
         assertThat(suggestResponse.details.url).isEqualTo(url)
         assertThat(suggestResponse.details.keywords).hasSizeGreaterThan(5)
-        assertThat(suggestResponse.details.title).isEqualTo("Savoy - How U Like Me Now (feat. Roniit) [Monstercat Release]")
-        coVerify(exactly = 1) { retriever.getString(any()) }
+        assertThat(suggestResponse.details.title).isEqualTo("When Your Phone is at 1%")
+        coVerify(exactly = 1) { retriever.postStringResult(any(), any()) }
     }
 
     @Test
     fun testGetTitleBadInfo() = runBlocking {
-        coEvery { retriever.getString(any()) } returns null
+        coEvery { retriever.postStringResult(any(), any()) } returns Result.Failure(ExecutionException("error"))
         val suggestResponse = processor.suggest(EnumSet.noneOf(ResourceType::class.java))
         assertThat(suggestResponse.details.title).isEmpty()
     }

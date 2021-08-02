@@ -8,6 +8,7 @@ import resource.*
 import task.youtube.YoutubeDlTask
 import task.youtube.YoutubeSubtitleTask
 import util.JsonMapper
+import util.Result
 import util.URLUtils
 import util.loggerFor
 import java.util.*
@@ -20,6 +21,20 @@ class YoutubeLinkProcessor(
     resourceManager: ResourceManager
 ) :
     LinkProcessor(url, webResourceRetriever, resourceManager) {
+
+    private val apiKey = "AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8"
+    private val playerRequest = """
+        {
+                "context": {
+                    "client": {
+                        "clientName": "ANDROID",
+                        "clientVersion": "16.20"
+                    }
+                },
+                "api_key": "%s",
+                "videoId": "%s"
+        }
+    """.trimIndent()
 
     private lateinit var videoId: String
 
@@ -40,14 +55,9 @@ class YoutubeLinkProcessor(
     }
 
     private fun parseVideoInfo(raw: String): JsonNode? {
-        val params = URLUtils.extractQueryParams(raw)
-        if (params.containsKey("player_response")) {
-            val playerResponse = params["player_response"]
-            val playerResponseJson = JsonMapper.defaultMapper.readTree(playerResponse)
-            if ("error".equals(playerResponseJson["playabilityStatus"]["status"].asText("error"), true)) {
-                return null
-            }
-            return playerResponseJson["videoDetails"]
+        val responseJson = JsonMapper.defaultMapper.readTree(raw)
+        if (responseJson.has("videoDetails")) {
+            return responseJson["videoDetails"]
         }
         return null
     }
@@ -98,8 +108,12 @@ class YoutubeLinkProcessor(
 
     private suspend fun downloadVideoInfo(): String? {
         log.info("Retrieving video info for Youtube video id={}", videoId)
-        val url = "https://www.youtube.com/get_video_info?html5=1&video_id=$videoId"
-        return webResourceRetriever.getString(url)
+        val url = "https://youtubei.googleapis.com/youtubei/v1/player?key=$apiKey"
+        val requestBody = playerRequest.format(apiKey, videoId)
+        return when(val response = webResourceRetriever.postStringResult(url, requestBody)) {
+            is Result.Success -> response.value
+            is Result.Failure -> null
+        }
     }
 
     private suspend fun generateThumbnail(): GeneratedResource? {

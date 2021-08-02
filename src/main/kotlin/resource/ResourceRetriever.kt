@@ -62,7 +62,7 @@ class WebResourceRetriever : ResourceRetriever {
     }
 
     suspend fun postStringResult(location: String, body: Any): Result<String, ExecutionException> = try {
-        val json = JsonMapper.defaultMapper.writeValueAsString(body)
+        val json = if(body is String) body else JsonMapper.defaultMapper.writeValueAsString(body)
         val request = HttpRequest.newBuilder(URI.create(location))
             .POST(HttpRequest.BodyPublishers.ofString(json))
             .header("Content-Type", "application/json")
