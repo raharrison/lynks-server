@@ -88,6 +88,7 @@ object Environment {
     }
         .from.json.resource("default.json")
         .from.json.resource("${mode.toString().lowercase()}.json")
+        .from.json.file("config/lynks.config.json", optional = true)
         .from.json.file(System.getProperty("CONFIG_FILE") ?: "lynks.config.json", optional = true)
         .from.env()
         .from.systemProperties()
