@@ -1,5 +1,7 @@
 {
-    "server": {
-        "database": "jdbc:h2:./lynksdb"
+    "database": {
+        "dialect": "POSTGRES",
+        "url": "jdbc:postgresql://postgres:5432/lynksdb",
+        "user": "lynksuser"
     }
 }
