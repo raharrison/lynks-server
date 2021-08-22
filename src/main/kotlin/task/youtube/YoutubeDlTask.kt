@@ -54,7 +54,7 @@ class YoutubeDlTask(id: String, entryId: String) : Task<YoutubeDlTask.YoutubeDlT
         log.info("Executing YoutubeDl task entry={} type={}", entryId, context.type)
         val command = when (context.type) {
             YoutubeDlDownload.BEST_AUDIO -> "$youtubeDlBinaryPath -f \"bestaudio/best\" $outputTemplate ${context.url}"
-            YoutubeDlDownload.BEST_VIDEO -> "$youtubeDlBinaryPath -f \"best\" $outputTemplate ${context.url}"
+            YoutubeDlDownload.BEST_VIDEO -> "$youtubeDlBinaryPath -f \"bestvideo[height<=?720]+bestaudio/best\" $outputTemplate ${context.url}"
             YoutubeDlDownload.BEST_VIDEO_TRANSCODE -> "$youtubeDlBinaryPath -f \"bestvideo[height<=?1080]+bestaudio/best\" $outputTemplate ${context.url}"
         }
 
