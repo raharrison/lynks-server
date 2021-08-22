@@ -1,0 +1,11 @@
+services:
+  postgres:
+    image: postgres
+    restart: unless-stopped
+    env_file:
+      - ./config/.env
+    environment:
+      - POSTGRES_DB=lynksdb
+      - POSTGRES_USER=lynksuser
+    ports:
+      - '5432:5432'
