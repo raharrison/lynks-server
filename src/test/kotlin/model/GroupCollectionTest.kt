@@ -98,7 +98,7 @@ class GroupCollectionTest {
         assertThat(added).isEqualTo(add)
         assertThat(collection.all()).hasSize(10)
         assertThat(collection.group("g10")).isEqualTo(add).extracting("path").isEqualTo("2/4/7/10")
-        assertThat(collection.group("g7")?.children).hasSize(1).containsExactly(add)
+        assertThat(collection.group("g7")?.children).containsExactly(add).hasSize(1)
         assertThat(collection.subtree("g4")).hasSize(3).extracting("id").containsExactlyInAnyOrder("g4", "g7", "g10")
         assertThat(collection.subtree("g2")).hasSize(8).extracting("id").contains("g4", "g7", "g3", "g10")
 

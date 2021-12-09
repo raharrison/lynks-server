@@ -1,4 +1,4 @@
-FROM gradle:7-jdk11 AS build
+FROM gradle:7-jdk17 AS build
 
 USER gradle
 WORKDIR /app
@@ -8,7 +8,7 @@ COPY src/ ./src
 
 RUN gradle installDist --no-daemon
 
-FROM openjdk:11-jre-slim-buster
+FROM openjdk:17-slim-buster
 
 RUN apt-get update \
     && apt-get install -y python3 \
