@@ -61,6 +61,5 @@ class NoteService(
         it[plainContent] = entry.plainText
         it[content] = MarkdownUtils.convertToMarkdown(entry.plainText)
         it[props] = entry.props
-        it[thumbnailId] = entry.thumbnailId
     }
 }

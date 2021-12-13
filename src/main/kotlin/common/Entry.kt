@@ -37,7 +37,6 @@ object EntryVersions : BaseEntries("ENTRY_VERSION") {
 }
 
 interface Entry : IdBasedCreatedEntity {
-    val title: String
     val dateCreated: Long
     val dateUpdated: Long
     val version: Int
@@ -45,7 +44,6 @@ interface Entry : IdBasedCreatedEntity {
     val props: BaseProperties
     val tags: List<Tag>
     val collections: List<Collection>
-    var thumbnailId: String?
 }
 
 interface NewEntry : IdBasedNewEntity {

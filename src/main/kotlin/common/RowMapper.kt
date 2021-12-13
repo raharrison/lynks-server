@@ -53,8 +53,7 @@ object RowMapper {
             collections = collections,
             props = row[table.props] ?: BaseProperties(),
             version = row[table.version],
-            starred = row[table.starred],
-            thumbnailId = row[table.thumbnailId]
+            starred = row[table.starred]
         )
     }
 
@@ -65,8 +64,7 @@ object RowMapper {
             dateUpdated = row[table.dateUpdated],
             tags = tags,
             collections = collections,
-            starred = row[table.starred],
-            thumbnailId = row[table.thumbnailId]
+            starred = row[table.starred]
         )
     }
 

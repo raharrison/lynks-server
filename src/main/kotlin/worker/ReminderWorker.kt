@@ -1,5 +1,7 @@
 package worker
 
+import common.Link
+import common.Note
 import entry.EntryAuditService
 import entry.EntryService
 import kotlinx.coroutines.delay
@@ -100,9 +102,13 @@ class ReminderWorker(
 
         if (reminder.notifyMethod == NotificationMethod.EMAIL || reminder.notifyMethod == NotificationMethod.BOTH) {
             // send email
-            val entry = entryService.get(reminder.entryId)
+            val title = when (val entry = entryService.get(reminder.entryId)) {
+                is Link -> entry.title
+                is Note -> entry.title
+                else -> entry?.javaClass?.simpleName
+            }
             val content = mapOf(
-                "title" to entry?.title,
+                "title" to title,
                 "spec" to reminder.spec,
                 "message" to reminder.message
             )
