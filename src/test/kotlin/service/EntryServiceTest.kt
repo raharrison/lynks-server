@@ -34,6 +34,8 @@ class EntryServiceTest: DatabaseTest() {
         createDummyEntry("id2", "note1", "note content", EntryType.NOTE)
         Thread.sleep(10)
         createDummyEntry("id3", "note2", "note content second", EntryType.NOTE)
+        Thread.sleep(10)
+        createDummyEntry("id4", "fact1", "fact text", EntryType.FACT)
     }
 
     @Test
@@ -54,17 +56,23 @@ class EntryServiceTest: DatabaseTest() {
         assertThat(retrieved2.title).isEqualTo("note1")
         assertThat(retrieved2.plainText).isEqualTo("note content")
         assertThat(retrieved2.type).isEqualTo(EntryType.NOTE)
+
+        val retrieved3 = entryService.get("id4") as Fact
+        assertThat(retrieved3.id).isEqualTo("id4")
+        assertThat(retrieved3.plainText).isEqualTo("fact text")
+        assertThat(retrieved3.type).isEqualTo(EntryType.FACT)
     }
 
     @Test
     fun testGetAll() {
         val retrieved = entryService.get()
-        assertThat(retrieved.content).hasSize(3)
+        assertThat(retrieved.content).hasSize(4)
         assertThat(retrieved.page).isEqualTo(1L)
-        assertThat(retrieved.total).isEqualTo(3)
-        assertThat(retrieved.content).extracting("id").containsExactlyInAnyOrder("id1", "id2", "id3")
+        assertThat(retrieved.total).isEqualTo(4)
+        assertThat(retrieved.content).extracting("id").containsExactlyInAnyOrder("id1", "id2", "id3", "id4")
         assertThat(retrieved.content).hasAtLeastOneElementOfType(SlimNote::class.java)
         assertThat(retrieved.content).hasAtLeastOneElementOfType(SlimLink::class.java)
+        assertThat(retrieved.content).hasAtLeastOneElementOfType(SlimFact::class.java)
     }
 
     @Test
@@ -92,15 +100,15 @@ class EntryServiceTest: DatabaseTest() {
         val retrieved = entryService.get(PageRequest(1, 1))
         assertThat(retrieved.content).hasSize(1)
         assertThat(retrieved.page).isEqualTo(1L)
-        assertThat(retrieved.total).isEqualTo(3)
-        assertThat(retrieved.content).extracting("id").containsExactly("id3")
-        assertThat(retrieved.content).hasOnlyElementsOfType(SlimNote::class.java)
+        assertThat(retrieved.total).isEqualTo(4)
+        assertThat(retrieved.content).extracting("id").containsExactly("id4")
+        assertThat(retrieved.content).hasOnlyElementsOfType(SlimFact::class.java)
 
-        val retrieved2 = entryService.get(PageRequest(3, 1))
+        val retrieved2 = entryService.get(PageRequest(4, 1))
         assertThat(retrieved2.content).hasSize(1)
-        assertThat(retrieved2.page).isEqualTo(3L)
+        assertThat(retrieved2.page).isEqualTo(4L)
         assertThat(retrieved2.size).isEqualTo(1)
-        assertThat(retrieved2.total).isEqualTo(3)
+        assertThat(retrieved2.total).isEqualTo(4)
         assertThat(retrieved2.content).extracting("id").containsExactly("id1")
         assertThat(retrieved2.content).hasOnlyElementsOfType(SlimLink::class.java)
     }
@@ -108,10 +116,10 @@ class EntryServiceTest: DatabaseTest() {
     @Test
     fun testSearchSortOrdering() {
         val retrieved = entryService.get(PageRequest(0, 10, sort = "dateCreated", direction = SortDirection.ASC))
-        assertThat(retrieved.content).extracting("id").containsExactly("id1", "id2", "id3")
+        assertThat(retrieved.content).extracting("id").containsExactly("id1", "id2", "id3", "id4")
 
         val retrieved2 = entryService.get(PageRequest(0, 10, sort = "dateCreated", direction = SortDirection.DESC))
-        assertThat(retrieved2.content).extracting("id").containsExactly("id3", "id2", "id1")
+        assertThat(retrieved2.content).extracting("id").containsExactly("id4", "id3", "id2", "id1")
     }
 
     @Test

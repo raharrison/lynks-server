@@ -68,6 +68,32 @@ object RowMapper {
         )
     }
 
+    fun toFact(table: BaseEntries, row: ResultRow, tags: List<Tag>, collections: List<Collection>): Fact {
+        return Fact(
+            id = row[table.id],
+            plainText = row[table.plainContent]!!,
+            markdownText = row[table.content]!!,
+            dateCreated = row[table.dateCreated],
+            dateUpdated = row[table.dateUpdated],
+            tags = tags,
+            collections = collections,
+            props = row[table.props] ?: BaseProperties(),
+            version = row[table.version],
+            starred = row[table.starred]
+        )
+    }
+
+    fun toSlimFact(table: BaseEntries, row: ResultRow, tags: List<Tag>, collections: List<Collection>): SlimFact {
+        return SlimFact(
+            id = row[table.id],
+            markdownText = row[table.content]!!,
+            dateUpdated = row[table.dateUpdated],
+            tags = tags,
+            collections = collections,
+            starred = row[table.starred]
+        )
+    }
+
     fun toComment(row: ResultRow): Comment =
             Comment(
                     id = row[Comments.id],
