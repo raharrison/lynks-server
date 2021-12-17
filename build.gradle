@@ -67,7 +67,7 @@ test {
 }
 
 application {
-    mainClass = "MainKt"
+    mainClass = "lynks.MainKt"
 }
 
 dependencies {
