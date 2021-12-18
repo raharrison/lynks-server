@@ -12,6 +12,7 @@ import lynks.common.MAX_IMAGE_UPLOAD_BYTES
 import lynks.common.TEMP_URL
 import lynks.common.exception.InvalidModelException
 import lynks.util.FileUtils
+import java.io.File
 
 fun Route.resources(resourceManager: ResourceManager) {
 
@@ -57,6 +58,9 @@ fun Route.resources(resourceManager: ResourceManager) {
 
     route("/entry/{entryId}/resource") {
 
+        // used when retrieving resource files to prevent lookups
+        val resourceCache = mutableMapOf<String, Pair<Resource, File>>()
+
         get {
             val id = call.parameters["entryId"]!!
             call.respond(resourceManager.getResourcesFor(id))
@@ -73,7 +77,12 @@ fun Route.resources(resourceManager: ResourceManager) {
         }
 
         get("/{id}") {
-            val res = resourceManager.getResourceAsFile(call.parameters["id"]!!)
+            val id = call.parameters["id"]!!
+            val res = if(id in resourceCache) resourceCache[id] else {
+                resourceManager.getResourceAsFile(id)?.also {
+                    resourceCache[id] = it
+                }
+            }
             if (res != null) {
                 call.response.header("Content-Disposition", "inline; filename=\"${res.first.name}\"")
                 call.respondFile(res.second)
@@ -99,12 +108,19 @@ fun Route.resources(resourceManager: ResourceManager) {
             val resource = call.receive<Resource>()
             val updated = resourceManager.updateResource(resource)
             if (updated == null) call.respond(HttpStatusCode.NotFound)
-            else call.respond(HttpStatusCode.OK, updated)
+            else {
+                resourceCache.remove(updated.id)
+                call.respond(HttpStatusCode.OK, updated)
+            }
         }
 
         delete("/{id}") {
-            val removed = resourceManager.delete(call.parameters["id"]!!)
-            if (removed) call.respond(HttpStatusCode.OK)
+            val id = call.parameters["id"]!!
+            val removed = resourceManager.delete(id)
+            if (removed) {
+                resourceCache.remove(id)
+                call.respond(HttpStatusCode.OK)
+            }
             else call.respond(HttpStatusCode.NotFound)
         }
 
