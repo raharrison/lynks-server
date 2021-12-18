@@ -17,7 +17,7 @@ class YoutubeDlResolver(private val resourceRetriever: WebResourceRetriever) {
     private val log = loggerFor<YoutubeDlResolver>()
 
     suspend fun resolveYoutubeDl(): String {
-        val binaryName = "youtube-dl${if (SystemUtils.IS_OS_WINDOWS) ".exe" else ""}"
+        val binaryName = "yt-dlp${if (SystemUtils.IS_OS_WINDOWS) ".exe" else ""}"
         val binaryPath = Paths.get(Environment.resource.binaryBasePath, binaryName)
         if (binaryPath.exists()) {
             log.info("Youtube-dl binary resolved to {}", binaryPath)

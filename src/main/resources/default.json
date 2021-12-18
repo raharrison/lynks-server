@@ -14,7 +14,7 @@
         "port": 1025
     },
     "external": {
-        "youtubeDlHost": "https://yt-dl.org/downloads/latest",
+        "youtubeDlHost": "https://github.com/yt-dlp/yt-dlp/releases/latest/download",
         "scraperHost": "http://localhost:3000/api"
     }
 }
