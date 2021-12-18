@@ -92,7 +92,7 @@ class YoutubeDlTaskTest {
 
         verify(exactly = 1) {
             ExecUtils.executeCommand(match {
-                it.contains(Paths.get(Environment.resource.binaryBasePath, "youtube-dl").toString()) && it.endsWith(url)
+                it.contains(Paths.get(Environment.resource.binaryBasePath, "yt-dlp").toString()) && it.endsWith(url)
             })
         }
 
@@ -112,7 +112,7 @@ class YoutubeDlTaskTest {
         val type = YoutubeDlTask.YoutubeDlDownload.BEST_VIDEO
         val context = youtubeDlTask.createContext(mapOf("url" to url, "type" to type.toString()))
 
-        val binaryName = "youtube-dl${if (SystemUtils.IS_OS_WINDOWS) ".exe" else ""}"
+        val binaryName = "yt-dlp${if (SystemUtils.IS_OS_WINDOWS) ".exe" else ""}"
         val binaryPath = Paths.get(Environment.resource.binaryBasePath, binaryName)
         FileUtils.writeToFile(binaryPath, byteArrayOf(1, 2, 3))
 

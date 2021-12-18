@@ -40,7 +40,7 @@ class YoutubeDlResolverTest {
 
     @Test
     fun testBinaryAlreadyExists() = runBlocking {
-        val binaryName = "youtube-dl${if (SystemUtils.IS_OS_WINDOWS) ".exe" else ""}"
+        val binaryName = "yt-dlp${if (SystemUtils.IS_OS_WINDOWS) ".exe" else ""}"
         val binaryPath = Paths.get(Environment.resource.binaryBasePath, binaryName)
         FileUtils.writeToFile(binaryPath, byteArrayOf(1, 2, 3))
 

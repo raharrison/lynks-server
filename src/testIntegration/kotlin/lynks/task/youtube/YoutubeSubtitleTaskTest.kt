@@ -102,7 +102,7 @@ class YoutubeSubtitleTaskTest {
         verify(exactly = 1) {
             ExecUtils.executeCommand(match {
                 it.contains(
-                    Paths.get(Environment.resource.binaryBasePath, "youtube-dl").toString()
+                    Paths.get(Environment.resource.binaryBasePath, "yt-dlp").toString()
                 ) && it.endsWith(link.url)
             })
         }
@@ -125,7 +125,7 @@ class YoutubeSubtitleTaskTest {
 
     @Test
     fun testProcessBadResult() {
-        val binaryName = "youtube-dl${if (SystemUtils.IS_OS_WINDOWS) ".exe" else ""}"
+        val binaryName = "yt-dlp${if (SystemUtils.IS_OS_WINDOWS) ".exe" else ""}"
         val binaryPath = Paths.get(Environment.resource.binaryBasePath, binaryName)
         FileUtils.writeToFile(binaryPath, byteArrayOf(1, 2, 3))
 
