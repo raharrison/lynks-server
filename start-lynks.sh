@@ -1,3 +1,3 @@
 #!/bin/bash
 
-docker-compose up --env-file ./config/.env "$@"
+docker-compose --env-file ./config/.env up "$@"
