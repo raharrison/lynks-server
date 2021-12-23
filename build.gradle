@@ -11,7 +11,7 @@ buildscript {
     ext.flexmark_version = '0.62.2'
     ext.handlebars_version = '4.3.0'
     ext.commons_email_version = '1.5'
-    ext.logback_version = '1.2.8'
+    ext.logback_version = '1.2.10'
     ext.konf_version = '1.1.2'
     ext.commonslang_version = '3.12.0'
     ext.skedule_version = '0.4.0'
