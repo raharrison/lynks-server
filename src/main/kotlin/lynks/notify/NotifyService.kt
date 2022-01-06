@@ -1,6 +1,7 @@
 package lynks.notify
 
 import io.ktor.http.cio.websocket.*
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.SendChannel
 import lynks.common.Environment
 import lynks.user.UserService
@@ -15,6 +16,7 @@ class NotifyService(private val userService: UserService) {
 
     private val notifiers = ConcurrentHashMap.newKeySet<SendChannel<Frame>>()
 
+    @ExperimentalCoroutinesApi
     suspend fun accept(notify: Notification, body: Any?) {
         log.info("Accepting ${notify.type} notification: ${notify.message}")
         notifiers.forEach {

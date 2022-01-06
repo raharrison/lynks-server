@@ -11,6 +11,7 @@ import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.coroutines.CoroutineContext
 
 abstract class Worker<T>(
@@ -21,7 +22,7 @@ abstract class Worker<T>(
     protected val log: Logger = LoggerFactory.getLogger(this::class.java)
 
     var runner: CoroutineContext = Dispatchers.Default
-    private val supervisor = SupervisorJob()
+    protected val supervisor = SupervisorJob()
 
     protected open suspend fun beforeWork() {
     }
@@ -72,7 +73,7 @@ abstract class VariableChannelBasedWorker<T : VariableWorkerRequest>(
 ) :
     ChannelBasedWorker<T>(notifyService, entryAuditService) {
 
-    private val jobs = mutableMapOf<T, Job?>()
+    private val jobs = ConcurrentHashMap<T, Job?>()
 
     private fun launch(request: T) = super.onChannelReceive(request).also {
         jobs[request] = it
@@ -94,8 +95,16 @@ abstract class VariableChannelBasedWorker<T : VariableWorkerRequest>(
         }
     }
 
+    fun cancelAll() {
+        jobs.values.forEach { it?.cancel() }
+        supervisor.cancel()
+    }
+
     override fun onWorkerFinished(request: T) {
-        jobs.remove(request)
+        // only remove if it exactly matches the original request
+        jobs.keys.find { it === request }?.let {
+            jobs.remove(request)
+        }
     }
 }
 

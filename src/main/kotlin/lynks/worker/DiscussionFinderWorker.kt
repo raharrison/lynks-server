@@ -16,6 +16,8 @@ import java.time.Instant
 data class DiscussionFinderWorkerRequest(val linkId: String, val intervalIndex: Int = -1) :
     PersistVariableWorkerRequest() {
     override val key = linkId
+    override fun hashCode() = key.hashCode()
+    override fun equals(other: Any?) = other is DiscussionFinderWorkerRequest && other.key == key
 }
 
 class DiscussionFinderWorker(

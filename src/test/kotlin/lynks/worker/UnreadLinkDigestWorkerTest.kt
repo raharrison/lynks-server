@@ -3,8 +3,10 @@ package lynks.worker
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.test.TestCoroutineContext
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.test.runTest
 import lynks.common.Link
 import lynks.entry.EntryAuditService
 import lynks.entry.LinkService
@@ -15,6 +17,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.util.concurrent.TimeUnit
 
+@ExperimentalCoroutinesApi
 class UnreadLinkDigestWorkerTest {
 
     private val userService = mockk<UserService>()
@@ -22,54 +25,54 @@ class UnreadLinkDigestWorkerTest {
     private val notifyService = mockk<NotifyService>(relaxUnitFun = true)
     private val entryAuditService = mockk<EntryAuditService>(relaxUnitFun = true)
 
-    private val context = TestCoroutineContext()
-
     @BeforeEach
     fun before() {
         every { linkService.getUnread() } returns listOf(Link("id", "title", "url", "src", "", 0, 0))
     }
 
     @Test
-    fun testNotEnabled() = runBlocking(context) {
+    fun testNotEnabled() = runTest {
         every { userService.currentUserPreferences } returns Preferences(digest = false)
         val worker = UnreadLinkDigestWorker(linkService, userService, notifyService, entryAuditService)
-                .apply { runner = context }.worker()
-        worker.close()
-
-        context.triggerActions()
+                .apply { runner = this@runTest.coroutineContext }
+        val send = worker.worker()
+        runCurrent()
         verify(exactly = 0) { notifyService.sendEmail(any(), any()) }
+        send.close()
+        worker.cancelAll()
     }
 
     @Test
-    fun testCreateFromStartup() = runBlocking(context) {
+    fun testCreateFromStartup() = runTest {
         every { userService.currentUserPreferences } returns Preferences(digest = true)
         val worker = UnreadLinkDigestWorker(linkService, userService, notifyService, entryAuditService)
-                .apply { runner = context }.worker()
-        context.triggerActions() // to get to initial delay
+                .apply { runner = this@runTest.coroutineContext }
+        val send = worker.worker()
+        runCurrent()
 
-        context.advanceTimeBy(8, TimeUnit.DAYS)
-        context.triggerActions()
+        advanceTimeBy(TimeUnit.DAYS.toMillis(8))
 
-        worker.close()
         verify { linkService.getUnread() }
         verify { notifyService.sendEmail(any(), any()) }
+        send.close()
+        worker.cancelAll()
     }
 
     @Test
-    fun testOverrideWithNewPreferences()= runBlocking(context) {
+    fun testOverrideWithNewPreferences()= runTest {
         every { userService.currentUserPreferences } returns Preferences(digest = true)
         val worker = UnreadLinkDigestWorker(linkService, userService, notifyService, entryAuditService)
-                .apply { runner = context }.worker()
-        context.triggerActions() // to get to initial delay
+                .apply { runner = this@runTest.coroutineContext }
+        val send = worker.worker()
+        runCurrent()
 
-        worker.send(UnreadLinkDigestWorkerRequest(Preferences(digest = false)))
-        context.triggerActions()
+        send.send(UnreadLinkDigestWorkerRequest(Preferences(digest = false)))
 
-        context.advanceTimeBy(7, TimeUnit.DAYS)
-        context.triggerActions()
+        advanceTimeBy(TimeUnit.DAYS.toMillis(7))
 
-        worker.close()
         verify(exactly = 0) { notifyService.sendEmail(any(), any()) }
+        send.close()
+        worker.cancelAll()
     }
 
 }

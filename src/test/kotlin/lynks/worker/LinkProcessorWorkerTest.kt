@@ -2,11 +2,12 @@ package lynks.worker
 
 import io.mockk.*
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runTest
 import lynks.common.DEAD_LINK_PROP
 import lynks.common.Environment
 import lynks.common.Link
-import lynks.common.TestCoroutineContext
 import lynks.entry.EntryAuditService
 import lynks.entry.LinkService
 import lynks.group.Collection
@@ -29,6 +30,7 @@ import java.nio.file.Files
 import java.nio.file.Paths
 import java.util.*
 
+@ExperimentalCoroutinesApi
 class LinkProcessorWorkerTest {
 
     private val readableTextContentPath = Paths.get(Environment.resource.resourceTempPath, "readable_text.txt")
@@ -52,7 +54,7 @@ class LinkProcessorWorkerTest {
     @Nested
     inner class Persist {
         @Test
-        fun testDefaultPersistAllTypes() = runBlocking(TestCoroutineContext()) {
+        fun testDefaultPersistAllTypes() = runTest {
             val link = Link("id1", "title", "google.com", "google.com", "", 100, 100)
             val resourceSet = ResourceType.linkBaseline()
             val content = "article content"
@@ -83,8 +85,9 @@ class LinkProcessorWorkerTest {
             every { linkService.update(link) } returns link
             every { linkService.mergeProps(eq("id1"), any()) } just Runs
 
-            val channel = worker.apply { runner = this@runBlocking.coroutineContext }.worker()
+            val channel = worker.apply { runner = this@runTest.coroutineContext }.worker()
             channel.send(PersistLinkProcessingRequest(link, resourceSet, true))
+            advanceUntilIdle()
             channel.close()
 
             coVerify(exactly = 1) { processorFactory.createProcessors(link.url) }
@@ -99,7 +102,7 @@ class LinkProcessorWorkerTest {
         }
 
         @Test
-        fun testDefaultPersistSingleType() = runBlocking(TestCoroutineContext()) {
+        fun testDefaultPersistSingleType() = runTest {
             val link = Link("id1", "title", "google.com", "google.com", "", 100, 100)
             val resourceSet = EnumSet.of(ResourceType.SCREENSHOT)
 
@@ -119,8 +122,9 @@ class LinkProcessorWorkerTest {
             every { linkService.update(link) } returns link
             every { linkService.mergeProps(eq("id1"), any()) } just Runs
 
-            val channel = worker.apply { runner = this@runBlocking.coroutineContext }.worker()
+            val channel = worker.apply { runner = this@runTest.coroutineContext }.worker()
             channel.send(PersistLinkProcessingRequest(link, resourceSet, true))
+            advanceUntilIdle()
             channel.close()
 
             coVerify(exactly = 1) { processorFactory.createProcessors(link.url) }
@@ -134,7 +138,7 @@ class LinkProcessorWorkerTest {
         }
 
         @Test
-        fun testDefaultPersistNoProcessFlag() = runBlocking(TestCoroutineContext()) {
+        fun testDefaultPersistNoProcessFlag() = runTest {
             val link = Link("id1", "title", "google.com", "google.com", "", 100, 100)
 
             val processor = mockk<LinkProcessor>(relaxUnitFun = true)
@@ -147,8 +151,9 @@ class LinkProcessorWorkerTest {
             every { linkService.mergeProps(eq("id1"), any()) } just Runs
             every { resourceManager.deleteTempFiles(link.url) } just Runs
 
-            val channel = worker.apply { runner = this@runBlocking.coroutineContext }.worker()
+            val channel = worker.apply { runner = this@runTest.coroutineContext }.worker()
             channel.send(PersistLinkProcessingRequest(link, ResourceType.linkBaseline(), false))
+            advanceUntilIdle()
             channel.close()
 
             coVerify(exactly = 1) { processorFactory.createProcessors(link.url) }
@@ -162,7 +167,7 @@ class LinkProcessorWorkerTest {
         }
 
         @Test
-        fun testDefaultPersistNoResourceTypes() = runBlocking(TestCoroutineContext()) {
+        fun testDefaultPersistNoResourceTypes() = runTest {
             val link = Link("id1", "title", "google.com", "google.com", "", 100, 100)
 
             val processor = mockk<LinkProcessor>(relaxUnitFun = true)
@@ -172,8 +177,9 @@ class LinkProcessorWorkerTest {
             every { linkService.mergeProps(eq("id1"), any()) } just Runs
             every { resourceManager.deleteTempFiles(link.url) } just Runs
 
-            val channel = worker.apply { runner = this@runBlocking.coroutineContext }.worker()
+            val channel = worker.apply { runner = this@runTest.coroutineContext }.worker()
             channel.send(PersistLinkProcessingRequest(link, EnumSet.noneOf(ResourceType::class.java), true))
+            advanceUntilIdle()
             channel.close()
 
             coVerify(exactly = 1) { processorFactory.createProcessors(link.url) }
@@ -187,7 +193,7 @@ class LinkProcessorWorkerTest {
         }
 
         @Test
-        fun testDefaultPersistCompletedExceptionally() = runBlocking(TestCoroutineContext()) {
+        fun testDefaultPersistCompletedExceptionally() = runTest {
             val link = Link("id1", "title", "google.com", "google.com", "", 100, 100)
 
             val exception = RuntimeException("error during computation")
@@ -201,8 +207,9 @@ class LinkProcessorWorkerTest {
             every { linkService.mergeProps(eq("id1"), any()) } just Runs
             every { resourceManager.deleteTempFiles(link.url) } just Runs
 
-            val channel = worker.apply { runner = this@runBlocking.coroutineContext }.worker()
+            val channel = worker.apply { runner = this@runTest.coroutineContext }.worker()
             channel.send(PersistLinkProcessingRequest(link, ResourceType.linkBaseline(), true))
+            advanceUntilIdle()
             channel.close()
 
             coVerify(exactly = 1) { processorFactory.createProcessors(link.url) }
@@ -220,7 +227,7 @@ class LinkProcessorWorkerTest {
     @Nested
     inner class Suggest {
         @Test
-        fun testDefaultSuggest() = runBlocking(TestCoroutineContext()) {
+        fun testDefaultSuggest() = runTest {
             val url = "google.com"
             val resourceSet = EnumSet.of(ResourceType.PREVIEW, ResourceType.THUMBNAIL, ResourceType.READABLE_TEXT)
             val processor = mockk<LinkProcessor>(relaxUnitFun = true)
@@ -252,8 +259,9 @@ class LinkProcessorWorkerTest {
             coEvery { processorFactory.createProcessors(url) } returns listOf(processor)
 
             val deferred = CompletableDeferred<Suggestion>()
-            val channel = worker.apply { runner = this@runBlocking.coroutineContext }.worker()
+            val channel = worker.apply { runner = this@runTest.coroutineContext }.worker()
             channel.send(SuggestLinkProcessingRequest(url, deferred))
+            advanceUntilIdle()
             channel.close()
 
             val suggestion = deferred.await()
@@ -273,7 +281,7 @@ class LinkProcessorWorkerTest {
         }
 
         @Test
-        fun testSuggestCompletedExceptionally() = runBlocking(TestCoroutineContext()) {
+        fun testSuggestCompletedExceptionally() = runTest {
             val url = "google.com"
 
             val processor = mockk<LinkProcessor>(relaxUnitFun = true)
@@ -285,8 +293,9 @@ class LinkProcessorWorkerTest {
             coEvery { processorFactory.createProcessors(url) } returns listOf(processor)
 
             val deferred = CompletableDeferred<Suggestion>()
-            val channel = worker.apply { runner = this@runBlocking.coroutineContext }.worker()
+            val channel = worker.apply { runner = this@runTest.coroutineContext }.worker()
             channel.send(SuggestLinkProcessingRequest(url, deferred))
+            advanceUntilIdle()
             channel.close()
 
             assertThat(deferred.getCompletionExceptionOrNull()?.message).isEqualTo(exception.message)
@@ -300,7 +309,7 @@ class LinkProcessorWorkerTest {
     @Nested
     inner class ActiveCheck {
         @Test
-        fun testDefaultActiveCheck() = runBlocking(TestCoroutineContext()) {
+        fun testDefaultActiveCheck() = runTest {
             val url = "google.com"
 
             val processor = mockk<LinkProcessor>(relaxUnitFun = true)
@@ -309,8 +318,9 @@ class LinkProcessorWorkerTest {
             coEvery { processorFactory.createProcessors(url) } returns listOf(processor)
 
             val deferred = CompletableDeferred<Boolean>()
-            val channel = worker.apply { runner = this@runBlocking.coroutineContext }.worker()
+            val channel = worker.apply { runner = this@runTest.coroutineContext }.worker()
             channel.send(ActiveLinkCheckingRequest(url, deferred))
+            advanceUntilIdle()
             channel.close()
 
             val active = deferred.await()
@@ -321,7 +331,7 @@ class LinkProcessorWorkerTest {
         }
 
         @Test
-        fun testDefaultActiveCheckFoundDeadLink() = runBlocking(TestCoroutineContext()) {
+        fun testDefaultActiveCheckFoundDeadLink() = runTest {
             val url = "google.com"
 
             val processor = mockk<LinkProcessor>(relaxUnitFun = true)
@@ -333,8 +343,9 @@ class LinkProcessorWorkerTest {
             coEvery { processorFactory.createProcessors(url) } returns listOf(processor)
 
             val deferred = CompletableDeferred<Boolean>()
-            val channel = worker.apply { runner = this@runBlocking.coroutineContext }.worker()
+            val channel = worker.apply { runner = this@runTest.coroutineContext }.worker()
             channel.send(ActiveLinkCheckingRequest(url, deferred))
+            advanceUntilIdle()
             channel.close()
 
             val active = deferred.await()

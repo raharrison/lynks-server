@@ -2,8 +2,11 @@ package lynks.worker
 
 import io.mockk.every
 import io.mockk.mockk
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.test.TestCoroutineContext
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.channels.trySendBlocking
+import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.test.runTest
 import lynks.common.Environment
 import lynks.entry.EntryAuditService
 import lynks.notify.NotifyService
@@ -19,8 +22,8 @@ import java.nio.file.attribute.BasicFileAttributeView
 import java.nio.file.attribute.FileTime
 import java.time.Instant
 import java.time.temporal.ChronoUnit
-import java.util.concurrent.TimeUnit
 
+@ExperimentalCoroutinesApi
 class TempFileCleanupWorkerTest {
 
     private val oldFile = Paths.get(Environment.resource.resourceTempPath, "e1", "f1")
@@ -55,39 +58,42 @@ class TempFileCleanupWorkerTest {
         Files.createFile(newFile)
     }
 
-    private val context = TestCoroutineContext()
-
     @Test
-    fun testWorkerRemovesOldFilesOnStartupAfterInitialDelay() = runBlocking(context) {
+    fun testWorkerRemovesOldFilesOnStartupAfterInitialDelay() = runTest {
         val worker = TempFileCleanupWorker(userService, notifyService, entryAuditService)
-            .apply { runner = context }.worker()
+            .apply { runner = this@runTest.coroutineContext }
+        worker.worker()
 
-        context.advanceTimeBy(6, TimeUnit.HOURS)
-        worker.close()
+        advanceTimeBy(6 * 1000 * 60 * 60)
+        runCurrent()
 
         assertThat(Files.exists(newFile)).isTrue()
         assertThat(Files.exists(oldFile)).isFalse()
-        Unit
+
+        worker.cancelAll()
     }
 
     @Test
-    fun testOverrideDefaultTimeout() = runBlocking(context) {
+    fun testOverrideDefaultTimeout() = runTest {
         val worker = TempFileCleanupWorker(userService, notifyService, entryAuditService)
-            .apply { runner = context }.worker()
-        context.triggerActions() // initial trigger
+            .apply { runner = this@runTest.coroutineContext }
+        val send = worker.worker()
+        runCurrent()
 
-        worker.offer(TempFileCleanupWorkerRequest(Preferences(tempFileCleanInterval = 2)))
+        send.trySendBlocking(TempFileCleanupWorkerRequest(Preferences(tempFileCleanInterval = 2)))
 
         createTempFiles() // recreate files
         assertThat(Files.exists(newFile)).isTrue()
         assertThat(Files.exists(oldFile)).isTrue()
 
-        context.advanceTimeBy(2, TimeUnit.HOURS)
-        worker.close()
+        advanceTimeBy(2 * 1000 * 60 * 60)
+        runCurrent()
 
         assertThat(Files.exists(newFile)).isTrue()
         assertThat(Files.exists(oldFile)).isFalse()
-        Unit
+
+        worker.cancelAll()
+        send.close()
     }
 
 }
