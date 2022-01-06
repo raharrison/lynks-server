@@ -47,7 +47,7 @@ fun Application.module() {
         }
     }
 
-    when(Environment.mode) {
+    when (Environment.mode) {
         ConfigMode.TEST -> installTestFeatures()
         ConfigMode.DEV -> installDevFeatures()
         ConfigMode.PROD -> installProdFeatures()
@@ -115,6 +115,7 @@ fun Application.installDevFeatures() {
 }
 
 fun Application.installProdFeatures() {
+    install(CallLogging)
     install(Compression) {
         gzip()
     }
