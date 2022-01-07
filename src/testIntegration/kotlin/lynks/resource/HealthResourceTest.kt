@@ -15,4 +15,12 @@ class HealthResourceTest: ServerTest() {
                 .body("status", equalTo("ok"))
     }
 
+    @Test
+    fun testInfo() {
+        get("/info")
+            .then()
+            .statusCode(200)
+            .body("version", equalTo(""))
+    }
+
 }

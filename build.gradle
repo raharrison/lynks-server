@@ -29,6 +29,8 @@ plugins {
     id 'org.jetbrains.kotlin.jvm' version '1.6.10'
 }
 
+version = "1.0.1"
+
 sourceSets {
     testIntegration {
         java.srcDir 'src/testIntegration/java'
@@ -47,11 +49,16 @@ task testIntegration(type: Test) {
     classpath = sourceSets.testIntegration.runtimeClasspath
 }
 
-//compileTestKotlin {
-//    kotlinOptions {
-//        freeCompilerArgs += '-Xopt-in=kotlin.RequiresOptIn'
-//    }
-//}
+task createProperties() {
+    doLast {
+        def file = new File("$buildDir/resources/main/version.txt")
+        file.getParentFile().mkdirs()
+        file.text = project.version.toString()
+    }
+}
+classes {
+    dependsOn createProperties
+}
 
 repositories {
     mavenCentral()

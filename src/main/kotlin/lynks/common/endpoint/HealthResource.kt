@@ -12,4 +12,9 @@ fun Route.health() {
         call.respond(ok)
     }
 
+    get("/info") {
+        val version = this.javaClass.getResource("/version.txt").readText()
+        call.respond(mapOf("version" to version))
+    }
+
 }
