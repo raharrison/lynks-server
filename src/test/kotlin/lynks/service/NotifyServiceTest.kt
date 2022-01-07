@@ -3,6 +3,7 @@ package lynks.service
 import com.fasterxml.jackson.module.kotlin.readValue
 import io.ktor.http.cio.websocket.*
 import io.mockk.*
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.runBlocking
 import lynks.notify.Notification
@@ -12,6 +13,7 @@ import lynks.util.JsonMapper
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
+@ExperimentalCoroutinesApi
 class NotifyServiceTest {
 
     private val notifyService = NotifyService(UserService())

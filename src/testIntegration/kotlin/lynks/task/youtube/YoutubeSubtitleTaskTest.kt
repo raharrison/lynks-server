@@ -50,7 +50,6 @@ class YoutubeSubtitleTaskTest {
     @Test
     fun testContextConstruct() {
         val context = youtubeSubtitleTask.createContext(emptyMap())
-        assertThat(context.input).isEmpty()
         assertThat(context).isOfAnyClassIn(TaskContext::class.java)
     }
 
@@ -58,7 +57,7 @@ class YoutubeSubtitleTaskTest {
     fun testBuilder() {
         val builder = YoutubeSubtitleTask.build()
         assertThat(builder.clazz).isEqualTo(YoutubeSubtitleTask::class)
-        assertThat(builder.context.input).isEmpty()
+        assertThat(builder.params).isEmpty()
     }
 
     @Test

@@ -1,6 +1,8 @@
 package lynks.task
 
 import lynks.common.TaskDefinition
+import lynks.common.TaskParameterType
+import lynks.common.exception.InvalidModelException
 import lynks.common.inject.Inject
 import lynks.common.inject.ServiceProvider
 import lynks.entry.EntryService
@@ -20,12 +22,13 @@ class TaskService(private val entryService: EntryService,
 
     private val log = loggerFor<TaskService>()
 
-    fun runTask(eid: String, taskId: String): Boolean {
+    fun runTask(eid: String, taskId: String, params: Map<String, String>): Boolean {
         entryService.get(eid)?.let { it ->
             it.props.getTask(taskId)?.let {
                 val task = convertToConcreteTask(taskId, eid, it)
                 log.info("Submitting task work request for entry={} task={}", eid, taskId)
-                workerRegistry.acceptTaskWork(task, task.createContext(it.input))
+                val taskParams = formTaskParams(it, params)
+                workerRegistry.acceptTaskWork(task, task.createContext(taskParams))
                 return true
             }
         }
@@ -53,6 +56,20 @@ class TaskService(private val entryService: EntryService,
                 }
             }
         }
+    }
+
+    private fun formTaskParams(task: TaskDefinition, params: Map<String, String>): Map<String, String> {
+        val taskParams = mutableMapOf<String, String>()
+        task.params.forEach {
+            if(it.type == TaskParameterType.STATIC) {
+                taskParams[it.name] = it.value!!
+            } else if (it.type == TaskParameterType.ENUM && it.options?.contains(params[it.name]) == false) {
+                throw InvalidModelException("Invalid value supplied for param '${it.name}'")
+            } else {
+                taskParams[it.name] = params[it.name] ?: throw InvalidModelException("'${it.name}' is required parameter for task")
+            }
+        }
+        return taskParams
     }
 
 }

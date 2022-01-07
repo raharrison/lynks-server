@@ -22,7 +22,6 @@ class DiscussionFinderTaskTest {
     @Test
     fun testContextConstruct() {
         val context = discussionFinderTask.createContext(emptyMap())
-        assertThat(context.input).isEmpty()
         assertThat(context).isOfAnyClassIn(TaskContext::class.java)
     }
 
@@ -30,7 +29,7 @@ class DiscussionFinderTaskTest {
     fun testBuilder() {
         val builder = DiscussionFinderTask.build()
         assertThat(builder.clazz).isEqualTo(DiscussionFinderTask::class)
-        assertThat(builder.context.input).isEmpty()
+        assertThat(builder.params).isEmpty()
     }
 
     @Test

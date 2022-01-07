@@ -102,11 +102,11 @@ class YoutubeSubtitleTask(id: String, entryId: String) : Task<TaskContext>(id, e
         }
     }
 
-    override fun createContext(input: Map<String, String>) = TaskContext(input)
+    override fun createContext(params: Map<String, String>) = TaskContext(params)
 
     companion object {
         fun build(): TaskBuilder {
-            return TaskBuilder(YoutubeSubtitleTask::class, TaskContext())
+            return TaskBuilder(YoutubeSubtitleTask::class)
         }
     }
 

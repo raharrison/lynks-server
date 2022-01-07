@@ -1,9 +1,10 @@
 package lynks.model
 
 import lynks.common.BaseProperties
+import lynks.common.TaskParameter
+import lynks.common.TaskParameterType
 import lynks.task.Task
 import lynks.task.TaskBuilder
-import lynks.task.TaskContext
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
@@ -12,10 +13,10 @@ class PropertiesTest {
     @Test
     fun testAddTask() {
         val props = BaseProperties()
-        val builder = TaskBuilder(Task::class, TaskContext())
+        val builder = TaskBuilder(Task::class)
         val def = props.addTask("desc", builder)
         val task = props.getTask(def.id)
-        assertThat(task?.input).isEmpty()
+        assertThat(task?.params).isEmpty()
         assertThat(task?.description).isEqualTo("desc")
         assertThat(task?.className).isEqualTo(Task::class.qualifiedName)
     }
@@ -23,7 +24,7 @@ class PropertiesTest {
     @Test
     fun testGetNoTask() {
         val props = BaseProperties()
-        props.addTask("desc", TaskBuilder(Task::class, TaskContext()))
+        props.addTask("desc", TaskBuilder(Task::class))
         val task = props.getTask("invalid")
         assertThat(task).isNull()
     }
@@ -31,10 +32,10 @@ class PropertiesTest {
     @Test
     fun testClearTasks() {
         val props = BaseProperties()
-        val def1 = props.addTask("desc1", TaskBuilder(Task::class, TaskContext()))
+        val def1 = props.addTask("desc1", TaskBuilder(Task::class))
         assertThat(props.getTask(def1.id)).isNotNull
         props.clearTasks()
-        val def2 = props.addTask("desc2", TaskBuilder(Task::class, TaskContext()))
+        val def2 = props.addTask("desc2", TaskBuilder(Task::class))
         assertThat(props.getTask(def1.id)).isNull()
         assertThat(props.getTask(def2.id)).isNotNull
     }
@@ -42,15 +43,15 @@ class PropertiesTest {
     @Test
     fun testAddDuplicateTaskOverwrites() {
         val props = BaseProperties()
-        val def = props.addTask("desc", TaskBuilder(Task::class, TaskContext()))
+        val def = props.addTask("desc", TaskBuilder(Task::class))
         val task = props.getTask(def.id)
         assertThat(task).isNotNull
 
-        val builder = TaskBuilder(Task::class, TaskContext(mapOf("1" to "one")))
+        val builder = TaskBuilder(Task::class, listOf(TaskParameter("p1", TaskParameterType.TEXT)))
         val def2 = props.addTask("desc", builder)
         val task2 = props.getTask(def2.id)
         assertThat(task2?.description).isEqualTo("desc")
-        assertThat(task2?.input).hasSize(1).isEqualTo(builder.context.input)
+        assertThat(task2?.params).hasSize(1).containsExactlyElementsOf(builder.params)
     }
 
     @Test
@@ -72,12 +73,12 @@ class PropertiesTest {
         val props1 = BaseProperties()
         props1.addAttribute("attr1", "val1")
         props1.addAttribute("attr2", "val2")
-        val t1 = props1.addTask("desc1", TaskBuilder(Task::class, TaskContext(mapOf("1" to "one"))))
+        val t1 = props1.addTask("desc1", TaskBuilder(Task::class))
 
         val props2 = BaseProperties()
         props2.addAttribute("attr2", "updated")
         props2.addAttribute("attr3", "val3")
-        val t2 = props2.addTask("desc2", TaskBuilder(Task::class, TaskContext(mapOf("2" to "two"))))
+        val t2 = props2.addTask("desc2", TaskBuilder(Task::class))
 
         val merged = props1.merge(props2)
         assertThat(merged.getAttribute("attr1")).isEqualTo("val1")

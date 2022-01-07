@@ -9,7 +9,9 @@ class TaskContextTest {
     fun testCreation() {
         val input = mapOf("one" to "1", "two" to "2")
         val context = TaskContext(input)
-        assertThat(context.input).isEqualTo(input)
+        assertThat(context.param("one")).isEqualTo("1")
+        assertThat(context.param("two")).isEqualTo("2")
+        assertThat(context.optParam("three")).isNull()
     }
 
     @Test

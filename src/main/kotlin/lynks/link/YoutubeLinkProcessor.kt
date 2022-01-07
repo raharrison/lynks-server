@@ -139,16 +139,12 @@ class YoutubeLinkProcessor(
     override suspend fun enrich(props: BaseProperties) {
         super.enrich(props)
         props.addAttribute("embedUrl", embedUrl())
-        addYoutubeDlTasks(url, props)
+        addYoutubeDlTasks(props)
     }
 
-    private fun addYoutubeDlTasks(url: String, props: BaseProperties) {
-        props.addTask("Download Audio", YoutubeDlTask.build(url, YoutubeDlTask.YoutubeDlDownload.BEST_AUDIO))
-        props.addTask("Download Video (max 720p)", YoutubeDlTask.build(url, YoutubeDlTask.YoutubeDlDownload.BEST_VIDEO))
-        props.addTask(
-            "Download Video (max 1080p)",
-            YoutubeDlTask.build(url, YoutubeDlTask.YoutubeDlDownload.BEST_VIDEO_TRANSCODE)
-        )
+    private fun addYoutubeDlTasks(props: BaseProperties) {
+        props.addTask("Download Video", YoutubeDlTask.build())
+        props.addTask("Download Audio", YoutubeDlTask.build())
         props.addTask("Download Subtitles", YoutubeSubtitleTask.build())
     }
 }

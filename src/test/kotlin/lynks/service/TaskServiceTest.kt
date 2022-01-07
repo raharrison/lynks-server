@@ -1,9 +1,8 @@
 package lynks.service
 
 import io.mockk.*
-import lynks.common.BaseProperties
-import lynks.common.Link
-import lynks.common.TaskDefinition
+import lynks.common.*
+import lynks.common.exception.InvalidModelException
 import lynks.common.inject.ServiceProvider
 import lynks.entry.EntryService
 import lynks.entry.LinkService
@@ -33,16 +32,25 @@ class TaskServiceTest {
     @Test
     fun testRunValidTask() {
         val props = BaseProperties()
-        props.addTask(TaskDefinition("task1", "description", LinkProcessingTask::class.qualifiedName!!, mapOf("k1" to "v1")))
+        props.addTask(
+            TaskDefinition(
+                "task1", "description", LinkProcessingTask::class.qualifiedName!!,
+                listOf(
+                    TaskParameter("p1", TaskParameterType.STATIC, value = "v1"),
+                    TaskParameter("p2", TaskParameterType.TEXT),
+                    TaskParameter("p3", TaskParameterType.ENUM, options = setOf("e1", "e2"))
+                )
+            )
+        )
         val entry = Link("entry1", "title", "google.com", "src", "", 1234, 1234L, emptyList(), emptyList(), props)
         every { entryService.get("entry1") } returns entry
         every { workerRegistry.acceptTaskWork(any(), any()) } just Runs
 
-        val res = taskService.runTask("entry1", "task1")
+        val res = taskService.runTask("entry1", "task1", mapOf("p1" to "v3", "p2" to "v2", "p3" to "e2"))
 
         assertThat(res).isTrue()
 
-        val context = LinkProcessingTask.LinkProcessingTaskContext(mapOf("k1" to "v1"))
+        val context = LinkProcessingTask.LinkProcessingTaskContext(mapOf("p1" to "v1", "p2" to "v2", "p3" to "e2"))
         verify(exactly = 1) { entryService.get("entry1") }
         verify { workerRegistry.acceptTaskWork(match {
             if(it::class == LinkProcessingTask::class) {
@@ -58,9 +66,44 @@ class TaskServiceTest {
     }
 
     @Test
+    fun testRunTaskRequiredParamMissing() {
+        val props = BaseProperties()
+        props.addTask(
+            TaskDefinition(
+                "task1", "description", LinkProcessingTask::class.qualifiedName!!,
+                listOf(
+                    TaskParameter("p1", TaskParameterType.STATIC, value = "v1"),
+                    TaskParameter("p2", TaskParameterType.TEXT)
+                )
+            )
+        )
+        val entry = Link("entry1", "title", "google.com", "src", "", 1234, 1234L, emptyList(), emptyList(), props)
+        every { entryService.get("entry1") } returns entry
+
+        assertThrows<InvalidModelException> { taskService.runTask("entry1", "task1", emptyMap()) }
+    }
+
+    @Test
+    fun testRunTaskInvalidEnumParam() {
+        val props = BaseProperties()
+        props.addTask(
+            TaskDefinition(
+                "task1", "description", LinkProcessingTask::class.qualifiedName!!,
+                listOf(
+                    TaskParameter("p1", TaskParameterType.ENUM, options = setOf("v1", "v2"))
+                )
+            )
+        )
+        val entry = Link("entry1", "title", "google.com", "src", "", 1234, 1234L, emptyList(), emptyList(), props)
+        every { entryService.get("entry1") } returns entry
+
+        assertThrows<InvalidModelException> { taskService.runTask("entry1", "task1", mapOf("p1" to "invalid")) }
+    }
+
+    @Test
     fun testNoEntryReturnsFalse() {
         every { entryService.get("invalid") } returns null
-        val res = taskService.runTask("invalid", "task1")
+        val res = taskService.runTask("invalid", "task1", emptyMap())
         assertThat(res).isFalse()
         verify(exactly = 1) { entryService.get("invalid") }
     }
@@ -72,14 +115,13 @@ class TaskServiceTest {
             TaskDefinition(
                 "task1",
                 "description",
-                LinkProcessingTask::class.qualifiedName!!,
-                mapOf("k1" to "v1")
+                LinkProcessingTask::class.qualifiedName!!
             )
         )
         val entry = Link("entry1", "title", "google.com", "src", "", 1234, 1234, emptyList(), emptyList(), props)
         every { entryService.get("entry1") } returns entry
 
-        val res = taskService.runTask("entry1", "invalid")
+        val res = taskService.runTask("entry1", "invalid", emptyMap())
         assertThat(res).isFalse()
         verify(exactly = 1) { entryService.get("entry1") }
     }
@@ -87,13 +129,13 @@ class TaskServiceTest {
     @Test
     fun testRunInvalidTaskClassThrows() {
         val props = BaseProperties().apply {
-            addTask(TaskDefinition("task1", "description", TaskService::class.qualifiedName!!, mapOf("k1" to "v1")))
+            addTask(TaskDefinition("task1", "description", TaskService::class.qualifiedName!!))
         }
         val entry = Link("entry1", "title", "google.com", "src", "", 1234, 1234L, emptyList(), emptyList(), props)
         every { entryService.get("entry1") } returns entry
 
         assertThrows<IllegalArgumentException> {
-            taskService.runTask("entry1", "task1")
+            taskService.runTask("entry1", "task1", emptyMap())
         }
     }
 }

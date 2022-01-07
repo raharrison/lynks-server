@@ -8,7 +8,6 @@ import lynks.resource.ResourceType
 import lynks.worker.PersistLinkProcessingRequest
 import lynks.worker.WorkerRegistry
 import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.api.Assertions.entry
 import org.junit.jupiter.api.Test
 
 class LinkProcessingTaskTest {
@@ -24,7 +23,6 @@ class LinkProcessingTaskTest {
     @Test
     fun testContextConstructNoType() {
         val context = linkProcessingTask.createContext(emptyMap())
-        assertThat(context.input).isEmpty()
         assertThat(context).isInstanceOf(LinkProcessingTask.LinkProcessingTaskContext::class.java)
         assertThat(context.type).isNull()
     }
@@ -32,7 +30,6 @@ class LinkProcessingTaskTest {
     @Test
     fun testContextConstructWithType() {
         val context = linkProcessingTask.createContext(mapOf("type" to ResourceType.SCREENSHOT.name))
-        assertThat(context.input).hasSize(1).containsExactly(entry("type", ResourceType.SCREENSHOT.name))
         assertThat(context).isInstanceOf(LinkProcessingTask.LinkProcessingTaskContext::class.java)
         assertThat(context.type).isEqualTo(ResourceType.SCREENSHOT)
     }
@@ -41,11 +38,11 @@ class LinkProcessingTaskTest {
     fun testBuilder() {
         val builder = LinkProcessingTask.build()
         assertThat(builder.clazz).isEqualTo(LinkProcessingTask::class)
-        assertThat(builder.context.input).isEmpty()
+        assertThat(builder.params).isEmpty()
 
         val builderWithType = LinkProcessingTask.build(ResourceType.SCREENSHOT)
         assertThat(builder.clazz).isEqualTo(LinkProcessingTask::class)
-        assertThat(builderWithType.context.input).hasSize(1).containsExactly(entry("type", ResourceType.SCREENSHOT.name))
+        assertThat(builderWithType.params).hasSize(1).extracting("value").containsOnly(ResourceType.SCREENSHOT.name)
     }
 
     @Test

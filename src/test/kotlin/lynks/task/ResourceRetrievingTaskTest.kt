@@ -12,7 +12,6 @@ import lynks.resource.ResourceRetriever
 import lynks.resource.ResourceType
 import lynks.util.Result
 import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.api.Assertions.entry
 import org.junit.jupiter.api.Test
 
 class ResourceRetrievingTaskTest {
@@ -40,7 +39,7 @@ class ResourceRetrievingTaskTest {
         val name = "filename"
         val builder = ResourceRetrievingTask.build(url, name)
         assertThat(builder.clazz).isEqualTo(ResourceRetrievingTask::class)
-        assertThat(builder.context.input).contains(entry("url", url), entry("name", name))
+        assertThat(builder.params).hasSize(2).extracting("name").containsOnly("url", "name")
     }
 
     @Test

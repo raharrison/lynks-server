@@ -1,5 +1,7 @@
 package lynks.task
 
+import lynks.common.TaskParameter
+import lynks.common.TaskParameterType
 import lynks.common.inject.Inject
 import lynks.resource.ResourceManager
 import lynks.resource.ResourceRetriever
@@ -26,23 +28,25 @@ class ResourceRetrievingTask(id: String, entryId: String) :
         }
     }
 
-    override fun createContext(input: Map<String, String>): ResourceTaskContext {
-        return ResourceTaskContext(input)
+    override fun createContext(params: Map<String, String>): ResourceTaskContext {
+        return ResourceTaskContext(params)
     }
 
     companion object {
         fun build(url: String, name: String): TaskBuilder {
-            return TaskBuilder(ResourceRetrievingTask::class, ResourceTaskContext(url, name))
+            return TaskBuilder(
+                ResourceRetrievingTask::class,
+                listOf(
+                    TaskParameter("url", TaskParameterType.STATIC, value = url),
+                    TaskParameter("name", TaskParameterType.STATIC, value = name)
+                )
+            )
         }
     }
 
     class ResourceTaskContext(input: Map<String, String>) : TaskContext(input) {
-
-        constructor(url: String, name: String) : this(mapOf("url" to url, "name" to name))
-
         val url: String get() = param("url")
         val name: String get() = param("name")
-
     }
 }
 

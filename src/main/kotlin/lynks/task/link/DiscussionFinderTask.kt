@@ -21,11 +21,11 @@ class DiscussionFinderTask(id: String, entryId: String) : Task<TaskContext>(id, 
         }
     }
 
-    override fun createContext(input: Map<String, String>) = TaskContext(input)
+    override fun createContext(params: Map<String, String>) = TaskContext(params)
 
     companion object {
         fun build(): TaskBuilder {
-            return TaskBuilder(DiscussionFinderTask::class, TaskContext())
+            return TaskBuilder(DiscussionFinderTask::class)
         }
     }
 

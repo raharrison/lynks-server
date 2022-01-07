@@ -1,5 +1,7 @@
 package lynks.task.link
 
+import lynks.common.TaskParameter
+import lynks.common.TaskParameterType
 import lynks.common.inject.Inject
 import lynks.entry.LinkService
 import lynks.resource.ResourceType
@@ -26,29 +28,25 @@ class LinkProcessingTask(id: String, entryId: String) :
         }
     }
 
-    override fun createContext(input: Map<String, String>) = LinkProcessingTaskContext(input)
+    override fun createContext(params: Map<String, String>) = LinkProcessingTaskContext(params)
 
     companion object {
         fun build(): TaskBuilder {
-            return TaskBuilder(LinkProcessingTask::class, LinkProcessingTaskContext())
+            return TaskBuilder(LinkProcessingTask::class)
         }
 
         fun build(type: ResourceType): TaskBuilder {
-            return TaskBuilder(LinkProcessingTask::class, LinkProcessingTaskContext(type))
+            return TaskBuilder(LinkProcessingTask::class,
+                listOf(TaskParameter("type", TaskParameterType.STATIC, value = type.name))
+            )
         }
     }
 
     class LinkProcessingTaskContext(input: Map<String, String>) : TaskContext(input) {
-
-        constructor() : this(emptyMap())
-
-        constructor(type: ResourceType) : this(mapOf("type" to type.name))
-
         val type: ResourceType?
             get() = optParam("type")?.let {
                 ResourceType.valueOf(it)
             }
-
     }
 
 }

@@ -30,7 +30,6 @@ class LinkSummarizerTaskTest {
     @Test
     fun testContextConstruct() {
         val context = linkSummarizerTask.createContext(emptyMap())
-        assertThat(context.input).isEmpty()
         assertThat(context).isOfAnyClassIn(TaskContext::class.java)
     }
 
@@ -38,7 +37,7 @@ class LinkSummarizerTaskTest {
     fun testBuilder() {
         val builder = LinkSummarizerTask.build()
         assertThat(builder.clazz).isEqualTo(LinkSummarizerTask::class)
-        assertThat(builder.context.input).isEmpty()
+        assertThat(builder.params).isEmpty()
     }
 
     @Test

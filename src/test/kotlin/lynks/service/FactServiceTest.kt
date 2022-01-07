@@ -18,7 +18,6 @@ import lynks.resource.ResourceType
 import lynks.util.createDummyCollection
 import lynks.util.createDummyTag
 import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.data.MapEntry.entry
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -359,7 +358,7 @@ class FactServiceTest : DatabaseTest() {
     @Test
     fun testUpdatePropsTasks() {
         val added = factService.add(newFact("n1", "fact content 1"))
-        val task = TaskDefinition("t1", "description", "className", mapOf("a1" to "v1"))
+        val task = TaskDefinition("t1", "description", "className")
         added.props.addTask(task)
 
         factService.update(added)
@@ -375,14 +374,14 @@ class FactServiceTest : DatabaseTest() {
         val added = factService.add(newFact("n1", "fact content 1"))
         added.props.addAttribute("key1", "attribute1")
         added.props.addAttribute("key2", "attribute2")
-        val task = TaskDefinition("t1", "description", "className", mapOf("a1" to "v1"))
+        val task = TaskDefinition("t1", "description", "className")
         added.props.addTask(task)
         factService.update(added)
 
         val updatedProps = BaseProperties()
         updatedProps.addAttribute("key2", "updated")
         updatedProps.addAttribute("key3", "attribute3")
-        val updatedTask = TaskDefinition("t3", "description", "className", mapOf("b1" to "c1"))
+        val updatedTask = TaskDefinition("t3", "description", "className")
         updatedProps.addTask(updatedTask)
 
         factService.mergeProps(added.id, updatedProps)
@@ -396,7 +395,7 @@ class FactServiceTest : DatabaseTest() {
         assertThat(updated?.props?.tasks).hasSize(1)
         assertThat(updated?.props?.getTask("t1")).isNull()
         assertThat(updated?.props?.getTask("t3")?.description).isEqualTo("description")
-        assertThat(updated?.props?.getTask("t3")?.input).containsOnly(entry("b1", "c1"))
+        assertThat(updated?.props?.getTask("t3")?.params).isEmpty()
     }
 
     @Test

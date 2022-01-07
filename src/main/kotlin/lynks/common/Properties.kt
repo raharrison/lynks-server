@@ -34,7 +34,7 @@ open class BaseProperties {
     }
 
     fun addTask(description: String, task: TaskBuilder): TaskDefinition {
-        val definition = TaskDefinition(RandomUtils.generateUid(), description, task.clazz.qualifiedName!!, task.context.input)
+        val definition = TaskDefinition(RandomUtils.generateUid(), description, task.clazz.qualifiedName!!, task.params)
         addTask(definition)
         return definition
     }

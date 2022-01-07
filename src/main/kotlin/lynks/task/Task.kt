@@ -1,20 +1,21 @@
 package lynks.task
 
 import lynks.common.IdBasedCreatedEntity
+import lynks.common.TaskParameter
 import kotlin.reflect.KClass
 
-abstract class Task<T: TaskContext>(override val id: String, val entryId: String): IdBasedCreatedEntity {
+abstract class Task<T : TaskContext>(override val id: String, val entryId: String) : IdBasedCreatedEntity {
 
     abstract suspend fun process(context: T)
 
-    abstract fun createContext(input: Map<String, String>): T
+    abstract fun createContext(params: Map<String, String>): T
 }
 
-open class TaskContext(val input: Map<String, String> = emptyMap()) {
+open class TaskContext(private val input: Map<String, String> = emptyMap()) {
 
-    protected fun param(field: String) = input[field] ?: error("Could not find param with key: $field")
+    fun param(field: String) = input[field] ?: error("Could not find param with key: $field")
 
-    protected fun optParam(field: String) = input[field]
+    fun optParam(field: String) = input[field]
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -29,4 +30,4 @@ open class TaskContext(val input: Map<String, String> = emptyMap()) {
 
 }
 
-data class TaskBuilder(val clazz: KClass<out Task<*>>, val context: TaskContext)
+data class TaskBuilder(val clazz: KClass<out Task<*>>, val params: List<TaskParameter> = emptyList())
