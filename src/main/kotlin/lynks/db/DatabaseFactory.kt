@@ -21,9 +21,9 @@ import org.jetbrains.exposed.sql.deleteAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import javax.sql.DataSource
 
-val log = loggerFor<DatabaseFactory>()
-
 class DatabaseFactory {
+
+    private val log = loggerFor<DatabaseFactory>()
 
     var connected: Boolean = false
         private set

@@ -81,7 +81,7 @@ class NotifyServiceTest {
         val retrieved = JsonMapper.defaultMapper.readValue<Map<String, Any>>(got)
 
         assertThat(retrieved["entity"]).isEqualTo("String")
-        assertThat(retrieved["type"]).isEqualTo("EXECUTED")
+        assertThat(retrieved["type"]).isEqualTo("executed")
         assertThat(retrieved["body"]).isEqualTo("body")
         assertThat(retrieved["message"]).isEqualTo("finished")
         coVerify(exactly = 1) { channel.send(any()) }
