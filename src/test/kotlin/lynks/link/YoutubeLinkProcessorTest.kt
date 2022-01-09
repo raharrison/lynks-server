@@ -8,8 +8,8 @@ import lynks.resource.JPG
 import lynks.resource.ResourceManager
 import lynks.resource.ResourceType
 import lynks.resource.WebResourceRetriever
-import lynks.task.link.LinkProcessingTask
-import lynks.task.youtube.YoutubeDlTask
+import lynks.task.youtube.YoutubeDlAudioTask
+import lynks.task.youtube.YoutubeDlVideoTask
 import lynks.util.Result
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.entry
@@ -98,9 +98,12 @@ class YoutubeLinkProcessorTest {
         val props = BaseProperties()
         processor.enrich(props)
         assertThat(props.tasks).extracting("description")
-            .contains("Process Link", "Download Audio", "Download Video")
+            .contains("Download Audio", "Download Video")
         assertThat(props.tasks).extracting("className")
-            .contains(LinkProcessingTask::class.qualifiedName, YoutubeDlTask::class.qualifiedName)
+            .contains(
+                YoutubeDlAudioTask::class.qualifiedName,
+                YoutubeDlVideoTask::class.qualifiedName
+            )
         Unit
     }
 

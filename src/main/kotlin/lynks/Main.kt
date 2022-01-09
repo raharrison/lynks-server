@@ -30,6 +30,7 @@ import lynks.suggest.SuggestionService
 import lynks.suggest.suggest
 import lynks.task.TaskService
 import lynks.task.task
+import lynks.task.youtube.YoutubeDlRunner
 import lynks.user.UserService
 import lynks.user.user
 import lynks.util.JsonMapper.defaultMapper
@@ -72,6 +73,7 @@ fun Application.module() {
         register(CommentService(get()))
         register(ReminderService(get()))
         register(SuggestionService(get()))
+        register(YoutubeDlRunner(get(), get(), get()))
         register(TaskService(get(), this, get()))
         register(NotifyService(get()))
         workerRegistry.init(this)

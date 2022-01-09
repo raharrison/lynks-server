@@ -5,7 +5,8 @@ import com.fasterxml.jackson.databind.node.ArrayNode
 import kotlinx.coroutines.runBlocking
 import lynks.common.BaseProperties
 import lynks.resource.*
-import lynks.task.youtube.YoutubeDlTask
+import lynks.task.youtube.YoutubeDlAudioTask
+import lynks.task.youtube.YoutubeDlVideoTask
 import lynks.task.youtube.YoutubeSubtitleTask
 import lynks.util.JsonMapper
 import lynks.util.Result
@@ -13,14 +14,14 @@ import lynks.util.URLUtils
 import lynks.util.loggerFor
 import java.util.*
 
-private val log = loggerFor<YoutubeLinkProcessor>()
-
 class YoutubeLinkProcessor(
     url: String,
     webResourceRetriever: WebResourceRetriever,
     resourceManager: ResourceManager
 ) :
     LinkProcessor(url, webResourceRetriever, resourceManager) {
+
+    private val log = loggerFor<YoutubeLinkProcessor>()
 
     private val apiKey = "AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8"
     private val playerRequest = """
@@ -143,8 +144,8 @@ class YoutubeLinkProcessor(
     }
 
     private fun addYoutubeDlTasks(props: BaseProperties) {
-        props.addTask("Download Video", YoutubeDlTask.build())
-        props.addTask("Download Audio", YoutubeDlTask.build())
+        props.addTask("Download Video", YoutubeDlVideoTask.build())
+        props.addTask("Download Audio", YoutubeDlAudioTask.build())
         props.addTask("Download Subtitles", YoutubeSubtitleTask.build())
     }
 }
