@@ -141,7 +141,10 @@ class ResourceManager {
         return saveGeneratedResource(id, entryId, name, ext, ResourceType.UPLOAD, file.length())
     }
 
-    internal fun constructPath(entryId: String, id: String = RandomUtils.generateUid()): Path = Paths.get(Environment.resource.resourceBasePath, entryId, id)
+    internal fun constructPath(entryId: String, id: String = RandomUtils.generateUid()): Path {
+        val firstDir = entryId.substring(0, 1); val secondDir = entryId.substring(0, 2)
+        return Paths.get(Environment.resource.resourceBasePath, firstDir, secondDir, entryId, id)
+    }
 
     private fun constructPath(entryId: String, id: String, extension: String): Path {
         val resId = if (extension.isNotEmpty()) "$id.$extension" else id
