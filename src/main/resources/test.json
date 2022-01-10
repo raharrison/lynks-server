@@ -1,7 +1,8 @@
 {
     "database": {
         "dialect": "H2",
-        "url": "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1"
+        "url": "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1",
+        "user": "lynksuser"
     },
     "resource": {
         "resourceBasePath": "media/test",

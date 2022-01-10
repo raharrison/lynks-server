@@ -1,6 +1,7 @@
 package lynks.db
 
 import lynks.common.EntryVersions
+import org.h2.jdbc.JdbcClob
 import org.h2.tools.TriggerAdapter
 import org.jetbrains.exposed.sql.Column
 import org.jetbrains.exposed.sql.insert
@@ -30,6 +31,7 @@ class EntryVersionTrigger : TriggerAdapter() {
                 val raw = newRow.getObject(column.name)
                 statement[column as Column<Any?>] = when (raw) {
                     is Reader -> raw.readText()
+                    is JdbcClob -> raw.characterStream.readText()
                     else -> raw
                 }
             }
