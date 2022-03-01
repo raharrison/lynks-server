@@ -33,16 +33,20 @@ class YoutubeDlRunner(
         { lines ->
             val prefix = "[download] Destination:"
             lines.firstOrNull { it.startsWith(prefix) }?.removePrefix(prefix)
+        },
+        { lines ->
+            val prefix = "[ExtractAudio] Destination:"
+            lines.firstOrNull { it.startsWith(prefix) }?.removePrefix(prefix)
         }
     )
 
-    suspend fun run(entryId: String, url: String, format: String) {
+    suspend fun run(entryId: String, url: String, format: String, options: String = "") {
         validateVideoUrl(url)
         val youtubeDlBinaryPath = YoutubeDlResolver(resourceRetriever).resolveYoutubeDl()
         val tempPath = resourceManager.constructTempBasePath(entryId).resolve("%(title)s.f%(format_id)s.%(ext)s")
         val outputTemplate = "-o \"${tempPath.absolutePathString()}\""
 
-        val command = "$youtubeDlBinaryPath -f \"$format\" $outputTemplate $url"
+        val command = "$youtubeDlBinaryPath $options -f \"$format\" $outputTemplate $url"
 
         when (val result = ExecUtils.executeCommand(command)) {
             is Result.Success -> {

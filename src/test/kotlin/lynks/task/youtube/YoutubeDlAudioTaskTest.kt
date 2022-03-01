@@ -48,7 +48,7 @@ class YoutubeDlAudioTaskTest {
         }
 
         verify(exactly = 1) { linkService.get(link.id) }
-        coVerify(exactly = 1) { youtubeDlRunner.run(link.id, link.url, any()) }
+        coVerify(exactly = 1) { youtubeDlRunner.run(link.id, link.url, any(), any()) }
     }
 
 }

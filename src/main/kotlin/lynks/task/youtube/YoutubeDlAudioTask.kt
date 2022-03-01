@@ -23,10 +23,13 @@ class YoutubeDlAudioTask(id: String, entryId: String) :
     override suspend fun process(context: YoutubeDlAudioTaskContext) {
         linkService.get(entryId)?.let { link ->
             log.info("Executing YoutubeDlAudio task entry={} type={}", entryId, context.type)
-            val format = when (context.type) {
-                YoutubeDlAudioType.BEST_AUDIO -> "bestaudio/best"
+            return when (context.type) {
+                YoutubeDlAudioType.BEST_AUDIO -> youtubeDlRunner.run(entryId, link.url, "bestaudio/best")
+                YoutubeDlAudioType.BEST_MP3 -> youtubeDlRunner.run(
+                    entryId, link.url, "bestaudio/best",
+                    "--extract-audio --audio-format mp3 --audio-quality 0"
+                )
             }
-            youtubeDlRunner.run(entryId, link.url, format)
         }
     }
 
@@ -47,7 +50,8 @@ class YoutubeDlAudioTask(id: String, entryId: String) :
     }
 
     enum class YoutubeDlAudioType {
-        BEST_AUDIO
+        BEST_AUDIO,
+        BEST_MP3
     }
 
     class YoutubeDlAudioTaskContext(input: Map<String, String>) : TaskContext(input) {
