@@ -2,13 +2,13 @@ buildscript {
     ext.kotlin_version = '1.6.10'
     ext.ktor_version = '1.6.7'
 
-    ext.h2_version = '2.0.206'
+    ext.h2_version = '2.1.210'
     ext.postgres_version = '42.3.1'
     ext.exposed_version = '0.37.3'
-    ext.hikari_version = '5.0.0'
-    ext.flyway_version = '8.4.0'
+    ext.hikari_version = '5.0.1'
+    ext.flyway_version = '8.5.0'
 
-    ext.flexmark_version = '0.62.2'
+    ext.flexmark_version = '0.64.0'
     ext.handlebars_version = '4.3.0'
     ext.commons_email_version = '1.5'
     ext.logback_version = '1.2.10'
@@ -17,10 +17,10 @@ buildscript {
     ext.skedule_version = '0.4.0'
 
     ext.kotlinx_coroutines_test_version = '1.6.0'
-    ext.rest_assured_version = '4.4.0'
+    ext.rest_assured_version = '4.5.0'
     ext.junit_version = '5.8.2'
-    ext.assertj_version = '3.21.0'
-    ext.mockk_version = '1.12.1'
+    ext.assertj_version = '3.22.0'
+    ext.mockk_version = '1.12.2'
     ext.wiremock_version = '2.32.0'
 }
 
