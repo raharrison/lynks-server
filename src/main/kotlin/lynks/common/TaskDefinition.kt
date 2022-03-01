@@ -8,7 +8,7 @@ data class TaskDefinition(
 ) : IdBasedCreatedEntity
 
 enum class TaskParameterType {
-    TEXT, NUMBER, ENUM, STATIC
+    TEXT, NUMBER, ENUM, STATIC, MULTI
 }
 
 data class TaskParameter(

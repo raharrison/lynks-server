@@ -37,8 +37,8 @@ class ResourceRetrievingTask(id: String, entryId: String) :
             return TaskBuilder(
                 ResourceRetrievingTask::class,
                 listOf(
-                    TaskParameter("url", TaskParameterType.STATIC, value = url),
-                    TaskParameter("name", TaskParameterType.STATIC, value = name)
+                    TaskParameter("url", TaskParameterType.STATIC, "Url", value = url),
+                    TaskParameter("name", TaskParameterType.STATIC, "Name", value = name)
                 )
             )
         }

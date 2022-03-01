@@ -27,7 +27,7 @@ abstract class LinkProcessor(
     abstract suspend fun suggest(resourceSet: EnumSet<ResourceType>): SuggestResponse
 
     open suspend fun enrich(props: BaseProperties) {
-        props.addTask("Process Link", LinkProcessingTask.build())
+        props.addTask("Process Link", LinkProcessingTask.buildAllTypes())
         props.addTask("Find Discussions", DiscussionFinderTask.build())
     }
 

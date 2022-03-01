@@ -29,9 +29,9 @@ class LinkProcessingTaskTest {
 
     @Test
     fun testContextConstructWithType() {
-        val context = linkProcessingTask.createContext(mapOf("type" to ResourceType.SCREENSHOT.name))
+        val context = linkProcessingTask.createContext(mapOf("type" to "${ResourceType.SCREENSHOT.name},${ResourceType.DOCUMENT.name}"))
         assertThat(context).isInstanceOf(LinkProcessingTask.LinkProcessingTaskContext::class.java)
-        assertThat(context.type).isEqualTo(ResourceType.SCREENSHOT)
+        assertThat(context.type).containsOnly(ResourceType.SCREENSHOT, ResourceType.DOCUMENT)
     }
 
     @Test
@@ -43,6 +43,11 @@ class LinkProcessingTaskTest {
         val builderWithType = LinkProcessingTask.build(ResourceType.SCREENSHOT)
         assertThat(builder.clazz).isEqualTo(LinkProcessingTask::class)
         assertThat(builderWithType.params).hasSize(1).extracting("value").containsOnly(ResourceType.SCREENSHOT.name)
+
+        val builderAllTypes = LinkProcessingTask.buildAllTypes()
+        assertThat(builder.clazz).isEqualTo(LinkProcessingTask::class)
+        assertThat(builderAllTypes.params).hasSize(1).extracting("name").containsOnly("type")
+        assertThat(builderAllTypes.params).hasSize(1).extracting("value").containsOnlyNulls()
     }
 
     @Test

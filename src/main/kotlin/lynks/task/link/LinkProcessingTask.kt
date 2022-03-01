@@ -23,7 +23,7 @@ class LinkProcessingTask(id: String, entryId: String) :
 
     override suspend fun process(context: LinkProcessingTaskContext) {
         linkService.get(entryId)?.also { it ->
-            val resourceSet = context.type?.let { EnumSet.of(it) } ?: ResourceType.linkBaseline()
+            val resourceSet = context.type ?: EnumSet.noneOf(ResourceType::class.java)
             workerRegistry.acceptLinkWork(PersistLinkProcessingRequest(it, resourceSet, true))
         }
     }
@@ -35,17 +35,24 @@ class LinkProcessingTask(id: String, entryId: String) :
             return TaskBuilder(LinkProcessingTask::class)
         }
 
+        fun buildAllTypes(): TaskBuilder {
+            val options = ResourceType.linkBaseline().map { it.name }.toSet()
+            return TaskBuilder(LinkProcessingTask::class,
+                listOf(TaskParameter("type", TaskParameterType.MULTI, "Resource Type", options = options))
+            )
+        }
+
         fun build(type: ResourceType): TaskBuilder {
             return TaskBuilder(LinkProcessingTask::class,
-                listOf(TaskParameter("type", TaskParameterType.STATIC, value = type.name))
+                listOf(TaskParameter("type", TaskParameterType.STATIC, "Resource Type", value = type.name))
             )
         }
     }
 
     class LinkProcessingTaskContext(input: Map<String, String>) : TaskContext(input) {
-        val type: ResourceType?
-            get() = optParam("type")?.let {
-                ResourceType.valueOf(it)
+        val type: EnumSet<ResourceType>?
+            get() = listParam("type")?.let { type ->
+                EnumSet.copyOf(type.map { ResourceType.valueOf(it) })
             }
     }
 

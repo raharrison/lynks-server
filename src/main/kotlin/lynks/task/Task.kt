@@ -17,6 +17,8 @@ open class TaskContext(private val input: Map<String, String> = emptyMap()) {
 
     fun optParam(field: String) = input[field]
 
+    fun listParam(field: String) = input[field]?.split(',')
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
