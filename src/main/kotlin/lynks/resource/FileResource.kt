@@ -12,7 +12,10 @@ import lynks.common.MAX_IMAGE_UPLOAD_BYTES
 import lynks.common.TEMP_URL
 import lynks.common.exception.InvalidModelException
 import lynks.util.FileUtils
+import lynks.util.HashUtils
 import java.io.File
+import java.time.LocalDate
+import java.time.temporal.TemporalAdjusters
 
 fun Route.resources(resourceManager: ResourceManager) {
 
@@ -58,6 +61,8 @@ fun Route.resources(resourceManager: ResourceManager) {
 
     route("/entry/{entryId}/resource") {
 
+        val cacheExpiresAge = LocalDate.now().plusYears(5).atStartOfDay()
+            .with(TemporalAdjusters.firstDayOfYear())
         // used when retrieving resource files to prevent lookups
         val resourceCache = mutableMapOf<String, Pair<Resource, File>>()
 
@@ -84,7 +89,9 @@ fun Route.resources(resourceManager: ResourceManager) {
                 }
             }
             if (res != null) {
-                call.response.header("Content-Disposition", "inline; filename=\"${res.first.name}\"")
+                call.response.header(HttpHeaders.ContentDisposition, "inline; filename=\"${res.first.name}\"")
+                call.response.header(HttpHeaders.Expires, cacheExpiresAge)
+                call.response.header(HttpHeaders.ETag, HashUtils.sha1Hash(res.first.dateUpdated.toString()))
                 call.respondFile(res.second)
             } else call.respond(HttpStatusCode.NotFound)
         }
