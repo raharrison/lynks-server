@@ -17,7 +17,7 @@ buildscript {
     ext.skedule_version = '0.4.0'
 
     ext.kotlinx_coroutines_test_version = '1.6.0'
-    ext.rest_assured_version = '4.4.0'
+    ext.rest_assured_version = '4.5.1'
     ext.junit_version = '5.8.2'
     ext.assertj_version = '3.22.0'
     ext.mockk_version = '1.12.2'
