@@ -190,6 +190,21 @@ class FactResourceTest: ServerTest() {
     }
 
     @Test
+    fun testFactSorting() {
+        val facts = given()
+            .queryParam("sort", "dateCreated")
+            .queryParam("direction", "asc")
+            .When()
+            .get("/fact")
+            .then()
+            .statusCode(200)
+            .extract().to<Page<Fact>>()
+        // oldest fact first
+        assertThat(facts.total).isEqualTo(2)
+        assertThat(facts.content).hasSize(2).extracting("id").containsExactly("e2", "e3")
+    }
+
+    @Test
     fun testGetInvalidVersion() {
         get("/fact/{id}/{version}", "e2", 2)
                 .then()

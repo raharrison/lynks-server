@@ -192,6 +192,21 @@ class NoteResourceTest: ServerTest() {
     }
 
     @Test
+    fun testNoteSorting() {
+        val notes = given()
+            .queryParam("sort", "dateCreated")
+            .queryParam("direction", "asc")
+            .When()
+            .get("/note")
+            .then()
+            .statusCode(200)
+            .extract().to<Page<Note>>()
+        // newest note first
+        assertThat(notes.total).isEqualTo(2)
+        assertThat(notes.content).hasSize(2).extracting("id").containsExactly("e2", "e3")
+    }
+
+    @Test
     fun testGetInvalidVersion() {
         get("/note/{id}/{version}", "e2", 2)
                 .then()

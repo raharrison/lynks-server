@@ -190,6 +190,21 @@ class LinkResourceTest: ServerTest() {
     }
 
     @Test
+    fun testLinkSorting() {
+        val links = given()
+            .queryParam("sort", "dateCreated")
+            .queryParam("direction", "asc")
+            .When()
+            .get("/link")
+            .then()
+            .statusCode(200)
+            .extract().to<Page<Link>>()
+        // oldest link first
+        assertThat(links.total).isEqualTo(2)
+        assertThat(links.content).hasSize(2).extracting("id").containsExactly("e1", "e3")
+    }
+
+    @Test
     fun testGetInvalidVersion() {
         get("/link/{id}/{version}", "e1", 2)
                 .then()

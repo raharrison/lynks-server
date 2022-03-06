@@ -16,7 +16,12 @@ fun ApplicationCall.pageRequest(): PageRequest {
     val page: Long = request.queryParameters["page"]?.toLong() ?: 1
     val size: Int = request.queryParameters["size"]?.toInt() ?: 25
     val tag: String? = request.queryParameters["tag"]
-    return PageRequest(page, size, tag)
+    val collection: String? = request.queryParameters["collection"]
+    val sort: String? = request.queryParameters["sort"]
+    val direction: SortDirection? = request.queryParameters["direction"]?.let {
+        SortDirection.valueOf(it.uppercase())
+    }
+    return PageRequest(page, size, tag, collection, sort, direction)
 }
 
 fun Path.toUrlString(): String {
