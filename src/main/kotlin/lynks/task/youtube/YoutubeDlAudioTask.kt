@@ -8,6 +8,7 @@ import lynks.task.Task
 import lynks.task.TaskBuilder
 import lynks.task.TaskContext
 import lynks.util.loggerFor
+import java.util.*
 
 class YoutubeDlAudioTask(id: String, entryId: String) :
     Task<YoutubeDlAudioTask.YoutubeDlAudioTaskContext>(id, entryId) {
@@ -23,13 +24,30 @@ class YoutubeDlAudioTask(id: String, entryId: String) :
     override suspend fun process(context: YoutubeDlAudioTaskContext) {
         linkService.get(entryId)?.let { link ->
             log.info("Executing YoutubeDlAudio task entry={} type={}", entryId, context.type)
-            return when (context.type) {
-                YoutubeDlAudioType.BEST_AUDIO -> youtubeDlRunner.run(entryId, link.url, "bestaudio/best")
-                YoutubeDlAudioType.BEST_MP3 -> youtubeDlRunner.run(
-                    entryId, link.url, "bestaudio/best",
-                    "--extract-audio --audio-format mp3 --audio-quality 0"
-                )
+            val optionsBuilder = StringJoiner(" ")
+            val format = when (context.type) {
+                YoutubeDlAudioType.BEST_AUDIO -> "bestaudio/best"
+                YoutubeDlAudioType.BEST_MP3 -> {
+                    optionsBuilder.add("--extract-audio --audio-format mp3 --audio-quality 0")
+                    "bestaudio/best"
+                }
             }
+            if (context.sponsorBlock == SponsorBlockOptions.MARK_CHAPTERS) {
+                optionsBuilder.add("--sponsorblock-mark all")
+            } else if (context.sponsorBlock == SponsorBlockOptions.REMOVE) {
+                optionsBuilder.add("--sponsorblock-remove all")
+            }
+            if (context.startTime != null || context.endTime != null) {
+                val postOpts = StringJoiner(" ")
+                if (context.startTime != null) {
+                    postOpts.add("-ss ${context.startTime}")
+                }
+                if (context.endTime != null) {
+                    postOpts.add("-to ${context.endTime}")
+                }
+                optionsBuilder.add("--postprocessor-args=\"$postOpts\"")
+            }
+            youtubeDlRunner.run(entryId, link.url, format, optionsBuilder.toString())
         }
     }
 
@@ -37,15 +55,23 @@ class YoutubeDlAudioTask(id: String, entryId: String) :
 
     companion object {
         fun build(): TaskBuilder {
-            return TaskBuilder(
-                YoutubeDlAudioTask::class,
-                listOf(
-                    TaskParameter(
-                        "type", TaskParameterType.ENUM, "Audio type",
-                        options = YoutubeDlAudioType.values().map { it.name }.toSet()
-                    )
-                )
+            val params = listOf(
+                TaskParameter(
+                    "type", TaskParameterType.ENUM, "Audio type",
+                    options = YoutubeDlAudioType.values().map { it.name }.toSet()
+                ),
+                TaskParameter(
+                    "startTime", TaskParameterType.TEXT, "Start Time (00:00:00)", required = false
+                ),
+                TaskParameter(
+                    "endTime", TaskParameterType.TEXT, "End Time (00:00:00)", required = false
+                ),
+                TaskParameter(
+                    "sponsorBlock", TaskParameterType.ENUM, "SponsorBlock",
+                    options = SponsorBlockOptions.values().map { it.name }.toSet()
+                ),
             )
+            return TaskBuilder(YoutubeDlAudioTask::class, params)
         }
     }
 
@@ -55,6 +81,13 @@ class YoutubeDlAudioTask(id: String, entryId: String) :
     }
 
     class YoutubeDlAudioTaskContext(input: Map<String, String>) : TaskContext(input) {
+        init {
+            TimeSeekValidator.validateStartTime(startTime)
+            TimeSeekValidator.validateEndTime(endTime)
+        }
         val type: YoutubeDlAudioType get() = YoutubeDlAudioType.valueOf(param("type"))
+        val startTime: String? get() = optParam("startTime")
+        val endTime: String? get() = optParam("endTime")
+        val sponsorBlock: SponsorBlockOptions get() = SponsorBlockOptions.valueOf(param("sponsorBlock"))
     }
 }

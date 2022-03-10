@@ -8,6 +8,7 @@ import lynks.task.Task
 import lynks.task.TaskBuilder
 import lynks.task.TaskContext
 import lynks.util.loggerFor
+import java.util.*
 
 class YoutubeDlVideoTask(id: String, entryId: String) :
     Task<YoutubeDlVideoTask.YoutubeDlVideoTaskContext>(id, entryId) {
@@ -27,7 +28,23 @@ class YoutubeDlVideoTask(id: String, entryId: String) :
                 YoutubeDlVideoType.BEST_VIDEO -> "bestvideo[height<=?720]+bestaudio/best"
                 YoutubeDlVideoType.BEST_VIDEO_TRANSCODE -> "bestvideo[height<=?1080]+bestaudio/best"
             }
-            youtubeDlRunner.run(entryId, link.url, format)
+            val optionsBuilder = StringJoiner(" ")
+            if (context.sponsorBlock == SponsorBlockOptions.MARK_CHAPTERS) {
+                optionsBuilder.add("--sponsorblock-mark all")
+            } else if (context.sponsorBlock == SponsorBlockOptions.REMOVE) {
+                optionsBuilder.add("--sponsorblock-remove all")
+            }
+            if (context.startTime != null || context.endTime != null) {
+                val postOpts = StringJoiner(" ")
+                if (context.startTime != null) {
+                    postOpts.add("-ss ${context.startTime}")
+                }
+                if (context.endTime != null) {
+                    postOpts.add("-to ${context.endTime}")
+                }
+                optionsBuilder.add("--postprocessor-args=\"$postOpts\"")
+            }
+            youtubeDlRunner.run(entryId, link.url, format, optionsBuilder.toString())
         }
     }
 
@@ -35,15 +52,23 @@ class YoutubeDlVideoTask(id: String, entryId: String) :
 
     companion object {
         fun build(): TaskBuilder {
-            return TaskBuilder(
-                YoutubeDlVideoTask::class,
-                listOf(
-                    TaskParameter(
-                        "type", TaskParameterType.ENUM, "Video type",
-                        options = YoutubeDlVideoType.values().map { it.name }.toSet()
-                    )
-                )
+            val params = listOf(
+                TaskParameter(
+                    "type", TaskParameterType.ENUM, "Video type",
+                    options = YoutubeDlVideoType.values().map { it.name }.toSet()
+                ),
+                TaskParameter(
+                    "startTime", TaskParameterType.TEXT, "Start Time (00:00:00)", required = false
+                ),
+                TaskParameter(
+                    "endTime", TaskParameterType.TEXT, "End Time (00:00:00)", required = false
+                ),
+                TaskParameter(
+                    "sponsorBlock", TaskParameterType.ENUM, "SponsorBlock",
+                    options = SponsorBlockOptions.values().map { it.name }.toSet()
+                ),
             )
+            return TaskBuilder(YoutubeDlVideoTask::class, params)
         }
     }
 
@@ -53,6 +78,13 @@ class YoutubeDlVideoTask(id: String, entryId: String) :
     }
 
     class YoutubeDlVideoTaskContext(input: Map<String, String>) : TaskContext(input) {
+        init {
+            TimeSeekValidator.validateStartTime(startTime)
+            TimeSeekValidator.validateEndTime(endTime)
+        }
         val type: YoutubeDlVideoType get() = YoutubeDlVideoType.valueOf(param("type"))
+        val startTime: String? get() = optParam("startTime")
+        val endTime: String? get() = optParam("endTime")
+        val sponsorBlock: SponsorBlockOptions get() = SponsorBlockOptions.valueOf(param("sponsorBlock"))
     }
 }

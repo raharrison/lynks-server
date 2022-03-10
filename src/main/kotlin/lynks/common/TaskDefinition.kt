@@ -16,5 +16,6 @@ data class TaskParameter(
     val type: TaskParameterType,
     val description: String? = null,
     val value: String? = null,
-    val options: Set<String>? = null
+    val options: Set<String>? = null,
+    val required: Boolean = true
 )
