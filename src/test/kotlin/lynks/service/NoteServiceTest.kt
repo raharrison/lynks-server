@@ -205,6 +205,18 @@ class NoteServiceTest : DatabaseTest() {
     }
 
     @Test
+    fun testGetNotesBySource() {
+        noteService.add(newNote("n1", "content1", listOf("t1", "t2"), listOf("c1")))
+        noteService.add(newNote("n2", "content2", listOf("t1")))
+        val notesFromSource = noteService.get(PageRequest(source = "me"))
+        assertThat(notesFromSource.total).isEqualTo(2)
+        assertThat(notesFromSource.content).hasSize(2)
+        val notesFromMissingSource = noteService.get(PageRequest(source = "invalid"))
+        assertThat(notesFromMissingSource.total).isZero()
+        assertThat(notesFromMissingSource.content).isEmpty()
+    }
+
+    @Test
     fun testDeleteTags() {
         val added1 = noteService.add(newNote("n1", "note content 1", listOf("t1")))
         val added2 = noteService.add(newNote("n12", "note content 2", listOf("t1", "t2")))

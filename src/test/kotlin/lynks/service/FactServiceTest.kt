@@ -201,6 +201,18 @@ class FactServiceTest : DatabaseTest() {
     }
 
     @Test
+    fun testGetFactsBySource() {
+        factService.add(newFact("n1", "content1", listOf("t1", "t2"), listOf("c1")))
+        factService.add(newFact("n2", "content2", listOf("t1", "t2"), listOf("c1")))
+        val factsFromSource = factService.get(PageRequest(source = "me"))
+        assertThat(factsFromSource.total).isEqualTo(2)
+        assertThat(factsFromSource.content).hasSize(2)
+        val factsFromMissingSource = factService.get(PageRequest(source = "invalid"))
+        assertThat(factsFromMissingSource.total).isZero()
+        assertThat(factsFromMissingSource.content).isEmpty()
+    }
+
+    @Test
     fun testDeleteTags() {
         val added1 = factService.add(newFact("n1", "fact content 1", listOf("t1")))
         val added2 = factService.add(newFact("n12", "fact content 2", listOf("t1", "t2")))

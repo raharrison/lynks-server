@@ -16,7 +16,7 @@ object URLUtils {
         if (host == null) {
             throw IllegalArgumentException("URL is not valid")
         } else {
-            return if (host.startsWith("www.")) host.substring(4) else host
+            return if (host.startsWith("www.")) host.substring(4).lowercase() else host.lowercase()
         }
     }
 

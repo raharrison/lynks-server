@@ -214,6 +214,7 @@ class FactResourceTest: ServerTest() {
             .then()
             .statusCode(201)
             .extract().to<Fact>()
+        // filter by tags
         val factsTag = given()
             .queryParam("tags", "t1")
             .queryParam("direction", "asc")
@@ -225,6 +226,7 @@ class FactResourceTest: ServerTest() {
         assertThat(factsTag.total).isZero()
         assertThat(factsTag.content).isEmpty()
 
+        // filter by collections
         val factsCollection = given()
             .queryParam("collections", "c1,c2")
             .queryParam("direction", "asc")
@@ -235,6 +237,18 @@ class FactResourceTest: ServerTest() {
             .extract().to<Page<Fact>>()
         assertThat(factsCollection.total).isEqualTo(1)
         assertThat(factsCollection.content).hasSize(1).extracting("id").containsExactly(created.id)
+
+        // filter by source
+        val factsSource = given()
+            .queryParam("source", "me")
+            .queryParam("direction", "asc")
+            .When()
+            .get("/fact")
+            .then()
+            .statusCode(200)
+            .extract().to<Page<Fact>>()
+        assertThat(factsSource.total).isEqualTo(1)
+        assertThat(factsSource.content).hasSize(1).extracting("id").containsExactly(created.id)
     }
 
     @Test

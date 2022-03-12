@@ -216,6 +216,7 @@ class NoteResourceTest: ServerTest() {
             .then()
             .statusCode(201)
             .extract().to<Note>()
+        // filter by tags
         val notesTag = given()
             .queryParam("tags", "t1")
             .queryParam("direction", "asc")
@@ -227,6 +228,7 @@ class NoteResourceTest: ServerTest() {
         assertThat(notesTag.total).isZero()
         assertThat(notesTag.content).isEmpty()
 
+        // filter by collections
         val notesCollection = given()
             .queryParam("collections", "c1,c2")
             .queryParam("direction", "asc")
@@ -237,6 +239,18 @@ class NoteResourceTest: ServerTest() {
             .extract().to<Page<Note>>()
         assertThat(notesCollection.total).isEqualTo(1)
         assertThat(notesCollection.content).hasSize(1).extracting("id").containsExactly(created.id)
+
+        // filter by source
+        val notesSource = given()
+            .queryParam("source", "me")
+            .queryParam("direction", "asc")
+            .When()
+            .get("/note")
+            .then()
+            .statusCode(200)
+            .extract().to<Page<Note>>()
+        assertThat(notesSource.total).isEqualTo(1)
+        assertThat(notesSource.content).hasSize(1).extracting("id").containsExactly(created.id)
     }
 
     @Test

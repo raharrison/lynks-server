@@ -214,6 +214,7 @@ class LinkResourceTest: ServerTest() {
             .then()
             .statusCode(201)
             .extract().to<Link>()
+        // filter by tags
         val linksTag = given()
             .queryParam("tags", "t1")
             .queryParam("direction", "asc")
@@ -225,6 +226,7 @@ class LinkResourceTest: ServerTest() {
         assertThat(linksTag.total).isZero()
         assertThat(linksTag.content).isEmpty()
 
+        // filter by collections
         val linksCollection = given()
             .queryParam("collections", "c1,c2")
             .queryParam("direction", "asc")
@@ -235,6 +237,18 @@ class LinkResourceTest: ServerTest() {
             .extract().to<Page<Link>>()
         assertThat(linksCollection.total).isEqualTo(1)
         assertThat(linksCollection.content).hasSize(1).extracting("id").containsExactly(created.id)
+
+        // filter by source
+        val linksSource = given()
+            .queryParam("source", "google.com")
+            .queryParam("direction", "asc")
+            .When()
+            .get("/link")
+            .then()
+            .statusCode(200)
+            .extract().to<Page<Link>>()
+        assertThat(linksSource.total).isEqualTo(1)
+        assertThat(linksSource.content).hasSize(1).extracting("id").containsExactly(created.id)
     }
 
     @Test

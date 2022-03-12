@@ -43,7 +43,7 @@ class NoteService(
         it[title] = entry.title
         it[plainContent] = entry.plainText
         it[content] = MarkdownUtils.convertToMarkdown(entry.plainText)
-        it[src] = "Me"
+        it[src] = "me"
         it[type] = EntryType.NOTE
         it[dateCreated] = time
         it[dateUpdated] = time

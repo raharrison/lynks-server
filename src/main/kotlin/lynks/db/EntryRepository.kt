@@ -84,6 +84,9 @@ abstract class EntryRepository<T : Entry, S : SlimEntry, U : NewEntry>(
         if (subtrees.collections.isNotEmpty()) {
             baseQuery = baseQuery.combine { collectionTable[EntryGroups.groupId].inList(subtrees.collections.map { it.id }) }
         }
+        if (pageRequest.source != null) {
+            baseQuery = baseQuery.combine { Entries.src eq pageRequest.source.lowercase() }
+        }
 
         val sortColumn = Entries.findColumn(pageRequest.sort) ?: Entries.dateUpdated
         val sortOrder = pageRequest.direction ?: SortDirection.DESC
