@@ -136,11 +136,11 @@ class FactResourceTest: ServerTest() {
 
     @Test
     fun testCannotUpdateNonFact() {
-        // e1 = existing link entry
-        val updatedLink = NewFact("e1", "modified", emptyList())
+        // e1 = existing fact entry
+        val updatedFact = NewFact("e1", "modified", emptyList())
         given()
                 .contentType(ContentType.JSON)
-                .body(updatedLink)
+                .body(updatedFact)
                 .When()
                 .put("/fact")
                 .then()
@@ -202,6 +202,39 @@ class FactResourceTest: ServerTest() {
         // oldest fact first
         assertThat(facts.total).isEqualTo(2)
         assertThat(facts.content).hasSize(2).extracting("id").containsExactly("e2", "e3")
+    }
+
+    @Test
+    fun testFactFiltering() {
+        val created = given()
+            .contentType(ContentType.JSON)
+            .body(NewFact(null,  "content4", emptyList(), listOf("c1")))
+            .When()
+            .post("/fact")
+            .then()
+            .statusCode(201)
+            .extract().to<Fact>()
+        val factsTag = given()
+            .queryParam("tags", "t1")
+            .queryParam("direction", "asc")
+            .When()
+            .get("/fact")
+            .then()
+            .statusCode(200)
+            .extract().to<Page<Fact>>()
+        assertThat(factsTag.total).isZero()
+        assertThat(factsTag.content).isEmpty()
+
+        val factsCollection = given()
+            .queryParam("collections", "c1,c2")
+            .queryParam("direction", "asc")
+            .When()
+            .get("/fact")
+            .then()
+            .statusCode(200)
+            .extract().to<Page<Fact>>()
+        assertThat(factsCollection.total).isEqualTo(1)
+        assertThat(factsCollection.content).hasSize(1).extracting("id").containsExactly(created.id)
     }
 
     @Test

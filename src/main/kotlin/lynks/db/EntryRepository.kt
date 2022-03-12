@@ -68,15 +68,15 @@ abstract class EntryRepository<T : Entry, S : SlimEntry, U : NewEntry>(
 
         val tagTable = EntryGroups.alias("tags")
         val collectionTable = EntryGroups.alias("collections")
-        if (pageRequest.tag != null) {
+        if (pageRequest.tags.isNotEmpty()) {
             table = table.innerJoin(tagTable, { Entries.id }, { tagTable[EntryGroups.entryId] })
         }
-        if (pageRequest.collection != null) {
+        if (pageRequest.collections.isNotEmpty()) {
             table = table.innerJoin(collectionTable, { Entries.id }, { collectionTable[EntryGroups.entryId] })
         }
 
         var baseQuery = getBaseQuery(table)
-        val subtrees = groupSetService.subtrees(pageRequest.tag, pageRequest.collection)
+        val subtrees = groupSetService.subtrees(pageRequest.tags, pageRequest.collections)
 
         if (subtrees.tags.isNotEmpty()) {
             baseQuery = baseQuery.combine { tagTable[EntryGroups.groupId].inList(subtrees.tags.map { it.id }) }

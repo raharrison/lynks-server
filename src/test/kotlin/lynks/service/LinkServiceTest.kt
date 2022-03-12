@@ -192,23 +192,23 @@ class LinkServiceTest : DatabaseTest() {
         linkService.add(newLink("l3", "netflix.com", emptyList(), listOf("c2")))
         linkService.add(newLink("l4", "fb.com"))
 
-        val onlyTags = linkService.get(PageRequest(tag = "t1"))
+        val onlyTags = linkService.get(PageRequest(tags = listOf("t1")))
         assertThat(onlyTags.content).hasSize(2)
         assertThat(onlyTags.content).extracting("title").containsExactlyInAnyOrder("l1", "l2")
 
-        val onlyTags2 = linkService.get(PageRequest(tag = "t2"))
+        val onlyTags2 = linkService.get(PageRequest(tags = listOf("t2")))
         assertThat(onlyTags2.content).hasSize(1)
         assertThat(onlyTags2.content).extracting("title").containsExactlyInAnyOrder("l1")
 
-        val onlyCollections = linkService.get(PageRequest(collection = "c1"))
+        val onlyCollections = linkService.get(PageRequest(collections = listOf("c1")))
         assertThat(onlyCollections.content).hasSize(1)
         assertThat(onlyCollections.content).extracting("title").containsExactlyInAnyOrder("l1")
 
-        val onlyCollections2 = linkService.get(PageRequest(collection = "c2"))
+        val onlyCollections2 = linkService.get(PageRequest(collections = listOf("c2")))
         assertThat(onlyCollections2.content).hasSize(1)
         assertThat(onlyCollections2.content).extracting("title").containsExactlyInAnyOrder("l3")
 
-        val both = linkService.get(PageRequest(tag = "t1", collection = "c1"))
+        val both = linkService.get(PageRequest(tags = listOf("t1"), collections = listOf("c1")))
         assertThat(both.content).hasSize(1)
         assertThat(both.content).extracting("title").containsExactlyInAnyOrder("l1")
     }

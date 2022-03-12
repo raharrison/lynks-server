@@ -183,23 +183,23 @@ class NoteServiceTest : DatabaseTest() {
         noteService.add(newNote("n3", "content3", emptyList(), listOf("c2")))
         noteService.add(newNote("n4", "content3"))
 
-        val onlyTags = noteService.get(PageRequest(tag = "t1"))
+        val onlyTags = noteService.get(PageRequest(tags = listOf("t1")))
         assertThat(onlyTags.content).hasSize(2)
         assertThat(onlyTags.content).extracting("title").containsExactlyInAnyOrder("n1", "n2")
 
-        val onlyTags2 = noteService.get(PageRequest(tag = "t2"))
+        val onlyTags2 = noteService.get(PageRequest(tags = listOf("t2")))
         assertThat(onlyTags2.content).hasSize(1)
         assertThat(onlyTags2.content).extracting("title").containsExactlyInAnyOrder("n1")
 
-        val onlyCollections = noteService.get(PageRequest(collection = "c1"))
+        val onlyCollections = noteService.get(PageRequest(collections = listOf("c1")))
         assertThat(onlyCollections.content).hasSize(1)
         assertThat(onlyCollections.content).extracting("title").containsExactlyInAnyOrder("n1")
 
-        val onlyCollections2 = noteService.get(PageRequest(collection = "c2"))
+        val onlyCollections2 = noteService.get(PageRequest(collections = listOf("c2")))
         assertThat(onlyCollections2.content).hasSize(1)
         assertThat(onlyCollections2.content).extracting("title").containsExactlyInAnyOrder("n3")
 
-        val both = noteService.get(PageRequest(tag = "t1", collection = "c1"))
+        val both = noteService.get(PageRequest(tags = listOf("t1"), collections = listOf("c1")))
         assertThat(both.content).hasSize(1)
         assertThat(both.content).extracting("title").containsExactlyInAnyOrder("n1")
     }

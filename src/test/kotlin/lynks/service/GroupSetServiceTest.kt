@@ -77,7 +77,7 @@ class GroupSetServiceTest {
         every { tagService.subtree("t1") } returns tags
         every { collectionService.subtree("c1") } returns collections
 
-        val groupSet = groupSetService.subtrees("t1", "c1")
+        val groupSet = groupSetService.subtrees(listOf("t1"), listOf("c1"))
         assertThat(groupSet.tags).isEqualTo(tags)
         assertThat(groupSet.collections).isEqualTo(collections)
 
@@ -87,7 +87,7 @@ class GroupSetServiceTest {
 
     @Test
     fun testGetSubtreesEmptyIds() {
-        val subtrees = groupSetService.subtrees(null, null)
+        val subtrees = groupSetService.subtrees(emptyList(), emptyList())
         assertThat(subtrees.tags).isEmpty()
         assertThat(subtrees.collections).isEmpty()
 

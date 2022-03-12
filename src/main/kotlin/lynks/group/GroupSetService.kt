@@ -19,9 +19,9 @@ class GroupSetService(private val tagService: TagService, private val collection
         }
     }
 
-    fun subtrees(tagId: String?, collectionId: String?): GroupSet {
-        val tags = if (tagId != null) tagService.subtree(tagId) else emptyList()
-        val collections = if (collectionId != null) collectionService.subtree(collectionId) else emptyList()
+    fun subtrees(tagIds: List<String>, collectionIds: List<String>): GroupSet {
+        val tags = tagIds.flatMap { tagService.subtree(it) }
+        val collections = collectionIds.flatMap { collectionService.subtree(it) }
         return GroupSet(tags, collections)
     }
 

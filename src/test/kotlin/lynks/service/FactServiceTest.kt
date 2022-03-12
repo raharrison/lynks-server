@@ -179,23 +179,23 @@ class FactServiceTest : DatabaseTest() {
         factService.add(newFact("n3", "content3", emptyList(), listOf("c2")))
         factService.add(newFact("n4", "content3"))
 
-        val onlyTags = factService.get(PageRequest(tag = "t1"))
+        val onlyTags = factService.get(PageRequest(tags = listOf("t1")))
         assertThat(onlyTags.content).hasSize(2)
         assertThat(onlyTags.content).extracting("markdownText").containsExactlyInAnyOrder("<p>content1</p>\n", "<p>content2</p>\n")
 
-        val onlyTags2 = factService.get(PageRequest(tag = "t2"))
+        val onlyTags2 = factService.get(PageRequest(tags = listOf("t2")))
         assertThat(onlyTags2.content).hasSize(1)
         assertThat(onlyTags2.content).extracting("markdownText").containsExactlyInAnyOrder("<p>content1</p>\n")
 
-        val onlyCollections = factService.get(PageRequest(collection = "c1"))
+        val onlyCollections = factService.get(PageRequest(collections = listOf("c1")))
         assertThat(onlyCollections.content).hasSize(1)
         assertThat(onlyCollections.content).extracting("markdownText").containsExactlyInAnyOrder("<p>content1</p>\n")
 
-        val onlyCollections2 = factService.get(PageRequest(collection = "c2"))
+        val onlyCollections2 = factService.get(PageRequest(collections = listOf("c2")))
         assertThat(onlyCollections2.content).hasSize(1)
         assertThat(onlyCollections2.content).extracting("markdownText").containsExactlyInAnyOrder("<p>content3</p>\n")
 
-        val both = factService.get(PageRequest(tag = "t1", collection = "c1"))
+        val both = factService.get(PageRequest(tags = listOf("t1"), collections = listOf("c1")))
         assertThat(both.content).hasSize(1)
         assertThat(both.content).extracting("markdownText").containsExactlyInAnyOrder("<p>content1</p>\n")
     }

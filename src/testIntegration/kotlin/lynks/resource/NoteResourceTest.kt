@@ -138,11 +138,11 @@ class NoteResourceTest: ServerTest() {
 
     @Test
     fun testCannotUpdateNonNote() {
-        // e1 = existing link entry
-        val updatedLink = NewNote("e1", "title2", "modified", emptyList())
+        // e1 = existing note entry
+        val updatedNote = NewNote("e1", "title2", "modified", emptyList())
         given()
                 .contentType(ContentType.JSON)
-                .body(updatedLink)
+                .body(updatedNote)
                 .When()
                 .put("/note")
                 .then()
@@ -204,6 +204,39 @@ class NoteResourceTest: ServerTest() {
         // newest note first
         assertThat(notes.total).isEqualTo(2)
         assertThat(notes.content).hasSize(2).extracting("id").containsExactly("e2", "e3")
+    }
+
+    @Test
+    fun testNoteFiltering() {
+        val created = given()
+            .contentType(ContentType.JSON)
+            .body(NewNote(null, "title4", "content4", emptyList(), listOf("c1")))
+            .When()
+            .post("/note")
+            .then()
+            .statusCode(201)
+            .extract().to<Note>()
+        val notesTag = given()
+            .queryParam("tags", "t1")
+            .queryParam("direction", "asc")
+            .When()
+            .get("/note")
+            .then()
+            .statusCode(200)
+            .extract().to<Page<Note>>()
+        assertThat(notesTag.total).isZero()
+        assertThat(notesTag.content).isEmpty()
+
+        val notesCollection = given()
+            .queryParam("collections", "c1,c2")
+            .queryParam("direction", "asc")
+            .When()
+            .get("/note")
+            .then()
+            .statusCode(200)
+            .extract().to<Page<Note>>()
+        assertThat(notesCollection.total).isEqualTo(1)
+        assertThat(notesCollection.content).hasSize(1).extracting("id").containsExactly(created.id)
     }
 
     @Test

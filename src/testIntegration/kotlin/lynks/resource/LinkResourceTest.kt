@@ -148,7 +148,7 @@ class LinkResourceTest: ServerTest() {
 
     @Test
     fun testCannotUpdateNonLink() {
-        // e2 = existing note entry
+        // e2 = existing link entry
         val updatedLink = NewLink("e2", "title2", "google.com")
         given()
                 .contentType(ContentType.JSON)
@@ -202,6 +202,39 @@ class LinkResourceTest: ServerTest() {
         // oldest link first
         assertThat(links.total).isEqualTo(2)
         assertThat(links.content).hasSize(2).extracting("id").containsExactly("e1", "e3")
+    }
+
+    @Test
+    fun testLinkFiltering() {
+        val created = given()
+            .contentType(ContentType.JSON)
+            .body(NewLink(null, "title4", "http://google.com/page", emptyList(), listOf("c1"), false))
+            .When()
+            .post("/link")
+            .then()
+            .statusCode(201)
+            .extract().to<Link>()
+        val linksTag = given()
+            .queryParam("tags", "t1")
+            .queryParam("direction", "asc")
+            .When()
+            .get("/link")
+            .then()
+            .statusCode(200)
+            .extract().to<Page<Link>>()
+        assertThat(linksTag.total).isZero()
+        assertThat(linksTag.content).isEmpty()
+
+        val linksCollection = given()
+            .queryParam("collections", "c1,c2")
+            .queryParam("direction", "asc")
+            .When()
+            .get("/link")
+            .then()
+            .statusCode(200)
+            .extract().to<Page<Link>>()
+        assertThat(linksCollection.total).isEqualTo(1)
+        assertThat(linksCollection.content).hasSize(1).extracting("id").containsExactly(created.id)
     }
 
     @Test
