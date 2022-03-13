@@ -9,6 +9,7 @@ import lynks.group.GroupSetService
 import lynks.resource.ResourceManager
 import lynks.resource.ResourceType
 import lynks.util.URLUtils
+import lynks.util.combine
 import lynks.worker.PersistLinkProcessingRequest
 import lynks.worker.WorkerRegistry
 import org.jetbrains.exposed.sql.*
@@ -87,13 +88,16 @@ class LinkService(
     }
 
     fun getUnread(): List<Link> = transaction {
-        Entries.select { Entries.props.isNull() or (Entries.props notLike "%\"$READ_LINK_PROP\":true%") }
+        getBaseQuery().combine { Entries.props.isNull() or (Entries.props notLike "%\"$READ_LINK_PROP\":true%") }
             .map { toModel(it) }
     }
 
     fun getDead(): List<Link> = transaction {
-        Entries.select { Entries.props like "%\"$DEAD_LINK_PROP\":true%" }
-            .map { toModel(it) }
+        getBaseQuery().combine { Entries.props like "%\"$DEAD_LINK_PROP\":true%" }.map { toModel(it) }
+    }
+
+    fun checkExistingWithUrl(url: String): List<SlimLink> = transaction {
+        getBaseQuery().combine { Entries.plainContent eq url }.map { toSlimModel(it) }
     }
 
 }

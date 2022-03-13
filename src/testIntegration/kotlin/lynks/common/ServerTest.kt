@@ -39,6 +39,7 @@ open class ServerTest {
                 server.start()
                 serverStarted = true
 
+                RestAssured.enableLoggingOfRequestAndResponseIfValidationFails()
                 RestAssured.baseURI = "http://localhost"
                 RestAssured.basePath = Environment.server.rootPath
                 RestAssured.port = Environment.server.port

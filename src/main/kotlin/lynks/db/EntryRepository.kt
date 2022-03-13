@@ -245,9 +245,9 @@ abstract class EntryRepository<T : Entry, S : SlimEntry, U : NewEntry>(
 
     protected abstract fun toUpdate(entry: T): BaseEntries.(UpdateBuilder<*>) -> Unit
 
-    protected abstract fun toModel(row: ResultRow, groups: GroupSet, table: BaseEntries = Entries): T
+    protected abstract fun toModel(row: ResultRow, groups: GroupSet = GroupSet(), table: BaseEntries = Entries): T
 
-    protected abstract fun toSlimModel(row: ResultRow, groups: GroupSet, table: BaseEntries = Entries): S
+    protected abstract fun toSlimModel(row: ResultRow, groups: GroupSet = GroupSet(), table: BaseEntries = Entries): S
 
     protected fun toModel(row: ResultRow, table: BaseEntries = Entries): T {
         return toModel(row, getGroupsForEntry(row[table.id]), table)

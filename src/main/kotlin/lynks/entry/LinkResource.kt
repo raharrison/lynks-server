@@ -76,5 +76,11 @@ fun Route.link(linkService: LinkService) {
             if (read == null) call.respond(HttpStatusCode.NotFound)
             else call.respondRedirect(read.url)
         }
+
+        post("/checkExisting") {
+            val url = call.receive<String>()
+            if(!URLUtils.isValidUrl(url)) throw InvalidModelException("Invalid URL")
+            else call.respond(linkService.checkExistingWithUrl(url))
+        }
     }
 }

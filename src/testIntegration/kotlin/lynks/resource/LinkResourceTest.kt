@@ -385,4 +385,52 @@ class LinkResourceTest: ServerTest() {
             .header("Location", "content1")
     }
 
+    @Test
+    fun testCheckExistingLinkWithUrl() {
+        val created1 = given()
+            .contentType(ContentType.JSON)
+            .body(NewLink(null, "title4", "http://google.com/page", emptyList(), emptyList(), false))
+            .When()
+            .post("/link")
+            .then()
+            .statusCode(201)
+            .extract().to<Link>()
+        val created2 = given()
+            .contentType(ContentType.JSON)
+            .body(NewLink(null, "title4", "http://google.com/page", emptyList(), emptyList(), false))
+            .When()
+            .post("/link")
+            .then()
+            .statusCode(201)
+            .extract().to<Link>()
+
+        val existing = given()
+            .body(created1.url)
+            .When()
+            .post("/link/checkExisting")
+            .then()
+            .statusCode(200)
+            .extract().to<List<SlimLink>>()
+        assertThat(existing).hasSize(2).extracting("id").containsExactly(created1.id, created2.id)
+
+        val noExisting = given()
+            .body("amazon.com")
+            .When()
+            .post("/link/checkExisting")
+            .then()
+            .statusCode(200)
+            .extract().to<List<SlimLink>>()
+        assertThat(noExisting).isEmpty()
+    }
+
+    @Test
+    fun testCheckExistingWithInvalidUrl() {
+        given()
+            .body("invalid")
+            .When()
+            .post("/link/checkExisting")
+            .then()
+            .statusCode(400)
+    }
+
 }

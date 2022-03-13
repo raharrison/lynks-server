@@ -563,6 +563,18 @@ class LinkServiceTest : DatabaseTest() {
         assertThat(linkService.getDead()).isEmpty()
     }
 
+    @Test
+    fun testCheckExistingLinkWithUrl() {
+        val added1 = linkService.add(newLink("n1", "google.com/content?param=one"))
+        linkService.add(newLink("n1", "google.co.uk/content"))
+        val added2 = linkService.add(newLink("n1", "google.com/content?param=one"))
+
+        val existing = linkService.checkExistingWithUrl("google.com/content?param=one")
+        assertThat(existing).hasSize(2).extracting("id").containsExactly(added1.id, added2.id)
+
+        assertThat(linkService.checkExistingWithUrl("amazon.com")).isEmpty()
+    }
+
     private fun newLink(
         title: String,
         url: String,
