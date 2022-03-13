@@ -60,8 +60,8 @@ class LinkService(
         return link
     }
 
-    fun update(entry: NewLink): Link? {
-        return super.update(entry, true)?.also {
+    override fun update(entry: NewLink, newVersion: Boolean): Link? {
+        return super.update(entry, newVersion)?.also {
             workerRegistry.acceptLinkWork(PersistLinkProcessingRequest(it, ResourceType.linkBaseline(), entry.process))
             if (entry.process)
                 workerRegistry.acceptDiscussionWork(it.id)

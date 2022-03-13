@@ -312,6 +312,50 @@ class LinkResourceTest: ServerTest() {
     }
 
     @Test
+    fun testUpdateLinkNoNewVersion() {
+        val newLink = NewLink(null, "title", "google.com", emptyList(), emptyList(), false)
+        val created = given()
+            .contentType(ContentType.JSON)
+            .body(newLink)
+            .When()
+            .post("/link")
+            .then()
+            .statusCode(201)
+            .extract().to<Link>()
+
+        assertThat(created.version).isOne()
+        assertThat(created.title).isEqualTo(newLink.title)
+        assertThat(created.url).isEqualTo(newLink.url)
+        assertThat(created.dateCreated).isEqualTo(created.dateUpdated)
+
+        // update no new version
+        val updateLink = NewLink(created.id, "edited", "amazon.com", process = false)
+        val updated = given()
+            .contentType(ContentType.JSON)
+            .body(updateLink)
+            .When()
+            .put("/link?newVersion=false")
+            .then()
+            .statusCode(200)
+            .extract().to<Link>()
+
+        assertThat(updated.title).isEqualTo(updateLink.title)
+        assertThat(updated.url).isEqualTo(updateLink.url)
+        assertThat(updated.version).isOne()
+        assertThat(updated.dateCreated).isNotEqualTo(updated.dateUpdated)
+
+        // retrieve latest version
+        val current = get("/link/{id}", created.id)
+            .then()
+            .statusCode(200)
+            .extract().to<Link>()
+        assertThat(current.version).isOne()
+        assertThat(current.title).isEqualTo(updateLink.title)
+        assertThat(current.url).isEqualTo(updateLink.url)
+        assertThat(current.dateCreated).isNotEqualTo(current.dateUpdated)
+    }
+
+    @Test
     fun testSetReadInvalidLink() {
         post("/link/{id}/read", "invalid")
                 .then()
