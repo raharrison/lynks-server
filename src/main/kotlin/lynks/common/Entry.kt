@@ -20,6 +20,7 @@ abstract class BaseEntries(name: String) : Table(name) {
     val props = json("PROPS", BaseProperties::class.java).nullable()
     abstract val version: Column<Int>
     val starred = bool("STARRED").default(false)
+    val read = bool("READ").nullable()
     abstract val thumbnailId: Column<String?>
 }
 

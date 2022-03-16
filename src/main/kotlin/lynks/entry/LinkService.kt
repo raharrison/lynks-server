@@ -3,7 +3,6 @@ package lynks.entry
 import lynks.common.*
 import lynks.db.EntryRepository
 import lynks.db.like
-import lynks.db.notLike
 import lynks.group.GroupSet
 import lynks.group.GroupSetService
 import lynks.resource.ResourceManager
@@ -35,6 +34,7 @@ class LinkService(
         it[type] = EntryType.LINK
         it[dateCreated] = time
         it[dateUpdated] = time
+        it[read] = false
     }
 
     override fun toUpdate(entry: NewLink): BaseEntries.(UpdateBuilder<*>) -> Unit = {
@@ -77,19 +77,16 @@ class LinkService(
         // explicitly not updating props to prevent overriding
     }
 
-    fun read(id: String, read: Boolean): Link? {
-        val newProps = BaseProperties()
-        newProps.addAttribute(READ_LINK_PROP, read)
-        mergeProps(id, newProps)
+    fun read(id: String, read: Boolean): Link? = transaction {
+        Entries.update({ getBaseQuery().combine { Entries.id eq id }.where!! }) { it[Entries.read] = read }
         val readMessage = if (read) "read" else "unread"
-        return get(id)?.also {
+        get(id)?.also {
             entryAuditService.acceptAuditEvent(id, LinkService::class.simpleName, "Link marked as $readMessage")
         }
     }
 
     fun getUnread(): List<Link> = transaction {
-        getBaseQuery().combine { Entries.props.isNull() or (Entries.props notLike "%\"$READ_LINK_PROP\":true%") }
-            .map { toModel(it) }
+        getBaseQuery().combine { Entries.read eq false }.map { toModel(it) }
     }
 
     fun getDead(): List<Link> = transaction {

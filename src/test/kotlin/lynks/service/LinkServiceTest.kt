@@ -514,20 +514,20 @@ class LinkServiceTest : DatabaseTest() {
     @Test
     fun testSetRead() {
         val added = linkService.add(newLink("n1", "google.com"))
-        assertThat(added.props.containsAttribute(READ_LINK_PROP)).isFalse()
+        assertThat(added.read).isFalse()
 
         val read = linkService.read(added.id, true)
-        assertThat(read?.props?.getAttribute(READ_LINK_PROP)).isEqualTo(true)
+        assertThat(read?.read).isTrue()
         // date and version is still the same
         assertThat(read?.version).isOne()
         assertThat(read?.dateUpdated).isEqualTo(added.dateUpdated)
 
         val unread = linkService.read(added.id, false)
-        assertThat(unread?.props?.getAttribute(READ_LINK_PROP)).isEqualTo(false)
+        assertThat(unread?.read).isFalse()
         assertThat(unread?.version).isOne()
         assertThat(unread?.dateUpdated).isEqualTo(added.dateUpdated)
 
-        assertThat(linkService.get(added.id)?.props?.getAttribute(READ_LINK_PROP)).isEqualTo(false)
+        assertThat(linkService.get(added.id)?.read).isFalse()
     }
 
     @Test

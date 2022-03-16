@@ -24,7 +24,8 @@ object RowMapper {
             props = row[table.props] ?: BaseProperties(),
             version = row[table.version],
             starred = row[table.starred],
-            thumbnailId = row[table.thumbnailId]
+            thumbnailId = row[table.thumbnailId],
+            read = row[table.read] ?: false
         )
     }
 
@@ -37,7 +38,8 @@ object RowMapper {
             tags = tags,
             collections = collections,
             starred = row[table.starred],
-            thumbnailId = row[table.thumbnailId]
+            thumbnailId = row[table.thumbnailId],
+            read = row[table.read] ?: false
         )
     }
 
