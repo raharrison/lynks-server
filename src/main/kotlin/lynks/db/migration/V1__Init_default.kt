@@ -58,6 +58,8 @@ class V1__Init_default : BaseJavaMigration() {
     }
 
     private fun createPostgresEntryAuditTriggers(conn: Connection) {
+        val colSet = Entries.columns.joinToString(", ") { it.name }
+        val newValSet = Entries.columns.joinToString(", ") { "NEW.${it.name}" }
         conn.createStatement().use {
             it.execute("""
                 CREATE OR REPLACE FUNCTION audit_entry_changes()
@@ -72,7 +74,7 @@ class V1__Init_default : BaseJavaMigration() {
                         END IF;
                     END IF;
 
-                    INSERT INTO ${EntryVersions.tableName} SELECT NEW.*;
+                    INSERT INTO ${EntryVersions.tableName}($colSet) SELECT $newValSet;
 
                     RETURN NEW;
                 END;

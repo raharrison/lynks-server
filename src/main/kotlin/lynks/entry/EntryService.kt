@@ -72,7 +72,7 @@ class EntryService(
                 }
             }
         } else {
-            conn.prepareStatement("SELECT ID FROM ${Entries.tableName} WHERE TS_DOC @@ to_tsquery('english', ?)").use { prep ->
+            conn.prepareStatement("SELECT ID FROM ${Entries.tableName} WHERE TS_DOC @@ websearch_to_tsquery('english', ?)").use { prep ->
                 prep.setString(1, term)
                 prep.executeQuery().use { set ->
                     val keys = mutableListOf<String>()
