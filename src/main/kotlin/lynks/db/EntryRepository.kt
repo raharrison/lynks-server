@@ -75,7 +75,8 @@ abstract class EntryRepository<T : Entry, S : SlimEntry, U : NewEntry>(
             table = table.innerJoin(collectionTable, { Entries.id }, { collectionTable[EntryGroups.entryId] })
         }
 
-        var baseQuery = getBaseQuery(table)
+        // slice to only query columns required for slim entry
+        var baseQuery = getBaseQuery(table).adjustSlice { slice(slimColumnSet + Entries.type) }
         val subtrees = groupSetService.subtrees(pageRequest.tags, pageRequest.collections)
 
         if (subtrees.tags.isNotEmpty()) {
@@ -238,6 +239,8 @@ abstract class EntryRepository<T : Entry, S : SlimEntry, U : NewEntry>(
     protected open fun postprocess(eid: String, entry: U) : T = get(eid)!!
 
     protected abstract fun getBaseQuery(base: ColumnSet = Entries, where: BaseEntries = Entries): Query
+
+    protected abstract val slimColumnSet: List<Column<*>>
 
     protected abstract fun toInsert(eId: String, entry: U): BaseEntries.(InsertStatement<*>) -> Unit
 

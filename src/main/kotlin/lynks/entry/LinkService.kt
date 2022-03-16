@@ -25,6 +25,11 @@ class LinkService(
         return base.select { where.type eq EntryType.LINK }
     }
 
+    override val slimColumnSet: List<Column<*>> = listOf(
+        Entries.id, Entries.title, Entries.src, Entries.dateUpdated,
+        Entries.starred, Entries.thumbnailId, Entries.read
+    )
+
     override fun toInsert(eId: String, entry: NewLink): BaseEntries.(InsertStatement<*>) -> Unit = {
         val time = System.currentTimeMillis()
         it[id] = eId
@@ -94,7 +99,7 @@ class LinkService(
     }
 
     fun checkExistingWithUrl(url: String): List<SlimLink> = transaction {
-        getBaseQuery().combine { Entries.plainContent eq url }.map { toSlimModel(it) }
+        getBaseQuery().adjustSlice { slice(slimColumnSet) }.combine { Entries.plainContent eq url }.map { toSlimModel(it) }
     }
 
 }

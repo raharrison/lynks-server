@@ -7,10 +7,7 @@ import lynks.group.GroupSetService
 import lynks.resource.ResourceManager
 import lynks.resource.TempImageMarkdownVisitor
 import lynks.util.markdown.MarkdownUtils
-import org.jetbrains.exposed.sql.ColumnSet
-import org.jetbrains.exposed.sql.Query
-import org.jetbrains.exposed.sql.ResultRow
-import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.statements.UpdateBuilder
 
 class NoteService(
@@ -36,6 +33,8 @@ class NoteService(
     override fun getBaseQuery(base: ColumnSet, where: BaseEntries): Query {
         return base.select { where.type eq EntryType.NOTE }
     }
+
+    override val slimColumnSet: List<Column<*>> = listOf(Entries.id, Entries.title, Entries.dateUpdated, Entries.starred)
 
     override fun toInsert(eId: String, entry: NewNote): BaseEntries.(UpdateBuilder<*>) -> Unit = {
         val time = System.currentTimeMillis()

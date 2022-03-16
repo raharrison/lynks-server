@@ -40,6 +40,11 @@ class EntryService(
         return base.selectAll()
     }
 
+    override val slimColumnSet: List<Column<*>> = listOf(
+        Entries.id, Entries.title, Entries.src, Entries.dateUpdated, Entries.content,
+        Entries.starred, Entries.thumbnailId, Entries.read
+    )
+
     override fun toInsert(eId: String, entry: NewEntry): BaseEntries.(UpdateBuilder<*>) -> Unit {
         throw NotImplementedError()
     }
