@@ -20,6 +20,7 @@ class V1__Init_default : BaseJavaMigration() {
             enableH2EntrySearch(connection)
         } else if(Environment.database.dialect == DatabaseDialect.POSTGRES) {
             createPostgresEntryAuditTriggers(connection)
+            createPostgresEntrySearch(connection)
         }
     }
 
@@ -40,7 +41,19 @@ class V1__Init_default : BaseJavaMigration() {
         conn.createStatement().use {
             it.execute("CREATE ALIAS IF NOT EXISTS FT_INIT FOR \"org.h2.fulltext.FullText.init\";")
             it.execute("CALL FT_INIT();")
-            it.execute("CALL FT_CREATE_INDEX('PUBLIC', '${Entries.tableName}', 'TITLE,PLAIN_CONTENT');")
+            it.execute("CALL FT_CREATE_INDEX('PUBLIC', '${Entries.tableName}', '${Entries.title.name},${Entries.plainContent.name}');")
+        }
+    }
+
+    private fun createPostgresEntrySearch(conn: Connection) {
+        conn.createStatement().use {
+            it.execute("""
+                ALTER TABLE ${Entries.tableName} ADD COLUMN TS_DOC tsvector
+                GENERATED ALWAYS AS
+                (setweight(to_tsvector('english', ${Entries.title.name}), 'A') || ' ' ||
+                setweight(to_tsvector('english', coalesce(${Entries.plainContent.name}, '')), 'B')) STORED;
+            """.trimIndent())
+            it.execute("CREATE INDEX ts_doc_idx ON ${Entries.tableName} USING GIN (TS_DOC);")
         }
     }
 

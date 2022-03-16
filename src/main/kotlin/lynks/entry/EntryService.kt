@@ -67,9 +67,8 @@ class EntryService(
                 }
             }
         } else {
-            conn.prepareStatement("SELECT ID FROM ENTRY WHERE TITLE LIKE ? OR PLAIN_CONTENT LIKE ?").use { prep ->
-                prep.setString(1, "%$term%")
-                prep.setString(2, "%$term%")
+            conn.prepareStatement("SELECT ID FROM ${Entries.tableName} WHERE TS_DOC @@ to_tsquery('english', ?)").use { prep ->
+                prep.setString(1, term)
                 prep.executeQuery().use { set ->
                     val keys = mutableListOf<String>()
                     while (set.next()) {
