@@ -1,6 +1,7 @@
 package lynks.db.migration
 
 import lynks.common.Entries
+import lynks.common.EntryType
 import lynks.common.EntryVersions
 import lynks.common.Environment
 import lynks.db.DatabaseDialect
@@ -49,9 +50,17 @@ class V1__Init_default : BaseJavaMigration() {
         conn.createStatement().use {
             it.execute("""
                 ALTER TABLE ${Entries.tableName} ADD COLUMN TS_DOC tsvector
-                GENERATED ALWAYS AS
-                (setweight(to_tsvector('english', ${Entries.title.name}), 'A') || ' ' ||
-                setweight(to_tsvector('english', coalesce(${Entries.plainContent.name}, '')), 'B')) STORED;
+                    GENERATED ALWAYS AS (
+                        case
+                            when ${Entries.type.name} = ${EntryType.LINK.ordinal} then
+                                                (setweight(to_tsvector('english', ${Entries.title.name}), 'A') ||
+                                                setweight(to_tsvector('english', coalesce(${Entries.plainContent.name}, '')), 'A') ||
+                                                setweight(to_tsvector('english', coalesce(${Entries.content.name}, '')), 'B'))
+                            else (setweight(to_tsvector('english', ${Entries.title.name}), 'A') ||
+                                  setweight(to_tsvector('english', coalesce(${Entries.plainContent.name}, '')), 'B'))
+                        end
+                        )
+                 STORED;
             """.trimIndent())
             it.execute("CREATE INDEX ts_doc_idx ON ${Entries.tableName} USING GIN (TS_DOC);")
         }
