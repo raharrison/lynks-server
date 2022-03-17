@@ -58,7 +58,7 @@ abstract class EntryRepository<T : Entry, S : SlimEntry, U : NewEntry>(
         }
     }
 
-    private fun resolveEntryRows(rows: List<ResultRow>): List<S> {
+    protected fun resolveEntryRows(rows: List<ResultRow>): List<S> {
         val groups = getGroupsForEntries(rows.map { it[Entries.id] })
         return rows.map { toSlimModel(it, groups.getOrDefault(it[Entries.id], GroupSet())) }
     }
@@ -94,7 +94,6 @@ abstract class EntryRepository<T : Entry, S : SlimEntry, U : NewEntry>(
 
         return Pair(baseQuery.copy().apply {
             orderBy(sortColumn, sortOrder)
-            distinct
             limit(pageRequest.size, max(0, (pageRequest.page - 1) * pageRequest.size))
         }, baseQuery)
     }
@@ -240,7 +239,7 @@ abstract class EntryRepository<T : Entry, S : SlimEntry, U : NewEntry>(
 
     protected abstract fun getBaseQuery(base: ColumnSet = Entries, where: BaseEntries = Entries): Query
 
-    protected abstract val slimColumnSet: List<Column<*>>
+    protected abstract val slimColumnSet: List<Expression<*>>
 
     protected abstract fun toInsert(eId: String, entry: U): BaseEntries.(InsertStatement<*>) -> Unit
 
