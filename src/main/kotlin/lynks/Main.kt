@@ -125,5 +125,7 @@ fun Application.installProdFeatures() {
 }
 
 fun main() {
-    embeddedServer(Netty, Environment.server.port, module = Application::module).start(wait = true)
+    embeddedServer(Netty, Environment.server.port, configure = {
+        responseWriteTimeoutSeconds = 30
+    }, module = Application::module).start(wait = true)
 }
