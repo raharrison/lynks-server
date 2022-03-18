@@ -27,6 +27,10 @@ class YoutubeDlRunner(
             lines.lastOrNull { it.endsWith(suffix) }?.removePrefix("[download]")?.removeSuffix(suffix)
         },
         { lines ->
+            val prefix = "[Merger] Merging formats into"
+            lines.firstOrNull { it.startsWith(prefix) }?.removePrefix(prefix)
+        },
+        { lines ->
             val prefix = "[ffmpeg] Merging formats into"
             lines.lastOrNull { it.startsWith(prefix) }?.removePrefix(prefix)
         },
