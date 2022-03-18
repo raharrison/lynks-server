@@ -4,6 +4,7 @@ import io.mockk.mockk
 import io.mockk.verify
 import lynks.common.DatabaseTest
 import lynks.common.EntryType
+import lynks.common.exception.InvalidModelException
 import lynks.notify.NotificationMethod
 import lynks.reminder.*
 import lynks.util.createDummyEntry
@@ -218,6 +219,13 @@ class ReminderServiceTest : DatabaseTest() {
         assertThat(reminderService.isActive(res2.reminderId)).isTrue()
         assertThat(reminderService.isActive("invalid")).isFalse()
         assertThat(reminderService.isActive("")).isFalse()
+    }
+
+    @Test
+    fun testValidateSchedule() {
+        val nextFireTimes = reminderService.validateAndTranscribeSchedule("every day 17:00")
+        assertThat(nextFireTimes).hasSize(5)
+        assertThrows<InvalidModelException> { reminderService.validateAndTranscribeSchedule("every invalid 17:00") }
     }
 
     private fun reminder(sid: String, eId: String, type: ReminderType, notifyMethod: NotificationMethod = NotificationMethod.EMAIL,

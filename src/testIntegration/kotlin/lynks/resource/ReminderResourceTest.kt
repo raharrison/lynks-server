@@ -150,4 +150,28 @@ class ReminderResourceTest : ServerTest() {
                 .statusCode(404)
     }
 
+    @Test
+    fun testValidateSchedule() {
+        val nextFireTimes = given()
+            .contentType(ContentType.TEXT)
+            .body("every day 17:00")
+            .When()
+            .post("/reminder/validate")
+            .then()
+            .statusCode(200)
+            .extract().to<List<String>>()
+        assertThat(nextFireTimes).hasSize(5)
+    }
+
+    @Test
+    fun testValidScheduleInvalidDefinition() {
+        given()
+            .contentType(ContentType.TEXT)
+            .body("every invalid of may 17:00")
+            .When()
+            .post("/reminder/validate")
+            .then()
+            .statusCode(400)
+    }
+
 }

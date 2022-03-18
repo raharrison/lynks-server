@@ -1,5 +1,8 @@
 package lynks.reminder
 
+import com.github.shyiko.skedule.InvalidScheduleException
+import com.github.shyiko.skedule.Schedule
+import lynks.common.exception.InvalidModelException
 import lynks.util.RandomUtils
 import lynks.util.loggerFor
 import lynks.worker.CrudType
@@ -8,10 +11,13 @@ import lynks.worker.WorkerRegistry
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.time.ZoneId
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
 
 class ReminderService(private val workerRegistry: WorkerRegistry) {
 
     private val log = loggerFor<ReminderService>()
+    private val scheduleFormatter = DateTimeFormatter.ofPattern("EEE dd MMMM yyyy 'at' HH:mm")
 
     private fun toModel(row: ResultRow): Reminder {
         return when (row[Reminders.type]) {
@@ -121,6 +127,17 @@ class ReminderService(private val workerRegistry: WorkerRegistry) {
         }
         log.info("No reminder found with id={}", id)
         false
+    }
+
+    fun validateAndTranscribeSchedule(definition: String): List<String> {
+        val schedule = try {
+            Schedule.parse(definition)
+        } catch (e: InvalidScheduleException) {
+            throw InvalidModelException(e.message ?: "Invalid schedule definition")
+        }
+        val now = ZonedDateTime.now()
+        val iterator = schedule.iterate(now)
+        return (1..5).map { iterator.next().format(scheduleFormatter) }
     }
 
     private fun checkValidTimeZone(tz: String): String {

@@ -40,6 +40,11 @@ fun Route.reminder(reminderService: ReminderService) {
             else call.respond(HttpStatusCode.NotFound)
         }
 
+        post("/validate") {
+            val scheduleDef = call.receive<String>()
+            call.respond(HttpStatusCode.OK, reminderService.validateAndTranscribeSchedule(scheduleDef))
+        }
+
     }
 
 }
