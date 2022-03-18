@@ -8,10 +8,10 @@ COPY src/ ./src
 
 RUN gradle installDist --no-daemon
 
-FROM openjdk:17-slim-buster
+FROM openjdk:17-slim-bullseye
 
 RUN apt-get update \
-    && apt-get install -y python3 \
+    && apt-get install -y python3 ffmpeg \
     && apt-get autoremove -y \
     && apt-get autoclean -y \
     && rm -rf /var/lib/apt/lists/* \
