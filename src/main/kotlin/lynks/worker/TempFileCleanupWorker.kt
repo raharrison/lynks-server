@@ -9,6 +9,7 @@ import lynks.user.UserService
 import lynks.util.FileUtils
 import java.nio.file.Paths
 import java.time.Duration
+import kotlin.io.path.exists
 
 class TempFileCleanupWorkerRequest(val preferences: Preferences, crudType: CrudType = CrudType.UPDATE) :
     VariableWorkerRequest(crudType) {
@@ -38,10 +39,13 @@ class TempFileCleanupWorker(
 
         while (true) {
             try {
-                val dirs = FileUtils.directoriesOlderThan(Paths.get(Environment.resource.resourceTempPath), MAX_FILE_AGE)
-                if(dirs.isNotEmpty()) {
-                    log.info("Temp file cleanup worker removing {} dirs: {}", dirs.size, dirs)
-                    FileUtils.deleteDirectories(dirs)
+                val tempPath = Paths.get(Environment.resource.resourceTempPath)
+                if (tempPath.exists()) {
+                    val dirs = FileUtils.directoriesOlderThan(tempPath, MAX_FILE_AGE)
+                    if (dirs.isNotEmpty()) {
+                        log.info("Temp file cleanup worker removing {} dirs: {}", dirs.size, dirs)
+                        FileUtils.deleteDirectories(dirs)
+                    }
                 }
             } finally {
                 log.info("Temp file cleanup worker sleeping for {} hours", sleep)
