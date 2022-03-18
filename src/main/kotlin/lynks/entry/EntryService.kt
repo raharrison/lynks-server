@@ -80,7 +80,7 @@ class EntryService(
                 """.trimIndent()
 
         val sortOrder = page.direction ?: SortDirection.DESC
-        val orderBy = if (page.sort == null) {
+        val orderBy = if (page.sort == null || page.sort == "mostRelevant") {
             "ts_rank(TS_DOC, query_ts) ${sortOrder.name}"
         } else {
             val sortColumn = Entries.findColumn(page.sort) ?: Entries.dateUpdated
