@@ -4,8 +4,8 @@ import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.Table
 
 object EntryAudit : Table("ENTRY_AUDIT") {
-    val auditId = varchar("AUDIT_ID", 12)
-    val entryId = (varchar("ENTRY_ID", 12).references(Entries.id, ReferenceOption.CASCADE))
+    val auditId = varchar("AUDIT_ID", 14)
+    val entryId = (varchar("ENTRY_ID", 14).references(Entries.id, ReferenceOption.CASCADE))
     val src = varchar("SOURCE", 255).nullable()
     val details = varchar("DETAILS", 255)
     val timestamp = long("TIMESTAMP")

@@ -35,7 +35,7 @@ internal class EntryLinkInlineParserExtension : InlineParserExtension {
 
     companion object {
         private val ENTRY_LINK_PATTERN = Pattern.compile(
-            "^(@)([a-z\\d-_](?:[a-z\\d-_]|-(?=[a-z\\d-_])){0,12})(?![\\w-])",
+            "^(@)([a-z\\d-_](?:[a-z\\d-_]|-(?=[a-z\\d-_])){0,14})(?![\\w-])",
             Pattern.CASE_INSENSITIVE
         )
     }

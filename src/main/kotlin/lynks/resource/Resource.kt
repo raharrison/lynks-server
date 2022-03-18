@@ -7,8 +7,8 @@ import org.jetbrains.exposed.sql.Table
 import java.util.*
 
 object Resources : Table("RESOURCE") {
-    val id = varchar("ID", 12)
-    val entryId = (varchar("ENTRY_ID", 12).references(Entries.id, ReferenceOption.CASCADE)).index()
+    val id = varchar("ID", 14)
+    val entryId = (varchar("ENTRY_ID", 14).references(Entries.id, ReferenceOption.CASCADE)).index()
     val fileName = varchar("FILENAME", 255)
     val extension = varchar("EXTENSION", 4)
     val type = enumeration("TYPE", ResourceType::class)

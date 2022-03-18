@@ -9,7 +9,7 @@ object RandomUtils {
     private val encoder = Base64.getUrlEncoder().withoutPadding()
 
     fun generateUid(): String {
-        val bytes = ByteArray(9)
+        val bytes = ByteArray(10)
         random.nextBytes(bytes)
         return encoder.encodeToString(bytes)
     }

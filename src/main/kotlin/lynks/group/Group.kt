@@ -7,18 +7,18 @@ import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.Table
 
 object Groups: Table("GROUP") {
-    val id = varchar("ID", 12)
+    val id = varchar("ID", 14)
     val type = enumeration("TYPE", GroupType::class)
     val name = varchar("NAME", 255)
-    val parentId = (varchar("PARENT_ID", 12) references id).nullable()
+    val parentId = (varchar("PARENT_ID", 14) references id).nullable()
     val dateCreated = long("DATE_CREATED")
     val dateUpdated = long("DATE_UPDATED")
     override val primaryKey = PrimaryKey(id)
 }
 
 object EntryGroups: Table("ENTRY_GROUP") {
-    val groupId = (varchar("GROUP_ID", 12).references(Groups.id, ReferenceOption.CASCADE))
-    val entryId = (varchar("ENTRY_ID", 12).references(Entries.id, ReferenceOption.CASCADE))
+    val groupId = (varchar("GROUP_ID", 14).references(Groups.id, ReferenceOption.CASCADE))
+    val entryId = (varchar("ENTRY_ID", 14).references(Entries.id, ReferenceOption.CASCADE))
     override val primaryKey = PrimaryKey(groupId, entryId)
 }
 
