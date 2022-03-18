@@ -66,6 +66,18 @@ class TaskResourceTest : ServerTest() {
             .statusCode(400)
     }
 
+
+    @Test
+    fun testAcceptsNullParams() {
+        given()
+            .contentType(ContentType.JSON)
+            .body(mapOf("k1" to "v1", "k2" to null))
+            .When()
+            .post("/entry/{eid}/task/{tid}", "e11", "t1")
+            .then()
+            .statusCode(200)
+    }
+
     @Test
     fun testRunValidTask() {
         given()

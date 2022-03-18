@@ -12,10 +12,12 @@ fun Route.task(taskService: TaskService) {
     fun validateInputParams(raw: Map<*, *>): Map<String, String> {
         val params = mutableMapOf<String, String>()
         raw.entries.forEach {
-            if(it.key !is String || it.value !is String) {
-                throw InvalidModelException("Invalid task input parameters")
+            if(it.key !is String || (it.value != null && it.value !is String)) {
+                throw InvalidModelException("Invalid task input parameter: " + it.key)
             }
-            params[it.key.toString()] = it.value.toString()
+            if (it.value != null) {
+                params[it.key.toString()] = it.value.toString()
+            }
         }
         return params
     }

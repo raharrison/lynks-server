@@ -36,7 +36,7 @@ class LinkProcessingTask(id: String, entryId: String) :
         }
 
         fun buildAllTypes(): TaskBuilder {
-            val options = ResourceType.linkBaseline().map { it.name }.toSet()
+            val options = ResourceType.linkBaseline().map { it.name }.toList()
             return TaskBuilder(LinkProcessingTask::class,
                 listOf(TaskParameter("type", TaskParameterType.MULTI, "Resource Type", options = options))
             )

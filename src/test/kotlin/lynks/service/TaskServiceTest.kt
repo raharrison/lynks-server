@@ -38,7 +38,8 @@ class TaskServiceTest {
                 listOf(
                     TaskParameter("p1", TaskParameterType.STATIC, value = "v1"),
                     TaskParameter("p2", TaskParameterType.TEXT),
-                    TaskParameter("p3", TaskParameterType.ENUM, options = setOf("e1", "e2"))
+                    TaskParameter("p3", TaskParameterType.ENUM, options = listOf("e1", "e2")),
+                    TaskParameter("p4", TaskParameterType.NUMBER, required = false)
                 )
             )
         )
@@ -90,7 +91,7 @@ class TaskServiceTest {
             TaskDefinition(
                 "task1", "description", LinkProcessingTask::class.qualifiedName!!,
                 listOf(
-                    TaskParameter("p1", TaskParameterType.ENUM, options = setOf("v1", "v2"))
+                    TaskParameter("p1", TaskParameterType.ENUM, options = listOf("v1", "v2"))
                 )
             )
         )

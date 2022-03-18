@@ -58,7 +58,7 @@ class YoutubeDlAudioTask(id: String, entryId: String) :
             val params = listOf(
                 TaskParameter(
                     "type", TaskParameterType.ENUM, "Audio type",
-                    options = YoutubeDlAudioType.values().map { it.name }.toSet()
+                    options = YoutubeDlAudioType.values().map { it.name }.toList()
                 ),
                 TaskParameter(
                     "startTime", TaskParameterType.TEXT, "Start Time (00:00:00)", required = false
@@ -68,7 +68,7 @@ class YoutubeDlAudioTask(id: String, entryId: String) :
                 ),
                 TaskParameter(
                     "sponsorBlock", TaskParameterType.ENUM, "SponsorBlock",
-                    options = SponsorBlockOptions.values().map { it.name }.toSet()
+                    options = SponsorBlockOptions.values().map { it.name }.toList()
                 ),
             )
             return TaskBuilder(YoutubeDlAudioTask::class, params)

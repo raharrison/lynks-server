@@ -55,7 +55,7 @@ class YoutubeDlVideoTask(id: String, entryId: String) :
             val params = listOf(
                 TaskParameter(
                     "type", TaskParameterType.ENUM, "Video type",
-                    options = YoutubeDlVideoType.values().map { it.name }.toSet()
+                    options = YoutubeDlVideoType.values().map { it.name }.toList()
                 ),
                 TaskParameter(
                     "startTime", TaskParameterType.TEXT, "Start Time (00:00:00)", required = false
@@ -65,7 +65,7 @@ class YoutubeDlVideoTask(id: String, entryId: String) :
                 ),
                 TaskParameter(
                     "sponsorBlock", TaskParameterType.ENUM, "SponsorBlock",
-                    options = SponsorBlockOptions.values().map { it.name }.toSet()
+                    options = SponsorBlockOptions.values().map { it.name }.toList()
                 ),
             )
             return TaskBuilder(YoutubeDlVideoTask::class, params)

@@ -62,11 +62,17 @@ class TaskService(private val entryService: EntryService,
         val taskParams = mutableMapOf<String, String>()
         task.params.forEach {
             if(it.type == TaskParameterType.STATIC) {
+                // take static values from stored task definition not user input
                 taskParams[it.name] = it.value!!
-            } else if (it.type == TaskParameterType.ENUM && it.options?.contains(params[it.name]) == false) {
+            } else if(it.required && !params.containsKey(it.name)) {
+                throw InvalidModelException("'${it.name}' is required parameter for task")
+            }
+            else if (it.type == TaskParameterType.ENUM && params.containsKey(it.name) && it.options?.contains(params[it.name]) == false) {
                 throw InvalidModelException("Invalid value supplied for param '${it.name}'")
             } else {
-                taskParams[it.name] = params[it.name] ?: throw InvalidModelException("'${it.name}' is required parameter for task")
+                if (params.containsKey(it.name)) {
+                    taskParams[it.name] = params.getValue(it.name)
+                }
             }
         }
         return taskParams
