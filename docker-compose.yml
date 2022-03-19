@@ -1,9 +1,9 @@
 services:
   lynks-ui:
-    image: raharrison/lynks-ui:1.1.0
+    image: raharrison/lynks-ui:1.1.1
     restart: on-failure:5
   lynks-server:
-    image: raharrison/lynks-server:1.1.0
+    image: raharrison/lynks-server:1.2.0
     env_file:
       - ./config/.env
     environment:
@@ -35,7 +35,7 @@ services:
       - lynks-ui
       - lynks-server
   postgres:
-    image: postgres:latest
+    image: postgres:14-bullseye
     volumes:
       - lynks-data:/var/lib/postgresql/data
     restart: on-failure:5
