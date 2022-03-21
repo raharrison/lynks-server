@@ -21,6 +21,7 @@ import lynks.entry.*
 import lynks.group.*
 import lynks.notify.NotifyService
 import lynks.notify.notify
+import lynks.notify.pushover.PushoverClient
 import lynks.reminder.ReminderService
 import lynks.reminder.reminder
 import lynks.resource.ResourceManager
@@ -75,7 +76,8 @@ fun Application.module() {
         register(SuggestionService(get()))
         register(YoutubeDlRunner(get(), get(), get()))
         register(TaskService(get(), this, get()))
-        register(NotifyService(get()))
+        register(PushoverClient(get()))
+        register(NotifyService(get(), get()))
         workerRegistry.init(this)
     }
 

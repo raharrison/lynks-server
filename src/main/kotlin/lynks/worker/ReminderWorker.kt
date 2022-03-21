@@ -17,6 +17,7 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
+import java.util.*
 import kotlin.math.max
 import com.github.shyiko.skedule.Schedule as Skedule
 
@@ -91,32 +92,65 @@ class ReminderWorker(
     private suspend fun reminderElapsed(reminder: Reminder) {
         log.info("Reminder elapsed entry={} reminder={}", reminder.entryId, reminder.reminderId)
 
-        if (reminder.notifyMethod == NotificationMethod.PUSH || reminder.notifyMethod == NotificationMethod.BOTH) {
-            // send notification
-            if (reminder.message == null) {
-                sendNotification(Notification.reminder(), reminder)
-            } else {
-                sendNotification(Notification.reminder(reminder.message!!), reminder)
+        for (notifyMethod in EnumSet.copyOf(reminder.notifyMethods)) {
+            if (notifyMethod == NotificationMethod.WEB) {
+                try {
+                    sendWebNotification(reminder)
+                } catch (e: Exception) {
+                    log.error("Reminder web notification failed", e)
+                }
             }
+
+            if (notifyMethod == NotificationMethod.EMAIL) {
+                try {
+                    sendEmailNotification(reminder)
+                } catch (e: Exception) {
+                    log.error("Reminder email notification failed", e)
+                }
+            }
+
+            if (notifyMethod == NotificationMethod.PUSHOVER) {
+                try {
+                    sendPushoverNotification(reminder)
+                } catch (e: Exception) {
+                    log.error("Reminder pushover notification failed", e)
+                }
+            }
+
         }
+    }
 
-        if (reminder.notifyMethod == NotificationMethod.EMAIL || reminder.notifyMethod == NotificationMethod.BOTH) {
-            // send email
-            val title = when (val entry = entryService.get(reminder.entryId)) {
-                is Link -> entry.title
-                is Note -> entry.title
-                else -> entry?.javaClass?.simpleName
-            }
-            val content = mapOf(
-                "title" to title,
-                "spec" to reminder.spec,
-                "message" to reminder.message
-            )
+    private suspend fun sendWebNotification(reminder: Reminder) {
+        if (reminder.message == null) {
+            sendNotification(Notification.reminder(), reminder)
+        } else {
+            sendNotification(Notification.reminder(reminder.message!!), reminder)
+        }
+    }
 
-            val template = ResourceTemplater("reminder.html")
-            val email = template.apply(content)
+    private fun sendEmailNotification(reminder: Reminder) {
+        val title = when (val entry = entryService.get(reminder.entryId)) {
+            is Link -> entry.title
+            is Note -> entry.title
+            else -> entry?.javaClass?.simpleName
+        }
+        val content = mapOf(
+            "title" to title,
+            "spec" to reminder.spec,
+            "message" to reminder.message
+        )
 
-            notifyService.sendEmail("Lynks - Reminder Elapsed", email)
+        val template = ResourceTemplater("reminder.html")
+        val email = template.apply(content)
+
+        notifyService.sendEmail("Lynks - Reminder Elapsed", email)
+    }
+
+    private suspend fun sendPushoverNotification(reminder: Reminder) {
+        if (reminder.message == null) {
+            notifyService.sendPushoverNotification(Notification.reminder())
+        } else {
+            notifyService.sendPushoverNotification(Notification.reminder(reminder.message!!))
         }
     }
 

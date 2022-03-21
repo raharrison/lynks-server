@@ -18,7 +18,8 @@ class ReminderResourceTest : ServerTest() {
     @BeforeEach
     fun createEntries() {
         createDummyEntry("e1", "title1", "content1", EntryType.LINK)
-        createDummyReminder("r1", "e1", ReminderType.ADHOC, NotificationMethod.PUSH, "message", (System.currentTimeMillis() + 1.2e+6).toLong().toString())
+        createDummyReminder("r1", "e1", ReminderType.ADHOC, listOf(NotificationMethod.WEB, NotificationMethod.EMAIL),
+            "message", (System.currentTimeMillis() + 1.2e+6).toLong().toString())
     }
 
     @Test
@@ -31,7 +32,8 @@ class ReminderResourceTest : ServerTest() {
         assertThat(reminders).extracting("reminderId").containsOnly("r1")
         assertThat(reminders).extracting("entryId").containsOnly("e1")
         assertThat(reminders).extracting("type").containsOnly(ReminderType.ADHOC.name.lowercase())
-        assertThat(reminders).extracting("notifyMethod").containsOnly(NotificationMethod.PUSH.name.lowercase())
+        assertThat(reminders).extracting("notifyMethods")
+            .containsOnly(listOf(NotificationMethod.WEB.name.lowercase(), NotificationMethod.EMAIL.name.lowercase()))
         assertThat(reminders).extracting("message").containsOnly("message")
         assertThat(reminders).extracting("dateCreated").doesNotContainNull()
         assertThat(reminders).extracting("dateUpdated").doesNotContainNull()
@@ -46,7 +48,7 @@ class ReminderResourceTest : ServerTest() {
         assertThat(reminder.reminderId).isEqualTo("r1")
         assertThat(reminder.entryId).isEqualTo("e1")
         assertThat(reminder.type).isEqualTo(ReminderType.ADHOC)
-        assertThat(reminder.notifyMethod).isEqualTo(NotificationMethod.PUSH)
+        assertThat(reminder.notifyMethods).containsExactly(NotificationMethod.WEB, NotificationMethod.EMAIL)
         assertThat(reminder.message).isEqualTo("message")
         assertThat(reminder.dateCreated).isPositive().isEqualTo(reminder.dateUpdated)
     }
@@ -60,7 +62,7 @@ class ReminderResourceTest : ServerTest() {
 
     @Test
     fun testCreateReminder() {
-        val reminder = NewReminder(null, "e1", ReminderType.RECURRING, NotificationMethod.EMAIL,
+        val reminder = NewReminder(null, "e1", ReminderType.RECURRING, listOf(NotificationMethod.WEB, NotificationMethod.EMAIL),
                 "message", "every 30 minutes", ZoneId.systemDefault().id)
         val created = given()
                 .contentType(ContentType.JSON)
@@ -74,7 +76,7 @@ class ReminderResourceTest : ServerTest() {
         assertThat(created.reminderId).isNotNull()
         assertThat(created.entryId).isEqualTo(reminder.entryId)
         assertThat(created.type).isEqualTo(reminder.type)
-        assertThat(created.notifyMethod).isEqualTo(NotificationMethod.EMAIL)
+        assertThat(created.notifyMethods).containsExactly(NotificationMethod.WEB, NotificationMethod.EMAIL)
         assertThat(created.message).isEqualTo("message")
         assertThat(created.spec).isEqualTo(reminder.spec)
         assertThat(created.tz).isEqualTo(reminder.tz)
@@ -95,7 +97,8 @@ class ReminderResourceTest : ServerTest() {
 
     @Test
     fun testUpdateReminder() {
-        val reminder = NewReminder("r1", "e1", ReminderType.RECURRING, NotificationMethod.EMAIL, "updated", "every 30 minutes", "Asia/Singapore")
+        val reminder = NewReminder("r1", "e1", ReminderType.RECURRING,
+            listOf(NotificationMethod.EMAIL), "updated", "every 30 minutes", "Asia/Singapore")
         val updated = given()
                 .contentType(ContentType.JSON)
                 .body(reminder)
@@ -107,7 +110,7 @@ class ReminderResourceTest : ServerTest() {
         assertThat(updated.reminderId).isEqualTo(reminder.reminderId)
         assertThat(updated.entryId).isEqualTo(reminder.entryId)
         assertThat(updated.type).isEqualTo(reminder.type)
-        assertThat(updated.notifyMethod).isEqualTo(NotificationMethod.EMAIL)
+        assertThat(updated.notifyMethods).containsExactly(NotificationMethod.EMAIL)
         assertThat(updated.message).isEqualTo("updated")
         assertThat(updated.spec).isEqualTo(reminder.spec)
         assertThat(updated.tz).isEqualTo(reminder.tz)
@@ -122,8 +125,10 @@ class ReminderResourceTest : ServerTest() {
 
     @Test
     fun testUpdateReminderReturnsNotFound() {
-        val reminder = NewReminder("invalid", "e1", ReminderType.RECURRING, NotificationMethod.EMAIL,
-                "", "every 30 minutes", ZoneId.systemDefault().id)
+        val reminder = NewReminder(
+            "invalid", "e1", ReminderType.RECURRING,
+            listOf(NotificationMethod.WEB), "", "every 30 minutes", ZoneId.systemDefault().id
+        )
         given()
                 .contentType(ContentType.JSON)
                 .body(reminder)

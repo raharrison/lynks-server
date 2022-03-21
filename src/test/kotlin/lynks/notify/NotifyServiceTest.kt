@@ -1,4 +1,4 @@
-package lynks.service
+package lynks.notify
 
 import com.fasterxml.jackson.module.kotlin.readValue
 import io.ktor.http.cio.websocket.*
@@ -6,8 +6,7 @@ import io.mockk.*
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.runBlocking
-import lynks.notify.Notification
-import lynks.notify.NotifyService
+import lynks.notify.pushover.PushoverClient
 import lynks.user.UserService
 import lynks.util.JsonMapper
 import org.assertj.core.api.Assertions.assertThat
@@ -16,7 +15,8 @@ import org.junit.jupiter.api.Test
 @ExperimentalCoroutinesApi
 class NotifyServiceTest {
 
-    private val notifyService = NotifyService(UserService())
+    private val pushoverClient = mockk<PushoverClient>()
+    private val notifyService = NotifyService(UserService(), pushoverClient)
 
     @Test
     fun testSendToOpen() = runBlocking {
@@ -85,6 +85,14 @@ class NotifyServiceTest {
         assertThat(retrieved["body"]).isEqualTo("body")
         assertThat(retrieved["message"]).isEqualTo("finished")
         coVerify(exactly = 1) { channel.send(any()) }
+    }
+
+    @Test
+    fun testSendPushoverNotification() = runBlocking {
+        val notification = Notification.processed("finished")
+        coEvery { pushoverClient.sendNotification(notification.message) } just Runs
+        notifyService.sendPushoverNotification(notification)
+        coVerify(exactly = 1) { pushoverClient.sendNotification(notification.message) }
     }
 
 }

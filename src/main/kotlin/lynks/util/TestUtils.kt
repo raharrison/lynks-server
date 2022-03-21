@@ -74,14 +74,14 @@ fun createDummyComment(id: String, entryId: String, content: String) = transacti
     }
 }
 
-fun createDummyReminder(id: String, entryId: String, type: ReminderType, notifyMethod: NotificationMethod,
+fun createDummyReminder(id: String, entryId: String, type: ReminderType, notifyMethods: List<NotificationMethod>,
                         message: String? = null, spec: String, tz: String = ZoneId.systemDefault().id) = transaction {
     val time = System.currentTimeMillis()
     Reminders.insert {
         it[Reminders.reminderId] = id
         it[Reminders.entryId] = entryId
         it[Reminders.type] = type
-        it[Reminders.notifyMethod] = notifyMethod
+        it[Reminders.notifyMethods] = notifyMethods.joinToString(",")
         it[Reminders.message] = message
         it[Reminders.spec] = spec
         it[Reminders.tz] = tz

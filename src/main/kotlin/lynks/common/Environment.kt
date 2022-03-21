@@ -65,12 +65,16 @@ object Environment {
         val smmryApiKey by optional<String?>(null, description = "api key to smmry.com")
         val youtubeDlHost by required<String>(description = "url of latest youtube-dl binary")
         val scraperHost by optional<String?>(null, description = "url to the scraper component")
+        val pushoverToken by optional<String?>(null, description = "Pushover application token")
+        val pushoverUser by optional<String?>(null, description = "Pushover user/group key")
     }
 
     data class External(
         val smmryApikey: String? = config[ExternalSpec.smmryApiKey],
         val youtubeDlHost: String = config[ExternalSpec.youtubeDlHost],
-        val scraperHost: String? = config[ExternalSpec.scraperHost]
+        val scraperHost: String? = config[ExternalSpec.scraperHost],
+        val pushoverToken: String? = config[ExternalSpec.pushoverToken],
+        val pushoverUser: String? = config[ExternalSpec.pushoverUser]
     )
 
     val mode: ConfigMode = ConfigMode.valueOf(System.getProperty("CONFIG_MODE")?.uppercase() ?: "DEV")

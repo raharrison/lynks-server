@@ -34,7 +34,7 @@ class CascadingDeleteTest: DatabaseTest() {
         createDummyCollection("c2", "col2", "c1")
         createDummyEntry("id1", "link1", "link content", EntryType.LINK)
         createDummyComment("c1", "id1", "comment content")
-        createDummyReminder("rem1", "id1", ReminderType.ADHOC, NotificationMethod.EMAIL,"message", System.currentTimeMillis().toString())
+        createDummyReminder("rem1", "id1", ReminderType.ADHOC, listOf(NotificationMethod.EMAIL),"message", System.currentTimeMillis().toString())
 
         resourceManager.saveGeneratedResource("r1", "id1", "resource name", "jpg", ResourceType.SCREENSHOT, 11)
         updateDummyEntry("id1", "link1", 1, "r1") // add generated thumbnail resource id to entry

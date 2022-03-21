@@ -371,13 +371,13 @@ class LinkResourceTest: ServerTest() {
                 .then()
                 .statusCode(200)
                 .extract().to<Link>()
-        assertThat(read.props.getAttribute(READ_LINK_PROP)).isEqualTo(true)
+        assertThat(read.read).isTrue()
         assertThat(read.dateCreated).isEqualTo(read.dateUpdated)
         val retrieved = get("/link/{id}", "e1")
                 .then()
                 .statusCode(200)
                 .extract().to<Link>()
-        assertThat(retrieved.props.getAttribute(READ_LINK_PROP)).isEqualTo(true)
+        assertThat(retrieved.read).isTrue()
     }
 
     @Test
@@ -386,13 +386,13 @@ class LinkResourceTest: ServerTest() {
                 .then()
                 .statusCode(200)
                 .extract().to<Link>()
-        assertThat(read.props.getAttribute(READ_LINK_PROP)).isEqualTo(false)
+        assertThat(read.read).isFalse()
         assertThat(read.dateCreated).isEqualTo(read.dateUpdated)
         val retrieved = get("/link/{id}", "e1")
                 .then()
                 .statusCode(200)
                 .extract().to<Link>()
-        assertThat(retrieved.props.getAttribute(READ_LINK_PROP)).isEqualTo(false)
+        assertThat(retrieved.read).isFalse()
     }
 
     @Test

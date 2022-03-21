@@ -3,6 +3,7 @@ package lynks.reminder
 import com.github.shyiko.skedule.InvalidScheduleException
 import com.github.shyiko.skedule.Schedule
 import lynks.common.exception.InvalidModelException
+import lynks.notify.NotificationMethod
 import lynks.util.RandomUtils
 import lynks.util.loggerFor
 import lynks.worker.CrudType
@@ -22,16 +23,21 @@ class ReminderService(private val workerRegistry: WorkerRegistry) {
     private fun toModel(row: ResultRow): Reminder {
         return when (row[Reminders.type]) {
             ReminderType.ADHOC -> AdhocReminder(
-                    row[Reminders.reminderId], row[Reminders.entryId], row[Reminders.notifyMethod],
+                    row[Reminders.reminderId], row[Reminders.entryId], toNotifyMethods(row[Reminders.notifyMethods]),
                     row[Reminders.message], row[Reminders.spec].toLong(), row[Reminders.tz],
                     row[Reminders.dateCreated], row[Reminders.dateUpdated]
             )
             ReminderType.RECURRING -> RecurringReminder(
-                    row[Reminders.reminderId], row[Reminders.entryId], row[Reminders.notifyMethod],
+                    row[Reminders.reminderId], row[Reminders.entryId], toNotifyMethods(row[Reminders.notifyMethods]),
                     row[Reminders.message], row[Reminders.spec], row[Reminders.tz],
                     row[Reminders.dateCreated], row[Reminders.dateUpdated]
             )
         }
+    }
+
+    // convert stored comma-separated set of methods to list of enum
+    private fun toNotifyMethods(str: String): List<NotificationMethod> {
+        return str.split(',').map { NotificationMethod.valueOf(it) }
     }
 
     fun getRemindersForEntry(eId: String) = transaction {
@@ -60,7 +66,7 @@ class ReminderService(private val workerRegistry: WorkerRegistry) {
             it[reminderId] = job.reminderId
             it[entryId] = job.entryId
             it[type] = job.type
-            it[notifyMethod] = job.notifyMethod
+            it[notifyMethods] = job.notifyMethods.joinToString(",")
             it[message] = job.message
             it[spec] = job.spec
             it[tz] = checkValidTimeZone(job.tz)
@@ -80,7 +86,7 @@ class ReminderService(private val workerRegistry: WorkerRegistry) {
             it[reminderId] = id
             it[entryId] = reminder.entryId
             it[type] = reminder.type
-            it[notifyMethod] = reminder.notifyMethod
+            it[notifyMethods] = reminder.notifyMethods.joinToString(",")
             it[message] = reminder.message
             it[spec] = reminder.spec
             it[tz] = checkValidTimeZone(reminder.tz)
@@ -100,7 +106,7 @@ class ReminderService(private val workerRegistry: WorkerRegistry) {
         } else {
             val updatedCount = Reminders.update({ Reminders.reminderId eq reminder.reminderId }) {
                 it[type] = reminder.type
-                it[notifyMethod] = reminder.notifyMethod
+                it[notifyMethods] = reminder.notifyMethods.joinToString(",")
                 it[message] = reminder.message
                 it[spec] = reminder.spec
                 it[tz] = checkValidTimeZone(reminder.tz)

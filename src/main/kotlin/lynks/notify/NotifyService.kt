@@ -4,16 +4,16 @@ import io.ktor.http.cio.websocket.*
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.SendChannel
 import lynks.common.Environment
+import lynks.notify.pushover.PushoverClient
 import lynks.user.UserService
 import lynks.util.JsonMapper.defaultMapper
 import lynks.util.loggerFor
 import org.apache.commons.mail.HtmlEmail
 import java.util.concurrent.ConcurrentHashMap
 
-private val log = loggerFor<NotifyService>()
+class NotifyService(private val userService: UserService, private val pushoverClient: PushoverClient) {
 
-class NotifyService(private val userService: UserService) {
-
+    private val log = loggerFor<NotifyService>()
     private val notifiers = ConcurrentHashMap.newKeySet<SendChannel<Frame>>()
 
     @ExperimentalCoroutinesApi
@@ -32,11 +32,12 @@ class NotifyService(private val userService: UserService) {
 
     private fun buildNotification(notify: Notification, body: Any?): Map<String, Any?> {
         val entityType = body?.javaClass?.simpleName
-        return mapOf("entity" to entityType,
-                "type" to notify.type,
-                "message" to notify.message,
-                "body" to body)
-
+        return mapOf(
+            "entity" to entityType,
+            "type" to notify.type,
+            "message" to notify.message,
+            "body" to body
+        )
     }
 
     fun join(outgoing: SendChannel<Frame>) {
@@ -61,6 +62,10 @@ class NotifyService(private val userService: UserService) {
             email.setHtmlMsg(body)
             email.send()
         }
+    }
+
+    suspend fun sendPushoverNotification(notification: Notification) {
+        pushoverClient.sendNotification(notification.message)
     }
 
 }

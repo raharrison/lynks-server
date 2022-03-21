@@ -2,6 +2,8 @@ package lynks.util
 
 import java.net.URI
 import java.net.URLDecoder
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 import javax.mail.internet.AddressException
 import javax.mail.internet.InternetAddress
 
@@ -50,5 +52,9 @@ object URLUtils {
         true
     } catch (ex: AddressException) {
         false
+    }
+
+    fun encode(value: String): String {
+        return URLEncoder.encode(value, StandardCharsets.UTF_8)
     }
 }

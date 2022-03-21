@@ -8,8 +8,8 @@ import org.jetbrains.exposed.sql.Table
 object Reminders : Table("REMINDER") {
     val reminderId = varchar("REMINDER_ID", 14)
     val entryId = (varchar("ENTRY_ID", 14).references(Entries.id, ReferenceOption.CASCADE))
-    val type = enumeration("TYPE", ReminderType::class)
-    val notifyMethod = enumeration("NOTIFY_METHOD", NotificationMethod::class)
+    val type = enumeration("REMINDER_TYPE", ReminderType::class)
+    val notifyMethods = varchar("NOTIFY_METHODS", 16)
     val message = varchar("MESSAGE", 255).nullable()
     val spec = varchar("SPEC", 32)
     val tz = varchar("TZ", 32)
@@ -27,7 +27,7 @@ interface Reminder {
     val reminderId: String
     val entryId: String
     val type: ReminderType
-    val notifyMethod: NotificationMethod
+    val notifyMethods: List<NotificationMethod>
     val message: String?
     val spec: String
     val tz: String
@@ -37,7 +37,7 @@ interface Reminder {
 
 data class AdhocReminder(override val reminderId: String,
                          override val entryId: String,
-                         override val notifyMethod: NotificationMethod,
+                         override val notifyMethods: List<NotificationMethod>,
                          override val message: String?,
                          val interval: Long,
                          override val tz: String,
@@ -49,7 +49,7 @@ data class AdhocReminder(override val reminderId: String,
 
 data class RecurringReminder(override val reminderId: String,
                              override val entryId: String,
-                             override val notifyMethod: NotificationMethod,
+                             override val notifyMethods: List<NotificationMethod>,
                              override val message: String?,
                              val fire: String,
                              override val tz: String,
@@ -60,4 +60,4 @@ data class RecurringReminder(override val reminderId: String,
 }
 
 data class NewReminder(val reminderId: String? = null, val entryId: String, val type: ReminderType,
-                       val notifyMethod: NotificationMethod, val message: String? = null, val spec: String, val tz: String)
+                       val notifyMethods: List<NotificationMethod>, val message: String? = null, val spec: String, val tz: String)

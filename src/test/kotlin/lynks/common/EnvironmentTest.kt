@@ -52,9 +52,13 @@ class EnvironmentTest {
 
         val scraperHost = node.get("scraperHost").textValue()
         val smmryApiKey = node.get("smmryApiKey").textValue()
+        val pushoverToken = node.get("pushoverToken").textValue()
+        val pushoverUser = node.get("pushoverUser").textValue()
 
         assertThat(scraperHost).isEqualTo(Environment.external.scraperHost)
         assertThat(smmryApiKey).isEqualTo(Environment.external.smmryApikey)
+        assertThat(pushoverToken).isEqualTo(Environment.external.pushoverToken)
+        assertThat(pushoverUser).isEqualTo(Environment.external.pushoverUser)
     }
 
 }

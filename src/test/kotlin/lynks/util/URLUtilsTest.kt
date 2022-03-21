@@ -91,4 +91,10 @@ class URLUtilsTest {
         assertThat(URLUtils.isValidEmail("me@me@example.com")).isFalse()
         assertThat(URLUtils.isValidEmail("me*@%*-example.other.1com")).isFalse()
     }
+
+    @Test
+    fun testEncode() {
+        assertThat(URLUtils.encode("abc123")).isEqualTo("abc123")
+        assertThat(URLUtils.encode("a:b*c(d)&e!f")).isEqualTo("a%3Ab*c%28d%29%26e%21f")
+    }
 }

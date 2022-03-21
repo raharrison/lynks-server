@@ -10,6 +10,8 @@
     },
     "external": {
         "scraperHost": "http://localhost:3893/api",
-        "smmryApiKey": "DBB05EAE64"
+        "smmryApiKey": "DBB05EAE64",
+        "pushoverToken": "pushoverToken",
+        "pushoverUser": "pushoverUser"
     }
 }

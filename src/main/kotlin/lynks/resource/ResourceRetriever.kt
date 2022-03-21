@@ -4,6 +4,7 @@ import kotlinx.coroutines.future.await
 import lynks.common.exception.ExecutionException
 import lynks.util.JsonMapper
 import lynks.util.Result
+import lynks.util.URLUtils
 import lynks.util.loggerFor
 import java.net.URI
 import java.net.http.HttpClient
@@ -72,6 +73,22 @@ class WebResourceRetriever : ResourceRetriever {
         handleAsyncResponseAsResult(location, future)
     } catch (e: Exception) {
         log.error("Error posting data to web location: {}", location, e)
+        Result.Failure(ExecutionException("Error occurred posting to endpoint: " + e.message))
+    }
+
+    suspend fun postFormStringResult(location: String, params: Map<String, String>): Result<String, ExecutionException> = try {
+        val encodedParams = params
+            .map { entry -> entry.key + "=" + URLUtils.encode(entry.value) }
+            .joinToString("&")
+        val request = HttpRequest.newBuilder(URI.create(location))
+            .POST(HttpRequest.BodyPublishers.ofString(encodedParams))
+            .header("Content-Type", "application/x-www-form-urlencoded")
+            .build()
+        log.info("Posting form data to web location: {}", location)
+        val future = client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+        handleAsyncResponseAsResult(location, future)
+    } catch (e: Exception) {
+        log.error("Error posting form data to web location: {}", location, e)
         Result.Failure(ExecutionException("Error occurred posting to endpoint: " + e.message))
     }
 

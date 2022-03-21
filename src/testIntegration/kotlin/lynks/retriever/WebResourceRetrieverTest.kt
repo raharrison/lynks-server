@@ -184,4 +184,46 @@ class WebResourceRetrieverTest {
 
     }
 
+    @Nested
+    inner class PostFormString {
+
+        @Test
+        fun testPostFormStringResultSuccess() = runBlocking {
+            val expected = "response"
+            val body = mapOf("key1" to "value1", "key2" to "value2")
+            wireMockServer.stubFor(
+                post("/api/postFormString")
+                    .withHeader("Content-Type", equalTo("application/x-www-form-urlencoded"))
+                    .withRequestBody(equalTo("key1=value1&key2=value2"))
+                    .willReturn(ok(expected))
+            )
+            val res = retriever.postFormStringResult("$baseUrl/postFormString", body)
+            if (res is Result.Success) {
+                assertThat(res.value).isEqualTo(expected)
+            } else {
+                fail("Result is not Success")
+            }
+            Unit
+        }
+
+        @Test
+        fun testPostFormStringResultFailure() = runBlocking {
+            val body = mapOf("key1" to "value1", "key2" to "value2")
+            wireMockServer.stubFor(
+                post("/api/postFormString")
+                    .withHeader("Content-Type", equalTo("application/x-www-form-urlencoded"))
+                    .withRequestBody(equalTo("key1=value1&key2=value2"))
+                    .willReturn(status(500))
+            )
+            val res = retriever.postFormStringResult("$baseUrl/failedPostString", body)
+            if (res is Result.Failure) {
+                assertThat(res.reason).isInstanceOf(ExecutionException::class.java)
+            } else {
+                fail("Result is not Failure")
+            }
+            Unit
+        }
+
+    }
+
 }

@@ -2,7 +2,7 @@ package lynks.notify
 
 internal enum class NotificationType { EXECUTED, ERROR, REMINDER, DISCUSSIONS }
 
-enum class NotificationMethod { EMAIL, PUSH, BOTH }
+enum class NotificationMethod { EMAIL, WEB, PUSHOVER }
 
 class Notification private constructor(internal val type: NotificationType, val message: String = "") {
 

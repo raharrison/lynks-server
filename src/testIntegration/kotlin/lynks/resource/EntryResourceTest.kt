@@ -20,7 +20,7 @@ class EntryResourceTest : ServerTest() {
     fun createEntries() {
         createDummyEntry("e1", "expedition", "some content here", EntryType.LINK)
         createDummyReminder(
-            "r1", "e1", ReminderType.ADHOC, NotificationMethod.EMAIL, "message",
+            "r1", "e1", ReminderType.ADHOC, listOf(NotificationMethod.EMAIL), "message",
             (System.currentTimeMillis() + 1.2e+6).toLong().toString()
         )
         Thread.sleep(10)// prevent having same creation timestamp
