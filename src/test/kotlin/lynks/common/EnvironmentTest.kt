@@ -56,7 +56,7 @@ class EnvironmentTest {
         val pushoverUser = node.get("pushoverUser").textValue()
 
         assertThat(scraperHost).isEqualTo(Environment.external.scraperHost)
-        assertThat(smmryApiKey).isEqualTo(Environment.external.smmryApikey)
+        assertThat(smmryApiKey).isEqualTo(Environment.external.smmryApiKey)
         assertThat(pushoverToken).isEqualTo(Environment.external.pushoverToken)
         assertThat(pushoverUser).isEqualTo(Environment.external.pushoverUser)
     }

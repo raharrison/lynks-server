@@ -70,7 +70,7 @@ object Environment {
     }
 
     data class External(
-        val smmryApikey: String? = config[ExternalSpec.smmryApiKey],
+        val smmryApiKey: String? = config[ExternalSpec.smmryApiKey],
         val youtubeDlHost: String = config[ExternalSpec.youtubeDlHost],
         val scraperHost: String? = config[ExternalSpec.scraperHost],
         val pushoverToken: String? = config[ExternalSpec.pushoverToken],
@@ -92,7 +92,7 @@ object Environment {
     }
         .from.json.resource("default.json")
         .from.json.resource("${mode.toString().lowercase()}.json")
-        .from.json.file("config/lynks.config.json", optional = true)
+        .from.json.file("config/lynks${if(mode == ConfigMode.TEST) "-$mode" else ""}.config.json", optional = true)
         .from.json.file(System.getProperty("CONFIG_FILE") ?: "lynks.config.json", optional = true)
         .from.env()
         .from.systemProperties()
