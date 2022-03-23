@@ -24,12 +24,12 @@ class ReminderService(private val workerRegistry: WorkerRegistry) {
         return when (row[Reminders.type]) {
             ReminderType.ADHOC -> AdhocReminder(
                     row[Reminders.reminderId], row[Reminders.entryId], toNotifyMethods(row[Reminders.notifyMethods]),
-                    row[Reminders.message], row[Reminders.spec].toLong(), row[Reminders.tz],
+                    row[Reminders.message], row[Reminders.spec].toLong(), row[Reminders.tz], row[Reminders.status],
                     row[Reminders.dateCreated], row[Reminders.dateUpdated]
             )
             ReminderType.RECURRING -> RecurringReminder(
                     row[Reminders.reminderId], row[Reminders.entryId], toNotifyMethods(row[Reminders.notifyMethods]),
-                    row[Reminders.message], row[Reminders.spec], row[Reminders.tz],
+                    row[Reminders.message], row[Reminders.spec], row[Reminders.tz], row[Reminders.status],
                     row[Reminders.dateCreated], row[Reminders.dateUpdated]
             )
         }
@@ -42,12 +42,19 @@ class ReminderService(private val workerRegistry: WorkerRegistry) {
 
     fun getRemindersForEntry(eId: String) = transaction {
         Reminders.select { Reminders.entryId eq eId }
-                .map { toModel(it) }
+            .orderBy(Reminders.dateUpdated, SortOrder.DESC)
+            .map { toModel(it) }
     }
 
     fun getAllReminders() = transaction {
         Reminders.selectAll()
-                .map { toModel(it) }
+            .orderBy(Reminders.dateUpdated, SortOrder.DESC)
+            .map { toModel(it) }
+    }
+
+    fun getAllActiveReminders() = transaction {
+        Reminders.select { Reminders.status eq ReminderStatus.ACTIVE }
+            .map { toModel(it) }
     }
 
     fun get(id: String): Reminder? = transaction {
@@ -57,24 +64,28 @@ class ReminderService(private val workerRegistry: WorkerRegistry) {
 
     fun isActive(id: String): Boolean = transaction {
         Reminders.slice(Reminders.reminderId)
-                .select { Reminders.reminderId eq id }.count() > 0
+            .select {
+                (Reminders.reminderId eq id) and
+                    (Reminders.status eq ReminderStatus.ACTIVE)
+            }.count() > 0
     }
 
-    fun add(job: Reminder): Reminder = transaction {
+    fun add(reminder: Reminder): Reminder = transaction {
         val time = System.currentTimeMillis()
         Reminders.insert {
-            it[reminderId] = job.reminderId
-            it[entryId] = job.entryId
-            it[type] = job.type
-            it[notifyMethods] = job.notifyMethods.joinToString(",")
-            it[message] = job.message
-            it[spec] = job.spec
-            it[tz] = checkValidTimeZone(job.tz)
+            it[reminderId] = reminder.reminderId
+            it[entryId] = reminder.entryId
+            it[type] = reminder.type
+            it[notifyMethods] = reminder.notifyMethods.joinToString(",")
+            it[message] = reminder.message
+            it[spec] = reminder.spec
+            it[tz] = checkValidTimeZone(reminder.tz)
+            it[status] = reminder.status
             it[dateCreated] = time
             it[dateUpdated] = time
         }
-        get(job.reminderId)!!.also {
-            log.info("Created reminder, submitting worker request id={}", job.reminderId)
+        get(reminder.reminderId)!!.also {
+            log.info("Created reminder, submitting worker request id={}", reminder.reminderId)
             workerRegistry.acceptReminderWork(ReminderWorkerRequest(it, CrudType.CREATE))
         }
     }
@@ -90,6 +101,7 @@ class ReminderService(private val workerRegistry: WorkerRegistry) {
             it[message] = reminder.message
             it[spec] = reminder.spec
             it[tz] = checkValidTimeZone(reminder.tz)
+            it[status] = reminder.status
             it[dateCreated] = time
             it[dateUpdated] = time
         }
@@ -110,17 +122,24 @@ class ReminderService(private val workerRegistry: WorkerRegistry) {
                 it[message] = reminder.message
                 it[spec] = reminder.spec
                 it[tz] = checkValidTimeZone(reminder.tz)
+                it[status] = reminder.status
                 it[dateUpdated] = System.currentTimeMillis()
             }
             if (updatedCount > 0) {
                 get(reminder.reminderId)?.also {
-                    log.info("Updated reminder, submitting worker request id={}", id)
+                    log.info("Updated reminder, submitting worker request id={}", reminder.reminderId)
                     workerRegistry.acceptReminderWork(ReminderWorkerRequest(it, CrudType.UPDATE))
                 }
             } else {
                 log.info("No rows modified when updating reminder id={}", reminder.reminderId)
                 null
             }
+        }
+    }
+
+    fun updateReminderStatus(reminderId: String, status: ReminderStatus) = transaction {
+        Reminders.update({ Reminders.reminderId eq reminderId }) {
+            it[Reminders.status] = status
         }
     }
 

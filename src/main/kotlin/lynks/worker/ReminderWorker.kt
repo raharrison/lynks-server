@@ -8,10 +8,7 @@ import lynks.entry.EntryService
 import lynks.notify.Notification
 import lynks.notify.NotificationMethod
 import lynks.notify.NotifyService
-import lynks.reminder.AdhocReminder
-import lynks.reminder.RecurringReminder
-import lynks.reminder.Reminder
-import lynks.reminder.ReminderService
+import lynks.reminder.*
 import lynks.util.ResourceTemplater
 import java.time.Instant
 import java.time.ZoneId
@@ -34,22 +31,26 @@ class ReminderWorker(
 
     override suspend fun beforeWork() {
         super.beforeWork()
-        reminderService.getAllReminders().forEach {
+        reminderService.getAllActiveReminders().forEach {
             when (it) {
-                is AdhocReminder -> launchJob { launchReminder(it) }
+                is AdhocReminder -> launchJob { launchAdhocReminder(it) }
                 is RecurringReminder -> launchJob { launchRecurringReminder(it) }
             }
         }
     }
 
     override suspend fun doWork(input: ReminderWorkerRequest) {
+        // only launch jobs when the reminder is enabled
+        if (input.reminder.status != ReminderStatus.ACTIVE) {
+            return
+        }
         when (input.reminder) {
-            is AdhocReminder -> launchReminder(input.reminder)
+            is AdhocReminder -> launchAdhocReminder(input.reminder)
             is RecurringReminder -> launchRecurringReminder(input.reminder)
         }
     }
 
-    private suspend fun launchReminder(reminder: AdhocReminder) {
+    private suspend fun launchAdhocReminder(reminder: AdhocReminder) {
         val fireDate = ZonedDateTime.ofInstant(Instant.ofEpochMilli(reminder.interval), ZoneId.of(reminder.tz))
         log.info(
             "Launching single reminder entry={} id={} nextFire={}",
@@ -60,8 +61,11 @@ class ReminderWorker(
         val sleep = calcDelay(fireDate)
         log.info("Reminder worker sleeping for {}ms entry={} reminder={}", sleep, reminder.entryId, reminder.reminderId)
         delay(sleep)
-        if (reminderService.isActive(reminder.reminderId))
+        if (reminderService.isActive(reminder.reminderId)){
             reminderElapsed(reminder)
+            log.info("Marking adhoc reminder as completed reminder={}", reminder.reminderId)
+            reminderService.updateReminderStatus(reminder.reminderId, ReminderStatus.COMPLETED)
+        }
     }
 
     private suspend fun launchRecurringReminder(reminder: RecurringReminder) {

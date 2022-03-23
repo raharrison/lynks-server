@@ -11,8 +11,9 @@ object Reminders : Table("REMINDER") {
     val type = enumeration("REMINDER_TYPE", ReminderType::class)
     val notifyMethods = varchar("NOTIFY_METHODS", 16)
     val message = varchar("MESSAGE", 255).nullable()
-    val spec = varchar("SPEC", 32)
+    val spec = varchar("SPEC", 64)
     val tz = varchar("TZ", 32)
+    val status = enumeration("STATUS", ReminderStatus::class)
     val dateCreated = long("DATE_CREATED")
     val dateUpdated = long("DATE_UPDATED")
     override val primaryKey = PrimaryKey(reminderId)
@@ -23,6 +24,12 @@ enum class ReminderType {
     RECURRING, // string
 }
 
+enum class ReminderStatus {
+    ACTIVE,
+    COMPLETED,
+    DISABLED
+}
+
 interface Reminder {
     val reminderId: String
     val entryId: String
@@ -31,6 +38,7 @@ interface Reminder {
     val message: String?
     val spec: String
     val tz: String
+    val status: ReminderStatus
     val dateCreated: Long
     val dateUpdated: Long
 }
@@ -41,6 +49,7 @@ data class AdhocReminder(override val reminderId: String,
                          override val message: String?,
                          val interval: Long,
                          override val tz: String,
+                         override val status: ReminderStatus,
                          override val dateCreated: Long,
                          override val dateUpdated: Long) : Reminder {
     override val type: ReminderType = ReminderType.ADHOC
@@ -53,6 +62,7 @@ data class RecurringReminder(override val reminderId: String,
                              override val message: String?,
                              val fire: String,
                              override val tz: String,
+                             override val status: ReminderStatus,
                              override val dateCreated: Long,
                              override val dateUpdated: Long) : Reminder {
     override val type: ReminderType = ReminderType.RECURRING
@@ -60,4 +70,5 @@ data class RecurringReminder(override val reminderId: String,
 }
 
 data class NewReminder(val reminderId: String? = null, val entryId: String, val type: ReminderType,
-                       val notifyMethods: List<NotificationMethod>, val message: String? = null, val spec: String, val tz: String)
+                       val notifyMethods: List<NotificationMethod>, val message: String? = null,
+                       val spec: String, val tz: String, val status: ReminderStatus)

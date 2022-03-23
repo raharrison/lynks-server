@@ -7,6 +7,7 @@ import lynks.common.EntryType
 import lynks.group.GroupType
 import lynks.group.Groups
 import lynks.notify.NotificationMethod
+import lynks.reminder.ReminderStatus
 import lynks.reminder.ReminderType
 import lynks.reminder.Reminders
 import lynks.worker.WorkerSchedules
@@ -75,7 +76,8 @@ fun createDummyComment(id: String, entryId: String, content: String) = transacti
 }
 
 fun createDummyReminder(id: String, entryId: String, type: ReminderType, notifyMethods: List<NotificationMethod>,
-                        message: String? = null, spec: String, tz: String = ZoneId.systemDefault().id) = transaction {
+                        message: String? = null, spec: String, tz: String = ZoneId.systemDefault().id,
+                        status: ReminderStatus = ReminderStatus.ACTIVE) = transaction {
     val time = System.currentTimeMillis()
     Reminders.insert {
         it[Reminders.reminderId] = id
@@ -85,6 +87,7 @@ fun createDummyReminder(id: String, entryId: String, type: ReminderType, notifyM
         it[Reminders.message] = message
         it[Reminders.spec] = spec
         it[Reminders.tz] = tz
+        it[Reminders.status] = status
         it[Reminders.dateCreated] = time
         it[Reminders.dateUpdated] = time
     }
