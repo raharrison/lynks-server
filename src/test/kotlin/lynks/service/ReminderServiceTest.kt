@@ -131,14 +131,14 @@ class ReminderServiceTest : DatabaseTest() {
         assertThat(reminders).extracting("reminderId").containsExactlyInAnyOrder("sid", "sid2", "sid3")
         assertThat(reminders).extracting("entryId").containsOnly("e1", "e2")
         assertThat(reminders).extracting("type").containsOnly(ReminderType.RECURRING, ReminderType.ADHOC)
-        assertThat(reminders).extracting("notifyMethods").containsExactly(
+        assertThat(reminders).extracting("notifyMethods").containsExactlyInAnyOrder(
             listOf(NotificationMethod.WEB), listOf(NotificationMethod.EMAIL),
             listOf(NotificationMethod.EMAIL, NotificationMethod.WEB)
         )
         assertThat(reminders).extracting("message").containsOnly("message")
         assertThat(reminders).extracting("spec").doesNotContain("400")
         assertThat(reminders).extracting("tz").containsOnly(tz)
-        assertThat(reminders).extracting("status").containsExactly(ReminderStatus.ACTIVE,
+        assertThat(reminders).extracting("status").containsExactlyInAnyOrder(ReminderStatus.ACTIVE,
             ReminderStatus.COMPLETED, ReminderStatus.DISABLED)
     }
 

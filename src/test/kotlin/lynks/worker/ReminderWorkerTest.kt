@@ -35,7 +35,7 @@ class ReminderWorkerTest {
         every { entryService.get("e1") } returns null
         coEvery { notifyService.accept(any(), any()) } just Runs
         coEvery { notifyService.sendEmail(any(), any()) } just Runs
-        coEvery { notifyService.sendPushoverNotification(any()) } just Runs
+        coEvery { notifyService.sendPushoverNotification(any(), any()) } just Runs
         every { reminderService.isActive(any()) } returns true
     }
 
@@ -66,13 +66,13 @@ class ReminderWorkerTest {
         coVerify(exactly = 0) { notifyService.accept(any(), reminder) }
         coVerify(exactly = 0) { notifyService.accept(any(), reminder2) }
         coVerify(exactly = 0) { notifyService.sendEmail(any(), any()) }
-        coVerify(exactly = 0) { notifyService.sendPushoverNotification(any()) }
+        coVerify(exactly = 0) { notifyService.sendPushoverNotification(any(), any()) }
 
         advanceTimeBy(TimeUnit.MINUTES.toMillis(1))
         coVerify(exactly = 1) { notifyService.accept(any(), reminder) }
         coVerify(exactly = 0) { notifyService.accept(any(), reminder2) }
         coVerify(exactly = 0) { notifyService.sendEmail(any(), any()) }
-        coVerify(exactly = 0) { notifyService.sendPushoverNotification(any()) }
+        coVerify(exactly = 0) { notifyService.sendPushoverNotification(any(), any()) }
 
         advanceTimeBy(TimeUnit.MINUTES.toMillis(35))
         send.close()
@@ -81,7 +81,7 @@ class ReminderWorkerTest {
         coVerify(exactly = 1) { notifyService.accept(any(), reminder) }
         coVerify(exactly = 1) { notifyService.accept(any(), reminder2) }
         coVerify(exactly = 1) { notifyService.sendEmail(any(), any()) }
-        coVerify(exactly = 0) { notifyService.sendPushoverNotification(any()) }
+        coVerify(exactly = 0) { notifyService.sendPushoverNotification(any(), any()) }
         coVerify(exactly = 1) { reminderService.updateReminderStatus(reminder.reminderId, ReminderStatus.COMPLETED) }
         coVerify(exactly = 1) { reminderService.updateReminderStatus(reminder2.reminderId, ReminderStatus.COMPLETED) }
     }
@@ -107,11 +107,11 @@ class ReminderWorkerTest {
         coVerify(exactly = 0) { notifyService.accept(any(), reminder) }
         coVerify(exactly = 0) { notifyService.accept(any(), reminder2) }
         coVerify(exactly = 0) { notifyService.sendEmail(any(), any()) }
-        coVerify(exactly = 0) { notifyService.sendPushoverNotification(any()) }
+        coVerify(exactly = 0) { notifyService.sendPushoverNotification(any(), any()) }
 
         advanceTimeBy(TimeUnit.MINUTES.toMillis(2))
         coVerify(exactly = 1) { notifyService.accept(any(), reminder) }
-        coVerify(exactly = 1) { notifyService.sendPushoverNotification(any()) }
+        coVerify(exactly = 1) { notifyService.sendPushoverNotification(any(), any()) }
         coVerify(exactly = 0) { notifyService.accept(any(), reminder2) }
         coVerify(exactly = 0) { notifyService.sendEmail(any(), any()) }
 
@@ -120,7 +120,7 @@ class ReminderWorkerTest {
         worker.cancelAll()
 
         coVerify(exactly = 1) { notifyService.accept(any(), reminder) }
-        coVerify(exactly = 1) { notifyService.sendPushoverNotification(any()) }
+        coVerify(exactly = 1) { notifyService.sendPushoverNotification(any(), any()) }
         coVerify(exactly = 1) { reminderService.updateReminderStatus(reminder.reminderId, ReminderStatus.COMPLETED) }
         coVerify(exactly = 1) { notifyService.accept(any(), reminder2) }
         coVerify(exactly = 1) { reminderService.updateReminderStatus(reminder2.reminderId, ReminderStatus.COMPLETED) }
@@ -140,26 +140,26 @@ class ReminderWorkerTest {
 
         advanceTimeBy(TimeUnit.MINUTES.toMillis(25))
         coVerify(exactly = 0) { notifyService.accept(any(), reminder) }
-        coVerify(exactly = 0) { notifyService.sendPushoverNotification(any()) }
+        coVerify(exactly = 0) { notifyService.sendPushoverNotification(any(), any()) }
 
         advanceTimeBy(TimeUnit.MINUTES.toMillis(160))
         coVerify(exactly = 6) { notifyService.accept(any(), reminder) }
-        coVerify(exactly = 6) { notifyService.sendPushoverNotification(any()) }
+        coVerify(exactly = 6) { notifyService.sendPushoverNotification(any(), any()) }
 
         advanceTimeBy(TimeUnit.HOURS.toMillis(1))
         coVerify(exactly = 8) { notifyService.accept(any(), reminder) }
-        coVerify(exactly = 8) { notifyService.sendPushoverNotification(any()) }
+        coVerify(exactly = 8) { notifyService.sendPushoverNotification(any(), any()) }
 
         advanceTimeBy(TimeUnit.HOURS.toMillis(2))
         coVerify(exactly = 12) { notifyService.accept(any(), reminder) }
-        coVerify(exactly = 12) { notifyService.sendPushoverNotification(any()) }
+        coVerify(exactly = 12) { notifyService.sendPushoverNotification(any(), any()) }
 
         advanceTimeBy(TimeUnit.HOURS.toMillis(3))
         send.close()
         worker.cancelAll()
 
         coVerify(exactly = 18) { notifyService.accept(any(), reminder) }
-        coVerify(exactly = 18) { notifyService.sendPushoverNotification(any()) }
+        coVerify(exactly = 18) { notifyService.sendPushoverNotification(any(), any()) }
     }
 
     @Test
@@ -191,7 +191,7 @@ class ReminderWorkerTest {
 
         coVerify(exactly = 1) { notifyService.accept(any(), reminder) }
         coVerify(exactly = 0) { notifyService.sendEmail(any(), any()) }
-        coVerify(exactly = 0) { notifyService.sendPushoverNotification(any()) }
+        coVerify(exactly = 0) { notifyService.sendPushoverNotification(any(), any()) }
     }
 
     @Test
@@ -211,7 +211,7 @@ class ReminderWorkerTest {
         worker.cancelAll()
 
         coVerify(exactly = 0) { notifyService.accept(any(), reminder) }
-        coVerify(exactly = 0) { notifyService.sendPushoverNotification(any()) }
+        coVerify(exactly = 0) { notifyService.sendPushoverNotification(any(), any()) }
         verify(exactly = 1) { reminderService.isActive(reminder.reminderId) }
         verify(exactly = 0) { reminderService.updateReminderStatus(reminder.reminderId, ReminderStatus.COMPLETED) }
     }
@@ -232,7 +232,7 @@ class ReminderWorkerTest {
         worker.cancelAll()
 
         coVerify(exactly = 0) { notifyService.accept(any(), reminder) }
-        coVerify(exactly = 0) { notifyService.sendPushoverNotification(any()) }
+        coVerify(exactly = 0) { notifyService.sendPushoverNotification(any(), any()) }
         verify(exactly = 1) { reminderService.isActive(reminder.reminderId) }
     }
 
@@ -258,7 +258,7 @@ class ReminderWorkerTest {
 
         coVerify(exactly = 1) { notifyService.accept(any(), reminder) }
         coVerify(exactly = 1) { notifyService.accept(any(), recurring) }
-        coVerify(exactly = 1) { notifyService.sendPushoverNotification(any()) }
+        coVerify(exactly = 1) { notifyService.sendPushoverNotification(any(), any()) }
         verify(exactly = 2) { reminderService.isActive(reminder.reminderId) }
         verify(exactly = 1) { reminderService.updateReminderStatus(reminder.reminderId, ReminderStatus.COMPLETED) }
     }
@@ -362,7 +362,7 @@ class ReminderWorkerTest {
 
         coVerify(exactly = 0) { notifyService.accept(any(), reminder) }
         coVerify(exactly = 0) { notifyService.sendEmail(any(), any()) }
-        coVerify(exactly = 0) { notifyService.sendPushoverNotification(any()) }
+        coVerify(exactly = 0) { notifyService.sendPushoverNotification(any(), any()) }
     }
 
     private fun createWorker(context: CoroutineContext) = ReminderWorker(reminderService, entryService, notifyService, entryAuditService)

@@ -64,8 +64,8 @@ class NotifyService(private val userService: UserService, private val pushoverCl
         }
     }
 
-    suspend fun sendPushoverNotification(notification: Notification) {
-        pushoverClient.sendNotification(notification.message)
+    suspend fun sendPushoverNotification(title: String?, notification: Notification) {
+        pushoverClient.sendNotification(title, notification.message)
     }
 
 }

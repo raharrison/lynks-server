@@ -152,9 +152,9 @@ class ReminderWorker(
 
     private suspend fun sendPushoverNotification(reminder: Reminder) {
         if (reminder.message == null) {
-            notifyService.sendPushoverNotification(Notification.reminder())
+            notifyService.sendPushoverNotification(null, Notification.reminder())
         } else {
-            notifyService.sendPushoverNotification(Notification.reminder(reminder.message!!))
+            notifyService.sendPushoverNotification("Reminder Elapsed", Notification.reminder(reminder.message!!))
         }
     }
 

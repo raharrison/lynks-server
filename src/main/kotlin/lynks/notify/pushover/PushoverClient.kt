@@ -10,7 +10,7 @@ class PushoverClient(private val webResourceRetriever: WebResourceRetriever) {
     private val pushoverMessageUrl = "https://api.pushover.net/1/messages.json"
     private val log = loggerFor<PushoverClient>()
 
-    suspend fun sendNotification(message: String) {
+    suspend fun sendNotification(title: String?, message: String) {
         val pushoverToken = Environment.external.pushoverToken
         val pushoverUser = Environment.external.pushoverUser
         if (pushoverToken == null || pushoverUser == null) {
@@ -19,11 +19,14 @@ class PushoverClient(private val webResourceRetriever: WebResourceRetriever) {
         }
 
         log.info("Sending pushover notification message={}", message)
-        val params = mapOf(
+        val params = mutableMapOf(
             "token" to pushoverToken,
             "user" to pushoverUser,
             "message" to message
         )
+        if (title != null) {
+            params["title"] = "Lynks - $title"
+        }
 
         val response = webResourceRetriever.postFormStringResult(pushoverMessageUrl, params)
         if (response is Result.Failure) {

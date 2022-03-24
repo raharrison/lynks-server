@@ -19,7 +19,7 @@ class PushoverClientTest {
     fun testSendNotificationSuccess() = runBlocking {
         val result = Result.Success("success")
         coEvery { resourceRetriever.postFormStringResult(any(), any()) } returns result
-        pushoverClient.sendNotification("message")
+        pushoverClient.sendNotification("title", "message")
         coVerify(exactly = 1) { resourceRetriever.postFormStringResult(any(), any()) }
     }
 
@@ -28,7 +28,7 @@ class PushoverClientTest {
         val result = Result.Failure(ExecutionException("failed"))
         coEvery { resourceRetriever.postFormStringResult(any(), any()) } returns result
         assertThrows<ExecutionException> {
-            pushoverClient.sendNotification("message")
+            pushoverClient.sendNotification("title", "message")
         }
         coVerify(exactly = 1) { resourceRetriever.postFormStringResult(any(), any()) }
     }

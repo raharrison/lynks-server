@@ -90,9 +90,9 @@ class NotifyServiceTest {
     @Test
     fun testSendPushoverNotification() = runBlocking {
         val notification = Notification.processed("finished")
-        coEvery { pushoverClient.sendNotification(notification.message) } just Runs
-        notifyService.sendPushoverNotification(notification)
-        coVerify(exactly = 1) { pushoverClient.sendNotification(notification.message) }
+        coEvery { pushoverClient.sendNotification(any(), notification.message) } just Runs
+        notifyService.sendPushoverNotification(null, notification)
+        coVerify(exactly = 1) { pushoverClient.sendNotification(any(), notification.message) }
     }
 
 }
