@@ -27,7 +27,7 @@ class LinkSummarizer(private val resourceRetriever: ResourceRetriever) {
     suspend fun generateSummary(target: String): Result<Summary, ExecutionException> {
         val key = Environment.external.smmryApiKey ?: return Result.Failure(ExecutionException("No Smmry API key found"))
 
-        val reqUrl = "http://api.smmry.com/&SM_API_KEY=$key&SM_KEYWORD_COUNT=5&SM_WITH_BREAK&SM_IGNORE_LENGTH&SM_URL=$target"
+        val reqUrl = "https://api.smmry.com/&SM_API_KEY=$key&SM_KEYWORD_COUNT=5&SM_WITH_BREAK&SM_IGNORE_LENGTH&SM_URL=$target"
 
         when (val response = resourceRetriever.getStringResult(reqUrl)) {
             is Result.Success -> {

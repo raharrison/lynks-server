@@ -120,7 +120,7 @@ class DiscussionFinderWorker(
     private fun encode(s: String): String = URLEncoder.encode(s, Charsets.UTF_8)
 
     private suspend fun hackerNewsDiscussions(url: String): List<Discussion> {
-        val base = "http://hn.algolia.com/api/v1/search?query=%s&restrictSearchableAttributes=url"
+        val base = "https://hn.algolia.com/api/v1/search?query=%s&restrictSearchableAttributes=url"
         val response = resourceRetriever.getString(base.format(encode(url)))
         val discussions = mutableListOf<Discussion>()
         if (response == null || response.isBlank()) return discussions

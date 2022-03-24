@@ -119,7 +119,7 @@ class YoutubeLinkProcessor(
 
     private suspend fun generateThumbnail(): GeneratedResource? {
         log.info("Capturing thumbnail for Youtube video videoId={}", videoId)
-        val dl = "http://i3.ytimg.com/vi/$videoId/mqdefault.jpg"
+        val dl = "https://i3.ytimg.com/vi/$videoId/mqdefault.jpg"
         // "https://img.youtube.com/vi/$videoId/mqdefault.jpg"
         return webResourceRetriever.getFile(dl)?.let {
             val savedFile = resourceManager.saveTempFile(url, it, ResourceType.THUMBNAIL, JPG)
@@ -129,7 +129,7 @@ class YoutubeLinkProcessor(
 
     private suspend fun generatePreview(): GeneratedResource? {
         log.info("Capturing preview for Youtube video videoId={}", videoId)
-        val dl = "http://i3.ytimg.com/vi/$videoId/maxresdefault.jpg"
+        val dl = "https://i3.ytimg.com/vi/$videoId/maxresdefault.jpg"
         // "https://img.youtube.com/vi/$videoId/maxresdefault.jpg"
         return webResourceRetriever.getFile(dl)?.let {
             val savedFile = resourceManager.saveTempFile(url, it, ResourceType.PREVIEW, JPG)

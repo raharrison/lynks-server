@@ -35,7 +35,7 @@ class ReminderResourceTest : ServerTest() {
         assertThat(reminders).extracting("notifyMethods")
             .containsOnly(listOf(NotificationMethod.WEB.name.lowercase(), NotificationMethod.EMAIL.name.lowercase()))
         assertThat(reminders).extracting("message").containsOnly("message")
-        assertThat(reminders).extracting("status").containsOnly(ReminderStatus.ACTIVE.name)
+        assertThat(reminders).extracting("status").containsOnly(ReminderStatus.ACTIVE.name.lowercase())
         assertThat(reminders).extracting("dateCreated").doesNotContainNull()
         assertThat(reminders).extracting("dateUpdated").doesNotContainNull()
     }
