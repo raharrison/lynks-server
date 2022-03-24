@@ -59,10 +59,9 @@ object URLUtils {
     }
 
     fun ensureUrlProtocol(url: String): String {
-        var uri = url.lowercase()
-        if (!uri.startsWith("http://") and !uri.startsWith("https://")) {
-            uri = "https://$url"
+        if (!url.startsWith("http://") and !url.startsWith("https://")) {
+            return "https://$url"
         }
-        return uri
+        return url
     }
 }

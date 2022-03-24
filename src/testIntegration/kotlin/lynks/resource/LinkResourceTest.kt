@@ -272,7 +272,7 @@ class LinkResourceTest: ServerTest() {
 
         assertThat(created.version).isOne()
         assertThat(created.title).isEqualTo(newLink.title)
-        assertThat(created.url).isEqualTo(newLink.url)
+        assertThat(created.url).isEqualTo("https://gmail.com")
         assertThat(created.dateCreated).isEqualTo(created.dateUpdated)
 
         // update
@@ -287,7 +287,7 @@ class LinkResourceTest: ServerTest() {
                 .extract().to<Link>()
 
         assertThat(updated.title).isEqualTo(updateLink.title)
-        assertThat(updated.url).isEqualTo(updateLink.url)
+        assertThat(updated.url).isEqualTo("https://google.com")
         assertThat(updated.version).isEqualTo(2)
         assertThat(updated.dateCreated).isNotEqualTo(updated.dateUpdated)
 
@@ -298,7 +298,7 @@ class LinkResourceTest: ServerTest() {
                 .extract().to<Link>()
         assertThat(original.version).isOne()
         assertThat(original.title).isEqualTo(newLink.title)
-        assertThat(original.url).isEqualTo(newLink.url)
+        assertThat(original.url).isEqualTo("https://gmail.com")
         assertThat(original.dateCreated).isEqualTo(original.dateUpdated)
 
         val current = get("/link/{id}", created.id)
@@ -307,7 +307,7 @@ class LinkResourceTest: ServerTest() {
                 .extract().to<Link>()
         assertThat(current.version).isEqualTo(2)
         assertThat(current.title).isEqualTo(updateLink.title)
-        assertThat(current.url).isEqualTo(updateLink.url)
+        assertThat(current.url).isEqualTo("https://google.com")
         assertThat(current.dateCreated).isNotEqualTo(current.dateUpdated)
     }
 
@@ -325,7 +325,7 @@ class LinkResourceTest: ServerTest() {
 
         assertThat(created.version).isOne()
         assertThat(created.title).isEqualTo(newLink.title)
-        assertThat(created.url).isEqualTo(newLink.url)
+        assertThat(created.url).isEqualTo("https://google.com")
         assertThat(created.dateCreated).isEqualTo(created.dateUpdated)
 
         // update no new version
@@ -340,7 +340,7 @@ class LinkResourceTest: ServerTest() {
             .extract().to<Link>()
 
         assertThat(updated.title).isEqualTo(updateLink.title)
-        assertThat(updated.url).isEqualTo(updateLink.url)
+        assertThat(updated.url).isEqualTo("https://amazon.com")
         assertThat(updated.version).isOne()
         assertThat(updated.dateCreated).isNotEqualTo(updated.dateUpdated)
 
@@ -351,7 +351,7 @@ class LinkResourceTest: ServerTest() {
             .extract().to<Link>()
         assertThat(current.version).isOne()
         assertThat(current.title).isEqualTo(updateLink.title)
-        assertThat(current.url).isEqualTo(updateLink.url)
+        assertThat(current.url).isEqualTo("https://amazon.com")
         assertThat(current.dateCreated).isNotEqualTo(current.dateUpdated)
     }
 

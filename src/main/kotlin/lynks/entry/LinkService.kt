@@ -58,17 +58,19 @@ class LinkService(
     }
 
     override fun add(entry: NewLink): Link {
-        val link = super.add(entry)
-        workerRegistry.acceptLinkWork(PersistLinkProcessingRequest(link, ResourceType.linkBaseline(), entry.process))
-        if (entry.process)
+        val fullEntry = entry.copy(url = URLUtils.ensureUrlProtocol(entry.url))
+        val link = super.add(fullEntry)
+        workerRegistry.acceptLinkWork(PersistLinkProcessingRequest(link, ResourceType.linkBaseline(), fullEntry.process))
+        if (fullEntry.process)
             workerRegistry.acceptDiscussionWork(link.id)
         return link
     }
 
     override fun update(entry: NewLink, newVersion: Boolean): Link? {
-        return super.update(entry, newVersion)?.also {
-            workerRegistry.acceptLinkWork(PersistLinkProcessingRequest(it, ResourceType.linkBaseline(), entry.process))
-            if (entry.process)
+        val fullEntry = entry.copy(url = URLUtils.ensureUrlProtocol(entry.url))
+        return super.update(fullEntry, newVersion)?.also {
+            workerRegistry.acceptLinkWork(PersistLinkProcessingRequest(it, ResourceType.linkBaseline(), fullEntry.process))
+            if (fullEntry.process)
                 workerRegistry.acceptDiscussionWork(it.id)
         }
     }
@@ -99,7 +101,8 @@ class LinkService(
     }
 
     fun checkExistingWithUrl(url: String): List<SlimLink> = transaction {
-        getBaseQuery().adjustSlice { slice(slimColumnSet) }.combine { Entries.plainContent eq url }.map { toSlimModel(it) }
+        val fullUrl = URLUtils.ensureUrlProtocol(url)
+        getBaseQuery().adjustSlice { slice(slimColumnSet) }.combine { Entries.plainContent eq fullUrl }.map { toSlimModel(it) }
     }
 
 }

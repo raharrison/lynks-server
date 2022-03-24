@@ -49,7 +49,7 @@ class LinkServiceTest : DatabaseTest() {
         val link = linkService.add(newLink("n1", "google.com/page"))
         assertThat(link.type).isEqualTo(EntryType.LINK)
         assertThat(link.title).isEqualTo("n1")
-        assertThat(link.url).isEqualTo("google.com/page")
+        assertThat(link.url).isEqualTo("https://google.com/page")
         assertThat(link.source).isEqualTo("google.com")
         assertThat(link.dateUpdated).isPositive()
         assertThat(link.dateCreated).isEqualTo(link.dateUpdated)
@@ -64,7 +64,7 @@ class LinkServiceTest : DatabaseTest() {
         val link = linkService.add(newLink("n1", "google.com", listOf("t1", "t2")))
         assertThat(link.type).isEqualTo(EntryType.LINK)
         assertThat(link.title).isEqualTo("n1")
-        assertThat(link.url).isEqualTo("google.com")
+        assertThat(link.url).isEqualTo("https://google.com")
         assertThat(link.tags).hasSize(2).extracting("id").containsExactly("t1", "t2")
         assertThat(link.dateCreated).isEqualTo(link.dateUpdated)
         assertThat(link.thumbnailId).isNull()
@@ -76,7 +76,7 @@ class LinkServiceTest : DatabaseTest() {
         val link = linkService.add(newLink("n1", "google.com", emptyList(), listOf("c1", "c2")))
         assertThat(link.type).isEqualTo(EntryType.LINK)
         assertThat(link.title).isEqualTo("n1")
-        assertThat(link.url).isEqualTo("google.com")
+        assertThat(link.url).isEqualTo("https://google.com")
         assertThat(link.collections).hasSize(2).extracting("id").containsExactly("c1", "c2")
         assertThat(link.dateCreated).isEqualTo(link.dateUpdated)
         assertThat(link.thumbnailId).isNull()
@@ -293,7 +293,7 @@ class LinkServiceTest : DatabaseTest() {
         val newLink = linkService.get(updated!!.id)
         assertThat(newLink?.id).isEqualTo(added1.id)
         assertThat(newLink?.title).isEqualTo("updated")
-        assertThat(newLink?.url).isEqualTo("amazon.com")
+        assertThat(newLink?.url).isEqualTo("https://amazon.com")
         assertThat(newLink?.tags).hasSize(1)
         assertThat(newLink?.collections).hasSize(1)
         assertThat(newLink?.dateUpdated).isNotEqualTo(newLink?.dateCreated)
@@ -301,7 +301,7 @@ class LinkServiceTest : DatabaseTest() {
 
         val oldLink = linkService.get(added1.id)
         assertThat(oldLink?.id).isEqualTo(updated.id)
-        assertThat(oldLink?.url).isEqualTo("amazon.com")
+        assertThat(oldLink?.url).isEqualTo("https://amazon.com")
         assertThat(oldLink?.title).isEqualTo("updated")
         assertThat(oldLink?.tags).hasSize(1)
         assertThat(oldLink?.collections).hasSize(1)
@@ -321,7 +321,7 @@ class LinkServiceTest : DatabaseTest() {
         val newLink = linkService.get(updated!!.id)
         assertThat(newLink?.id).isEqualTo(added1.id)
         assertThat(newLink?.title).isEqualTo("updated")
-        assertThat(newLink?.url).isEqualTo("amazon.com")
+        assertThat(newLink?.url).isEqualTo("https://amazon.com")
         assertThat(newLink?.dateUpdated).isNotEqualTo(newLink?.dateCreated)
 
         // for initial add then update
@@ -349,12 +349,12 @@ class LinkServiceTest : DatabaseTest() {
     fun testUpdateLinkTags() {
         val added1 = linkService.add(newLink("n1", "google.com", listOf("t1", "t2")))
         assertThat(linkService.get(added1.id)?.title).isEqualTo("n1")
-        assertThat(linkService.get(added1.id)?.url).isEqualTo("google.com")
+        assertThat(linkService.get(added1.id)?.url).isEqualTo("https://google.com")
         assertThat(linkService.get(added1.id)?.tags).extracting("id").containsExactlyInAnyOrder("t1", "t2")
 
         linkService.update(newLink(added1.id, "n1", "google.com", listOf("t2")))
         assertThat(linkService.get(added1.id)?.title).isEqualTo("n1")
-        assertThat(linkService.get(added1.id)?.url).isEqualTo("google.com")
+        assertThat(linkService.get(added1.id)?.url).isEqualTo("https://google.com")
         assertThat(linkService.get(added1.id)?.tags).extracting("id").containsExactlyInAnyOrder("t2")
 
         linkService.update(newLink(added1.id, "n1", "google.com", listOf("t2", "t3")))
@@ -366,12 +366,12 @@ class LinkServiceTest : DatabaseTest() {
     fun testUpdateLinkCollections() {
         val added1 = linkService.add(newLink("n1", "google.com", emptyList(), listOf("c1", "c2")))
         assertThat(linkService.get(added1.id)?.title).isEqualTo("n1")
-        assertThat(linkService.get(added1.id)?.url).isEqualTo("google.com")
+        assertThat(linkService.get(added1.id)?.url).isEqualTo("https://google.com")
         assertThat(linkService.get(added1.id)?.collections).extracting("id").containsExactlyInAnyOrder("c1", "c2")
 
         linkService.update(newLink(added1.id, "n1", "google.com", emptyList(), listOf("c2")))
         assertThat(linkService.get(added1.id)?.title).isEqualTo("n1")
-        assertThat(linkService.get(added1.id)?.url).isEqualTo("google.com")
+        assertThat(linkService.get(added1.id)?.url).isEqualTo("https://google.com")
         assertThat(linkService.get(added1.id)?.collections).extracting("id").containsExactlyInAnyOrder("c2")
 
         linkService.update(newLink(added1.id, "n1", "google.com"))
@@ -388,7 +388,7 @@ class LinkServiceTest : DatabaseTest() {
         assertThat(linkService.get(updated!!.id)?.id).isNotEqualTo(added1.id)
         assertThat(added1.id).isNotEqualToIgnoringCase(updated.id)
         assertThat(updated.title).isEqualTo("updated")
-        assertThat(updated.url).isEqualTo("amazon.com")
+        assertThat(updated.url).isEqualTo("https://amazon.com")
         assertThat(updated.dateUpdated).isEqualTo(updated.dateCreated)
         assertThat(added1.dateCreated).isNotEqualTo(updated.dateCreated)
         assertThat(updated.thumbnailId).isEqualTo(added1.thumbnailId)
