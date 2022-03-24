@@ -97,4 +97,13 @@ class URLUtilsTest {
         assertThat(URLUtils.encode("abc123")).isEqualTo("abc123")
         assertThat(URLUtils.encode("a:b*c(d)&e!f")).isEqualTo("a%3Ab*c%28d%29%26e%21f")
     }
+
+    @Test
+    fun testEnsureUrlProtocol() {
+        assertThat(URLUtils.ensureUrlProtocol("google.com")).isEqualTo("https://google.com")
+        assertThat(URLUtils.ensureUrlProtocol("http://google.com")).isEqualTo("http://google.com")
+        assertThat(URLUtils.ensureUrlProtocol("https://google.com")).isEqualTo("https://google.com")
+        assertThat(URLUtils.ensureUrlProtocol("www.google.com")).isEqualTo("https://www.google.com")
+        assertThat(URLUtils.ensureUrlProtocol("https://www.google.com")).isEqualTo("https://www.google.com")
+    }
 }

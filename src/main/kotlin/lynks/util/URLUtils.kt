@@ -57,4 +57,12 @@ object URLUtils {
     fun encode(value: String): String {
         return URLEncoder.encode(value, StandardCharsets.UTF_8)
     }
+
+    fun ensureUrlProtocol(url: String): String {
+        var uri = url.lowercase()
+        if (!uri.startsWith("http://") and !uri.startsWith("https://")) {
+            uri = "https://$url"
+        }
+        return uri
+    }
 }
