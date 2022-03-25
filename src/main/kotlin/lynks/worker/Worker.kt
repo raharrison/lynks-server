@@ -4,7 +4,6 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.channels.actor
 import lynks.entry.EntryAuditService
-import lynks.notify.Notification
 import lynks.notify.NotifyService
 import lynks.util.JsonMapper.defaultMapper
 import org.jetbrains.exposed.sql.*
@@ -33,10 +32,6 @@ abstract class Worker<T>(
 
     protected inline fun launchJob(crossinline job: suspend () -> Unit): Job = launch(coroutineContext) {
         job()
-    }
-
-    protected suspend fun sendNotification(notification: Notification = Notification.processed(), body: Any? = null) {
-        notifyService.accept(notification, body)
     }
 
     override val coroutineContext: CoroutineContext

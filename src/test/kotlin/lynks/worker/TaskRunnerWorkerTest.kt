@@ -20,8 +20,6 @@ class TaskRunnerWorkerTest {
         coEvery { task.process(context) } just Runs
 
         val notifyService = mockk<NotifyService>(relaxUnitFun = true)
-        coEvery { notifyService.accept(any(), null) } just Runs
-
         val entryAuditService = mockk<EntryAuditService>(relaxUnitFun = true)
 
         val taskRunnerWorker = TaskRunnerWorker(notifyService, entryAuditService)
@@ -32,8 +30,6 @@ class TaskRunnerWorkerTest {
         taskRunnerWorker.close()
 
         coVerify(exactly = 1) { task.process(context) }
-        coVerify(exactly = 1) { notifyService.accept(any(), null) }
-
     }
 
 }

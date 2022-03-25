@@ -5,7 +5,7 @@ import kotlinx.coroutines.time.delay
 import lynks.common.DISCUSSIONS_PROP
 import lynks.entry.EntryAuditService
 import lynks.entry.LinkService
-import lynks.notify.Notification
+import lynks.notify.NewNotification
 import lynks.notify.NotifyService
 import lynks.resource.ResourceRetriever
 import lynks.util.JsonMapper.defaultMapper
@@ -86,10 +86,10 @@ class DiscussionFinderWorker(
 
                 val difference = discussions.size - current.size
                 if (difference > 0) {
-                    val message = "$difference new discussions found"
-                    log.info("Discussion finder worker sending notification entry={} difference={}", link.id, difference)
+                    val message = "Discussion finder found $difference new references"
+                    log.info("Discussion finder worker creating notification entry={} differences={}", link.id, difference)
                     entryAuditService.acceptAuditEvent(link.id, DiscussionFinderWorker::class.simpleName, message)
-                    sendNotification(Notification.discussions(message), link)
+                    notifyService.create(NewNotification.discussions(message, link.id))
                 }
             } else {
                 log.info("Discussion finder worker none found entry={}", link.id)

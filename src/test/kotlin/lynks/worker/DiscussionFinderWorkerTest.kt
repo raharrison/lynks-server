@@ -10,6 +10,8 @@ import lynks.common.DatabaseTest
 import lynks.common.Link
 import lynks.entry.EntryAuditService
 import lynks.entry.LinkService
+import lynks.notify.Notification
+import lynks.notify.NotificationType
 import lynks.notify.NotifyService
 import lynks.resource.ResourceRetriever
 import lynks.util.createDummyWorkerSchedule
@@ -34,7 +36,9 @@ class DiscussionFinderWorkerTest: DatabaseTest() {
         every { linkService.get("id1") } returns link
         every { linkService.mergeProps(eq(link.id), capture(propsSlot)) } just Runs
 
-        coEvery { notifyService.accept(any(), ofType(Link::class)) } just Runs
+        coEvery { notifyService.create(any()) } returns Notification(
+            "n1", NotificationType.DISCUSSIONS, "found", false, dateCreated = System.currentTimeMillis()
+        )
     }
 
     @Test
@@ -52,7 +56,7 @@ class DiscussionFinderWorkerTest: DatabaseTest() {
 
         coVerify(exactly = 5) { linkService.get(link.id) }
         coVerify(exactly = 5 * 2) { retriever.getString(any()) }
-        coVerify(exactly = 0) { notifyService.accept(any(), any()) }
+        coVerify(exactly = 0) { notifyService.create(any()) }
         coVerify(exactly = 5) { entryAuditService.acceptAuditEvent(link.id, any(), any()) }
         worker.close()
     }
@@ -80,7 +84,7 @@ class DiscussionFinderWorkerTest: DatabaseTest() {
         assertThat(discussions).extracting("url").doesNotHaveDuplicates()
 
         coVerify(exactly = 5 * 2) { retriever.getString(any()) }
-        coVerify(exactly = 1) { notifyService.accept(any(), link) }
+        coVerify(exactly = 1) { notifyService.create(any()) }
         coVerify(exactly = 1) { entryAuditService.acceptAuditEvent(link.id, any(), any()) }
         worker.close()
     }
@@ -112,7 +116,7 @@ class DiscussionFinderWorkerTest: DatabaseTest() {
         assertThat(discussions).extracting("url").doesNotHaveDuplicates()
 
         coVerify(exactly = 5 * 2) { retriever.getString(any()) }
-        coVerify(exactly = 1) { notifyService.accept(any(), link) }
+        coVerify(exactly = 1) { notifyService.create(any()) }
         coVerify(exactly = 1) { entryAuditService.acceptAuditEvent(link.id, any(), any()) }
         worker.close()
     }
@@ -134,7 +138,7 @@ class DiscussionFinderWorkerTest: DatabaseTest() {
         assertThat(propsSlot.captured.getAttribute(DISCUSSIONS_PROP) as List<*>).hasSize(6)
 
         coVerify(exactly = 2 * 2) { retriever.getString(any()) }
-        coVerify(exactly = 1) { notifyService.accept(any(), link) }
+        coVerify(exactly = 1) { notifyService.create(any()) }
         coVerify(exactly = 1) { entryAuditService.acceptAuditEvent(link.id, any(), any()) }
         worker.close()
     }
@@ -157,7 +161,7 @@ class DiscussionFinderWorkerTest: DatabaseTest() {
         assertThat(propsSlot.captured.getAttribute(DISCUSSIONS_PROP) as List<*>).hasSize(6)
 
         coVerify(exactly = 2 * 2) { retriever.getString(any()) }
-        coVerify(exactly = 1) { notifyService.accept(any(), link) }
+        coVerify(exactly = 1) { notifyService.create(any()) }
         coVerify(exactly = 1) { entryAuditService.acceptAuditEvent(link.id, any(), any()) }
         worker.close()
     }
@@ -179,7 +183,7 @@ class DiscussionFinderWorkerTest: DatabaseTest() {
         assertThat(discussions).extracting("url").doesNotHaveDuplicates()
 
         coVerify(exactly = 5 * 2) { retriever.getString(any()) }
-        coVerify(exactly = 1) { notifyService.accept(any(), link) }
+        coVerify(exactly = 1) { notifyService.create(any()) }
         coVerify(exactly = 5) { entryAuditService.acceptAuditEvent(link.id, any(), any()) }
         worker.close()
     }
@@ -203,11 +207,11 @@ class DiscussionFinderWorkerTest: DatabaseTest() {
         assertThat(discussions).hasSize(6)
 
         coVerify(exactly = 6 * 2) { retriever.getString(any()) }
-        coVerify(exactly = 1) { notifyService.accept(any(), link) }
+        coVerify(exactly = 1) { notifyService.create(any()) }
         coVerify(exactly = 5) { entryAuditService.acceptAuditEvent(link.id, any(), any()) }
         worker.close()
     }
 
-    private fun getFile(name: String) = this.javaClass.getResource(name).readText()
+    private fun getFile(name: String) = this.javaClass.getResource(name)?.readText()
 
 }

@@ -7,6 +7,8 @@ import lynks.common.EntryType
 import lynks.group.GroupType
 import lynks.group.Groups
 import lynks.notify.NotificationMethod
+import lynks.notify.NotificationType
+import lynks.notify.Notifications
 import lynks.reminder.ReminderStatus
 import lynks.reminder.ReminderType
 import lynks.reminder.Reminders
@@ -99,5 +101,16 @@ fun createDummyWorkerSchedule(worker: String, key: String, request: Any, lastRun
         it[WorkerSchedules.key] = key
         it[WorkerSchedules.request] = JsonMapper.defaultMapper.writeValueAsString(request)
         it[WorkerSchedules.lastRun] = lastRun
+    }
+}
+
+fun createDummyNotification(id: String, type: NotificationType, msg: String, eid: String?) = transaction {
+    Notifications.insert {
+        it[notificationId] = id
+        it[notificationType] = type
+        it[message] = msg
+        it[read] = false
+        it[entryId] = eid
+        it[dateCreated] = System.currentTimeMillis()
     }
 }

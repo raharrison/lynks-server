@@ -9,7 +9,7 @@ import lynks.entry.LinkService
 import lynks.group.GroupSetService
 import lynks.link.LinkProcessor
 import lynks.link.LinkProcessorFactory
-import lynks.notify.Notification
+import lynks.notify.NewNotification
 import lynks.notify.NotifyService
 import lynks.resource.GeneratedResource
 import lynks.resource.Resource
@@ -67,15 +67,16 @@ class LinkProcessorWorker(
             link.props.addAttribute(DEAD_LINK_PROP, false)
             linkService.mergeProps(link.id, link.props)
 
-            val updatedLink = linkService.update(link)
-            log.info("Link processing worker request complete, sending notification entry={}", link.id)
+            linkService.update(link)
+            log.info("Link processing worker request complete, saved {} resources for entry={}", link.id, resources.size)
+            val message = "Link processed successfully, ${resources.size} resources created"
             if (process) {
                 entryAuditService.acceptAuditEvent(
                     link.id,
                     LinkProcessorWorker::class.simpleName,
-                    "Link processing completed successfully"
+                    message
                 )
-                sendNotification(body = updatedLink)
+                notifyService.create(NewNotification.processed(message, link.id))
             }
         } catch (e: Exception) {
             log.error("Link processing worker failed for entry={}", link.id, e)
@@ -84,8 +85,7 @@ class LinkProcessorWorker(
             linkService.mergeProps(link.id, link.props)
             log.info("Link processing worker marked link as dead after failure, sending notification entry={}", link.id)
             entryAuditService.acceptAuditEvent(link.id, LinkProcessorWorker::class.simpleName, "Link processing failed")
-            sendNotification(Notification.error("Error occurred processing link"))
-            // log and reschedule
+            notifyService.create(NewNotification.error("An error occurred whilst processing the link", link.id))
         }
     }
 

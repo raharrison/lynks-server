@@ -18,12 +18,15 @@ import lynks.link.LinkDetails
 import lynks.link.LinkProcessor
 import lynks.link.LinkProcessorFactory
 import lynks.link.SuggestResponse
+import lynks.notify.Notification
+import lynks.notify.NotificationType
 import lynks.notify.NotifyService
 import lynks.resource.*
 import lynks.suggest.Suggestion
 import lynks.util.FileUtils
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import java.nio.file.Files
@@ -43,6 +46,13 @@ class LinkProcessorWorkerTest {
     private val worker =
         LinkProcessorWorker(resourceManager, linkService, groupSetService, notifyService, entryAuditService)
             .also { it.processorFactory = processorFactory }
+
+    @BeforeEach
+    fun setup() {
+        coEvery { notifyService.create(any()) } returns Notification(
+            "n1", NotificationType.DISCUSSIONS, "found", false, dateCreated = System.currentTimeMillis()
+        )
+    }
 
     @AfterEach
     fun clean() {
@@ -69,7 +79,6 @@ class LinkProcessorWorkerTest {
             FileUtils.writeToFile(readableTextContentPath, content.toByteArray())
             val processor = mockk<LinkProcessor>(relaxUnitFun = true)
 
-            coEvery { notifyService.accept(any(), ofType(Link::class)) } just Runs
             coEvery { processor.scrapeResources(resourceSet) } returns generatedResources
             every { resourceManager.migrateGeneratedResources(link.id, any()) } returns listOf(
                 Resource("rid1", link.id, "screenshot", PNG, ResourceType.SCREENSHOT, 1189, 100, 100),
@@ -94,7 +103,7 @@ class LinkProcessorWorkerTest {
             verify(exactly = 1) { processor.close() }
             verify(exactly = 1) { linkService.mergeProps(eq("id1"), any()) }
             verify(exactly = 1) { linkService.update(link) }
-            coVerify(exactly = 1) { notifyService.accept(any(), ofType(Link::class)) }
+            coVerify(exactly = 1) { notifyService.create(any()) }
             assertThat(link.content).isEqualTo("article content")
 
             coVerify(exactly = 1) { processor.scrapeResources(resourceSet) }
@@ -111,7 +120,6 @@ class LinkProcessorWorkerTest {
             )
             val processor = mockk<LinkProcessor>(relaxUnitFun = true)
 
-            coEvery { notifyService.accept(any(), ofType(Link::class)) } just Runs
             coEvery { processor.scrapeResources(resourceSet) } returns generatedResources
             every { resourceManager.migrateGeneratedResources(link.id, generatedResources) } returns emptyList()
             coEvery { processor.enrich(link.props) } just Runs
@@ -131,7 +139,7 @@ class LinkProcessorWorkerTest {
             verify(exactly = 1) { processor.close() }
             verify(exactly = 1) { linkService.mergeProps(eq("id1"), any()) }
             verify(exactly = 1) { linkService.update(link) }
-            coVerify(exactly = 1) { notifyService.accept(any(), ofType(Link::class)) }
+            coVerify(exactly = 1) { notifyService.create(any()) }
             coVerify(exactly = 1) { processor.scrapeResources(resourceSet) }
             verify(exactly = 1) { resourceManager.migrateGeneratedResources(link.id, generatedResources) }
             verify(exactly = 1) { entryAuditService.acceptAuditEvent(link.id, any(), any()) }
@@ -142,7 +150,6 @@ class LinkProcessorWorkerTest {
             val link = Link("id1", "title", "google.com", "google.com", "", 100, 100)
 
             val processor = mockk<LinkProcessor>(relaxUnitFun = true)
-            coEvery { notifyService.accept(any(), ofType(Link::class)) } just Runs
             coEvery { processor.enrich(link.props) } just Runs
             every { processor.close() } just Runs
 
@@ -160,7 +167,7 @@ class LinkProcessorWorkerTest {
             verify(exactly = 1) { processor.close() }
             verify(exactly = 1) { linkService.mergeProps(eq("id1"), any()) }
             verify(exactly = 1) { linkService.update(link) }
-            coVerify(exactly = 0) { notifyService.accept(any(), ofType(Link::class)) }
+            coVerify(exactly = 0) { notifyService.create(any()) }
 
             coVerify(exactly = 0) { processor.scrapeResources(any()) }
             verify(exactly = 0) { entryAuditService.acceptAuditEvent(link.id, any(), any()) }
@@ -186,7 +193,7 @@ class LinkProcessorWorkerTest {
             verify(exactly = 1) { processor.close() }
             verify(exactly = 1) { linkService.mergeProps(eq("id1"), any()) }
             verify(exactly = 1) { linkService.update(link) }
-            coVerify(exactly = 1) { notifyService.accept(any(), ofType(Link::class)) }
+            coVerify(exactly = 1) { notifyService.create(any()) }
 
             coVerify(exactly = 0) { processor.scrapeResources(any()) }
             verify(exactly = 1) { entryAuditService.acceptAuditEvent(link.id, any(), any()) }
@@ -198,7 +205,6 @@ class LinkProcessorWorkerTest {
 
             val exception = RuntimeException("error during computation")
             val processor = mockk<LinkProcessor>(relaxUnitFun = true)
-            coEvery { notifyService.accept(any(), null) } just Runs
             coEvery { processor.scrapeResources(any()) } throws exception
             every { processor.close() } just Runs
 
@@ -216,7 +222,7 @@ class LinkProcessorWorkerTest {
             verify(exactly = 1) { processor.close() }
             verify(exactly = 0) { linkService.update(link) }
             verify(exactly = 1) { linkService.mergeProps(eq("id1"), any()) }
-            coVerify(exactly = 1) { notifyService.accept(any(), null) }
+            coVerify(exactly = 1) { notifyService.create(any()) }
             verify(exactly = 1) { entryAuditService.acceptAuditEvent(link.id, any(), any()) }
             assertThat(link.props.containsAttribute(DEAD_LINK_PROP)).isTrue()
 

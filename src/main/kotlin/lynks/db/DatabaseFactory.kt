@@ -9,6 +9,7 @@ import lynks.common.EntryVersions
 import lynks.common.Environment
 import lynks.group.EntryGroups
 import lynks.group.Groups
+import lynks.notify.Notifications
 import lynks.reminder.Reminders
 import lynks.resource.Resources
 import lynks.user.UserPreferences
@@ -31,7 +32,7 @@ class DatabaseFactory {
     private val tables = listOf(
         Entries, EntryVersions, EntryAudit,
         Comments, Resources, Reminders, UserPreferences,
-        Groups, EntryGroups, WorkerSchedules
+        Groups, EntryGroups, WorkerSchedules, Notifications
     )
 
     fun connectAndMigrate() {

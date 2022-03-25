@@ -5,6 +5,7 @@ import lynks.common.Link
 import lynks.common.Note
 import lynks.entry.EntryAuditService
 import lynks.entry.EntryService
+import lynks.notify.NewNotification
 import lynks.notify.Notification
 import lynks.notify.NotificationMethod
 import lynks.notify.NotifyService
@@ -59,7 +60,8 @@ class ReminderWorker(
             fireDate
         )
         val sleep = calcDelay(fireDate)
-        log.info("Reminder worker sleeping for {}ms entry={} reminder={}", sleep, reminder.entryId, reminder.reminderId)
+        log.info("Reminder worker sleeping for {}mins entry={} reminder={}",
+            sleep / 1000 / 60, reminder.entryId, reminder.reminderId)
         delay(sleep)
         if (reminderService.isActive(reminder.reminderId)){
             reminderElapsed(reminder)
@@ -82,8 +84,8 @@ class ReminderWorker(
             )
             val sleep = calcDelay(next)
             log.info(
-                "Reminder worker sleeping for {}ms entry={} reminder={}",
-                sleep,
+                "Reminder worker sleeping for {}mins entry={} reminder={}",
+                sleep / 1000 / 60,
                 reminder.entryId,
                 reminder.reminderId
             )
@@ -96,10 +98,13 @@ class ReminderWorker(
     private suspend fun reminderElapsed(reminder: Reminder) {
         log.info("Reminder elapsed entry={} reminder={}", reminder.entryId, reminder.reminderId)
 
+        val message = if(reminder.message == null) "Reminder Elapsed" else reminder.message!!
+        val notification = notifyService.create(NewNotification.reminder(message, reminder.entryId), false)
+
         for (notifyMethod in EnumSet.copyOf(reminder.notifyMethods)) {
             if (notifyMethod == NotificationMethod.WEB) {
                 try {
-                    sendWebNotification(reminder)
+                    notifyService.sendWebNotification(notification)
                 } catch (e: Exception) {
                     log.error("Reminder web notification failed", e)
                 }
@@ -115,20 +120,12 @@ class ReminderWorker(
 
             if (notifyMethod == NotificationMethod.PUSHOVER) {
                 try {
-                    sendPushoverNotification(reminder)
+                    sendPushoverNotification(reminder, notification)
                 } catch (e: Exception) {
                     log.error("Reminder pushover notification failed", e)
                 }
             }
 
-        }
-    }
-
-    private suspend fun sendWebNotification(reminder: Reminder) {
-        if (reminder.message == null) {
-            sendNotification(Notification.reminder(), reminder)
-        } else {
-            sendNotification(Notification.reminder(reminder.message!!), reminder)
         }
     }
 
@@ -150,11 +147,11 @@ class ReminderWorker(
         notifyService.sendEmail("Lynks - Reminder Elapsed", email)
     }
 
-    private suspend fun sendPushoverNotification(reminder: Reminder) {
+    private suspend fun sendPushoverNotification(reminder: Reminder, notification: Notification) {
         if (reminder.message == null) {
-            notifyService.sendPushoverNotification(null, Notification.reminder())
+            notifyService.sendPushoverNotification(notification, null)
         } else {
-            notifyService.sendPushoverNotification("Reminder Elapsed", Notification.reminder(reminder.message!!))
+            notifyService.sendPushoverNotification(notification, "Reminder Elapsed")
         }
     }
 
