@@ -2,6 +2,7 @@ services:
   lynks-ui:
     image: raharrison/lynks-ui:1.1.1
     restart: on-failure:5
+    user: ${CURRENT_UID:0}:${CURRENT_GUID:0}
   lynks-server:
     image: raharrison/lynks-server:1.2.0
     env_file:
@@ -15,6 +16,7 @@ services:
     volumes:
       - ./media:/app/media
       - ./config:/app/config
+    user: ${CURRENT_UID:0}:${CURRENT_GUID:0}
     restart: on-failure:5
     depends_on:
       - postgres
@@ -24,6 +26,7 @@ services:
     restart: on-failure:5
     volumes:
       - ./media:/app/media
+    user: ${CURRENT_UID:0}:${CURRENT_GUID:0}
   lynks-gateway:
     image: nginx:1.21-alpine
     volumes:
