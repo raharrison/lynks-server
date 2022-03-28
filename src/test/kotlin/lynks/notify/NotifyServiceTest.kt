@@ -114,6 +114,24 @@ class NotifyServiceTest: DatabaseTest() {
     }
 
     @Test
+    fun testGetNotificationsSortByRead() = runBlocking {
+        val processed = notifyService.create(processed(), false)
+        delay(10)
+        val discussions = notifyService.create(discussions(), false)
+        delay(10)
+        val reminder = notifyService.create(reminder(), false)
+
+        notifyService.read(reminder.id, true)
+
+        val notifications = notifyService.getNotifications(PageRequest(sort = "read", direction = SortDirection.ASC))
+        assertThat(notifications.content).hasSize(3)
+        assertThat(notifications.total).isEqualTo(3)
+        assertThat(notifications.content).extracting<String> { it.id }
+            .containsExactly(discussions.id, processed.id, reminder.id)
+        Unit
+    }
+
+    @Test
     fun testCreateNotificationNoEntry() = runBlocking {
         val notification = notifyService.create(processed("complete"), false)
         assertThat(notification.type).isEqualTo(NotificationType.PROCESSED)

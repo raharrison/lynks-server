@@ -31,12 +31,17 @@ fun Path.toUrlString(): String {
 
 fun Table.findColumn(name: String?): Column<*>? {
     if (name == null) return null
-    return this.columns.find { it.name == name }
+    return this.columns.find { it.name.equals(name, true) }
 }
 
 fun Query.orderBy(column: Expression<*>, direction: SortDirection): Query {
     val order = SortOrder.valueOf(direction.name)
     return orderBy(column to order)
+}
+
+fun Query.orderBy(orders: List<Pair<Expression<*>, SortDirection>>): Query {
+    val mappedOrders = orders.map { it.first to SortOrder.valueOf(it.second.name) }
+    return orderBy(*mappedOrders.toTypedArray())
 }
 
 inline fun <reified T> loggerFor(): Logger = LoggerFactory.getLogger(T::class.java)

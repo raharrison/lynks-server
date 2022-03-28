@@ -34,10 +34,17 @@ class NotifyService(private val userService: UserService, private val pushoverCl
     fun getNotifications(pageRequest: PageRequest = DefaultPageRequest): Page<Notification> = transaction {
         val sortColumn = Notifications.findColumn(pageRequest.sort) ?: Notifications.dateCreated
         val sortOrder = pageRequest.direction ?: SortDirection.DESC
+        val orders = buildList {
+            add(sortColumn to sortOrder)
+            // also add secondary sort by date created when using read
+            if (sortColumn == Notifications.read) {
+                add(Notifications.dateCreated to SortDirection.DESC)
+            }
+        }
         val baseQuery = Notifications.leftJoin(Entries).slice(notificationQuerySlice).selectAll()
         Page.of(
             baseQuery.copy()
-                .orderBy(sortColumn, sortOrder)
+                .orderBy(orders)
                 .limit(pageRequest.size, max(0, (pageRequest.page - 1) * pageRequest.size))
                 .map { toNotification(it) }, pageRequest, baseQuery.count()
         )
