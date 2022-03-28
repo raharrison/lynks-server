@@ -11,14 +11,16 @@ CONFIG_PATH=$1
 
 source "$CONFIG_PATH"
 
+POSTGRES_CONTAINER=lynks-postgres-1
 DUMP_FILENAME=dump_$(date +"%Y-%m-%d_%H_%M_%S").sql
 
-docker exec -t lynks_postgres_1 pg_dumpall -c -U "$POSTGRES_USER" -d "$POSTGRES_DB" > /tmp/db.dump
-docker cp lynks_postgres_1:/tmp/db.dump "$DUMP_FILENAME"
+docker exec -t $POSTGRES_CONTAINER bash -c 'pg_dumpall -c -U $POSTGRES_USER -l $POSTGRES_DB > /tmp/lynksdb.dump'
+docker cp $POSTGRES_CONTAINER:/tmp/lynksdb.dump "$DUMP_FILENAME"
 
 echo "Database dump saved to ${DUMP_FILENAME}"
 
 
 # Restore
-# docker cp db.dump lynks_postgres_1:/tmp/db_restore.dump
-# docker exec -t lynks_postgres_1 pg_restore -c -U lynksuser -d lynksdb /tmp/db_restore.dump
+
+#docker cp db.dump $POSTGRES_CONTAINER:/tmp/db_restore.dump
+#docker exec -t $POSTGRES_CONTAINER pg_restore -c -U $POSTGRES_USER -l $POSTGRES_DB /tmp/db_restore.dump
