@@ -50,6 +50,7 @@ class LinkProcessorWorker(
 
     private suspend fun processLinkPersist(link: Link, resourceSet: EnumSet<ResourceType>, process: Boolean) {
         try {
+            val originalLink = link.copy(props = link.props)
             resourceManager.deleteTempFiles(link.url)
             link.props.clearTasks()
             val resources = processorFactory.createProcessors(link.url).flatMap {
@@ -63,12 +64,16 @@ class LinkProcessorWorker(
                     }
                 }
             }
-            link.thumbnailId = findThumbnail(resources)
+            link.thumbnailId = findThumbnail(resources) ?: link.thumbnailId
             link.props.addAttribute(DEAD_LINK_PROP, false)
             linkService.mergeProps(link.id, link.props)
 
-            linkService.update(link)
-            log.info("Link processing worker request complete, saved {} resources for entry={}", link.id, resources.size)
+            if (link != originalLink) {
+                linkService.update(link)
+            } else {
+                log.info("No changes found after link processing, not updating entity")
+            }
+            log.info("Link processing worker request complete, saved {} resources for entry={}", resources.size, link.id)
             val message = "Link processed successfully, ${resources.size} resources created"
             if (process) {
                 entryAuditService.acceptAuditEvent(

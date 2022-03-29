@@ -138,7 +138,6 @@ class LinkProcessorWorkerTest {
             coVerify(exactly = 1) { processorFactory.createProcessors(link.url) }
             verify(exactly = 1) { processor.close() }
             verify(exactly = 1) { linkService.mergeProps(eq("id1"), any()) }
-            verify(exactly = 1) { linkService.update(link) }
             coVerify(exactly = 1) { notifyService.create(any()) }
             coVerify(exactly = 1) { processor.scrapeResources(resourceSet) }
             verify(exactly = 1) { resourceManager.migrateGeneratedResources(link.id, generatedResources) }
@@ -166,7 +165,6 @@ class LinkProcessorWorkerTest {
             coVerify(exactly = 1) { processorFactory.createProcessors(link.url) }
             verify(exactly = 1) { processor.close() }
             verify(exactly = 1) { linkService.mergeProps(eq("id1"), any()) }
-            verify(exactly = 1) { linkService.update(link) }
             coVerify(exactly = 0) { notifyService.create(any()) }
 
             coVerify(exactly = 0) { processor.scrapeResources(any()) }
@@ -192,7 +190,6 @@ class LinkProcessorWorkerTest {
             coVerify(exactly = 1) { processorFactory.createProcessors(link.url) }
             verify(exactly = 1) { processor.close() }
             verify(exactly = 1) { linkService.mergeProps(eq("id1"), any()) }
-            verify(exactly = 1) { linkService.update(link) }
             coVerify(exactly = 1) { notifyService.create(any()) }
 
             coVerify(exactly = 0) { processor.scrapeResources(any()) }
