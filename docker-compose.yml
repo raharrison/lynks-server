@@ -1,10 +1,10 @@
 services:
   lynks-ui:
-    image: raharrison/lynks-ui:1.1.1
+    image: raharrison/lynks-ui:1.1.3
     restart: on-failure:5
-    user: ${CURRENT_UID:0}:${CURRENT_GUID:0}
+    user: ${CURRENT_UID:-0}:${CURRENT_GUID:-0}
   lynks-server:
-    image: raharrison/lynks-server:1.2.0
+    image: raharrison/lynks-server:1.2.3
     env_file:
       - ./config/.env
     environment:
@@ -16,17 +16,17 @@ services:
     volumes:
       - ./media:/app/media
       - ./config:/app/config
-    user: ${CURRENT_UID:0}:${CURRENT_GUID:0}
+    user: ${CURRENT_UID:-0}:${CURRENT_GUID:-0}
     restart: on-failure:5
     depends_on:
       - postgres
   lynks-scraper:
-    image: raharrison/lynks-scraper:1.0.1
+    image: raharrison/lynks-scraper:1.0.3
     init: true
     restart: on-failure:5
     volumes:
       - ./media:/app/media
-    user: ${CURRENT_UID:0}:${CURRENT_GUID:0}
+    user: ${CURRENT_UID:-0}:${CURRENT_GUID:-0}
   lynks-gateway:
     image: nginx:1.21-alpine
     volumes:
