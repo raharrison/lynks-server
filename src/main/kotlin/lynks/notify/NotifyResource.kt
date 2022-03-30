@@ -23,6 +23,12 @@ fun Route.notify(notifyService: NotifyService) {
             else call.respond(notification)
         }
 
+        get("/unread") {
+            val unreadCount = notifyService.getUnreadCount()
+            val response = mapOf("unread" to unreadCount)
+            call.respond(HttpStatusCode.OK, response)
+        }
+
         post("/{id}/read") {
             val notificationId = call.parameters["id"]!!
             val updated = notifyService.read(notificationId, true)
@@ -35,6 +41,12 @@ fun Route.notify(notifyService: NotifyService) {
             val updated = notifyService.read(notificationId, false)
             if (updated == 0) call.respond(HttpStatusCode.NotFound)
             else call.respond(HttpStatusCode.OK)
+        }
+
+        post("/markAllRead") {
+            val markedRead = notifyService.markAllRead()
+            val response = mapOf("read" to markedRead)
+            call.respond(HttpStatusCode.OK, response)
         }
 
     }

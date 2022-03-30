@@ -10,6 +10,7 @@ import lynks.notify.NotificationType
 import lynks.util.createDummyEntry
 import lynks.util.createDummyNotification
 import org.assertj.core.api.Assertions.assertThat
+import org.hamcrest.Matchers.equalTo
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
@@ -59,6 +60,14 @@ class NotifyResourceTest : ServerTest() {
         get("/notifications/{id}", "notfound")
             .then()
             .statusCode(404)
+    }
+
+    @Test
+    fun testGetUnreadCount() {
+        get("/notifications/unread")
+            .then()
+            .statusCode(200)
+            .body("unread", equalTo(2))
     }
 
     @Test
@@ -112,6 +121,16 @@ class NotifyResourceTest : ServerTest() {
             .post("/notifications/{id}/unread", "notfound")
             .then()
             .statusCode(404)
+    }
+
+    @Test
+    fun testMarkAllRead() {
+        given()
+            .When()
+            .post("/notifications/markAllRead")
+            .then()
+            .statusCode(200)
+            .body("read", equalTo(2))
     }
 
 }

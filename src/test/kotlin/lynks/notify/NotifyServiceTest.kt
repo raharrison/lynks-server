@@ -132,6 +132,16 @@ class NotifyServiceTest: DatabaseTest() {
     }
 
     @Test
+    fun testGetUnreadCount() = runBlocking {
+        val processed = notifyService.create(processed(), false)
+        notifyService.create(discussions(), false)
+        assertThat(notifyService.getUnreadCount()).isEqualTo(2)
+        notifyService.read(processed.id, true)
+        assertThat(notifyService.getUnreadCount()).isOne()
+        Unit
+    }
+
+    @Test
     fun testCreateNotificationNoEntry() = runBlocking {
         val notification = notifyService.create(processed("complete"), false)
         assertThat(notification.type).isEqualTo(NotificationType.PROCESSED)
@@ -186,6 +196,17 @@ class NotifyServiceTest: DatabaseTest() {
     fun testReadNotificationNotFound() = runBlocking {
         val updated = notifyService.read("notfound", true)
         assertThat(updated).isZero()
+        Unit
+    }
+
+    @Test
+    fun testMarkAllRead() = runBlocking {
+        notifyService.create(processed(), false)
+        notifyService.create(discussions(), false)
+        notifyService.create(reminder(), false)
+        assertThat(notifyService.getUnreadCount()).isEqualTo(3)
+        assertThat(notifyService.markAllRead()).isEqualTo(3)
+        assertThat(notifyService.getUnreadCount()).isZero()
         Unit
     }
 

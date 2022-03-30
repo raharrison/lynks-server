@@ -56,6 +56,10 @@ class NotifyService(private val userService: UserService, private val pushoverCl
             .mapNotNull { toNotification(it) }.singleOrNull()
     }
 
+    fun getUnreadCount(): Long = transaction {
+        Notifications.select { Notifications.read eq false }.count()
+    }
+
     suspend fun create(newNotification: NewNotification, sendWeb: Boolean = true): Notification {
         val notification = transaction {
             val id = RandomUtils.generateUid()
@@ -79,6 +83,12 @@ class NotifyService(private val userService: UserService, private val pushoverCl
     fun read(id: String, isRead: Boolean): Int = transaction {
         Notifications.update({ Notifications.notificationId eq id }) {
             it[read] = isRead
+        }
+    }
+
+    fun markAllRead(): Int = transaction {
+        Notifications.update({ Notifications.read eq false }) {
+            it[read] = true
         }
     }
 
