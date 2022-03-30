@@ -62,6 +62,8 @@ fun Application.module() {
         register(workerRegistry)
         register(WebResourceRetriever())
         register(UserService())
+        register(PushoverClient(get()))
+        register(NotifyService(get(), get()))
         register(ResourceManager())
         register(TagService())
         register(CollectionService())
@@ -74,10 +76,8 @@ fun Application.module() {
         register(CommentService(get()))
         register(ReminderService(get()))
         register(SuggestionService(get()))
-        register(YoutubeDlRunner(get(), get(), get()))
+        register(YoutubeDlRunner(get(), get(), get(), get()))
         register(TaskService(get(), this, get()))
-        register(PushoverClient(get()))
-        register(NotifyService(get(), get()))
         workerRegistry.init(this)
     }
 

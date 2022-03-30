@@ -1,6 +1,8 @@
 package lynks.task.youtube
 
 import lynks.entry.EntryAuditService
+import lynks.notify.NewNotification
+import lynks.notify.NotifyService
 import lynks.resource.GeneratedResource
 import lynks.resource.ResourceManager
 import lynks.resource.ResourceType
@@ -12,7 +14,8 @@ import kotlin.io.path.absolutePathString
 class YoutubeDlRunner(
     private val resourceRetriever: WebResourceRetriever,
     private val resourceManager: ResourceManager,
-    private val entryAuditService: EntryAuditService
+    private val entryAuditService: EntryAuditService,
+    private val notifyService: NotifyService
 ) {
 
     private val log = loggerFor<YoutubeDlRunner>()
@@ -61,10 +64,9 @@ class YoutubeDlRunner(
                     val extension = FileUtils.getExtension(filename)
                     val generatedResources = listOf(GeneratedResource(ResourceType.GENERATED, filename, extension))
                     resourceManager.migrateGeneratedResources(entryId, generatedResources)
-                    entryAuditService.acceptAuditEvent(
-                        entryId, "YoutubeDlTask",
-                        "Youtube download task execution succeeded, created: " + File(filename).name
-                    )
+                    val message = "Youtube download task execution completed, created resource: " + File(filename).name
+                    notifyService.create(NewNotification.processed(message, entryId))
+                    entryAuditService.acceptAuditEvent(entryId, "YoutubeDlTask", message)
                 } else {
                     log.error("No filename found in YoutubeDl output - command likely failed")
                 }
@@ -75,10 +77,9 @@ class YoutubeDlRunner(
                     result.reason.code,
                     result.reason.message
                 )
-                entryAuditService.acceptAuditEvent(
-                    entryId, "YoutubeDlTask",
-                    "Youtube download task execution failed"
-                )
+                val message = "Youtube download task execution failed"
+                notifyService.create(NewNotification.processed(message, entryId))
+                entryAuditService.acceptAuditEvent(entryId, "YoutubeDlTask", message)
             }
         }
     }

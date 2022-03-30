@@ -6,12 +6,16 @@ import lynks.common.Environment
 import lynks.common.Link
 import lynks.common.exception.ExecutionException
 import lynks.entry.EntryAuditService
+import lynks.notify.Notification
+import lynks.notify.NotificationType
+import lynks.notify.NotifyService
 import lynks.resource.*
 import lynks.util.ExecUtils
 import lynks.util.FileUtils
 import lynks.util.Result
 import org.apache.commons.lang3.SystemUtils
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.nio.file.Paths
@@ -21,13 +25,21 @@ class YoutubeDlTaskTest {
     private val resourceRetriever = mockk<WebResourceRetriever>()
     private val resourceManager = mockk<ResourceManager>()
     private val entryAuditService = mockk<EntryAuditService>(relaxUnitFun = true)
+    private val notifyService = mockk<NotifyService>()
 
-    private val youtubeDlRunner = YoutubeDlRunner(resourceRetriever, resourceManager, entryAuditService)
+    private val youtubeDlRunner = YoutubeDlRunner(resourceRetriever, resourceManager, entryAuditService, notifyService)
 
     private val link = Link("eid", "title", "youtube.com/watch?v=1234", "src", "", 123L, 123L)
 
-    @AfterEach
+    @BeforeEach
     fun setup() {
+        coEvery { notifyService.create(any()) } returns Notification(
+            "n1", NotificationType.PROCESSED, "completed", false, dateCreated = System.currentTimeMillis()
+        )
+    }
+
+    @AfterEach
+    fun cleanup() {
         FileUtils.deleteDirectories(listOf(Paths.get(Environment.resource.binaryBasePath)))
     }
 
@@ -78,6 +90,7 @@ class YoutubeDlTaskTest {
         }) }
 
         verify(exactly = 1) { resourceManager.constructTempBasePath("eid") }
+        coVerify { notifyService.create(any()) }
         verify(exactly = 1) { entryAuditService.acceptAuditEvent("eid", any(), any()) }
     }
 
@@ -102,6 +115,7 @@ class YoutubeDlTaskTest {
         coVerify(exactly = 0) { resourceRetriever.getFileResult(any()) }
         verify(exactly = 1) { resourceManager.constructTempBasePath("eid") }
         verify(exactly = 0) { resourceManager.migrateGeneratedResources("eid", any()) }
+        coVerify { notifyService.create(any()) }
         verify(exactly = 1) { entryAuditService.acceptAuditEvent("eid", any(), any()) }
     }
 
