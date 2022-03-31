@@ -72,8 +72,8 @@ object RowMapper {
         )
     }
 
-    fun toFact(table: BaseEntries, row: ResultRow, tags: List<Tag>, collections: List<Collection>): Fact {
-        return Fact(
+    fun toSnippet(table: BaseEntries, row: ResultRow, tags: List<Tag>, collections: List<Collection>): Snippet {
+        return Snippet(
             id = row[table.id],
             plainText = row[table.plainContent]!!,
             markdownText = row[table.content]!!,
@@ -87,8 +87,8 @@ object RowMapper {
         )
     }
 
-    fun toSlimFact(table: BaseEntries, row: ResultRow, tags: List<Tag>, collections: List<Collection>): SlimFact {
-        return SlimFact(
+    fun toSlimSnippet(table: BaseEntries, row: ResultRow, tags: List<Tag>, collections: List<Collection>): SlimSnippet {
+        return SlimSnippet(
             id = row[table.id],
             markdownText = row[table.content]!!,
             dateUpdated = row[table.dateUpdated],

@@ -18,4 +18,9 @@ class RandomUtilsTest {
         val set = (0 until iterations).map { RandomUtils.generateUid() }.toSet()
         assertThat(iterations).isEqualTo(set.size)
     }
+
+    @Test
+    fun testGenerateUuid64() {
+        assertThat(RandomUtils.generateUuid64()).hasSize(22)
+    }
 }

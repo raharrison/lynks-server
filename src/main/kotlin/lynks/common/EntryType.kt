@@ -1,5 +1,5 @@
 package lynks.common
 
 enum class EntryType {
-    LINK, NOTE, FACT
+    LINK, NOTE, SNIPPET
 }

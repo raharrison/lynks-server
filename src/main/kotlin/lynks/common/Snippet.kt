@@ -3,7 +3,7 @@ package lynks.common
 import lynks.group.Collection
 import lynks.group.Tag
 
-data class Fact(
+data class Snippet(
     override val id: String,
     val plainText: String,
     val markdownText: String,
@@ -16,11 +16,11 @@ data class Fact(
     override val starred: Boolean = false
 ) : Entry {
     @JvmField
-    val type = EntryType.FACT
+    val type = EntryType.SNIPPET
 }
 
 
-data class NewFact(
+data class NewSnippet(
     override val id: String? = null,
     val plainText: String,
     override val tags: List<String> = emptyList(),
@@ -28,7 +28,7 @@ data class NewFact(
 ) : NewEntry
 
 
-data class SlimFact(
+data class SlimSnippet(
     override val id: String,
     val markdownText: String,
     override val dateUpdated: Long,
@@ -37,5 +37,5 @@ data class SlimFact(
     override val starred: Boolean = false
 ) : SlimEntry {
     @JvmField
-    val type = EntryType.FACT
+    val type = EntryType.SNIPPET
 }

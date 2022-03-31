@@ -28,7 +28,7 @@ class EntryService(
         return when (row[table.type]) {
             EntryType.LINK -> RowMapper.toLink(table, row, groups.tags, groups.collections)
             EntryType.NOTE -> RowMapper.toNote(table, row, groups.tags, groups.collections)
-            EntryType.FACT -> RowMapper.toFact(table, row, groups.tags, groups.collections)
+            EntryType.SNIPPET -> RowMapper.toSnippet(table, row, groups.tags, groups.collections)
         }
     }
 
@@ -36,7 +36,7 @@ class EntryService(
         return when (row[table.type]) {
             EntryType.LINK -> RowMapper.toSlimLink(table, row, groups.tags, groups.collections)
             EntryType.NOTE -> RowMapper.toSlimNote(table, row, groups.tags, groups.collections)
-            EntryType.FACT -> RowMapper.toSlimFact(table, row, groups.tags, groups.collections)
+            EntryType.SNIPPET -> RowMapper.toSlimSnippet(table, row, groups.tags, groups.collections)
         }
     }
 

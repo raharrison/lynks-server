@@ -35,7 +35,7 @@ class EntryServiceTest: DatabaseTest() {
         Thread.sleep(10)
         createDummyEntry("id3", "note2", "note content second", EntryType.NOTE)
         Thread.sleep(10)
-        createDummyEntry("id4", "fact1", "fact text", EntryType.FACT)
+        createDummyEntry("id4", "snippet1", "snippet text", EntryType.SNIPPET)
     }
 
     @Test
@@ -57,10 +57,10 @@ class EntryServiceTest: DatabaseTest() {
         assertThat(retrieved2.plainText).isEqualTo("note content")
         assertThat(retrieved2.type).isEqualTo(EntryType.NOTE)
 
-        val retrieved3 = entryService.get("id4") as Fact
+        val retrieved3 = entryService.get("id4") as Snippet
         assertThat(retrieved3.id).isEqualTo("id4")
-        assertThat(retrieved3.plainText).isEqualTo("fact text")
-        assertThat(retrieved3.type).isEqualTo(EntryType.FACT)
+        assertThat(retrieved3.plainText).isEqualTo("snippet text")
+        assertThat(retrieved3.type).isEqualTo(EntryType.SNIPPET)
     }
 
     @Test
@@ -72,7 +72,7 @@ class EntryServiceTest: DatabaseTest() {
         assertThat(retrieved.content).extracting("id").containsExactlyInAnyOrder("id1", "id2", "id3", "id4")
         assertThat(retrieved.content).hasAtLeastOneElementOfType(SlimNote::class.java)
         assertThat(retrieved.content).hasAtLeastOneElementOfType(SlimLink::class.java)
-        assertThat(retrieved.content).hasAtLeastOneElementOfType(SlimFact::class.java)
+        assertThat(retrieved.content).hasAtLeastOneElementOfType(SlimSnippet::class.java)
     }
 
     @Test
@@ -102,7 +102,7 @@ class EntryServiceTest: DatabaseTest() {
         assertThat(retrieved.page).isEqualTo(1L)
         assertThat(retrieved.total).isEqualTo(4)
         assertThat(retrieved.content).extracting("id").containsExactly("id4")
-        assertThat(retrieved.content).hasOnlyElementsOfType(SlimFact::class.java)
+        assertThat(retrieved.content).hasOnlyElementsOfType(SlimSnippet::class.java)
 
         val retrieved2 = entryService.get(PageRequest(4, 1))
         assertThat(retrieved2.content).hasSize(1)
