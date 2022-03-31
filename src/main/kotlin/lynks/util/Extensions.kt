@@ -31,7 +31,8 @@ fun Path.toUrlString(): String {
 
 fun Table.findColumn(name: String?): Column<*>? {
     if (name == null) return null
-    return this.columns.find { it.name.equals(name, true) }
+    val columnFormat = Normalize.convertToDbColumnName(name)
+    return this.columns.find { it.name.equals(name, true) || it.name.equals(columnFormat, true) }
 }
 
 fun Query.orderBy(column: Expression<*>, direction: SortDirection): Query {

@@ -23,4 +23,12 @@ class NormalizeTest {
         assertThat(Normalize.removeStopwords(original)).isEqualTo(target)
     }
 
+    @Test
+    fun testConvertToDbColumnName() {
+        assertThat(Normalize.convertToDbColumnName(null)).isNull()
+        assertThat(Normalize.convertToDbColumnName("date")).isEqualTo("date")
+        assertThat(Normalize.convertToDbColumnName("dateCreated")).isEqualTo("date_Created")
+        assertThat(Normalize.convertToDbColumnName("firstAndSecondAndThird")).isEqualTo("first_And_Second_And_Third")
+    }
+
 }

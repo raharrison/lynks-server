@@ -41,4 +41,17 @@ object Normalize {
         return words.joinToString(" ")
     }
 
+    fun convertToDbColumnName(str: String?): String? {
+        if(str == null) return null
+        val sb = StringBuilder(str.length)
+        str.forEach {
+            if (Character.isUpperCase(it)) {
+                sb.append("_").append(it)
+            } else {
+                sb.append(it)
+            }
+        }
+        return sb.toString()
+    }
+
 }
