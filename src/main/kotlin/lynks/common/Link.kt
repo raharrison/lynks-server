@@ -1,5 +1,6 @@
 package lynks.common
 
+import com.fasterxml.jackson.annotation.JsonIgnore
 import lynks.group.Collection
 import lynks.group.Tag
 
@@ -8,6 +9,7 @@ data class Link(
     val title: String,
     val url: String,
     val source: String,
+    @JsonIgnore // for search so doesn't need to be exposed
     var content: String?,
     override val dateCreated: Long,
     override val dateUpdated: Long,
