@@ -7,24 +7,42 @@ import io.ktor.response.*
 import io.ktor.routing.*
 import lynks.common.exception.InvalidModelException
 import lynks.util.URLUtils
-import lynks.worker.WorkerRegistry
 
-fun Route.user(userService: UserService, workerRegistry: WorkerRegistry) {
+fun Route.user(userService: UserService) {
 
-    get("/user/preferences") {
-        call.respond(userService.currentUserPreferences)
-    }
+    route("/user") {
 
-    post("/user/preferences") {
-        val preferences = call.receive<Preferences>()
-        preferences.email?.let { email ->
-            if (!URLUtils.isValidEmail(email)) {
-                throw InvalidModelException("Invalid email address")
-            }
+        get {
+            val user = userService.getUser("default")
+            if (user == null) call.respond(HttpStatusCode.NotFound)
+            else call.respond(HttpStatusCode.OK, user)
         }
-        val updated = userService.updateUserPreferences(preferences)
-        workerRegistry.onUserPreferenceChange(updated)
-        call.respond(HttpStatusCode.Accepted, updated)
+
+        post("/register") {
+            val registerRequest = call.receive<AuthRequest>()
+            val created = userService.register(registerRequest)
+            call.respond(HttpStatusCode.Created, created)
+        }
+
+        post("/changePassword") {
+            val changeRequest = call.receive<ChangePasswordRequest>()
+            val changed = userService.changePassword(changeRequest)
+            if (changed) call.respond(HttpStatusCode.OK)
+            else call.respond(HttpStatusCode.BadRequest)
+        }
+
+        put {
+            val user = call.receive<User>()
+            user.email?.let { email ->
+                if (!URLUtils.isValidEmail(email)) {
+                    throw InvalidModelException("Invalid email address")
+                }
+            }
+            val updated = userService.updateUser(user)
+            if (updated == null) call.respond(HttpStatusCode.NotFound)
+            else call.respond(HttpStatusCode.OK, updated)
+        }
+
     }
 
 }

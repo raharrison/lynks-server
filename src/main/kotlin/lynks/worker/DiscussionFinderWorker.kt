@@ -23,9 +23,9 @@ data class DiscussionFinderWorkerRequest(val linkId: String, val intervalIndex: 
 class DiscussionFinderWorker(
     private val linkService: LinkService,
     private val resourceRetriever: ResourceRetriever,
-    notifyService: NotifyService,
-    entryAuditService: EntryAuditService
-) : PersistedVariableChannelBasedWorker<DiscussionFinderWorkerRequest>(notifyService, entryAuditService) {
+    private val notifyService: NotifyService,
+    private val entryAuditService: EntryAuditService
+) : PersistedVariableChannelBasedWorker<DiscussionFinderWorkerRequest>() {
 
     private data class Discussion(
         val source: DiscussionSource,

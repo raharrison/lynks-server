@@ -34,9 +34,9 @@ class LinkProcessorWorker(
     private val resourceManager: ResourceManager,
     private val linkService: LinkService,
     private val groupSetService: GroupSetService,
-    notifyService: NotifyService,
-    entryAuditService: EntryAuditService
-) : ChannelBasedWorker<LinkProcessingRequest>(notifyService, entryAuditService) {
+    private val notifyService: NotifyService,
+    private val entryAuditService: EntryAuditService
+) : ChannelBasedWorker<LinkProcessingRequest>() {
 
     internal var processorFactory = LinkProcessorFactory(resourceManager = resourceManager)
 

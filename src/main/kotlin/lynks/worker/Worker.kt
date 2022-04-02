@@ -3,8 +3,6 @@ package lynks.worker
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.channels.actor
-import lynks.entry.EntryAuditService
-import lynks.notify.NotifyService
 import lynks.util.JsonMapper.defaultMapper
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -13,10 +11,7 @@ import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.coroutines.CoroutineContext
 
-abstract class Worker<T>(
-    protected val notifyService: NotifyService,
-    protected val entryAuditService: EntryAuditService
-) : CoroutineScope {
+abstract class Worker<T> : CoroutineScope {
 
     protected val log: Logger = LoggerFactory.getLogger(this::class.java)
 
@@ -38,8 +33,7 @@ abstract class Worker<T>(
         get() = runner + supervisor
 }
 
-abstract class ChannelBasedWorker<T>(notifyService: NotifyService, entryAuditService: EntryAuditService) :
-    Worker<T>(notifyService, entryAuditService) {
+abstract class ChannelBasedWorker<T> : Worker<T>() {
 
     fun worker(): SendChannel<T> = actor {
         beforeWork()
@@ -62,11 +56,7 @@ abstract class ChannelBasedWorker<T>(notifyService: NotifyService, entryAuditSer
 enum class CrudType { CREATE, UPDATE, DELETE }
 abstract class VariableWorkerRequest(val crudType: CrudType = CrudType.UPDATE)
 
-abstract class VariableChannelBasedWorker<T : VariableWorkerRequest>(
-    notifyService: NotifyService,
-    entryAuditService: EntryAuditService
-) :
-    ChannelBasedWorker<T>(notifyService, entryAuditService) {
+abstract class VariableChannelBasedWorker<T : VariableWorkerRequest> : ChannelBasedWorker<T>() {
 
     private val jobs = ConcurrentHashMap<T, Job?>()
 
@@ -107,11 +97,8 @@ abstract class PersistVariableWorkerRequest(crudType: CrudType = CrudType.UPDATE
     abstract val key: String
 }
 
-abstract class PersistedVariableChannelBasedWorker<T : PersistVariableWorkerRequest>(
-    notifyService: NotifyService,
-    entryAuditService: EntryAuditService
-) :
-    VariableChannelBasedWorker<T>(notifyService, entryAuditService) {
+abstract class PersistedVariableChannelBasedWorker<T : PersistVariableWorkerRequest> :
+    VariableChannelBasedWorker<T>() {
 
     private val workerName = javaClass.simpleName
     abstract val requestClass: Class<T>

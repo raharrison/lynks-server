@@ -2,37 +2,28 @@ package lynks.worker
 
 import kotlinx.coroutines.time.delay
 import lynks.common.Environment
-import lynks.entry.EntryAuditService
-import lynks.notify.NotifyService
-import lynks.user.Preferences
-import lynks.user.UserService
 import lynks.util.FileUtils
 import java.nio.file.Paths
 import java.time.Duration
 import kotlin.io.path.exists
 
-class TempFileCleanupWorkerRequest(val preferences: Preferences, crudType: CrudType = CrudType.UPDATE) :
-    VariableWorkerRequest(crudType) {
+class TempFileCleanupWorkerRequest(val maxFileAgeDays: Int, val intervalHours: Int) {
     override fun hashCode(): Int = 1
     override fun equals(other: Any?): Boolean = other is TempFileCleanupWorkerRequest
 }
 
-private const val MAX_FILE_AGE = 14L // days
-
-class TempFileCleanupWorker(
-    private val userService: UserService,
-    notifyService: NotifyService,
-    entryAuditService: EntryAuditService
-) : VariableChannelBasedWorker<TempFileCleanupWorkerRequest>(notifyService, entryAuditService) {
+class TempFileCleanupWorker : ChannelBasedWorker<TempFileCleanupWorkerRequest>() {
 
     override suspend fun beforeWork() {
-        val preferences = userService.currentUserPreferences
-        this.onChannelReceive(TempFileCleanupWorkerRequest(preferences, CrudType.CREATE))
+        val maxFileAge = Environment.resource.maxTempResourceAge
+        val intervalHours = Environment.resource.tempFileCleanInterval
+        super.onChannelReceive(TempFileCleanupWorkerRequest(maxFileAge, intervalHours))
     }
 
     override suspend fun doWork(input: TempFileCleanupWorkerRequest) {
-        val sleep = input.preferences.tempFileCleanInterval
-        val sleepDuration = Duration.ofHours(sleep)
+        val maxFileAge = input.maxFileAgeDays.toLong()
+        val sleepHours = input.intervalHours.toLong()
+        val sleepDuration = Duration.ofHours(sleepHours)
 
         // initial delay from startup
         delay(sleepDuration)
@@ -41,14 +32,14 @@ class TempFileCleanupWorker(
             try {
                 val tempPath = Paths.get(Environment.resource.resourceTempPath)
                 if (tempPath.exists()) {
-                    val dirs = FileUtils.directoriesOlderThan(tempPath, MAX_FILE_AGE)
+                    val dirs = FileUtils.directoriesOlderThan(tempPath, maxFileAge)
                     if (dirs.isNotEmpty()) {
                         log.info("Temp file cleanup worker removing {} dirs: {}", dirs.size, dirs)
                         FileUtils.deleteDirectories(dirs)
                     }
                 }
             } finally {
-                log.info("Temp file cleanup worker sleeping for {} hours", sleep)
+                log.info("Temp file cleanup worker sleeping for {} hours", sleepHours)
                 delay(sleepDuration)
             }
         }

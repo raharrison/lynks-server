@@ -12,7 +12,7 @@ import lynks.group.Groups
 import lynks.notify.Notifications
 import lynks.reminder.Reminders
 import lynks.resource.Resources
-import lynks.user.UserPreferences
+import lynks.user.Users
 import lynks.util.loggerFor
 import lynks.worker.WorkerSchedules
 import org.flywaydb.core.Flyway
@@ -31,7 +31,7 @@ class DatabaseFactory {
 
     private val tables = listOf(
         Entries, EntryVersions, EntryAudit,
-        Comments, Resources, Reminders, UserPreferences,
+        Comments, Resources, Reminders, Users,
         Groups, EntryGroups, WorkerSchedules, Notifications
     )
 

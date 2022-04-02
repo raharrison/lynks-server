@@ -1,5 +1,6 @@
 package lynks.util
 
+import at.favre.lib.crypto.bcrypt.BCrypt
 import java.security.MessageDigest
 
 object HashUtils {
@@ -17,6 +18,14 @@ object HashUtils {
             result.append(HEX_CHARS[i and 0x0f])
         }
         return result.toString()
+    }
+
+    fun bcryptHash(str: String): String {
+        return BCrypt.withDefaults().hashToString(8, str.toCharArray());
+    }
+
+    fun verifyBcryptHash(raw: CharArray, hash: CharArray): Boolean {
+        return BCrypt.verifyer().verify(raw, hash).verified
     }
 
 }

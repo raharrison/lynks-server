@@ -4,7 +4,6 @@ import io.mockk.*
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runTest
-import lynks.entry.EntryAuditService
 import lynks.entry.EntryService
 import lynks.notify.Notification
 import lynks.notify.NotificationMethod
@@ -28,7 +27,6 @@ class ReminderWorkerTest {
     private val reminderService = mockk<ReminderService>()
     private val notifyService = mockk<NotifyService>()
     private val entryService = mockk<EntryService>()
-    private val entryAuditService = mockk<EntryAuditService>(relaxUnitFun = true)
 
     @BeforeEach
     fun before() {
@@ -39,7 +37,7 @@ class ReminderWorkerTest {
             "n1", NotificationType.DISCUSSIONS, "found", false, dateCreated = System.currentTimeMillis()
         )
         coEvery { notifyService.sendWebNotification(any()) } just Runs
-        coEvery { notifyService.sendEmail(any(), any()) } just Runs
+        coEvery { notifyService.sendEmail(any(), any(), any()) } just Runs
         coEvery { notifyService.sendPushoverNotification(any(), any()) } just Runs
         every { reminderService.isActive(any()) } returns true
     }
@@ -70,13 +68,13 @@ class ReminderWorkerTest {
         advanceTimeBy(TimeUnit.MINUTES.toMillis(14))
         coVerify(exactly = 0) { notifyService.create(coMatch { it.message == reminder.message }, false) }
         coVerify(exactly = 0) { notifyService.create(coMatch { it.message == reminder2.message }, false) }
-        coVerify(exactly = 0) { notifyService.sendEmail(any(), any()) }
+        coVerify(exactly = 0) { notifyService.sendEmail(any(), any(), any()) }
         coVerify(exactly = 0) { notifyService.sendPushoverNotification(any(), any()) }
 
         advanceTimeBy(TimeUnit.MINUTES.toMillis(1))
         coVerify(exactly = 1) { notifyService.create(coMatch { it.message == reminder.message }, false) }
         coVerify(exactly = 0) { notifyService.create(coMatch { it.message == reminder2.message }, false) }
-        coVerify(exactly = 0) { notifyService.sendEmail(any(), any()) }
+        coVerify(exactly = 0) { notifyService.sendEmail(any(), any(), any()) }
         coVerify(exactly = 0) { notifyService.sendPushoverNotification(any(), any()) }
 
         advanceTimeBy(TimeUnit.MINUTES.toMillis(35))
@@ -85,7 +83,7 @@ class ReminderWorkerTest {
 
         coVerify(exactly = 1) { notifyService.create(coMatch { it.message == reminder.message }, false) }
         coVerify(exactly = 1) { notifyService.create(coMatch { it.message == reminder2.message }, false) }
-        coVerify(exactly = 1) { notifyService.sendEmail(any(), any()) }
+        coVerify(exactly = 1) { notifyService.sendEmail(any(), any(), any()) }
         coVerify(exactly = 0) { notifyService.sendPushoverNotification(any(), any()) }
         coVerify(exactly = 1) { reminderService.updateReminderStatus(reminder.reminderId, ReminderStatus.COMPLETED) }
         coVerify(exactly = 1) { reminderService.updateReminderStatus(reminder2.reminderId, ReminderStatus.COMPLETED) }
@@ -111,14 +109,14 @@ class ReminderWorkerTest {
         advanceTimeBy(TimeUnit.MINUTES.toMillis(118))
         coVerify(exactly = 0) { notifyService.create(coMatch { it.message == reminder.message }, false) }
         coVerify(exactly = 0) { notifyService.create(coMatch { it.message == reminder2.message }, false) }
-        coVerify(exactly = 0) { notifyService.sendEmail(any(), any()) }
+        coVerify(exactly = 0) { notifyService.sendEmail(any(), any(), any()) }
         coVerify(exactly = 0) { notifyService.sendPushoverNotification(any(), any()) }
 
         advanceTimeBy(TimeUnit.MINUTES.toMillis(2))
         coVerify(exactly = 1) { notifyService.create(coMatch { it.message == reminder.message }, false) }
         coVerify(exactly = 1) { notifyService.sendPushoverNotification(any(), any()) }
         coVerify(exactly = 0) { notifyService.create(coMatch { it.message == reminder2.message }, false) }
-        coVerify(exactly = 0) { notifyService.sendEmail(any(), any()) }
+        coVerify(exactly = 0) { notifyService.sendEmail(any(), any(), any()) }
 
         advanceTimeBy(TimeUnit.MINUTES.toMillis(35))
         send.close()
@@ -129,7 +127,7 @@ class ReminderWorkerTest {
         coVerify(exactly = 1) { reminderService.updateReminderStatus(reminder.reminderId, ReminderStatus.COMPLETED) }
         coVerify(exactly = 1) { notifyService.create(coMatch { it.message == reminder2.message }, false) }
         coVerify(exactly = 1) { reminderService.updateReminderStatus(reminder2.reminderId, ReminderStatus.COMPLETED) }
-        coVerify(exactly = 0) { notifyService.sendEmail(any(), any()) }
+        coVerify(exactly = 0) { notifyService.sendEmail(any(), any(), any()) }
     }
 
     @Test
@@ -195,7 +193,7 @@ class ReminderWorkerTest {
         worker.cancelAll()
 
         coVerify(exactly = 1) { notifyService.create(coMatch { it.message == reminder.message }, false) }
-        coVerify(exactly = 0) { notifyService.sendEmail(any(), any()) }
+        coVerify(exactly = 0) { notifyService.sendEmail(any(), any(), any()) }
         coVerify(exactly = 0) { notifyService.sendPushoverNotification(any(), any()) }
     }
 
@@ -366,10 +364,10 @@ class ReminderWorkerTest {
         worker.cancelAll()
 
         coVerify(exactly = 0) { notifyService.create(coMatch { it.message == reminder.message }, false) }
-        coVerify(exactly = 0) { notifyService.sendEmail(any(), any()) }
+        coVerify(exactly = 0) { notifyService.sendEmail(any(), any(), any()) }
         coVerify(exactly = 0) { notifyService.sendPushoverNotification(any(), any()) }
     }
 
-    private fun createWorker(context: CoroutineContext) = ReminderWorker(reminderService, entryService, notifyService, entryAuditService)
+    private fun createWorker(context: CoroutineContext) = ReminderWorker(reminderService, entryService, notifyService)
         .apply { runner = context }
 }

@@ -98,7 +98,7 @@ fun Application.module() {
                 notify(get())
                 health()
                 reminder(get())
-                user(get(), get())
+                user(get())
             }
         }
     }

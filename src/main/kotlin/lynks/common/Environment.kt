@@ -41,12 +41,16 @@ object Environment {
         val resourceBasePath by required<String>(description = "location where all main entry resources will be saved")
         val resourceTempPath by required<String>(description = "location where all temporary files will be saved")
         val binaryBasePath by required<String>(description = "location where all binary utilities will be saved")
+        val tempFileCleanInterval by optional(6, description = "frequency in hours to delete temp resources")
+        val maxTempResourceAge by optional(14, description = "maximum age of temp files in days before qualifying for cleanup")
     }
 
     data class Resource(
         val resourceBasePath: String = config[ResourceSpec.resourceBasePath],
         val resourceTempPath: String = config[ResourceSpec.resourceTempPath],
-        val binaryBasePath: String = config[ResourceSpec.binaryBasePath]
+        val binaryBasePath: String = config[ResourceSpec.binaryBasePath],
+        val tempFileCleanInterval: Int = config[ResourceSpec.tempFileCleanInterval],
+        val maxTempResourceAge: Int = config[ResourceSpec.maxTempResourceAge]
     )
 
     private object MailSpec : ConfigSpec("mail") {

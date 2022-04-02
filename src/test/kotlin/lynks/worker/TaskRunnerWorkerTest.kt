@@ -4,8 +4,6 @@ import io.mockk.*
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
-import lynks.entry.EntryAuditService
-import lynks.notify.NotifyService
 import lynks.task.Task
 import lynks.task.TaskContext
 import org.junit.jupiter.api.Test
@@ -19,10 +17,7 @@ class TaskRunnerWorkerTest {
         val task = mockk<Task<TaskContext>>()
         coEvery { task.process(context) } just Runs
 
-        val notifyService = mockk<NotifyService>(relaxUnitFun = true)
-        val entryAuditService = mockk<EntryAuditService>(relaxUnitFun = true)
-
-        val taskRunnerWorker = TaskRunnerWorker(notifyService, entryAuditService)
+        val taskRunnerWorker = TaskRunnerWorker()
             .apply { runner = this@runTest.coroutineContext }.worker()
         val request = TaskRunnerRequest(task, context)
         taskRunnerWorker.send(request)

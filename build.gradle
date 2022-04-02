@@ -100,6 +100,7 @@ dependencies {
     implementation "com.github.shyiko.skedule:skedule:$skedule_version"
     implementation "com.github.jknack:handlebars:$handlebars_version"
     implementation "org.apache.commons:commons-email:$commons_email_version"
+    implementation "at.favre.lib:bcrypt:0.9.0"
 
     implementation "org.apache.commons:commons-lang3:$commonslang_version"
     implementation "ch.qos.logback:logback-classic:$logback_version"

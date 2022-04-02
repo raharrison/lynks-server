@@ -113,20 +113,17 @@ class NotifyService(private val userService: UserService, private val pushoverCl
         }
     }
 
-    fun sendEmail(subject: String, body: String) {
+    fun sendEmail(address: String, subject: String, body: String) {
         if (!Environment.mail.enabled) return
-        val address = userService.currentUserPreferences.email
-        address?.let {
-            log.info("Sending notification email subject={}", subject)
-            val email = HtmlEmail()
-            email.hostName = Environment.mail.server
-            email.setSmtpPort(Environment.mail.port)
-            email.setFrom("noreply@lynks.com")
-            email.addTo(it)
-            email.subject = subject
-            email.setHtmlMsg(body)
-            email.send()
-        }
+        log.info("Sending email with address={} subject={}", address, subject)
+        val email = HtmlEmail()
+        email.hostName = Environment.mail.server
+        email.setSmtpPort(Environment.mail.port)
+        email.setFrom("noreply@lynks.com")
+        email.addTo(address)
+        email.subject = subject
+        email.setHtmlMsg(body)
+        email.send()
     }
 
     suspend fun sendPushoverNotification(notification: Notification, title: String?) {

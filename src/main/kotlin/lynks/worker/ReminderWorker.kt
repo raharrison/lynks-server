@@ -3,7 +3,6 @@ package lynks.worker
 import kotlinx.coroutines.delay
 import lynks.common.Link
 import lynks.common.Note
-import lynks.entry.EntryAuditService
 import lynks.entry.EntryService
 import lynks.notify.NewNotification
 import lynks.notify.Notification
@@ -27,8 +26,8 @@ class ReminderWorkerRequest(val reminder: Reminder, crudType: CrudType) : Variab
 
 class ReminderWorker(
     private val reminderService: ReminderService, private val entryService: EntryService,
-    notifyService: NotifyService, entryAuditService: EntryAuditService
-) : VariableChannelBasedWorker<ReminderWorkerRequest>(notifyService, entryAuditService) {
+    private val notifyService: NotifyService
+) : VariableChannelBasedWorker<ReminderWorkerRequest>() {
 
     override suspend fun beforeWork() {
         super.beforeWork()
@@ -144,7 +143,7 @@ class ReminderWorker(
         val template = ResourceTemplater("reminder.html")
         val email = template.apply(content)
 
-        notifyService.sendEmail("Lynks - Reminder Elapsed", email)
+        notifyService.sendEmail("default", "Lynks - Reminder Elapsed", email)
     }
 
     private suspend fun sendPushoverNotification(reminder: Reminder, notification: Notification) {

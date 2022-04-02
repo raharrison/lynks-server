@@ -12,6 +12,7 @@ import lynks.notify.Notifications
 import lynks.reminder.ReminderStatus
 import lynks.reminder.ReminderType
 import lynks.reminder.Reminders
+import lynks.user.Users
 import lynks.worker.WorkerSchedules
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -112,5 +113,15 @@ fun createDummyNotification(id: String, type: NotificationType, msg: String, eid
         it[read] = false
         it[entryId] = eid
         it[dateCreated] = System.currentTimeMillis()
+    }
+}
+
+fun createDummyUser(username: String, email: String? = null, displayName: String? = null, digest: Boolean = false) = transaction {
+    Users.insert {
+        it[this.username] = username
+        it[password] = "pass"
+        it[this.email] = email
+        it[this.displayName] = displayName
+        it[this.digest] = digest
     }
 }
