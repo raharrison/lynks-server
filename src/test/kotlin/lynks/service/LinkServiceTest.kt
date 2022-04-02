@@ -215,11 +215,14 @@ class LinkServiceTest : DatabaseTest() {
 
     @Test
     fun testGetLinksBySource() {
-        linkService.add(newLink("l1", "google.com/page1", listOf("t1", "t2"), listOf("c1")))
+        val l1 = linkService.add(newLink("l1", "google.com/page1", listOf("t1", "t2"), listOf("c1")))
         val l2 = linkService.add(newLink("l2", "amazon.com/content/more", listOf("t1")))
         val linksFromSource = linkService.get(PageRequest(source = "amazon.com"))
         assertThat(linksFromSource.total).isEqualTo(1)
         assertThat(linksFromSource.content).hasSize(1).extracting("id").containsOnly(l2.id)
+        val linksByWildcardSource = linkService.get(PageRequest(source = "goog%"))
+        assertThat(linksByWildcardSource.total).isEqualTo(1)
+        assertThat(linksByWildcardSource.content).hasSize(1).extracting("id").containsOnly(l1.id)
         val linksFromMissingSource = linkService.get(PageRequest(source = "invalid"))
         assertThat(linksFromMissingSource.total).isZero()
         assertThat(linksFromMissingSource.content).isEmpty()

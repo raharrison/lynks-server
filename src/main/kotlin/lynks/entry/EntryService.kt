@@ -73,7 +73,10 @@ class EntryService(
     private fun runPostgresSearchQuery(conn: Connection, term: String, page: PageRequest): Page<SlimEntry> {
         val columns = slimColumnSet + Entries.type
         val columnSelect = columns.joinToString(", ") { (it as Column<*>).name }
-        val andWhere = if (page.source != null) " AND ${page.source}" else ""
+        val andWhere = if (page.source != null) {
+            val matchOp = if(page.source.contains("%")) "LIKE" else "="
+            " AND ${Entries.src.name} $matchOp ${page.source.lowercase()}"
+        } else ""
         val baseSql = """
                     FROM ${Entries.tableName}, websearch_to_tsquery('english', ?) query_ts
                     WHERE TS_DOC @@ query_ts $andWhere

@@ -15,6 +15,7 @@ import lynks.util.combine
 import lynks.util.findColumn
 import lynks.util.orderBy
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.like
 import org.jetbrains.exposed.sql.statements.InsertStatement
 import org.jetbrains.exposed.sql.statements.UpdateBuilder
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -86,7 +87,13 @@ abstract class EntryRepository<T : Entry, S : SlimEntry, U : NewEntry>(
             baseQuery = baseQuery.combine { collectionTable[EntryGroups.groupId].inList(subtrees.collections.map { it.id }) }
         }
         if (pageRequest.source != null) {
-            baseQuery = baseQuery.combine { Entries.src eq pageRequest.source.lowercase() }
+            // wildcard search to use like operator
+            val predicate = if(pageRequest.source.contains('%')) {
+                Entries.src like pageRequest.source.lowercase()
+            } else {
+                Entries.src like pageRequest.source.lowercase()
+            }
+            baseQuery = baseQuery.combine { predicate }
         }
 
         val sortColumn = Entries.findColumn(pageRequest.sort) ?: Entries.dateUpdated
