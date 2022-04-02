@@ -23,6 +23,18 @@ object Environment {
         val rootPath: String = config[ServerSpec.rootPath]
     )
 
+    private object AuthSpec : ConfigSpec("auth") {
+        val enabled by required<Boolean>(description = "protect all endpoints to be accessible only to authorized users")
+        val defaultUserName by optional("user", description = "username for default auto-created user")
+        val defaultUserPassword by optional<String?>(null, description = "password raw text or bcrypt hash for auto-created user")
+    }
+
+    data class Auth(
+        val enabled: Boolean = config[AuthSpec.enabled],
+        val defaultUserName: String = config[AuthSpec.defaultUserName],
+        val defaultUserPassword: String? = config[AuthSpec.defaultUserPassword]
+    )
+
     private object DatabaseSpec: ConfigSpec("database") {
         val dialect by required<DatabaseDialect>(description = "type of database: either H2 or POSTGRES")
         val url by required<String>(description = "url of the database to connect to")
@@ -89,6 +101,7 @@ object Environment {
 
     private val config = Config {
         addSpec(ServerSpec)
+        addSpec(AuthSpec)
         addSpec(DatabaseSpec)
         addSpec(ResourceSpec)
         addSpec(MailSpec)
@@ -102,6 +115,7 @@ object Environment {
         .from.systemProperties()
 
     val server = Server()
+    val auth = Auth()
     val database = Database()
     val resource = Resource()
     val mail = Mail()

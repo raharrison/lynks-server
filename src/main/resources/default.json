@@ -3,6 +3,9 @@
         "port": 8080,
         "rootPath": "/api"
     },
+    "auth": {
+        "enabled": false
+    },
     "resource": {
         "resourceBasePath": "media",
         "resourceTempPath": "media/temp",
