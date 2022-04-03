@@ -1,6 +1,7 @@
 package lynks
 
 import io.ktor.application.*
+import io.ktor.auth.*
 import io.ktor.features.*
 import io.ktor.http.*
 import io.ktor.jackson.*
@@ -8,11 +9,13 @@ import io.ktor.response.*
 import io.ktor.routing.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
+import io.ktor.sessions.*
 import io.ktor.websocket.*
 import lynks.comment.CommentService
 import lynks.comment.comment
 import lynks.common.ConfigMode
 import lynks.common.Environment
+import lynks.common.UserSession
 import lynks.common.endpoint.health
 import lynks.common.exception.InvalidModelException
 import lynks.common.inject.ServiceProvider
@@ -33,7 +36,8 @@ import lynks.task.TaskService
 import lynks.task.task
 import lynks.task.youtube.YoutubeDlRunner
 import lynks.user.UserService
-import lynks.user.user
+import lynks.user.userProtected
+import lynks.user.userUnprotected
 import lynks.util.JsonMapper.defaultMapper
 import lynks.worker.WorkerRegistry
 
@@ -53,6 +57,10 @@ fun Application.module() {
         ConfigMode.TEST -> installTestFeatures()
         ConfigMode.DEV -> installDevFeatures()
         ConfigMode.PROD -> installProdFeatures()
+    }
+
+    if (Environment.auth.enabled) {
+        installAuth()
     }
 
     DatabaseFactory().connectAndMigrate()
@@ -82,33 +90,74 @@ fun Application.module() {
     }
 
     install(Routing) {
-        with(serviceProvider) {
-            val prefix = Environment.server.rootPath
-            route(prefix) {
-                comment(get())
-                link(get())
-                note(get())
-                snippet(get())
-                entry(get(), get(), get())
-                tag(get())
-                suggest(get())
-                resources(get())
-                task(get())
-                collection(get())
-                notify(get())
-                health()
-                reminder(get())
-                user(get())
+        val prefix = Environment.server.rootPath
+        route(prefix) {
+            unprotectedRoutes(serviceProvider)
+            if (Environment.auth.enabled) {
+                authenticate("auth_session") {
+                    protectedRoutes(serviceProvider)
+                }
+            } else {
+                protectedRoutes(serviceProvider)
             }
         }
     }
 }
 
-fun Application.installTestFeatures() {
+private fun Route.protectedRoutes(serviceProvider: ServiceProvider) {
+    with(serviceProvider) {
+        comment(get())
+        link(get())
+        note(get())
+        snippet(get())
+        entry(get(), get(), get())
+        tag(get())
+        suggest(get())
+        resources(get())
+        task(get())
+        collection(get())
+        notify(get())
+        reminder(get())
+        userProtected(get())
+    }
+}
+
+private fun Route.unprotectedRoutes(serviceProvider: ServiceProvider) {
+    with(serviceProvider) {
+        health()
+        userUnprotected(get())
+    }
+}
+
+private fun Application.installAuth() {
+    install(Sessions) {
+        cookie<UserSession>("lynks_session", SessionStorageMemory()) {
+            cookie.path = "/"
+            cookie.secure = Environment.mode == ConfigMode.PROD
+            if(Environment.auth.signingKey == null) {
+                throw IllegalArgumentException("Must provide a signing key in properties when auth is enabled")
+            }
+            val secretSignKey = Environment.auth.signingKey
+            val encryptKey = secretSignKey.substring(16)
+            transform(SessionTransportTransformerEncrypt(encryptKey.toByteArray(), secretSignKey.toByteArray()))
+        }
+    }
+
+    install(Authentication) {
+        session<UserSession>("auth_session") {
+            validate { session -> session }
+            challenge {
+                call.respond(UnauthorizedResponse())
+            }
+        }
+    }
+}
+
+private fun Application.installTestFeatures() {
     install(CallLogging)
 }
 
-fun Application.installDevFeatures() {
+private fun Application.installDevFeatures() {
     install(CallLogging)
     install(CORS) {
         method(HttpMethod.Put)
@@ -118,7 +167,7 @@ fun Application.installDevFeatures() {
     }
 }
 
-fun Application.installProdFeatures() {
+private fun Application.installProdFeatures() {
     install(CallLogging)
     install(Compression) {
         gzip()

@@ -1,6 +1,9 @@
 package lynks.util
 
 import io.ktor.application.*
+import io.ktor.auth.*
+import lynks.common.Environment
+import lynks.common.UserSession
 import lynks.common.page.PageRequest
 import lynks.common.page.SortDirection
 import org.jetbrains.exposed.sql.*
@@ -23,6 +26,15 @@ fun ApplicationCall.pageRequest(): PageRequest {
         SortDirection.valueOf(it.uppercase())
     }
     return PageRequest(page, size, tags, collections, source, sort, direction)
+}
+
+// check if the given call is authorized to perform actions for given user
+fun ApplicationCall.isCallAuthorizedForUser(username: String): Boolean {
+    if(Environment.auth.enabled) {
+        val session = principal<UserSession>() ?: return false
+        return session.username == username
+    }
+    return true
 }
 
 fun Path.toUrlString(): String {

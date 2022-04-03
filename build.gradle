@@ -11,6 +11,7 @@ buildscript {
     ext.flexmark_version = '0.64.0'
     ext.handlebars_version = '4.3.0'
     ext.commons_email_version = '1.5'
+    ext.bcrypt_version = '0.9.0'
     ext.logback_version = '1.2.11'
     ext.konf_version = '1.1.2'
     ext.commonslang_version = '3.12.0'
@@ -83,6 +84,8 @@ dependencies {
     implementation "io.ktor:ktor-server-netty:$ktor_version"
     implementation "io.ktor:ktor-jackson:$ktor_version"
     implementation "io.ktor:ktor-websockets:$ktor_version"
+    implementation "io.ktor:ktor-auth:$ktor_version"
+    implementation "io.ktor:ktor-server-sessions:$ktor_version"
 
     implementation "com.h2database:h2:$h2_version"
     implementation "org.postgresql:postgresql:$postgres_version"
@@ -100,7 +103,7 @@ dependencies {
     implementation "com.github.shyiko.skedule:skedule:$skedule_version"
     implementation "com.github.jknack:handlebars:$handlebars_version"
     implementation "org.apache.commons:commons-email:$commons_email_version"
-    implementation "at.favre.lib:bcrypt:0.9.0"
+    implementation "at.favre.lib:bcrypt:$bcrypt_version"
 
     implementation "org.apache.commons:commons-lang3:$commonslang_version"
     implementation "ch.qos.logback:logback-classic:$logback_version"

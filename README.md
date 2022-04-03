@@ -28,3 +28,18 @@ for front-end.
 - Comment on entries and add file attachments
 - Scheduled and recurring reminder notifications through email or web sockets
 - Scheduled digest email of unread links
+
+
+
+## TODO:
+
+### Server
+
+- create register, login, logout endpoints
+- file entry type
+- create default user as migration
+- emails for reminders
+
+### UI
+
+- show badge of number of unread notifications
