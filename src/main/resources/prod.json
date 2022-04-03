@@ -1,4 +1,7 @@
 {
+    "auth": {
+        "enabled": true
+    },
     "database": {
         "dialect": "POSTGRES",
         "url": "jdbc:postgresql://postgres:5432/lynksdb",
