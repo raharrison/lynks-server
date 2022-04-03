@@ -18,26 +18,33 @@ fun Route.userProtected(userService: UserService) {
 
     route("/user") {
 
-        get("/{id}") {
-            val username = call.parameters["id"]!!
-            if(call.isCallAuthorizedForUser(username)) {
+        get {
+            val username = call.principal<UserSession>()?.username ?:
+                if(Environment.mode != ConfigMode.PROD) {
+                    Environment.auth.defaultUserName
+                }
+                else {
+                    return@get call.respond(UnauthorizedResponse())
+                }
+
+            if (call.isCallAuthorizedForUser(username)) {
                 val user = userService.getUser(username)
-                if (user == null) call.respond(HttpStatusCode.NotFound)
+                if (user == null) call.respond(UnauthorizedResponse())
                 else call.respond(HttpStatusCode.OK, user)
             } else {
                 call.respond(UnauthorizedResponse())
             }
         }
 
-        post("/register") {
-            if (Environment.mode == ConfigMode.PROD) {
-                // disable as new users would be able to access all entries
-                call.respond(HttpStatusCode.Forbidden)
-                return@post
+        get("/{id}") {
+            val username = call.parameters["id"]!!
+            if (call.isCallAuthorizedForUser(username)) {
+                val user = userService.getUser(username)
+                if (user == null) call.respond(UnauthorizedResponse())
+                else call.respond(HttpStatusCode.OK, user)
+            } else {
+                call.respond(UnauthorizedResponse())
             }
-            val registerRequest = call.receive<AuthRequest>()
-            val created = userService.register(registerRequest)
-            call.respond(HttpStatusCode.Created, created)
         }
 
         post("/changePassword") {
@@ -75,7 +82,9 @@ fun Route.userUnprotected(userService: UserService) {
     post("/login") {
         val request = call.receive<AuthRequest>()
         if (userService.checkAuth(request)) {
-            call.sessions.set(UserSession(request.username))
+            if(Environment.auth.enabled) {
+                call.sessions.set(UserSession(request.username))
+            }
             call.respond(HttpStatusCode.OK)
         } else {
             call.respond(HttpStatusCode.Unauthorized)
@@ -83,8 +92,21 @@ fun Route.userUnprotected(userService: UserService) {
     }
 
     post("/logout") {
-        call.sessions.clear<UserSession>()
+        if (Environment.auth.enabled) {
+            call.sessions.clear<UserSession>()
+        }
         call.respond(HttpStatusCode.OK)
+    }
+
+    post("/user/register") {
+        if (Environment.mode == ConfigMode.PROD) {
+            // disable as new users would be able to access all entries
+            call.respond(HttpStatusCode.Forbidden)
+            return@post
+        }
+        val registerRequest = call.receive<AuthRequest>()
+        val created = userService.register(registerRequest)
+        call.respond(HttpStatusCode.Created, created)
     }
 
 }

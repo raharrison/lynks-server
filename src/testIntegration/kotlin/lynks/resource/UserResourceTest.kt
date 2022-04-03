@@ -20,6 +20,13 @@ class UserResourceTest : ServerTest() {
     }
 
     @Test
+    fun testGetDefaultUser() {
+        get("/user")
+            .then()
+            .statusCode(401)
+    }
+
+    @Test
     fun testGetUser() {
         // created user
         createDummyUser("user2", "user2@mail.com", "Bert Smith")
@@ -36,7 +43,7 @@ class UserResourceTest : ServerTest() {
     fun testGetUserNotFound() {
         get("/user/invalid")
             .then()
-            .statusCode(404)
+            .statusCode(401)
     }
 
     @Test
