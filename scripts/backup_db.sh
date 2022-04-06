@@ -2,22 +2,25 @@
 
 set -e
 
-if [ $# -eq 0 ]; then
-    echo "Expected path to config directory"
+if [ $# -lt 2 ]; then
+    echo "Expected path to config directory containing .env file and target dir"
+    echo "E.g. ./backup_db.sh ./lynks/config ./backups"
     exit 1
 fi
 
 CONFIG_PATH=$1
+TARGET_DIR=$2
 
-source "$CONFIG_PATH"
+# retrieve Postgres credentials from .env file in main config dir
+source "$CONFIG_PATH/.env"
 
 POSTGRES_CONTAINER=lynks-postgres-1
-DUMP_FILENAME=dump_$(date +"%Y-%m-%d_%H_%M_%S").sql
+DUMP_FILEPATH=$TARGET_DIR/dump_$(date +"%Y-%m-%d_%H_%M").gz
 
-docker exec -t $POSTGRES_CONTAINER bash -c 'pg_dumpall -c -U $POSTGRES_USER -l $POSTGRES_DB > /tmp/lynksdb.dump'
-docker cp $POSTGRES_CONTAINER:/tmp/lynksdb.dump "$DUMP_FILENAME"
+docker exec -t $POSTGRES_CONTAINER bash -c 'pg_dumpall -c -U $POSTGRES_USER -l $POSTGRES_DB | gzip > /tmp/lynksdb.dump'
+docker cp $POSTGRES_CONTAINER:/tmp/lynksdb.dump "$DUMP_FILEPATH"
 
-echo "Database dump saved to ${DUMP_FILENAME}"
+echo "Database dump saved to ${DUMP_FILEPATH}"
 
 
 # Restore
