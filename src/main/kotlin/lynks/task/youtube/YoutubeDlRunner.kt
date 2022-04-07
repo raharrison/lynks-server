@@ -8,7 +8,6 @@ import lynks.resource.ResourceManager
 import lynks.resource.ResourceType
 import lynks.resource.WebResourceRetriever
 import lynks.util.*
-import java.io.File
 import kotlin.io.path.absolutePathString
 
 class YoutubeDlRunner(
@@ -64,7 +63,7 @@ class YoutubeDlRunner(
                     val extension = FileUtils.getExtension(filename)
                     val generatedResources = listOf(GeneratedResource(ResourceType.GENERATED, filename, extension))
                     resourceManager.migrateGeneratedResources(entryId, generatedResources)
-                    val message = "Youtube download task execution completed, created resource: " + File(filename).name
+                    val message = "Youtube download task execution completed, created resource: " + FileUtils.getFileName(filename)
                     notifyService.create(NewNotification.processed(message, entryId))
                     entryAuditService.acceptAuditEvent(entryId, "YoutubeDlTask", message)
                 } else {

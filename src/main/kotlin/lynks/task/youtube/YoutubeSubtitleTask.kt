@@ -11,7 +11,6 @@ import lynks.task.TaskBuilder
 import lynks.task.TaskContext
 import lynks.util.*
 import java.io.ByteArrayInputStream
-import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
 import javax.xml.parsers.DocumentBuilderFactory
@@ -49,7 +48,7 @@ class YoutubeSubtitleTask(id: String, entryId: String) : Task<TaskContext>(id, e
                         it.startsWith(prefix)
                     }?.removePrefix(prefix)?.trim()
                     if (filename != null) {
-                        val name = File(filename).name
+                        val name = FileUtils.getFileName(filename)
                         log.info("Youtube subtitle task found destination filename={}", filename)
                         val subLines = extractSubtitleText(filename)
                         log.info("Found {} subtitle lines", subLines.size)

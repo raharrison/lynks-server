@@ -1,6 +1,5 @@
 package lynks.util
 
-import java.io.File
 import java.math.BigInteger
 import java.nio.file.Files
 import java.nio.file.Path
@@ -8,6 +7,7 @@ import java.nio.file.attribute.BasicFileAttributes
 import java.security.MessageDigest
 import java.time.Instant
 import java.time.temporal.ChronoUnit
+import kotlin.io.path.name
 
 object FileUtils {
 
@@ -40,15 +40,19 @@ object FileUtils {
     }
 
     fun removeExtension(name: String): String {
-        val fileName= File(name).name
+        val fileName = getFileName(name)
         val dotIndex = fileName.lastIndexOf('.')
         return if (dotIndex == -1) fileName else fileName.substring(0, dotIndex)
     }
 
     fun getExtension(name: String): String {
-        val fileName = File(name).name
+        val fileName = getFileName(name)
         val dotIndex = fileName.lastIndexOf('.')
         return if (dotIndex == -1) "" else fileName.substring(dotIndex + 1)
+    }
+
+    fun getFileName(str: String): String {
+        return Path.of(str).name
     }
 
     fun directoriesOlderThan(path: Path, days: Long): List<Path> {
