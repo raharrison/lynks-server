@@ -27,10 +27,13 @@ class V2__Create_default_user : BaseJavaMigration() {
             HashUtils.bcryptHash(passwordInput)
         }
 
+        val currentTime = System.currentTimeMillis()
         transaction {
             Users.insert {
                 it[this.username] = username
                 it[this.password] = password
+                it[this.dateCreated] = currentTime
+                it[this.dateUpdated] = currentTime
             }
         }
         log.info("Default user with name '{}' created", username)

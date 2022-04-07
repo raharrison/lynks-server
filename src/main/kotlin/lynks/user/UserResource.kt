@@ -59,7 +59,7 @@ fun Route.userProtected(userService: UserService) {
         }
 
         put {
-            val user = call.receive<User>()
+            val user = call.receive<UserUpdateRequest>()
             if (call.isCallAuthorizedForUser(user.username)) {
                 user.email?.let { email ->
                     if (!URLUtils.isValidEmail(email)) {

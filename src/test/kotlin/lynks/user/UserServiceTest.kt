@@ -25,6 +25,7 @@ class UserServiceTest : DatabaseTest() {
         assertThat(user?.email).isEqualTo("user1@mail.com")
         assertThat(user?.displayName).isEqualTo("Bob Smith")
         assertThat(user?.digest).isFalse()
+        assertThat(user?.dateCreated).isEqualTo(user?.dateUpdated)
     }
 
     @Test
@@ -39,6 +40,7 @@ class UserServiceTest : DatabaseTest() {
         assertThat(registered.email).isNull()
         assertThat(registered.displayName).isNull()
         assertThat(registered.digest).isFalse()
+        assertThat(registered.dateCreated).isEqualTo(registered.dateUpdated)
     }
 
     @Test
@@ -53,16 +55,19 @@ class UserServiceTest : DatabaseTest() {
         val before = userService.getUser("user1")
         assertThat(before?.email).isEqualTo("user1@mail.com")
         assertThat(before?.displayName).isEqualTo("Bob Smith")
-        val updated = userService.updateUser(User("user1", "updated@mail.com", "Bill Smith"))
+        Thread.sleep(10)
+        val updated = userService.updateUser(UserUpdateRequest("user1", "updated@mail.com", "Bill Smith"))
         assertThat(updated).isNotNull()
         assertThat(updated?.email).isEqualTo("updated@mail.com")
         assertThat(updated?.displayName).isEqualTo("Bill Smith")
+        assertThat(updated?.dateCreated).isEqualTo(before?.dateCreated)
+        assertThat(updated?.dateUpdated).isNotEqualTo(before?.dateUpdated)
         assertThat(userService.getUser("user1")).isEqualTo(updated)
     }
 
     @Test
     fun testUpdateUserNotFound() {
-        val updated = userService.updateUser(User("notfound", "updated@mail.com"))
+        val updated = userService.updateUser(UserUpdateRequest("notfound", "updated@mail.com"))
         assertThat(updated).isNull()
     }
 

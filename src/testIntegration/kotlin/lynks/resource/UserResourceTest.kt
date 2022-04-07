@@ -7,6 +7,7 @@ import lynks.common.ServerTest
 import lynks.user.AuthRequest
 import lynks.user.ChangePasswordRequest
 import lynks.user.User
+import lynks.user.UserUpdateRequest
 import lynks.util.createDummyUser
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -37,6 +38,7 @@ class UserResourceTest : ServerTest() {
         assertThat(user.username).isEqualTo("user2")
         assertThat(user.email).isEqualTo("user2@mail.com")
         assertThat(user.displayName).isEqualTo("Bert Smith")
+        assertThat(user.dateCreated).isEqualTo(user.dateUpdated)
     }
 
     @Test
@@ -59,6 +61,7 @@ class UserResourceTest : ServerTest() {
         assertThat(registered.username).isEqualTo("user2")
         assertThat(registered.email).isNull()
         assertThat(registered.displayName).isNull()
+        assertThat(registered.dateCreated).isEqualTo(registered.dateUpdated)
         val user = get("/user/{id}", registered.username)
             .then()
             .statusCode(200)
@@ -124,9 +127,10 @@ class UserResourceTest : ServerTest() {
         assertThat(original.email).isEqualTo("user2@mail.com")
         assertThat(original.displayName).isEqualTo("Bert Smith")
         assertThat(original.digest).isFalse()
+        assertThat(original.dateCreated).isEqualTo(original.dateUpdated)
         val updated = given()
             .contentType(ContentType.JSON)
-            .body(User(original.username, "updated@mail.com", "Bart Smith", true))
+            .body(UserUpdateRequest(original.username, "updated@mail.com", "Bart Smith", true))
             .When()
             .put("/user")
             .then()
@@ -137,6 +141,7 @@ class UserResourceTest : ServerTest() {
         assertThat(updated.email).isEqualTo("updated@mail.com")
         assertThat(updated.displayName).isEqualTo("Bart Smith")
         assertThat(updated.digest).isTrue()
+        assertThat(updated.dateCreated).isNotEqualTo(updated.dateUpdated)
         val user = get("/user/{id}", updated.username)
             .then()
             .statusCode(200)
@@ -148,7 +153,7 @@ class UserResourceTest : ServerTest() {
     fun testUpdateUserNotFound() {
         given()
             .contentType(ContentType.JSON)
-            .body(User("invalid", "updated@mail.com", "Bill Smith"))
+            .body(UserUpdateRequest("invalid", "updated@mail.com", "Bill Smith"))
             .When()
             .put("/user")
             .then()
@@ -159,7 +164,7 @@ class UserResourceTest : ServerTest() {
     fun testUpdateUserInvalidEmail() {
         given()
             .contentType(ContentType.JSON)
-            .body(User("user1", "invalid"))
+            .body(UserUpdateRequest("user1", "invalid"))
             .When()
             .put("/user")
             .then()

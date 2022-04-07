@@ -8,14 +8,25 @@ object Users : Table("USER_PROFILE") {
     val email = varchar("EMAIL", 100).nullable()
     val displayName = varchar("DISPLAY_NAME", 50).nullable()
     val digest = bool("DIGEST").default(false)
+    val dateCreated = long("DATE_CREATED")
+    val dateUpdated = long("DATE_UPDATED")
     override val primaryKey: PrimaryKey = PrimaryKey(username)
 }
 
 data class AuthRequest(val username: String, val password: String)
 data class ChangePasswordRequest(val username: String, val oldPassword: String, val newPassword: String)
-data class User(
+data class UserUpdateRequest(
     val username: String,
     val email: String? = null,
     val displayName: String? = null,
     val digest: Boolean = false
+)
+
+data class User(
+    val username: String,
+    val email: String? = null,
+    val displayName: String? = null,
+    val digest: Boolean = false,
+    val dateCreated: Long,
+    val dateUpdated: Long
 )

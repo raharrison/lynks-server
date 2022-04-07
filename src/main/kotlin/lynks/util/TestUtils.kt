@@ -117,11 +117,14 @@ fun createDummyNotification(id: String, type: NotificationType, msg: String, eid
 }
 
 fun createDummyUser(username: String, email: String? = null, displayName: String? = null, digest: Boolean = false) = transaction {
+    val time = System.currentTimeMillis()
     Users.insert {
         it[this.username] = username
         it[password] = "pass"
         it[this.email] = email
         it[this.displayName] = displayName
         it[this.digest] = digest
+        it[this.dateCreated] = time
+        it[this.dateUpdated] = time
     }
 }
