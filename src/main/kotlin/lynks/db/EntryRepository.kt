@@ -128,6 +128,7 @@ abstract class EntryRepository<T : Entry, S : SlimEntry, U : NewEntry>(
             add(entry)
         } else {
             groupSetService.assertGroups(entry.tags, entry.collections)
+            val serviceName = this::class.simpleName
             transaction {
                 val where = getBaseQuery().combine { Entries.id eq id }.where!!
                 val updated = Entries.update({ where }, body = {
@@ -143,7 +144,7 @@ abstract class EntryRepository<T : Entry, S : SlimEntry, U : NewEntry>(
                     val updatedEntry = postprocess(id, entry)
                     if (newVersion) {
                         entryAuditService.acceptAuditEvent(
-                            id, this::class.simpleName,
+                            id, serviceName,
                             "Updated to version ${updatedEntry.version}"
                         )
                     }
@@ -155,30 +156,33 @@ abstract class EntryRepository<T : Entry, S : SlimEntry, U : NewEntry>(
         }
     }
 
-    fun update(entry: T, newVersion: Boolean = false): T? = transaction {
-        groupSetService.assertGroups(entry.tags.map { it.id }, entry.collections.map { it.id })
-        val where = getBaseQuery().combine { Entries.id eq entry.id }.where!!
-        val updated = Entries.update({ where }, body = {
-            toUpdate(entry)(it)
-            if (newVersion) {
-                it[dateUpdated] = System.currentTimeMillis()
-                with(SqlExpressionBuilder) {
-                    it.update(version, version + 1)
+    fun update(entry: T, newVersion: Boolean = false): T? {
+        val serviceName = this::class.simpleName
+        return transaction {
+            groupSetService.assertGroups(entry.tags.map { it.id }, entry.collections.map { it.id })
+            val where = getBaseQuery().combine { Entries.id eq entry.id }.where!!
+            val updated = Entries.update({ where }, body = {
+                toUpdate(entry)(it)
+                if (newVersion) {
+                    it[dateUpdated] = System.currentTimeMillis()
+                    with(SqlExpressionBuilder) {
+                        it.update(version, version + 1)
+                    }
                 }
+            })
+            if (updated > 0) {
+                updateGroupsForEntry(entry.tags.map { it.id } + entry.collections.map { it.id }, entry.id)
+                val updatedEntry = get(entry.id)
+                if (newVersion) {
+                    entryAuditService.acceptAuditEvent(
+                        id, serviceName,
+                        "Updated to version ${updatedEntry?.version}"
+                    )
+                }
+                updatedEntry
+            } else {
+                null
             }
-        })
-        if (updated > 0) {
-            updateGroupsForEntry(entry.tags.map { it.id } + entry.collections.map { it.id }, entry.id)
-            val updatedEntry = get(entry.id)
-            if (newVersion) {
-                entryAuditService.acceptAuditEvent(
-                    id, this::class.simpleName,
-                    "Updated to version ${updatedEntry?.version}"
-                )
-            }
-            updatedEntry
-        } else {
-            null
         }
     }
 
