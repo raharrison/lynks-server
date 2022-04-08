@@ -1,21 +1,28 @@
 package lynks.user
 
+import lynks.common.Entries
+import lynks.common.EntryAudit
+import lynks.common.RowMapper
 import lynks.common.exception.InvalidModelException
+import lynks.common.page.Page
+import lynks.common.page.PageRequest
+import lynks.common.page.SortDirection
 import lynks.util.HashUtils
 import lynks.util.loggerFor
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.insert
-import org.jetbrains.exposed.sql.select
+import lynks.util.orderBy
+import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.jetbrains.exposed.sql.update
+import kotlin.math.max
 
 class UserService {
 
     private val log = loggerFor<UserService>()
+    private val activityLogColumns = EntryAudit.columns + listOf(Entries.type, Entries.title)
 
     fun getUser(username: String): User? = transaction {
         Users.select { Users.username eq username }.map {
-            User(it[Users.username],
+            User(
+                it[Users.username],
                 it[Users.email],
                 it[Users.displayName],
                 it[Users.digest],
@@ -74,6 +81,17 @@ class UserService {
         Users.slice(Users.email)
             .select { Users.digest eq true and Users.email.isNotNull() }
             .mapNotNull { it[Users.email] }.toSet()
+    }
+
+    fun getUserActivityLog(pageRequest: PageRequest = PageRequest()): Page<ActivityLogItem> = transaction {
+        val sortOrder = pageRequest.direction ?: SortDirection.DESC
+        val baseQuery = EntryAudit.leftJoin(Entries).slice(activityLogColumns).selectAll()
+        Page.of(
+            baseQuery.copy()
+                .orderBy(EntryAudit.timestamp, sortOrder)
+                .limit(pageRequest.size, max(0, (pageRequest.page - 1) * pageRequest.size))
+                .map { RowMapper.toActivityLogItem(it) }, pageRequest, baseQuery.count()
+        )
     }
 
 }

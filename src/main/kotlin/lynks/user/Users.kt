@@ -1,5 +1,6 @@
 package lynks.user
 
+import lynks.common.EntryType
 import org.jetbrains.exposed.sql.Table
 
 object Users : Table("USER_PROFILE") {
@@ -29,4 +30,14 @@ data class User(
     val digest: Boolean = false,
     val dateCreated: Long,
     val dateUpdated: Long
+)
+
+data class ActivityLogItem(
+    val id: String,
+    val entryId: String,
+    val src: String?,
+    val details: String,
+    val entryType: EntryType,
+    val entryTitle: String,
+    val timestamp: Long
 )

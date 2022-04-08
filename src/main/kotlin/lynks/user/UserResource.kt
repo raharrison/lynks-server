@@ -13,6 +13,7 @@ import lynks.common.UserSession
 import lynks.common.exception.InvalidModelException
 import lynks.util.URLUtils
 import lynks.util.isCallAuthorizedForUser
+import lynks.util.pageRequest
 
 fun Route.userProtected(userService: UserService) {
 
@@ -52,7 +53,7 @@ fun Route.userProtected(userService: UserService) {
             if (call.isCallAuthorizedForUser(changeRequest.username)) {
                 val changed = userService.changePassword(changeRequest)
                 if (changed) call.respond(HttpStatusCode.OK)
-                else call.respond(HttpStatusCode.BadRequest)
+                else call.respond(HttpStatusCode.BadRequest, "Old password is not correct")
             } else {
                 call.respond(UnauthorizedResponse())
             }
@@ -69,6 +70,22 @@ fun Route.userProtected(userService: UserService) {
                 val updated = userService.updateUser(user)
                 if (updated == null) call.respond(HttpStatusCode.NotFound)
                 else call.respond(HttpStatusCode.OK, updated)
+            } else {
+                call.respond(UnauthorizedResponse())
+            }
+        }
+
+        get("/activity") {
+            val username = call.principal<UserSession>()?.username ?:
+            if(Environment.mode != ConfigMode.PROD) {
+                Environment.auth.defaultUserName
+            }
+            else {
+                return@get call.respond(UnauthorizedResponse())
+            }
+            if (call.isCallAuthorizedForUser(username)) {
+                val page = call.pageRequest()
+                call.respond(userService.getUserActivityLog(page))
             } else {
                 call.respond(UnauthorizedResponse())
             }

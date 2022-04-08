@@ -1,13 +1,12 @@
 package lynks.resource
 
-import io.restassured.RestAssured.get
-import io.restassured.RestAssured.given
+import io.restassured.RestAssured.*
 import io.restassured.http.ContentType
+import lynks.common.EntryType
 import lynks.common.ServerTest
-import lynks.user.AuthRequest
-import lynks.user.ChangePasswordRequest
-import lynks.user.User
-import lynks.user.UserUpdateRequest
+import lynks.common.page.Page
+import lynks.user.*
+import lynks.util.createDummyEntry
 import lynks.util.createDummyUser
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -169,6 +168,29 @@ class UserResourceTest : ServerTest() {
             .put("/user")
             .then()
             .statusCode(400)
+    }
+
+    @Test
+    fun testGetUserActivityLog() {
+        createDummyEntry("e1", "note1", "note content", EntryType.NOTE)
+        post("/entry/{id}/star", "e1")
+        post("/entry/{id}/unstar", "e1")
+
+        val activityLog = get("/user/activity")
+            .then()
+            .statusCode(200)
+            .extract().to<Page<ActivityLogItem>>()
+
+        assertThat(activityLog.total).isEqualTo(2)
+        assertThat(activityLog.page).isEqualTo(1)
+        assertThat(activityLog.content).hasSize(2)
+        assertThat(activityLog.content).extracting("id").doesNotHaveDuplicates()
+        assertThat(activityLog.content).extracting("entryId").containsOnly("e1")
+        assertThat(activityLog.content).extracting("details").doesNotHaveDuplicates()
+        assertThat(activityLog.content).extracting("entryType").containsOnly(EntryType.NOTE.name.lowercase())
+        assertThat(activityLog.content).extracting("entryTitle").containsOnly("note1")
+        assertThat(activityLog.content).extracting("details").doesNotHaveDuplicates()
+        assertThat(activityLog.content).extracting("timestamp").doesNotContainNull()
     }
 
 

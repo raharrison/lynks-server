@@ -8,6 +8,7 @@ import lynks.notify.Notification
 import lynks.notify.Notifications
 import lynks.resource.Resource
 import lynks.resource.Resources
+import lynks.user.ActivityLogItem
 import org.jetbrains.exposed.sql.ResultRow
 
 object RowMapper {
@@ -131,6 +132,18 @@ object RowMapper {
             entryType = row[Entries.type],
             entryTitle = row[Entries.title],
             dateCreated = row[Notifications.dateCreated]
+        )
+    }
+
+    fun toActivityLogItem(row: ResultRow): ActivityLogItem {
+        return ActivityLogItem(
+            id = row[EntryAudit.auditId],
+            entryId = row[EntryAudit.entryId],
+            src = row[EntryAudit.src],
+            details = row[EntryAudit.details],
+            entryType = row[Entries.type],
+            entryTitle = row[Entries.title],
+            timestamp = row[EntryAudit.timestamp]
         )
     }
 }
