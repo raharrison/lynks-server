@@ -1,4 +1,4 @@
-package lynks.resource
+package lynks.endpoint
 
 import io.restassured.RestAssured.get
 import io.restassured.RestAssured.given
@@ -14,7 +14,7 @@ import org.hamcrest.Matchers.equalTo
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
-class NotifyResourceTest : ServerTest() {
+class NotifyEndpointTest : ServerTest() {
 
     @BeforeEach
     fun createEntries() {

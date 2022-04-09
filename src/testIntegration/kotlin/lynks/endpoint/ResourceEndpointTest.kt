@@ -1,16 +1,20 @@
-package lynks.resource
+package lynks.endpoint
 
 import io.restassured.RestAssured.*
 import io.restassured.http.ContentType
 import lynks.common.EntryType
 import lynks.common.Environment
 import lynks.common.ServerTest
+import lynks.resource.ImageUploadErrorResponse
+import lynks.resource.ImageUploadResponse
+import lynks.resource.Resource
+import lynks.resource.ResourceType
 import lynks.util.createDummyEntry
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
-class FileResourceTest : ServerTest() {
+class ResourceEndpointTest : ServerTest() {
 
     @BeforeEach
     fun createEntries() {

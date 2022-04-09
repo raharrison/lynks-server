@@ -1,11 +1,11 @@
-package lynks.resource
+package lynks.endpoint
 
 import io.restassured.RestAssured.get
 import lynks.common.ServerTest
 import org.hamcrest.Matchers.equalTo
 import org.junit.jupiter.api.Test
 
-class HealthResourceTest: ServerTest() {
+class HealthEndpointTest: ServerTest() {
 
     @Test
     fun testOkResponse() {

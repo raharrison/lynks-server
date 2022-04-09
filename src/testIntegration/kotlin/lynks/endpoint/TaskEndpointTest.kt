@@ -1,4 +1,4 @@
-package lynks.resource
+package lynks.endpoint
 
 import io.restassured.RestAssured.given
 import io.restassured.http.ContentType
@@ -8,7 +8,7 @@ import lynks.util.createDummyEntry
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
-class TaskResourceTest : ServerTest() {
+class TaskEndpointTest : ServerTest() {
 
     @BeforeEach
     fun createEntries() {

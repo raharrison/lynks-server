@@ -1,4 +1,4 @@
-package lynks.resource
+package lynks.endpoint
 
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock
@@ -18,7 +18,7 @@ import org.junit.jupiter.api.Test
 import java.nio.file.Paths
 import kotlin.io.path.absolutePathString
 
-class SuggestionResourceTest: ServerTest() {
+class SuggestionEndpointTest: ServerTest() {
 
     private lateinit var wireMockServer: WireMockServer
 

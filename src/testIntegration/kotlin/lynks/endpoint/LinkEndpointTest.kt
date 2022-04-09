@@ -1,4 +1,4 @@
-package lynks.resource
+package lynks.endpoint
 
 import io.restassured.RestAssured.*
 import io.restassured.http.ContentType
@@ -11,7 +11,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
-class LinkResourceTest: ServerTest() {
+class LinkEndpointTest: ServerTest() {
 
     @BeforeEach
     fun createEntries() {

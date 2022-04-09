@@ -1,4 +1,4 @@
-package lynks.resource
+package lynks.endpoint
 
 import io.restassured.RestAssured.*
 import io.restassured.http.ContentType
@@ -13,7 +13,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.time.ZoneId
 
-class ReminderResourceTest : ServerTest() {
+class ReminderEndpointTest : ServerTest() {
 
     @BeforeEach
     fun createEntries() {
