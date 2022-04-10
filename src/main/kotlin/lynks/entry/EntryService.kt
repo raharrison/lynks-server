@@ -29,6 +29,7 @@ class EntryService(
             EntryType.LINK -> RowMapper.toLink(table, row, groups.tags, groups.collections)
             EntryType.NOTE -> RowMapper.toNote(table, row, groups.tags, groups.collections)
             EntryType.SNIPPET -> RowMapper.toSnippet(table, row, groups.tags, groups.collections)
+            EntryType.FILE -> RowMapper.toFile(table, row, groups.tags, groups.collections)
         }
     }
 
@@ -37,6 +38,7 @@ class EntryService(
             EntryType.LINK -> RowMapper.toSlimLink(table, row, groups.tags, groups.collections)
             EntryType.NOTE -> RowMapper.toSlimNote(table, row, groups.tags, groups.collections)
             EntryType.SNIPPET -> RowMapper.toSlimSnippet(table, row, groups.tags, groups.collections)
+            EntryType.FILE -> RowMapper.toSlimFile(table, row, groups.tags, groups.collections)
         }
     }
 

@@ -17,7 +17,7 @@ import java.io.File
 import java.time.LocalDate
 import java.time.temporal.TemporalAdjusters
 
-fun Route.resources(resourceManager: ResourceManager) {
+fun Route.resource(resourceManager: ResourceManager) {
 
     static("temp") {
         files(Environment.resource.resourceTempPath)

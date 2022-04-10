@@ -99,6 +99,31 @@ object RowMapper {
         )
     }
 
+    fun toFile(table: BaseEntries, row: ResultRow, tags: List<Tag>, collections: List<Collection>): File {
+        return File(
+            id = row[table.id],
+            title = row[table.title],
+            dateCreated = row[table.dateCreated],
+            dateUpdated = row[table.dateUpdated],
+            tags = tags,
+            collections = collections,
+            props = row[table.props] ?: BaseProperties(),
+            version = row[table.version],
+            starred = row[table.starred]
+        )
+    }
+
+    fun toSlimFile(table: BaseEntries, row: ResultRow, tags: List<Tag>, collections: List<Collection>): SlimFile {
+        return SlimFile(
+            id = row[table.id],
+            title = row[table.title],
+            dateUpdated = row[table.dateUpdated],
+            tags = tags,
+            collections = collections,
+            starred = row[table.starred]
+        )
+    }
+
     fun toComment(row: ResultRow): Comment =
         Comment(
             id = row[Comments.id],

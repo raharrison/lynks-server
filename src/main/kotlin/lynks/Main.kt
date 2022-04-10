@@ -29,7 +29,7 @@ import lynks.reminder.ReminderService
 import lynks.reminder.reminder
 import lynks.resource.ResourceManager
 import lynks.resource.WebResourceRetriever
-import lynks.resource.resources
+import lynks.resource.resource
 import lynks.suggest.SuggestionService
 import lynks.suggest.suggest
 import lynks.task.TaskService
@@ -81,6 +81,7 @@ fun Application.module() {
         register(LinkService(get(), get(), get(), get()))
         register(NoteService(get(), get(), get()))
         register(SnippetService(get(), get(), get()))
+        register(FileService(get(), get(), get()))
         register(CommentService(get()))
         register(ReminderService(get()))
         register(SuggestionService(get()))
@@ -110,10 +111,11 @@ private fun Route.protectedRoutes(serviceProvider: ServiceProvider) {
         link(get())
         note(get())
         snippet(get())
+        file(get())
         entry(get(), get(), get())
         tag(get())
         suggest(get())
-        resources(get())
+        resource(get())
         task(get())
         collection(get())
         notify(get())
