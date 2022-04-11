@@ -2,6 +2,7 @@ package lynks.notify
 
 import io.ktor.application.*
 import io.ktor.http.*
+import io.ktor.http.cio.websocket.*
 import io.ktor.response.*
 import io.ktor.routing.*
 import io.ktor.websocket.*
@@ -54,8 +55,10 @@ fun Route.notify(notifyService: NotifyService) {
     webSocket("/notify") {
         try {
             notifyService.join(this.outgoing)
-            while (true) {
-                incoming.receive()
+            for (frame in incoming) {
+                if (frame.frameType == FrameType.CLOSE) {
+                    break
+                }
             }
         } finally {
             notifyService.leave(this.outgoing)
