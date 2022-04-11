@@ -46,21 +46,21 @@ class DiscussionFinderWorker(
         findDiscussions(input.linkId, input.intervalIndex)
     }
 
-    private val intervals = listOf<Long>(60, 60 * 4, 60 * 10, 60 * 24)
+    private val intervals = listOf<Long>(24, 48, 72) // in hours
 
     override val requestClass = DiscussionFinderWorkerRequest::class.java
 
-    private val redditLink = Regex("reddit\\.com\\/r\\/.+\\/comments\\/.+\\/.+")
+    private val redditLink = Regex("reddit\\.com/r/.+/comments/.+/.+")
 
     private suspend fun checkLastRunTime(input: DiscussionFinderWorkerRequest) {
         val lastRun = getLastRunTime(input) ?: return
         val now = System.currentTimeMillis()
         val minsSinceLastRun = (now - lastRun) / 1000 / 60
-        val interval = intervals[input.intervalIndex]
-        if(minsSinceLastRun < interval) {
-            val diff = interval - minsSinceLastRun
+        val intervalMins = intervals[input.intervalIndex] * 60
+        if(minsSinceLastRun < intervalMins) {
+            val diff = intervalMins - minsSinceLastRun
             log.debug("Discussion worker only {}mins since last run, sleeping for {}mins entryId={}", minsSinceLastRun, diff, input.linkId)
-            delay(Duration.ofMinutes(interval - minsSinceLastRun))
+            delay(Duration.ofMinutes(intervalMins - minsSinceLastRun))
         }
     }
 
@@ -111,9 +111,9 @@ class DiscussionFinderWorker(
             // update schedule
             updateSchedule(DiscussionFinderWorkerRequest(linkId, intervalIndex))
             val interval = intervals[intervalIndex]
-            log.info("Discussion finder worker sleeping for {}mins entry={}", interval, link.id)
+            log.info("Discussion finder worker sleeping for {} hours entry={}", interval, link.id)
 
-            delay(Duration.ofMinutes(interval))
+            delay(Duration.ofHours(interval))
         }
     }
 

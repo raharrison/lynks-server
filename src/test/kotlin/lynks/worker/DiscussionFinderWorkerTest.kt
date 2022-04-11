@@ -54,10 +54,10 @@ class DiscussionFinderWorkerTest: DatabaseTest() {
 
         assertThat(link.props.containsAttribute(DISCUSSIONS_PROP)).isFalse()
 
-        coVerify(exactly = 5) { linkService.get(link.id) }
-        coVerify(exactly = 5 * 2) { retriever.getString(any()) }
+        coVerify(exactly = 4) { linkService.get(link.id) }
+        coVerify(exactly = 4 * 2) { retriever.getString(any()) }
         coVerify(exactly = 0) { notifyService.create(any()) }
-        coVerify(exactly = 5) { entryAuditService.acceptAuditEvent(link.id, any(), any()) }
+        coVerify(exactly = 4) { entryAuditService.acceptAuditEvent(link.id, any(), any()) }
         worker.close()
     }
 
@@ -72,8 +72,8 @@ class DiscussionFinderWorkerTest: DatabaseTest() {
         worker.send(DiscussionFinderWorkerRequest(link.id))
         advanceUntilIdle()
 
-        verify(exactly = 5) { linkService.get(link.id) }
-        verify(exactly = 5) { linkService.mergeProps(eq(link.id), ofType(BaseProperties::class)) }
+        verify(exactly = 4) { linkService.get(link.id) }
+        verify(exactly = 4) { linkService.mergeProps(eq(link.id), ofType(BaseProperties::class)) }
         assertThat(propsSlot.captured.containsAttribute(DISCUSSIONS_PROP)).isTrue()
         val discussions = propsSlot.captured.getAttribute(DISCUSSIONS_PROP) as List<Any?>
         assertThat(discussions).hasSize(6)
@@ -83,7 +83,7 @@ class DiscussionFinderWorkerTest: DatabaseTest() {
                         "/r/hackernews", "/r/bprogramming", "/r/factorio")
         assertThat(discussions).extracting("url").doesNotHaveDuplicates()
 
-        coVerify(exactly = 5 * 2) { retriever.getString(any()) }
+        coVerify(exactly = 4 * 2) { retriever.getString(any()) }
         coVerify(exactly = 1) { notifyService.create(any()) }
         coVerify(exactly = 1) { entryAuditService.acceptAuditEvent(link.id, any(), any()) }
         worker.close()
@@ -106,7 +106,7 @@ class DiscussionFinderWorkerTest: DatabaseTest() {
         worker.send(DiscussionFinderWorkerRequest(link.id))
         advanceUntilIdle()
 
-        verify(exactly = 5) { linkService.mergeProps(eq(link.id), ofType(BaseProperties::class)) }
+        verify(exactly = 4) { linkService.mergeProps(eq(link.id), ofType(BaseProperties::class)) }
         assertThat(propsSlot.captured.containsAttribute(DISCUSSIONS_PROP)).isTrue()
         val discussions = propsSlot.captured.getAttribute(DISCUSSIONS_PROP) as List<Any?>
         assertThat(discussions).hasSize(4)
@@ -115,7 +115,7 @@ class DiscussionFinderWorkerTest: DatabaseTest() {
             .containsExactlyInAnyOrder("/r/GoogleMaps", "/r/hackernews", "/r/mistyfront", "/r/patient_hackernews")
         assertThat(discussions).extracting("url").doesNotHaveDuplicates()
 
-        coVerify(exactly = 5 * 2) { retriever.getString(any()) }
+        coVerify(exactly = 4 * 2) { retriever.getString(any()) }
         coVerify(exactly = 1) { notifyService.create(any()) }
         coVerify(exactly = 1) { entryAuditService.acceptAuditEvent(link.id, any(), any()) }
         worker.close()
@@ -126,7 +126,7 @@ class DiscussionFinderWorkerTest: DatabaseTest() {
         coEvery { retriever.getString(match { it.contains("hn.algolia") }) } returns getFile("/hacker_discussions.json")
         coEvery { retriever.getString(match { it.contains("reddit.com") }) } returns getFile("/reddit_discussions.json")
 
-        createDummyWorkerSchedule(DiscussionFinderWorker::class.java.simpleName, "key", DiscussionFinderWorkerRequest(link.id, 2))
+        createDummyWorkerSchedule(DiscussionFinderWorker::class.java.simpleName, "key", DiscussionFinderWorkerRequest(link.id, 1))
 
         val worker = DiscussionFinderWorker(linkService, retriever, notifyService, entryAuditService)
                 .apply { runner = this@runTest.coroutineContext }.worker()
@@ -149,7 +149,7 @@ class DiscussionFinderWorkerTest: DatabaseTest() {
         coEvery { retriever.getString(match { it.contains("reddit.com") }) } returns getFile("/reddit_discussions.json")
 
         val lastRun = System.currentTimeMillis() - (30 * 60 * 1000) // 30 mins ago
-        createDummyWorkerSchedule(DiscussionFinderWorker::class.java.simpleName, "key", DiscussionFinderWorkerRequest(link.id, 2), lastRun)
+        createDummyWorkerSchedule(DiscussionFinderWorker::class.java.simpleName, "key", DiscussionFinderWorkerRequest(link.id, 1), lastRun)
 
         val worker = DiscussionFinderWorker(linkService, retriever, notifyService, entryAuditService)
             .apply { runner = this@runTest.coroutineContext }.worker()
@@ -182,16 +182,16 @@ class DiscussionFinderWorkerTest: DatabaseTest() {
         assertThat(discussions).hasSize(6)
         assertThat(discussions).extracting("url").doesNotHaveDuplicates()
 
-        coVerify(exactly = 5 * 2) { retriever.getString(any()) }
+        coVerify(exactly = 4 * 2) { retriever.getString(any()) }
         coVerify(exactly = 1) { notifyService.create(any()) }
-        coVerify(exactly = 5) { entryAuditService.acceptAuditEvent(link.id, any(), any()) }
+        coVerify(exactly = 4) { entryAuditService.acceptAuditEvent(link.id, any(), any()) }
         worker.close()
     }
 
     @Test
     fun testWorkerContinues() = runTest {
-        val hnResponses = listOf("", "", "", "", getFile("/hacker_discussions.json"))
-        val redditResponses = listOf("", "", "", "", getFile("/reddit_discussions.json"))
+        val hnResponses = listOf("", "", "", getFile("/hacker_discussions.json"))
+        val redditResponses = listOf("", "", "", getFile("/reddit_discussions.json"))
         coEvery { retriever.getString(match { it.contains("hn.algolia") }) } returnsMany hnResponses
         coEvery { retriever.getString(match { it.contains("reddit.com") }) } returnsMany redditResponses
 
@@ -201,14 +201,14 @@ class DiscussionFinderWorkerTest: DatabaseTest() {
         worker.send(DiscussionFinderWorkerRequest(link.id))
         advanceUntilIdle()
 
-        verify(exactly = 6) { linkService.get(link.id) }
+        verify(exactly = 5) { linkService.get(link.id) }
         verify(exactly = 2) { linkService.mergeProps(eq(link.id), ofType(BaseProperties::class)) }
         val discussions = propsSlot.captured.getAttribute(DISCUSSIONS_PROP) as List<Any?>
         assertThat(discussions).hasSize(6)
 
-        coVerify(exactly = 6 * 2) { retriever.getString(any()) }
+        coVerify(exactly = 5 * 2) { retriever.getString(any()) }
         coVerify(exactly = 1) { notifyService.create(any()) }
-        coVerify(exactly = 5) { entryAuditService.acceptAuditEvent(link.id, any(), any()) }
+        coVerify(exactly = 4) { entryAuditService.acceptAuditEvent(link.id, any(), any()) }
         worker.close()
     }
 
