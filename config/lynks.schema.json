@@ -1,0 +1,329 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "$id": "https://github.com/raharrison/lynks-server/config/lynks.schema.json",
+    "type": "object",
+    "title": "Lynks configuration schema",
+    "description": "Describes options to configure a Lynks server deployment",
+    "examples": [
+        {
+            "server": {
+                "port": 8080,
+                "rootPath": "/api"
+            },
+            "auth": {
+                "enabled": true,
+                "signingKey": "abcdef123",
+                "defaultUserName": "user",
+                "defaultUserPassword": "abcdef123"
+            },
+            "database": {
+                "dialect": "H2",
+                "url": "jdbc:h2:./lynksdb;AUTO_SERVER=TRUE",
+                "user": "lynksuser",
+                "password": ""
+            },
+            "resource": {
+                "resourceBasePath": "media",
+                "resourceTempPath": "media/temp",
+                "binaryBasePath": "bin",
+                "tempFileCleanInterval": 6,
+                "maxTempResourceAge": 14
+            },
+            "mail": {
+                "enabled": false,
+                "server": "localhost",
+                "port": 1025
+            },
+            "external": {
+                "smmryApiKey": "abcdef123",
+                "youtubeDlHost": "https://github.com/yt-dlp/yt-dlp/releases/latest/download",
+                "scraperHost": "http://localhost:3000/api",
+                "pushoverToken": "abcdef123",
+                "pushoverUser": "abcdef123"
+            }
+        }
+    ],
+    "properties": {
+        "server": {
+            "$id": "#/properties/server",
+            "type": "object",
+            "description": "Core server configuration",
+            "examples": [
+                {
+                    "port": 8080,
+                    "rootPath": "/api"
+                }
+            ],
+            "properties": {
+                "port": {
+                    "$id": "#/properties/server/properties/port",
+                    "type": "integer",
+                    "description": "The port the server should bind to",
+                    "examples": [
+                        8080
+                    ]
+                },
+                "rootPath": {
+                    "$id": "#/properties/server/properties/rootPath",
+                    "type": "string",
+                    "description": "Root API path, to be the prefix for all routes",
+                    "examples": [
+                        "/api"
+                    ]
+                }
+            },
+            "additionalProperties": false
+        },
+        "auth": {
+            "$id": "#/properties/auth",
+            "type": "object",
+            "description": "Authentication and authorization configuration",
+            "examples": [
+                {
+                    "enabled": true,
+                    "signingKey": "abcdef123",
+                    "defaultUserName": "user",
+                    "defaultUserPassword": "abcdef123"
+                }
+            ],
+            "properties": {
+                "enabled": {
+                    "$id": "#/properties/auth/properties/enabled",
+                    "type": "boolean",
+                    "description": "Protect all endpoints to be accessible only to authorized users",
+                    "examples": [
+                        true
+                    ]
+                },
+                "signingKey": {
+                    "$id": "#/properties/auth/properties/signingKey",
+                    "type": "string",
+                    "description": "Key (32 chars) used to sign and encrypt session cookies, should be kept secret",
+                    "examples": [
+                        "abcdef123"
+                    ]
+                },
+                "defaultUserName": {
+                    "$id": "#/properties/auth/properties/defaultUserName",
+                    "type": "string",
+                    "description": "Username for the default auto-created user, created on first start",
+                    "examples": [
+                        "user"
+                    ]
+                },
+                "defaultUserPassword": {
+                    "$id": "#/properties/auth/properties/defaultUserPassword",
+                    "type": "string",
+                    "description": "Password raw text or bcrypt hash for auto-created user, created on first start",
+                    "examples": [
+                        "abcdef123"
+                    ]
+                }
+            },
+            "additionalProperties": false
+        },
+        "database": {
+            "$id": "#/properties/database",
+            "type": "object",
+            "description": "Database configuration",
+            "examples": [
+                {
+                    "dialect": "H2",
+                    "url": "jdbc:h2:./lynksdb;AUTO_SERVER=TRUE",
+                    "user": "lynksuser",
+                    "password": ""
+                }
+            ],
+            "properties": {
+                "dialect": {
+                    "$id": "#/properties/database/properties/dialect",
+                    "type": "string",
+                    "description": "Type of database: either H2 or POSTGRES",
+                    "examples": [
+                        "H2",
+                        "POSTGRES"
+                    ]
+                },
+                "url": {
+                    "$id": "#/properties/database/properties/url",
+                    "type": "string",
+                    "description": "JDBC url for the main Lynks database instance",
+                    "examples": [
+                        "jdbc:h2:./lynksdb;AUTO_SERVER=TRUE"
+                    ]
+                },
+                "user": {
+                    "$id": "#/properties/database/properties/user",
+                    "type": "string",
+                    "description": "Database username",
+                    "examples": [
+                        "lynksuser"
+                    ]
+                },
+                "password": {
+                    "$id": "#/properties/database/properties/password",
+                    "type": "string",
+                    "description": "Database password",
+                    "examples": [
+                        ""
+                    ]
+                }
+            },
+            "additionalProperties": false
+        },
+        "resource": {
+            "$id": "#/properties/resource",
+            "type": "object",
+            "description": "An explanation about the purpose of this instance.",
+            "examples": [
+                {
+                    "resourceBasePath": "media",
+                    "resourceTempPath": "media/temp",
+                    "binaryBasePath": "bin",
+                    "tempFileCleanInterval": 6,
+                    "maxTempResourceAge": 14
+                }
+            ],
+            "properties": {
+                "resourceBasePath": {
+                    "$id": "#/properties/resource/properties/resourceBasePath",
+                    "type": "string",
+                    "description": "Location where all main entry resources will be saved",
+                    "examples": [
+                        "media"
+                    ]
+                },
+                "resourceTempPath": {
+                    "$id": "#/properties/resource/properties/resourceTempPath",
+                    "type": "string",
+                    "description": "Location where all temporary files will be saved",
+                    "examples": [
+                        "media/temp"
+                    ]
+                },
+                "binaryBasePath": {
+                    "$id": "#/properties/resource/properties/binaryBasePath",
+                    "type": "string",
+                    "description": "Location where all binary utilities will be saved",
+                    "examples": [
+                        "bin"
+                    ]
+                },
+                "tempFileCleanInterval": {
+                    "$id": "#/properties/resource/properties/tempFileCleanInterval",
+                    "type": "integer",
+                    "description": "Frequency in hours to delete temp resources which are passed threshold age",
+                    "examples": [
+                        6
+                    ]
+                },
+                "maxTempResourceAge": {
+                    "$id": "#/properties/resource/properties/maxTempResourceAge",
+                    "type": "integer",
+                    "description": "Maximum age of temp files in days before qualifying for cleanup",
+                    "examples": [
+                        14
+                    ]
+                }
+            },
+            "additionalProperties": false
+        },
+        "mail": {
+            "$id": "#/properties/mail",
+            "type": "object",
+            "description": "An explanation about the purpose of this instance.",
+            "examples": [
+                {
+                    "enabled": false,
+                    "server": "localhost",
+                    "port": 1025
+                }
+            ],
+            "properties": {
+                "enabled": {
+                    "$id": "#/properties/mail/properties/enabled",
+                    "type": "boolean",
+                    "description": "Enable the sending of emails by the server for notifications",
+                    "examples": [
+                        false
+                    ]
+                },
+                "server": {
+                    "$id": "#/properties/mail/properties/server",
+                    "type": "string",
+                    "description": "Host of the mail server used to send emails (if enabled)",
+                    "examples": [
+                        "localhost"
+                    ]
+                },
+                "port": {
+                    "$id": "#/properties/mail/properties/port",
+                    "type": "integer",
+                    "description": "Port of the mail server used to send emails (if enabled)",
+                    "examples": [
+                        1025
+                    ]
+                }
+            },
+            "additionalProperties": false
+        },
+        "external": {
+            "$id": "#/properties/external",
+            "type": "object",
+            "description": "An explanation about the purpose of this instance.",
+            "examples": [
+                {
+                    "smmryApiKey": "abcdef123",
+                    "youtubeDlHost": "https://github.com/yt-dlp/yt-dlp/releases/latest/download",
+                    "scraperHost": "http://localhost:3000/api",
+                    "pushoverToken": "abcdef123",
+                    "pushoverUser": "abcdef123"
+                }
+            ],
+            "properties": {
+                "smmryApiKey": {
+                    "$id": "#/properties/external/properties/smmryApiKey",
+                    "type": "string",
+                    "description": "API key to smmry.com, used to generate summarizations of text content",
+                    "examples": [
+                        "abcdef123"
+                    ]
+                },
+                "youtubeDlHost": {
+                    "$id": "#/properties/external/properties/youtubeDlHost",
+                    "type": "string",
+                    "description": "URL of latest youtube-dl/yt-dlp binary",
+                    "examples": [
+                        "https://github.com/yt-dlp/yt-dlp/releases/latest/download"
+                    ]
+                },
+                "scraperHost": {
+                    "$id": "#/properties/external/properties/scraperHost",
+                    "type": "string",
+                    "description": "URL to the deployed Lynks scraper component",
+                    "examples": [
+                        "http://localhost:3000/api"
+                    ]
+                },
+                "pushoverToken": {
+                    "$id": "#/properties/external/properties/pushoverToken",
+                    "type": "string",
+                    "description": "Pushover application token for sending notifications",
+                    "examples": [
+                        "abcdef123"
+                    ]
+                },
+                "pushoverUser": {
+                    "$id": "#/properties/external/properties/pushoverUser",
+                    "type": "string",
+                    "description": "Pushover user/group token for sending notifications",
+                    "examples": [
+                        "abcdef123"
+                    ]
+                }
+            },
+            "additionalProperties": false
+        }
+    },
+    "additionalProperties": false
+}
