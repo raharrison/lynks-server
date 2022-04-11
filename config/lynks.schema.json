@@ -6,6 +6,7 @@
     "description": "Describes options to configure a Lynks server deployment",
     "examples": [
         {
+            "$schema": "https://raw.githubusercontent.com/raharrison/lynks-server/master/config/lynks.schema.json",
             "server": {
                 "port": 8080,
                 "rootPath": "/api"
@@ -44,6 +45,14 @@
         }
     ],
     "properties": {
+        "$schema": {
+            "$id": "#/properties/$schema",
+            "type": "string",
+            "description": "Ref to configuration schema",
+            "examples": [
+                "https://raw.githubusercontent.com/raharrison/lynks-server/master/config/lynks.schema.json"
+            ]
+        },
         "server": {
             "$id": "#/properties/server",
             "type": "object",

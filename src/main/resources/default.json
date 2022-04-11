@@ -1,4 +1,5 @@
 {
+    "$schema": "https://raw.githubusercontent.com/raharrison/lynks-server/master/config/lynks.schema.json",
     "server": {
         "port": 8080,
         "rootPath": "/api"
