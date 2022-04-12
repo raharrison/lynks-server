@@ -6,6 +6,7 @@ import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
+import io.ktor.server.plugins.callid.*
 import io.ktor.server.plugins.callloging.*
 import io.ktor.server.plugins.compression.*
 import io.ktor.server.plugins.contentnegotiation.*
@@ -20,6 +21,7 @@ import lynks.comment.CommentService
 import lynks.comment.comment
 import lynks.common.ConfigMode
 import lynks.common.Environment
+import lynks.common.MDC_REQUEST_ID
 import lynks.common.UserSession
 import lynks.common.endpoint.health
 import lynks.common.exception.InvalidModelException
@@ -44,6 +46,7 @@ import lynks.user.UserService
 import lynks.user.userProtected
 import lynks.user.userUnprotected
 import lynks.util.JsonMapper.defaultMapper
+import lynks.util.RandomUtils
 import lynks.worker.WorkerRegistry
 
 fun Application.module() {
@@ -52,16 +55,26 @@ fun Application.module() {
         register(ContentType.Application.Json, JacksonConverter(defaultMapper))
     }
     install(WebSockets)
+    install(CallId) {
+        generate { RandomUtils.generateUuid64() }
+        verify { true }
+        replyToHeader(HttpHeaders.XRequestId)
+    }
+    install(CallLogging) {
+        callIdMdc(MDC_REQUEST_ID)
+    }
     install(StatusPages) {
+        exception<Throwable> { call, _ ->
+            call.respond(HttpStatusCode.InternalServerError)
+        }
         exception<InvalidModelException> { call, cause ->
             call.respond(HttpStatusCode.BadRequest, cause.message ?: "Bad Request Format")
         }
     }
 
     when (Environment.mode) {
-        ConfigMode.TEST -> installTestFeatures()
-        ConfigMode.DEV -> installDevFeatures()
         ConfigMode.PROD -> installProdFeatures()
+        else -> Unit
     }
 
     if (Environment.auth.enabled) {
@@ -160,16 +173,7 @@ private fun Application.installAuth() {
     }
 }
 
-private fun Application.installTestFeatures() {
-    install(CallLogging)
-}
-
-private fun Application.installDevFeatures() {
-    install(CallLogging)
-}
-
 private fun Application.installProdFeatures() {
-    install(CallLogging)
     install(Compression) {
         gzip()
     }

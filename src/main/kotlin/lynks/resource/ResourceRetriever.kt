@@ -1,11 +1,15 @@
 package lynks.resource
 
+import io.ktor.http.*
 import kotlinx.coroutines.future.await
+import lynks.common.MDC_REQUEST_ID
 import lynks.common.exception.ExecutionException
 import lynks.util.JsonMapper
 import lynks.util.Result
 import lynks.util.URLUtils
 import lynks.util.loggerFor
+import org.apache.commons.lang3.StringUtils
+import org.slf4j.MDC
 import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
@@ -64,10 +68,7 @@ class WebResourceRetriever : ResourceRetriever {
 
     suspend fun postStringResult(location: String, body: Any): Result<String, ExecutionException> = try {
         val json = if(body is String) body else JsonMapper.defaultMapper.writeValueAsString(body)
-        val request = HttpRequest.newBuilder(URI.create(location))
-            .POST(HttpRequest.BodyPublishers.ofString(json))
-            .header("Content-Type", "application/json")
-            .build()
+        val request = createPostRequest(location, json, ContentType.Application.Json)
         log.info("Posting data to web location: {}", location)
         val future = client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
         handleAsyncResponseAsResult(location, future)
@@ -80,10 +81,7 @@ class WebResourceRetriever : ResourceRetriever {
         val encodedParams = params
             .map { entry -> entry.key + "=" + URLUtils.encode(entry.value) }
             .joinToString("&")
-        val request = HttpRequest.newBuilder(URI.create(location))
-            .POST(HttpRequest.BodyPublishers.ofString(encodedParams))
-            .header("Content-Type", "application/x-www-form-urlencoded")
-            .build()
+        val request = createPostRequest(location, encodedParams, ContentType.Application.FormUrlEncoded)
         log.info("Posting form data to web location: {}", location)
         val future = client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
         handleAsyncResponseAsResult(location, future)
@@ -104,9 +102,25 @@ class WebResourceRetriever : ResourceRetriever {
     }
 
     private fun createGetRequest(location: String): HttpRequest {
-        return HttpRequest.newBuilder(URI.create(location))
+        return createBaseRequest(location)
             .GET()
             .build()
+    }
+
+    private fun createPostRequest(location: String, content: String, contentType: ContentType): HttpRequest {
+        return createBaseRequest(location)
+            .header(HttpHeaders.ContentType, contentType.toString())
+            .POST(HttpRequest.BodyPublishers.ofString(content))
+            .build()
+    }
+
+    private fun createBaseRequest(location: String): HttpRequest.Builder {
+        val builder = HttpRequest.newBuilder(URI.create(location))
+        val requestId = MDC.get(MDC_REQUEST_ID)
+        if (StringUtils.isNotEmpty(requestId)) {
+            builder.setHeader(HttpHeaders.XRequestId, requestId)
+        }
+        return builder
     }
 
     companion object {

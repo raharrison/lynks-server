@@ -14,3 +14,5 @@ const val DEAD_LINK_PROP = "dead"
 
 // property key for discussions
 const val DISCUSSIONS_PROP = "discussions"
+
+const val MDC_REQUEST_ID = "requestId"
