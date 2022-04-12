@@ -8,9 +8,9 @@ import org.jetbrains.exposed.sql.Table
 
 object Groups: Table("GROUP") {
     val id = varchar("ID", 14)
-    val type = enumeration("TYPE", GroupType::class)
+    val type = enumeration("TYPE", GroupType::class).index()
     val name = varchar("NAME", 255)
-    val parentId = (varchar("PARENT_ID", 14) references id).nullable()
+    val parentId = (varchar("PARENT_ID", 14) references id).nullable().index()
     val dateCreated = long("DATE_CREATED")
     val dateUpdated = long("DATE_UPDATED")
     override val primaryKey = PrimaryKey(id)

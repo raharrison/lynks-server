@@ -11,7 +11,7 @@ object Comments : Table("COMMENT") {
     val entryId = (varchar("ENTRY_ID", 14).references(Entries.id, ReferenceOption.CASCADE)).index()
     val plainText = text("PLAIN_TEXT")
     val markdownText = text("MARKDOWN_TEXT")
-    val dateCreated = long("DATE_CREATED")
+    val dateCreated = long("DATE_CREATED").index()
     val dateUpdated = long("DATE_UPDATED")
     override val primaryKey = PrimaryKey(id)
 }

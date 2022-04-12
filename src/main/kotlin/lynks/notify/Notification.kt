@@ -11,7 +11,7 @@ object Notifications : Table("NOTIFICATION") {
     val message = varchar("MESSAGE", 255)
     val read = bool("READ")
     val entryId = varchar("ENTRY_ID", 14).references(Entries.id, ReferenceOption.CASCADE).nullable()
-    val dateCreated = long("DATE_CREATED")
+    val dateCreated = long("DATE_CREATED").index()
     override val primaryKey = PrimaryKey(notificationId)
 }
 

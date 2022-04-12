@@ -7,7 +7,7 @@ import org.jetbrains.exposed.sql.Table
 
 object Reminders : Table("REMINDER") {
     val reminderId = varchar("REMINDER_ID", 14)
-    val entryId = (varchar("ENTRY_ID", 14).references(Entries.id, ReferenceOption.CASCADE))
+    val entryId = (varchar("ENTRY_ID", 14).references(Entries.id, ReferenceOption.CASCADE)).index()
     val type = enumeration("REMINDER_TYPE", ReminderType::class)
     val notifyMethods = varchar("NOTIFY_METHODS", 16)
     val message = varchar("MESSAGE", 255).nullable()
