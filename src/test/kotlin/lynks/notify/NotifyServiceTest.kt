@@ -1,6 +1,6 @@
 package lynks.notify
 
-import io.ktor.http.cio.websocket.*
+import io.ktor.websocket.*
 import io.mockk.*
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.SendChannel

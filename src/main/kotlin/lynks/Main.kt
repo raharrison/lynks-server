@@ -1,16 +1,21 @@
 package lynks
 
-import io.ktor.application.*
-import io.ktor.auth.*
-import io.ktor.features.*
 import io.ktor.http.*
-import io.ktor.jackson.*
-import io.ktor.response.*
-import io.ktor.routing.*
+import io.ktor.serialization.jackson.*
+import io.ktor.server.application.*
+import io.ktor.server.auth.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
-import io.ktor.sessions.*
-import io.ktor.websocket.*
+import io.ktor.server.plugins.callloging.*
+import io.ktor.server.plugins.compression.*
+import io.ktor.server.plugins.contentnegotiation.*
+import io.ktor.server.plugins.defaultheaders.*
+import io.ktor.server.plugins.partialcontent.*
+import io.ktor.server.plugins.statuspages.*
+import io.ktor.server.response.*
+import io.ktor.server.routing.*
+import io.ktor.server.sessions.*
+import io.ktor.server.websocket.*
 import lynks.comment.CommentService
 import lynks.comment.comment
 import lynks.common.ConfigMode
@@ -48,8 +53,8 @@ fun Application.module() {
     }
     install(WebSockets)
     install(StatusPages) {
-        exception<InvalidModelException> {
-            call.respond(HttpStatusCode.BadRequest, it.message ?: "Bad Request Format")
+        exception<InvalidModelException> { call, cause ->
+            call.respond(HttpStatusCode.BadRequest, cause.message ?: "Bad Request Format")
         }
     }
 
@@ -161,12 +166,6 @@ private fun Application.installTestFeatures() {
 
 private fun Application.installDevFeatures() {
     install(CallLogging)
-    install(CORS) {
-        method(HttpMethod.Put)
-        method(HttpMethod.Delete)
-        anyHost()
-        allowNonSimpleContentTypes = true
-    }
 }
 
 private fun Application.installProdFeatures() {

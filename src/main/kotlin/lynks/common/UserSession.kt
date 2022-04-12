@@ -1,5 +1,5 @@
 package lynks.common
 
-import io.ktor.auth.*
+import io.ktor.server.auth.*
 
 data class UserSession(val username: String) : Principal

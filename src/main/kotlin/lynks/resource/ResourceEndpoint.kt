@@ -1,11 +1,12 @@
 package lynks.resource
 
-import io.ktor.application.*
 import io.ktor.http.*
 import io.ktor.http.content.*
-import io.ktor.request.*
-import io.ktor.response.*
-import io.ktor.routing.*
+import io.ktor.server.application.*
+import io.ktor.server.http.content.*
+import io.ktor.server.request.*
+import io.ktor.server.response.*
+import io.ktor.server.routing.*
 import lynks.common.Environment
 import lynks.common.IMAGE_UPLOAD_BASE
 import lynks.common.MAX_IMAGE_UPLOAD_BYTES

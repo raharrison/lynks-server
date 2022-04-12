@@ -1,7 +1,7 @@
 package lynks.util
 
-import io.ktor.application.*
-import io.ktor.auth.*
+import io.ktor.server.application.*
+import io.ktor.server.auth.*
 import lynks.common.Environment
 import lynks.common.UserSession
 import lynks.common.page.PageRequest
