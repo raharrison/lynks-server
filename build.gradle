@@ -22,7 +22,7 @@ buildscript {
     ext.junit_version = '5.8.2'
     ext.assertj_version = '3.22.0'
     ext.mockk_version = '1.12.3'
-    ext.wiremock_version = '2.32.0'
+    ext.wiremock_version = '2.33.1'
 }
 
 plugins {
