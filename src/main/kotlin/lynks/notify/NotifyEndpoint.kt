@@ -50,19 +50,20 @@ fun Route.notify(notifyService: NotifyService) {
             call.respond(HttpStatusCode.OK, response)
         }
 
-    }
-
-    webSocket("/notify") {
-        try {
-            notifyService.join(this.outgoing)
-            for (frame in incoming) {
-                if (frame.frameType == FrameType.CLOSE) {
-                    break
+        webSocket("/updates") {
+            try {
+                call.application.log.info("New notification socket listener joining")
+                notifyService.join(this.outgoing)
+                for (frame in incoming) {
+                    if (frame.frameType == FrameType.CLOSE) {
+                        break
+                    }
                 }
+            } finally {
+                call.application.log.info("Notification socket listener leaving")
+                notifyService.leave(this.outgoing)
             }
-        } finally {
-            notifyService.leave(this.outgoing)
         }
-    }
 
+    }
 }

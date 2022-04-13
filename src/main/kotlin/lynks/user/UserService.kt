@@ -17,10 +17,11 @@ import kotlin.math.max
 class UserService {
 
     private val log = loggerFor<UserService>()
+    private val userColumns = Users.columns - Users.password
     private val activityLogColumns = EntryAudit.columns + listOf(Entries.type, Entries.title)
 
     fun getUser(username: String): User? = transaction {
-        Users.select { Users.username eq username }.map {
+        Users.slice(userColumns).select { Users.username eq username }.map {
             User(
                 it[Users.username],
                 it[Users.email],
