@@ -1,9 +1,9 @@
-[![Kotlin](https://img.shields.io/badge/kotlin-1.6.0-blue.svg?logo=kotlin)](http://kotlinlang.org)
+[![Kotlin](https://img.shields.io/badge/kotlin-1.6.20-blue.svg?logo=kotlin)](http://kotlinlang.org)
 ![Build](https://github.com/raharrison/lynks-server/workflows/Build/badge.svg)
 
 ## Lynks Server - Self-hosted link and note manager
 
-**Updated for Kotlin 1.6.10 + Ktor 1.6.8 + Exposed 0.37.3**
+**Updated for Kotlin 1.6.20 + Ktor 2.0.0 + Exposed 0.38.2**
 
 Server side for the Lynks project offering backend web services for entry management. Accompanied by [lynks-ui](https://github.com/raharrison/lynks-ui) project
 which provides a front-end webapp.
