@@ -64,11 +64,12 @@ fun Application.module() {
         callIdMdc(MDC_REQUEST_ID)
     }
     install(StatusPages) {
-        exception<Throwable> { call, _ ->
-            call.respond(HttpStatusCode.InternalServerError)
-        }
-        exception<InvalidModelException> { call, cause ->
-            call.respond(HttpStatusCode.BadRequest, cause.message ?: "Bad Request Format")
+        exception<Throwable> { call, cause ->
+            if (cause is InvalidModelException) {
+                call.respond(HttpStatusCode.BadRequest, cause.message ?: "Bad Request Format")
+            } else {
+                call.respond(HttpStatusCode.InternalServerError)
+            }
         }
     }
 

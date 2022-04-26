@@ -13,6 +13,7 @@
             },
             "auth": {
                 "enabled": true,
+                "registrationsEnabled": false,
                 "signingKey": "abcdef123",
                 "defaultUserName": "user",
                 "defaultUserPassword": "abcdef123"
@@ -90,6 +91,7 @@
             "examples": [
                 {
                     "enabled": true,
+                    "registrationsEnabled": false,
                     "signingKey": "abcdef123",
                     "defaultUserName": "user",
                     "defaultUserPassword": "abcdef123"
@@ -102,6 +104,14 @@
                     "description": "Protect all endpoints to be accessible only to authorized users",
                     "examples": [
                         true
+                    ]
+                },
+                "registrationsEnabled": {
+                    "$id": "#/properties/auth/properties/registrationsEnabled",
+                    "type": "boolean",
+                    "description": "if new users can be registered (still requiring activation)",
+                    "examples": [
+                        false
                     ]
                 },
                 "signingKey": {

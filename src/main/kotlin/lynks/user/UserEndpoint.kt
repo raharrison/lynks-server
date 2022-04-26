@@ -116,8 +116,7 @@ fun Route.userUnprotected(userService: UserService) {
     }
 
     post("/user/register") {
-        if (Environment.mode == ConfigMode.PROD) {
-            // disable as new users would be able to access all entries
+        if (!Environment.auth.registrationsEnabled) {
             call.respond(HttpStatusCode.Forbidden)
             return@post
         }
