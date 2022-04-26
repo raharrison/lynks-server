@@ -11,6 +11,7 @@ object Users : Table("USER_PROFILE") {
     val digest = bool("DIGEST").default(false)
     val dateCreated = long("DATE_CREATED")
     val dateUpdated = long("DATE_UPDATED")
+    val activated = bool("ACTIVATED").default(false)
     override val primaryKey: PrimaryKey = PrimaryKey(username)
 }
 

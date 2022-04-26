@@ -126,5 +126,12 @@ fun createDummyUser(username: String, email: String? = null, displayName: String
         it[this.digest] = digest
         it[this.dateCreated] = time
         it[this.dateUpdated] = time
+        it[this.activated] = true
+    }
+}
+
+fun activateUser(username: String) = transaction {
+    Users.update({ Users.username eq username }) {
+        it[activated] = true
     }
 }

@@ -6,9 +6,11 @@ import lynks.common.EntryType
 import lynks.common.ServerTest
 import lynks.common.page.Page
 import lynks.user.*
+import lynks.util.activateUser
 import lynks.util.createDummyEntry
 import lynks.util.createDummyUser
 import org.assertj.core.api.Assertions.assertThat
+import org.hamcrest.Matchers
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
@@ -49,23 +51,26 @@ class UserEndpointTest : ServerTest() {
 
     @Test
     fun testRegisterUser() {
-        val registered = given()
+        given()
             .contentType(ContentType.JSON)
             .body(AuthRequest("user2", "pass"))
             .When()
             .post("/user/register")
             .then()
             .statusCode(201)
-            .extract().to<User>()
-        assertThat(registered.username).isEqualTo("user2")
-        assertThat(registered.email).isNull()
-        assertThat(registered.displayName).isNull()
-        assertThat(registered.dateCreated).isEqualTo(registered.dateUpdated)
-        val user = get("/user/{id}", registered.username)
+            .body("username", Matchers.equalTo("user2"))
+        // by default not activated
+        get("/user/{id}", "user2")
+            .then()
+            .statusCode(401)
+        activateUser("user2")
+        val user = get("/user/{id}", "user2")
             .then()
             .statusCode(200)
             .extract().to<User>()
-        assertThat(user).isEqualTo(registered)
+        assertThat(user.username).isEqualTo("user2")
+        assertThat(user.email).isNull()
+        assertThat(user.displayName).isNull()
     }
 
     @Test
@@ -88,6 +93,7 @@ class UserEndpointTest : ServerTest() {
             .post("/user/register")
             .then()
             .statusCode(201)
+        activateUser("user2")
         given()
             .contentType(ContentType.JSON)
             .body(ChangePasswordRequest("user2", "pass123", "pass456"))
@@ -106,6 +112,7 @@ class UserEndpointTest : ServerTest() {
             .post("/user/register")
             .then()
             .statusCode(201)
+        activateUser("user2")
         given()
             .contentType(ContentType.JSON)
             .body(ChangePasswordRequest("user2", "invalid", "pass456"))

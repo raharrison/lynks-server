@@ -122,8 +122,9 @@ fun Route.userUnprotected(userService: UserService) {
             return@post
         }
         val registerRequest = call.receive<AuthRequest>()
-        val created = userService.register(registerRequest)
-        call.respond(HttpStatusCode.Created, created)
+        val createdUsername = userService.register(registerRequest)
+        val response = mapOf("username" to createdUsername)
+        call.respond(HttpStatusCode.Created, response)
     }
 
 }

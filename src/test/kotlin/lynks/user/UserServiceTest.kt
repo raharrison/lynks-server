@@ -40,12 +40,17 @@ class UserServiceTest : DatabaseTest() {
 
     @Test
     fun testRegisterUser() {
-        val registered = userService.register(AuthRequest("user2", "pass"))
-        assertThat(registered.username).isEqualTo("user2")
-        assertThat(registered.email).isNull()
-        assertThat(registered.displayName).isNull()
-        assertThat(registered.digest).isFalse()
-        assertThat(registered.dateCreated).isEqualTo(registered.dateUpdated)
+        val registeredUsername = userService.register(AuthRequest("user2", "pass"))
+        assertThat(registeredUsername).isEqualTo("user2")
+        userService.activateUser(registeredUsername)
+        val registered = userService.getUser(registeredUsername)
+        assertThat(registered).isNotNull()
+        assertThat(registered?.username).isEqualTo("user2")
+        assertThat(registered?.email).isNull()
+        assertThat(registered?.displayName).isNull()
+        assertThat(registered?.digest).isFalse()
+        // different after activation
+        assertThat(registered?.dateCreated).isNotEqualTo(registered?.dateUpdated)
     }
 
     @Test
@@ -79,40 +84,53 @@ class UserServiceTest : DatabaseTest() {
     @Test
     fun testCheckAuthSuccess() {
         val pass = "pass123"
-        val user = userService.register(AuthRequest("user2", pass))
-        assertThat(userService.checkAuth(AuthRequest(user.username, pass))).isTrue()
+        val username = userService.register(AuthRequest("user2", pass))
+        userService.activateUser(username)
+        assertThat(userService.checkAuth(AuthRequest(username, pass))).isTrue()
     }
 
     @Test
     fun testCheckAuthFailure() {
-        val user = userService.register(AuthRequest("user2", "pass123"))
+        val username = userService.register(AuthRequest("user2", "pass123"))
+        userService.activateUser(username)
         // invalid username
         assertThat(userService.checkAuth(AuthRequest("invalid", "pass123"))).isFalse()
         // invalid password
-        assertThat(userService.checkAuth(AuthRequest(user.username, "invalid"))).isFalse()
+        assertThat(userService.checkAuth(AuthRequest(username, "invalid"))).isFalse()
+    }
+
+    @Test
+    fun testActivateUser() {
+        val pass = "pass123"
+        val username = userService.register(AuthRequest("user2", pass))
+        assertThat(userService.checkAuth(AuthRequest(username, pass))).isFalse()
+        userService.activateUser(username)
+        assertThat(userService.checkAuth(AuthRequest(username, pass))).isTrue()
     }
 
     @Test
     fun testChangePasswordSuccess() {
         val originalPass = "pass123"
         val newPass = "pass456"
-        val user = userService.register(AuthRequest("user2", originalPass))
-        assertThat(userService.checkAuth(AuthRequest(user.username, originalPass))).isTrue()
-        val changed = userService.changePassword(ChangePasswordRequest(user.username, originalPass, newPass))
+        val username = userService.register(AuthRequest("user2", originalPass))
+        userService.activateUser(username)
+        assertThat(userService.checkAuth(AuthRequest(username, originalPass))).isTrue()
+        val changed = userService.changePassword(ChangePasswordRequest(username, originalPass, newPass))
         assertThat(changed).isTrue()
-        assertThat(userService.checkAuth(AuthRequest(user.username, originalPass))).isFalse()
-        assertThat(userService.checkAuth(AuthRequest(user.username, newPass))).isTrue()
+        assertThat(userService.checkAuth(AuthRequest(username, originalPass))).isFalse()
+        assertThat(userService.checkAuth(AuthRequest(username, newPass))).isTrue()
     }
 
     @Test
     fun testChangePasswordBadAuth() {
         val originalPass = "pass123"
         val newPass = "pass456"
-        val user = userService.register(AuthRequest("user2", originalPass))
+        val username = userService.register(AuthRequest("user2", originalPass))
+        userService.activateUser(username)
         // invalid username
         assertThat(userService.changePassword(ChangePasswordRequest("invalid", originalPass, newPass))).isFalse()
         // invalid old password
-        assertThat(userService.changePassword(ChangePasswordRequest(user.username, "invalid", newPass))).isFalse()
+        assertThat(userService.changePassword(ChangePasswordRequest(username, "invalid", newPass))).isFalse()
     }
 
     @Test

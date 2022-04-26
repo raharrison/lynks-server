@@ -21,7 +21,7 @@ class UserService {
     private val activityLogColumns = EntryAudit.columns + listOf(Entries.type, Entries.title)
 
     fun getUser(username: String): User? = transaction {
-        Users.slice(userColumns).select { Users.username eq username }.map {
+        Users.slice(userColumns).select { Users.username eq username and Users.activated }.map {
             User(
                 it[Users.username],
                 it[Users.email],
@@ -33,9 +33,8 @@ class UserService {
         }.singleOrNull()
     }
 
-    fun register(request: AuthRequest): User = transaction {
-        val existing = getUser(request.username)
-        if (existing != null) {
+    fun register(request: AuthRequest): String = transaction {
+        if (Users.select { Users.username eq request.username }.count() > 0) {
             throw InvalidModelException("User with that name already exists")
         }
         val currentTime = System.currentTimeMillis()
@@ -44,13 +43,21 @@ class UserService {
             it[password] = HashUtils.bcryptHash(request.password)
             it[dateCreated] = currentTime
             it[dateUpdated] = currentTime
+            it[activated] = false
         }
         log.info("Successfully registered new user {}", request.username)
-        getUser(request.username)!!
+        request.username
+    }
+
+    fun activateUser(username: String): Int = transaction {
+        Users.update({ Users.username eq username }) {
+            it[activated] = true
+            it[dateUpdated] = System.currentTimeMillis()
+        }
     }
 
     fun updateUser(userUpdate: UserUpdateRequest): User? = transaction {
-        val updated = Users.update({ Users.username eq userUpdate.username }) {
+        val updated = Users.update({ Users.username eq userUpdate.username and Users.activated }) {
             it[email] = userUpdate.email
             it[displayName] = userUpdate.displayName
             it[digest] = userUpdate.digest
@@ -61,7 +68,7 @@ class UserService {
 
     fun changePassword(request: ChangePasswordRequest): Boolean = transaction {
         if (checkAuth(AuthRequest(request.username, request.oldPassword))) {
-            return@transaction Users.update({ Users.username eq request.username }) {
+            return@transaction Users.update({ Users.username eq request.username and Users.activated }) {
                 it[password] = HashUtils.bcryptHash(request.newPassword)
                 it[dateUpdated] = System.currentTimeMillis()
             } > 0
@@ -72,7 +79,7 @@ class UserService {
 
     fun checkAuth(request: AuthRequest): Boolean = transaction {
         val storedPassword = Users.slice(Users.password)
-            .select { Users.username eq request.username }
+            .select { Users.username eq request.username and Users.activated }
             .map { it[Users.password].toCharArray() }.singleOrNull()
             ?: return@transaction false
         HashUtils.verifyBcryptHash(request.password.toCharArray(), storedPassword)
@@ -80,7 +87,7 @@ class UserService {
 
     fun getDigestEnabledEmails(): Set<String> = transaction {
         Users.slice(Users.email)
-            .select { Users.digest eq true and Users.email.isNotNull() }
+            .select { Users.digest and Users.email.isNotNull() and Users.activated }
             .mapNotNull { it[Users.email] }.toSet()
     }
 
