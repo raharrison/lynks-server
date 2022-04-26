@@ -3,7 +3,7 @@ services:
     image: raharrison/lynks-ui:1.2.2
     restart: on-failure:5
   lynks-server:
-    image: raharrison/lynks-server:1.3.3
+    image: raharrison/lynks-server:1.3.4
     env_file:
       - ./config/.env
     environment:
