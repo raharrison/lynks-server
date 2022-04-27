@@ -100,10 +100,10 @@ class GroupCollection<T: Grouping<T>> {
         return current
     }
 
-    fun subtree(id: String): MutableCollection<T> {
+    fun subtree(id: String): Collection<T> {
         return group(id)?.let { group ->
-            return groupTree.getValue(group).toMutableSet().also { it.add(group) }
-        } ?: mutableSetOf()
+            groupTree[group]?.plus(group) ?: setOf(group)
+        } ?: setOf()
     }
 
     fun rootGroups(): Collection<T> = groupLookup.values.filter { !groupParents.containsKey(it.id) }
