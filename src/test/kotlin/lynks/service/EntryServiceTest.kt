@@ -3,6 +3,7 @@ package lynks.service
 import io.mockk.mockk
 import io.mockk.verify
 import lynks.common.*
+import lynks.common.exception.InvalidModelException
 import lynks.common.page.PageRequest
 import lynks.common.page.SortDirection
 import lynks.entry.EntryAuditService
@@ -11,7 +12,9 @@ import lynks.group.CollectionService
 import lynks.group.GroupSetService
 import lynks.group.TagService
 import lynks.resource.ResourceManager
+import lynks.util.createDummyCollection
 import lynks.util.createDummyEntry
+import lynks.util.createDummyTag
 import lynks.util.updateDummyEntry
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -223,6 +226,40 @@ class EntryServiceTest: DatabaseTest() {
     @Test
     fun getHistoryNotExists() {
         assertThat(entryService.getEntryVersions("invalid")).isEmpty()
+    }
+
+    @Test
+    fun testUpdateEntryGroups() {
+        createDummyTag("t1", "tag1")
+        createDummyCollection("c1", "col1")
+        val original = entryService.get("id2")
+        assertThat(original).isNotNull()
+        assertThat(original?.tags).isEmpty()
+        assertThat(original?.collections).isEmpty()
+        val result = entryService.updateEntryGroups("id2", listOf("t1"), listOf("c1"))
+        assertThat(result).isTrue()
+        val updated = entryService.get("id2")
+        assertThat(updated).isNotNull()
+        assertThat(updated?.tags).extracting("id").containsOnly("t1")
+        assertThat(updated?.collections).extracting("id").containsOnly("c1")
+    }
+
+    @Test
+    fun testUpdateGroupsNotFound() {
+        assertThrows<InvalidModelException> {
+            entryService.updateEntryGroups("id1", listOf("t1"), emptyList())
+        }
+        assertThrows<InvalidModelException> {
+            entryService.updateEntryGroups("id1", emptyList(), listOf("c1"))
+        }
+    }
+
+    @Test
+    fun testUpdateGroupsEntryNotFound() {
+        createDummyTag("t1", "tag1")
+        createDummyCollection("c1", "col1")
+        val result = entryService.updateEntryGroups("invalid", listOf("t1"), listOf("c1"))
+        assertThat(result).isFalse()
     }
 
 }

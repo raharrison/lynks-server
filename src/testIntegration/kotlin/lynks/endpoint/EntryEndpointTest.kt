@@ -1,14 +1,14 @@
 package lynks.endpoint
 
 import io.restassured.RestAssured.*
+import io.restassured.http.ContentType
 import lynks.common.*
 import lynks.common.page.Page
+import lynks.group.GroupIdSet
 import lynks.notify.NotificationMethod
 import lynks.reminder.Reminder
 import lynks.reminder.ReminderType
-import lynks.util.createDummyEntry
-import lynks.util.createDummyReminder
-import lynks.util.updateDummyEntry
+import lynks.util.*
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -272,4 +272,44 @@ class EntryEndpointTest : ServerTest() {
         assertThat(entryAudit2).extracting("details").doesNotContainNull()
         assertThat(entryAudit2).extracting("timestamp").doesNotHaveDuplicates()
     }
+
+    @Test
+    fun testUpdateEntryGroups() {
+        createDummyTag("t1", "tag1")
+        createDummyCollection("c1", "col1")
+        given()
+            .contentType(ContentType.JSON)
+            .body(GroupIdSet(listOf("t1"), listOf("c1")))
+            .When()
+            .put("/entry/{id}/groups", "e2")
+            .then()
+            .statusCode(200)
+        val note = get("/entry/{id}", "e2")
+            .then()
+            .statusCode(200)
+            .extract().to<Note>()
+        assertThat(note.tags).extracting("id").containsOnly("t1")
+        assertThat(note.collections).extracting("id").containsOnly("c1")
+    }
+
+    @Test
+    fun testUpdateEntryGroupsNotFound() {
+        createDummyTag("t1", "tag1")
+        createDummyCollection("c1", "col1")
+        given()
+            .contentType(ContentType.JSON)
+            .body(GroupIdSet(listOf("t1"), listOf("c1")))
+            .When()
+            .put("/entry/{id}/groups", "invalid")
+            .then()
+            .statusCode(404)
+        given()
+            .contentType(ContentType.JSON)
+            .body(GroupIdSet(listOf("invalid"), listOf("c1")))
+            .When()
+            .put("/entry/{id}/groups", "e2")
+            .then()
+            .statusCode(400)
+    }
+
 }

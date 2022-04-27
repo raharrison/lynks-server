@@ -65,7 +65,7 @@ class EntryService(
 
     fun search(term: String, page: PageRequest = DefaultPageRequest): Page<SlimEntry> = transaction {
         val conn = (TransactionManager.current().connection as JdbcConnectionImpl).connection
-        if(Environment.database.dialect == DatabaseDialect.POSTGRES) {
+        if (Environment.database.dialect == DatabaseDialect.POSTGRES) {
             runPostgresSearchQuery(conn, term, page)
         } else {
             runH2SearchQuery(conn, term, page)
@@ -76,7 +76,7 @@ class EntryService(
         val columns = slimColumnSet + Entries.type
         val columnSelect = columns.joinToString(", ") { (it as Column<*>).name }
         val andWhere = if (page.source != null) {
-            val matchOp = if(page.source.contains("%")) "LIKE" else "="
+            val matchOp = if (page.source.contains("%")) "LIKE" else "="
             " AND ${Entries.src.name} $matchOp ${page.source.lowercase()}"
         } else ""
         val baseSql = """
@@ -161,5 +161,14 @@ class EntryService(
                     dateUpdated = it[EntryVersions.dateUpdated]
                 )
             }
+    }
+
+    fun updateEntryGroups(entryId: String, tagIds: List<String>, collectionIds: List<String>): Boolean {
+        groupSetService.assertGroups(tagIds, collectionIds)
+        if (get(entryId) == null) return false
+        transaction {
+            updateGroupsForEntry(tagIds + collectionIds, entryId)
+        }
+        return true
     }
 }

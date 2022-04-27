@@ -34,6 +34,7 @@ interface Grouping<T>: IdBasedCreatedEntity {
 }
 
 class GroupSet(val tags: List<Tag> = emptyList(), val collections: List<Collection> = emptyList())
+data class GroupIdSet(val tags: List<String> = emptyList(), val collections: List<String> = emptyList())
 
 data class Tag(
     override val id: String,

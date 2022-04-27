@@ -22,7 +22,7 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import kotlin.math.max
 
 abstract class EntryRepository<T : Entry, S : SlimEntry, U : NewEntry>(
-    private val groupSetService: GroupSetService,
+    protected val groupSetService: GroupSetService,
     protected val entryAuditService: EntryAuditService,
     protected val resourceManager: ResourceManager
 ) {
@@ -210,7 +210,7 @@ abstract class EntryRepository<T : Entry, S : SlimEntry, U : NewEntry>(
         } ?: false
     }
 
-    private fun updateGroupsForEntry(groups: List<String>, id: String) {
+    protected fun updateGroupsForEntry(groups: List<String>, id: String) {
         val currentGroups = getGroupsForEntry(id).run { tags.map { it.id } + collections.map { it.id } }
         val newGroups = groups.toSet()
 
