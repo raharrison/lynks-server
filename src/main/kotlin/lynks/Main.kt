@@ -52,7 +52,7 @@ import lynks.worker.WorkerRegistry
 
 fun Application.module() {
     install(DefaultHeaders)
-    install(ForwardedHeaders)
+    install(XForwardedHeaders)
     install(ContentNegotiation) {
         register(ContentType.Application.Json, JacksonConverter(defaultMapper))
     }
