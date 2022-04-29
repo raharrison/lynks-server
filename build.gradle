@@ -30,7 +30,7 @@ plugins {
     id 'org.jetbrains.kotlin.jvm' version '1.6.20'
 }
 
-version = "1.3.5"
+version = "1.3.6"
 
 sourceSets {
     testIntegration {
@@ -85,6 +85,7 @@ dependencies {
     implementation "io.ktor:ktor-server-netty:$ktor_version"
     implementation "io.ktor:ktor-server-status-pages:$ktor_version"
     implementation "io.ktor:ktor-server-default-headers:$ktor_version"
+    implementation "io.ktor:ktor-server-forwarded-header:$ktor_version"
     implementation "io.ktor:ktor-server-compression:$ktor_version"
     implementation "io.ktor:ktor-server-partial-content:$ktor_version"
     implementation "io.ktor:ktor-server-call-logging:$ktor_version"
