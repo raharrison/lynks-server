@@ -11,6 +11,7 @@ import io.ktor.server.plugins.callloging.*
 import io.ktor.server.plugins.compression.*
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.plugins.defaultheaders.*
+import io.ktor.server.plugins.forwardedheaders.*
 import io.ktor.server.plugins.partialcontent.*
 import io.ktor.server.plugins.statuspages.*
 import io.ktor.server.response.*
@@ -51,6 +52,7 @@ import lynks.worker.WorkerRegistry
 
 fun Application.module() {
     install(DefaultHeaders)
+    install(ForwardedHeaders)
     install(ContentNegotiation) {
         register(ContentType.Application.Json, JacksonConverter(defaultMapper))
     }
