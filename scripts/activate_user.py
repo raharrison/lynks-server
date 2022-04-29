@@ -45,7 +45,7 @@ def activate_user(username: str):
             if rows_updated == 0:
                 print("User not activated: username not found")
             else:
-                print("Successfully activated user '{username}'")
+                print("Successfully activated user: {username}")
         except (Exception, psycopg2.DatabaseError) as error:
             print("Failed to activate user", error)
 

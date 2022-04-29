@@ -36,3 +36,4 @@ lynksdb.*
 lynks.config.json
 /bin
 .env
+scripts/venv
