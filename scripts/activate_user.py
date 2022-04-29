@@ -2,7 +2,13 @@
 
 import sys
 import os
-import psycopg2
+import psycopg
+
+# -- Usage --
+# python3 -m venv venv
+# source venv/bin/activate
+# pip install --upgrade pip (at least v20.3)
+# python activate_user.py <user>
 
 def read_env_file(env_file_path: str):
     env_vars = {}
@@ -16,13 +22,13 @@ def read_env_file(env_file_path: str):
 
 
 def connect_db():
-    current_file = os.path.abspath(__file__))
-    env_file = os.path.join(current_file, "../config/.env")
+    current_dir = os.path.dirname(os.path.realpath(__file__))
+    env_file = os.path.join(current_dir, "../config/.env")
     env_vars = read_env_file(env_file)
     user = env_vars["POSTGRES_USER"]
     password = env_vars["POSTGRES_PASSWORD"]
     db = env_vars["POSTGRES_DB"]
-    return psycopg2.connect(user=user, password=password, host="127.0.0.1", port="5432", database=db)
+    return psycopg.connect(f"user={user} password={password} host=127.0.0.1 port=5432 dbname={db}")
 
 
 def activate_user(username: str):
@@ -31,7 +37,7 @@ def activate_user(username: str):
     with connect_db() as conn:
         try:
             print("Successfully connected to database")
-            print(f"Attempting to activate user '{username}'")
+            print(f"Attempting to activate user: {username}")
             cur = conn.execute(activate_sql, (username,))
             conn.commit()
             rows_updated = cur.rowcount
@@ -47,6 +53,7 @@ def activate_user(username: str):
 if __name__ == "__main__":
     if len(sys.argv) != 2:
         print("Expected usage: activate_user.py <username>")
+        exit(1)
 
     username = sys.argv[1]
     activate_user(username)
