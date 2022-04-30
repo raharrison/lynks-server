@@ -51,6 +51,10 @@ task testIntegration(type: Test) {
     classpath = sourceSets.testIntegration.runtimeClasspath
 }
 
+tasks.withType(Copy) {
+    duplicatesStrategy(DuplicatesStrategy.EXCLUDE)
+}
+
 task createProperties() {
     doLast {
         def file = new File("$buildDir/resources/main/version.txt")
