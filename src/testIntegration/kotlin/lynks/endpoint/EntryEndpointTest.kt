@@ -4,6 +4,7 @@ import io.restassured.RestAssured.*
 import io.restassured.http.ContentType
 import lynks.common.*
 import lynks.common.page.Page
+import lynks.entry.ref.EntryRefSet
 import lynks.group.GroupIdSet
 import lynks.notify.NotificationMethod
 import lynks.reminder.Reminder
@@ -310,6 +311,23 @@ class EntryEndpointTest : ServerTest() {
             .put("/entry/{id}/groups", "e2")
             .then()
             .statusCode(400)
+    }
+
+    @Test
+    fun testGetEntryRefs() {
+        createDummyEntryRef("e1", "e2", "e1")
+        createDummyEntryRef("e1", "e3", "e1")
+        createDummyEntryRef("e2", "e1", "e2")
+        val refSet = get("/entry/{id}/refs", "e1")
+            .then()
+            .statusCode(200)
+            .extract().to<EntryRefSet>()
+        assertThat(refSet.outbound).extracting("entryId").containsOnly("e2", "e3")
+        assertThat(refSet.outbound).extracting("title").containsOnly("changeover", "megabyte expedition")
+        assertThat(refSet.outbound).extracting("entryType").containsOnly(EntryType.NOTE)
+        assertThat(refSet.inbound).extracting("entryId").containsOnly("e2")
+        assertThat(refSet.inbound).extracting("title").containsOnly("changeover")
+        assertThat(refSet.inbound).extracting("entryType").containsOnly(EntryType.NOTE)
     }
 
 }

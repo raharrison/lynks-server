@@ -4,13 +4,18 @@ import com.vladsch.flexmark.ext.autolink.AutolinkExtension
 import com.vladsch.flexmark.ext.gfm.strikethrough.StrikethroughSubscriptExtension
 import com.vladsch.flexmark.ext.gfm.tasklist.TaskListExtension
 import com.vladsch.flexmark.ext.tables.TablesExtension
+import com.vladsch.flexmark.formatter.Formatter
 import com.vladsch.flexmark.html.HtmlRenderer
 import com.vladsch.flexmark.parser.Parser
+import com.vladsch.flexmark.util.ast.NodeVisitor
 import com.vladsch.flexmark.util.data.MutableDataSet
+import lynks.resource.ResourceManager
+import lynks.resource.TempImageMarkdownVisitor
 
-object MarkdownUtils {
+class MarkdownProcessor(private val resourceManager: ResourceManager) {
 
     private val parser: Parser
+    private val formatter: Formatter
     private val renderer: HtmlRenderer
 
     init {
@@ -30,6 +35,7 @@ object MarkdownUtils {
                 )
             ).toImmutable()
         parser = Parser.builder(options).build()
+        formatter = Formatter.builder(options).build()
         renderer = HtmlRenderer.builder(options).build()
     }
 
@@ -37,15 +43,17 @@ object MarkdownUtils {
         return renderer.render(parser.parse(text))
     }
 
-    fun visitAndReplaceNodes(text: String, visitor: MarkdownNodeVisitor): Pair<Int, String> {
-        val regex = Regex(visitor.pattern)
-        var replaced = 0
-        val processed = regex.replace(text) {
-            visitor.replace(it)?.also {
-                replaced += 1
-            } ?: it.value
-        }
-        return Pair(replaced, processed)
+    fun convertAndProcess(text: String, entryId: String): Triple<Int, String, String> {
+        val doc = parser.parse(text)
+        val visitor = TempImageMarkdownVisitor(entryId, resourceManager)
+        visitor.replaceUrl(doc)
+        val markdown = formatter.render(doc)
+        return Triple(visitor.visitedCount, markdown, renderer.render(doc))
+    }
+
+    fun visit(text: String, visitor: NodeVisitor) {
+        val doc = parser.parse(text)
+        visitor.visit(doc)
     }
 
 }

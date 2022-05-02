@@ -5,20 +5,20 @@ import lynks.common.page.DefaultPageRequest
 import lynks.common.page.Page
 import lynks.common.page.PageRequest
 import lynks.common.page.SortDirection
-import lynks.resource.ResourceManager
-import lynks.resource.TempImageMarkdownVisitor
 import lynks.util.RandomUtils
 import lynks.util.findColumn
 import lynks.util.loggerFor
-import lynks.util.markdown.MarkdownUtils
+import lynks.util.markdown.MarkdownProcessor
 import lynks.util.orderBy
+import lynks.worker.CrudType
+import lynks.worker.WorkerRegistry
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 import kotlin.math.max
 
 private val log = loggerFor<CommentService>()
 
-class CommentService(private val resourceManager: ResourceManager) {
+class CommentService(private val workerRegistry: WorkerRegistry, private val markdownProcessor: MarkdownProcessor) {
 
     fun getComment(entryId: String, id: String): Comment? = transaction {
         Comments.select { Comments.id eq id and (Comments.entryId eq entryId) }.mapNotNull {
@@ -38,9 +38,9 @@ class CommentService(private val resourceManager: ResourceManager) {
         )
     }
 
-    private fun preprocess(eid: String, comment: NewComment) : NewComment {
-        val (replaced, markdown) = MarkdownUtils.visitAndReplaceNodes(comment.plainText, TempImageMarkdownVisitor(eid, resourceManager))
-        if(replaced > 0) {
+    private fun preprocess(eid: String, comment: NewComment): NewComment {
+        val (replaced, markdown) = markdownProcessor.convertAndProcess(comment.plainText, eid)
+        if (replaced > 0) {
             return comment.copy(plainText = markdown)
         }
         return comment
@@ -54,10 +54,11 @@ class CommentService(private val resourceManager: ResourceManager) {
             it[id] = newId
             it[entryId] = eId
             it[plainText] = processedComment.plainText
-            it[markdownText] = MarkdownUtils.convertToMarkdown(processedComment.plainText)
+            it[markdownText] = markdownProcessor.convertToMarkdown(processedComment.plainText)
             it[dateCreated] = time
             it[dateUpdated] = time
         }
+        workerRegistry.acceptCommentRefWork(eId, newId, CrudType.CREATE)
         getComment(eId, newId)!!
     }
 
@@ -71,11 +72,13 @@ class CommentService(private val resourceManager: ResourceManager) {
                 val processedComment = preprocess(entryId, comment)
                 val updated = Comments.update({ Comments.id eq id and (Comments.entryId eq entryId) }) {
                     it[plainText] = processedComment.plainText
-                    it[markdownText] = MarkdownUtils.convertToMarkdown(processedComment.plainText)
+                    it[markdownText] = markdownProcessor.convertToMarkdown(processedComment.plainText)
                     it[dateUpdated] = System.currentTimeMillis()
                 }
-                if (updated > 0) getComment(entryId, id)!!
-                else {
+                if (updated > 0) {
+                    workerRegistry.acceptCommentRefWork(entryId, id, CrudType.UPDATE)
+                    getComment(entryId, id)!!
+                } else {
                     log.info("No rows modified when updating comment id={} entry={}", id, entryId)
                     null
                 }
@@ -84,6 +87,10 @@ class CommentService(private val resourceManager: ResourceManager) {
     }
 
     fun deleteComment(entryId: String, id: String): Boolean = transaction {
-        Comments.deleteWhere { Comments.id eq id and (Comments.entryId eq entryId) } > 0
+        val deleted = Comments.deleteWhere { Comments.id eq id and (Comments.entryId eq entryId) }
+        if (deleted > 0) {
+            workerRegistry.acceptCommentRefWork(entryId, id, CrudType.DELETE)
+        }
+        deleted > 0
     }
 }

@@ -5,18 +5,22 @@ import lynks.db.EntryRepository
 import lynks.group.GroupSet
 import lynks.group.GroupSetService
 import lynks.resource.ResourceManager
-import lynks.resource.TempImageMarkdownVisitor
-import lynks.util.markdown.MarkdownUtils
+import lynks.util.markdown.MarkdownProcessor
+import lynks.worker.WorkerRegistry
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.statements.UpdateBuilder
 
 class NoteService(
-    groupSetService: GroupSetService, entryAuditService: EntryAuditService, resourceManager: ResourceManager
+    groupSetService: GroupSetService,
+    entryAuditService: EntryAuditService,
+    resourceManager: ResourceManager,
+    private val workerRegistry: WorkerRegistry,
+    private val markdownProcessor: MarkdownProcessor
 ) : EntryRepository<Note, SlimNote, NewNote>(groupSetService, entryAuditService, resourceManager) {
 
     override fun postprocess(eid: String, entry: NewNote): Note {
-        val (replaced, markdown) = MarkdownUtils.visitAndReplaceNodes(entry.plainText, TempImageMarkdownVisitor(eid, resourceManager))
-        if(replaced > 0) {
+        val (replaced, markdown) = markdownProcessor.convertAndProcess(entry.plainText, eid)
+        if (replaced > 0) {
             return update(entry.copy(id = eid, plainText = markdown), newVersion = false)!!
         }
         return super.postprocess(eid, entry)
@@ -34,14 +38,29 @@ class NoteService(
         return base.select { where.type eq EntryType.NOTE }
     }
 
-    override val slimColumnSet: List<Column<*>> = listOf(Entries.id, Entries.title, Entries.dateUpdated, Entries.starred)
+    override val slimColumnSet: List<Column<*>> =
+        listOf(Entries.id, Entries.title, Entries.dateUpdated, Entries.starred)
+
+    override fun add(entry: NewNote): Note {
+        return super.add(entry).also {
+            workerRegistry.acceptEntryRefWork(it.id)
+        }
+    }
+
+    override fun update(entry: NewNote, newVersion: Boolean): Note? {
+        return super.update(entry, newVersion).also {
+            if (it != null) {
+                workerRegistry.acceptEntryRefWork(it.id)
+            }
+        }
+    }
 
     override fun toInsert(eId: String, entry: NewNote): BaseEntries.(UpdateBuilder<*>) -> Unit = {
         val time = System.currentTimeMillis()
         it[id] = eId
         it[title] = entry.title
         it[plainContent] = entry.plainText
-        it[content] = MarkdownUtils.convertToMarkdown(entry.plainText)
+        it[content] = markdownProcessor.convertToMarkdown(entry.plainText)
         it[src] = "me"
         it[type] = EntryType.NOTE
         it[dateCreated] = time
@@ -51,14 +70,14 @@ class NoteService(
     override fun toUpdate(entry: NewNote): BaseEntries.(UpdateBuilder<*>) -> Unit = {
         it[title] = entry.title
         it[plainContent] = entry.plainText
-        it[content] = MarkdownUtils.convertToMarkdown(entry.plainText)
+        it[content] = markdownProcessor.convertToMarkdown(entry.plainText)
         it[dateUpdated] = System.currentTimeMillis()
     }
 
     override fun toUpdate(entry: Note): BaseEntries.(UpdateBuilder<*>) -> Unit = {
         it[title] = entry.title
         it[plainContent] = entry.plainText
-        it[content] = MarkdownUtils.convertToMarkdown(entry.plainText)
+        it[content] = markdownProcessor.convertToMarkdown(entry.plainText)
         it[props] = entry.props
     }
 }

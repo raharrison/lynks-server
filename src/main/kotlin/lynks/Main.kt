@@ -29,6 +29,7 @@ import lynks.common.exception.InvalidModelException
 import lynks.common.inject.ServiceProvider
 import lynks.db.DatabaseFactory
 import lynks.entry.*
+import lynks.entry.ref.EntryRefService
 import lynks.group.*
 import lynks.notify.NotifyService
 import lynks.notify.notify
@@ -48,6 +49,7 @@ import lynks.user.userProtected
 import lynks.user.userUnprotected
 import lynks.util.JsonMapper.defaultMapper
 import lynks.util.RandomUtils
+import lynks.util.markdown.MarkdownProcessor
 import lynks.worker.WorkerRegistry
 
 fun Application.module() {
@@ -94,16 +96,18 @@ fun Application.module() {
         register(PushoverClient(get()))
         register(NotifyService(get(), get()))
         register(ResourceManager())
+        register(MarkdownProcessor(get()))
         register(TagService())
         register(CollectionService())
         register(GroupSetService(get(), get()))
         register(EntryAuditService())
+        register(EntryRefService())
         register(EntryService(get(), get(), get()))
         register(LinkService(get(), get(), get(), get()))
-        register(NoteService(get(), get(), get()))
-        register(SnippetService(get(), get(), get()))
+        register(NoteService(get(), get(), get(), get(), get()))
+        register(SnippetService(get(), get(), get(), get(), get()))
         register(FileService(get(), get(), get()))
-        register(CommentService(get()))
+        register(CommentService(get(), get()))
         register(ReminderService(get()))
         register(SuggestionService(get()))
         register(YoutubeDlRunner(get(), get(), get(), get()))
@@ -133,7 +137,7 @@ private fun Route.protectedRoutes(serviceProvider: ServiceProvider) {
         note(get())
         snippet(get())
         file(get())
-        entry(get(), get(), get())
+        entry(get(), get(), get(), get())
         tag(get())
         suggest(get())
         resource(get())

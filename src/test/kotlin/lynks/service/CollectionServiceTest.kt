@@ -9,6 +9,7 @@ import lynks.group.GroupSetService
 import lynks.group.NewCollection
 import lynks.group.TagService
 import lynks.util.createDummyCollection
+import lynks.util.markdown.MarkdownProcessor
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -109,7 +110,10 @@ class CollectionServiceTest : DatabaseTest() {
 
     @Test
     fun testDeleteCollectionLinkedToEntry() {
-        val noteService = NoteService(GroupSetService(TagService(), collectionService), mockk(relaxUnitFun = true), mockk())
+        val noteService = NoteService(
+            GroupSetService(TagService(), collectionService),
+            mockk(relaxUnitFun = true), mockk(), mockk(relaxUnitFun = true), MarkdownProcessor(mockk())
+        )
         val note = noteService.add(NewNote(null, "n1", "content", emptyList(), listOf("c1")))
         assertThat(note.collections).hasSize(1).extracting("id").containsOnly("c1")
         assertThat(collectionService.delete("c1")).isTrue()

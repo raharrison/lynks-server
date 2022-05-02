@@ -15,6 +15,7 @@ class WorkerRegistry {
             unreadDigestWorker = UnreadLinkDigestWorker(get(), get(), get()).worker()
             fileCleanupWorker = TempFileCleanupWorker().worker()
             reminderWorker = ReminderWorker(get(), get(), get()).worker()
+            entryRefWorker = EntryRefWorker(get(), get(), get(), get()).worker()
         }
     }
 
@@ -24,6 +25,7 @@ class WorkerRegistry {
     private lateinit var unreadDigestWorker: SendChannel<String>
     private lateinit var fileCleanupWorker: SendChannel<TempFileCleanupWorkerRequest>
     private lateinit var reminderWorker: SendChannel<ReminderWorkerRequest>
+    private lateinit var entryRefWorker: SendChannel<EntryRefWorkerRequest>
 
     fun acceptLinkWork(request: LinkProcessingRequest) {
         linkWorker.trySend(request)
@@ -39,6 +41,14 @@ class WorkerRegistry {
 
     fun acceptReminderWork(request: ReminderWorkerRequest) {
         reminderWorker.trySend(request)
+    }
+
+    fun acceptEntryRefWork(entryId: String) {
+        entryRefWorker.trySend(DefaultEntryRefWorkerRequest(entryId))
+    }
+
+    fun acceptCommentRefWork(entryId: String, commentId: String, updateType: CrudType) {
+        entryRefWorker.trySend(CommentRefWorkerRequest(entryId, commentId, updateType))
     }
 
 }

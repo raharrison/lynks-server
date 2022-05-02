@@ -9,6 +9,7 @@ import lynks.group.GroupSetService
 import lynks.group.NewTag
 import lynks.group.TagService
 import lynks.util.createDummyTag
+import lynks.util.markdown.MarkdownProcessor
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -72,7 +73,10 @@ class TagServiceTest : DatabaseTest() {
 
     @Test
     fun testDeleteTagLinkedToEntry() {
-        val noteService = NoteService(GroupSetService(tagService, CollectionService()), mockk(relaxUnitFun = true), mockk())
+        val noteService = NoteService(
+            GroupSetService(tagService, CollectionService()),
+            mockk(relaxUnitFun = true), mockk(), mockk(relaxUnitFun = true), MarkdownProcessor(mockk())
+        )
         val note = noteService.add(NewNote(null, "n1", "content", listOf("t1")))
         assertThat(note.tags).hasSize(1).extracting("id").containsOnly("t1")
         assertThat(tagService.delete("t1")).isTrue()

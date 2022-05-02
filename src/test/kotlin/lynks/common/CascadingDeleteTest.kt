@@ -4,6 +4,7 @@ import io.mockk.mockk
 import lynks.comment.CommentService
 import lynks.entry.EntryAuditService
 import lynks.entry.LinkService
+import lynks.entry.ref.EntryRefService
 import lynks.group.CollectionService
 import lynks.group.GroupSetService
 import lynks.group.TagService
@@ -22,9 +23,10 @@ class CascadingDeleteTest: DatabaseTest() {
     private val tagService = TagService()
     private val collectionService = CollectionService()
     private val resourceManager = ResourceManager()
-    private val commentService = CommentService(resourceManager)
+    private val commentService = CommentService(mockk(relaxUnitFun = true), mockk())
     private val reminderService = ReminderService(mockk(relaxUnitFun = true))
     private val entryAuditService = EntryAuditService()
+    private val entryRefService = EntryRefService()
     private lateinit var linkService: LinkService
 
     @BeforeEach
@@ -69,6 +71,16 @@ class CascadingDeleteTest: DatabaseTest() {
 
         assertThat(collectionService.get("c2")).isNull()
         assertThat(collectionService.get("c1")).isNull()
+    }
+
+    @Test
+    fun testDeletingEntryRefDoesntDeleteEntry() {
+        val added1 = linkService.add(NewLink(null, "title", "url", process = false))
+        val added2 = linkService.add(NewLink(null, "title2", "url2", process =  false))
+        entryRefService.setEntryRefs(added1.id, listOf(added2.id), added1.id)
+        entryRefService.deleteOrigin(added1.id)
+        assertThat(linkService.get(added1.id)).isNotNull()
+        assertThat(linkService.get(added2.id)).isNotNull()
     }
 
     @Test
@@ -146,6 +158,18 @@ class CascadingDeleteTest: DatabaseTest() {
         assertThat(linkService.delete(added.id)).isTrue()
         assertThat(entryAuditService.getEntryAudit(added.id)).isEmpty()
         assertThat(linkService.get(added.id)).isNull()
+    }
+
+    @Test
+    fun testDeletingEntryDeletesRefs() {
+        val added1 = linkService.add(NewLink(null, "title", "url", process = false))
+        val added2 = linkService.add(NewLink(null, "title2", "url2", process =  false))
+        entryRefService.setEntryRefs(added1.id, listOf(added2.id), added1.id)
+        assertThat(entryRefService.getRefsForEntry(added1.id).outbound).hasSize(1)
+        assertThat(entryRefService.getRefsForEntry(added2.id).inbound).hasSize(1)
+        linkService.delete(added1.id)
+        assertThat(entryRefService.getRefsForEntry(added1.id).outbound).isEmpty()
+        assertThat(entryRefService.getRefsForEntry(added2.id).inbound).isEmpty()
     }
 
     @Test

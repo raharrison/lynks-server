@@ -17,6 +17,8 @@ import lynks.resource.ResourceManager
 import lynks.resource.ResourceType
 import lynks.util.createDummyCollection
 import lynks.util.createDummyTag
+import lynks.util.markdown.MarkdownProcessor
+import lynks.worker.WorkerRegistry
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -30,7 +32,9 @@ class NoteServiceTest : DatabaseTest() {
     private val groupSetService = GroupSetService(tagService, collectionService)
     private val resourceManager = mockk<ResourceManager>()
     private val entryAuditService = mockk<EntryAuditService>(relaxUnitFun = true)
-    private val noteService = NoteService(groupSetService, entryAuditService, resourceManager)
+    private val workerRegistry = mockk<WorkerRegistry>(relaxUnitFun = true)
+    private val markdownProcessor = MarkdownProcessor(resourceManager)
+    private val noteService = NoteService(groupSetService, entryAuditService, resourceManager, workerRegistry, markdownProcessor)
 
     @BeforeEach
     fun createTags() {
@@ -52,6 +56,7 @@ class NoteServiceTest : DatabaseTest() {
         assertThat(note.dateCreated).isEqualTo(note.dateUpdated)
         verify(exactly = 0) { resourceManager.migrateGeneratedResources(note.id, any()) }
         verify { entryAuditService.acceptAuditEvent(note.id, any(), any()) }
+        verify { workerRegistry.acceptEntryRefWork(note.id) }
     }
 
     @Test
@@ -63,9 +68,10 @@ class NoteServiceTest : DatabaseTest() {
         val note = noteService.add(newNote("n1", plain))
         assertThat(note.type).isEqualTo(EntryType.NOTE)
         assertThat(note.title).isEqualTo("n1")
-        assertThat(note.plainText).isEqualTo("something ![desc](${Environment.server.rootPath}/entry/${note.id}/resource/${resource.id})")
+        assertThat(note.plainText.trim()).isEqualTo("something ![desc](${Environment.server.rootPath}/entry/${note.id}/resource/${resource.id})")
         verify(exactly = 1) { resourceManager.migrateGeneratedResources(note.id, any()) }
         verify { entryAuditService.acceptAuditEvent(note.id, any(), any()) }
+        verify { workerRegistry.acceptEntryRefWork(note.id) }
     }
 
     @Test
@@ -77,6 +83,7 @@ class NoteServiceTest : DatabaseTest() {
         assertThat(note.tags).hasSize(2).extracting("id").containsExactly("t1", "t2")
         assertThat(note.dateCreated).isEqualTo(note.dateUpdated)
         verify { entryAuditService.acceptAuditEvent(note.id, any(), any()) }
+        verify { workerRegistry.acceptEntryRefWork(note.id) }
     }
 
     @Test
@@ -93,6 +100,7 @@ class NoteServiceTest : DatabaseTest() {
         assertThat(note.collections).hasSize(2).extracting("id").containsExactly("c1", "c2")
         assertThat(note.dateCreated).isEqualTo(note.dateUpdated)
         verify { entryAuditService.acceptAuditEvent(note.id, any(), any()) }
+        verify { workerRegistry.acceptEntryRefWork(note.id) }
     }
 
     @Test
@@ -292,6 +300,7 @@ class NoteServiceTest : DatabaseTest() {
         assertThat(newNote?.collections).hasSize(1)
         assertThat(newNote?.dateUpdated).isNotEqualTo(newNote?.dateCreated)
         verify { entryAuditService.acceptAuditEvent(added1.id, any(), any()) }
+        verify { workerRegistry.acceptEntryRefWork(added1.id) }
 
         val oldNote = noteService.get(added1.id)
         assertThat(oldNote?.id).isEqualTo(updated.id)
@@ -308,8 +317,9 @@ class NoteServiceTest : DatabaseTest() {
         every { resourceManager.constructTempBasePath(IMAGE_UPLOAD_BASE) } returns Path.of("migrated/")
         every { resourceManager.migrateGeneratedResources(added.id, any()) } returns listOf(resource)
         val updated = noteService.update(newNote(added.id, "updated", "something ![desc](${TEMP_URL}abc/one.png)"))
-        assertThat(updated?.plainText).isEqualTo("something ![desc](${Environment.server.rootPath}/entry/${added.id}/resource/${resource.id})")
+        assertThat(updated?.plainText?.trim()).isEqualTo("something ![desc](${Environment.server.rootPath}/entry/${added.id}/resource/${resource.id})")
         verify(exactly = 1) { resourceManager.migrateGeneratedResources(added.id, any()) }
+        verify { workerRegistry.acceptEntryRefWork(added.id) }
     }
 
     @Test
@@ -327,6 +337,7 @@ class NoteServiceTest : DatabaseTest() {
         noteService.update(newNote(added1.id, "n1", "content 1", listOf("t2", "t3")))
         assertThat(noteService.get(added1.id)?.tags).extracting("id").containsExactlyInAnyOrder("t2", "t3")
         verify(exactly = 3) { entryAuditService.acceptAuditEvent(added1.id, any(), any()) }
+        verify { workerRegistry.acceptEntryRefWork(added1.id) }
     }
 
     @Test
@@ -341,6 +352,7 @@ class NoteServiceTest : DatabaseTest() {
         assertThat(noteService.get(added1.id)?.plainText).isEqualTo("content 1")
         assertThat(noteService.get(added1.id)?.collections).extracting("id").containsExactlyInAnyOrder("c2")
         verify { entryAuditService.acceptAuditEvent(added1.id, any(), any()) }
+        verify { workerRegistry.acceptEntryRefWork(added1.id) }
 
         noteService.update(newNote(added1.id, "n1", "content 1", emptyList(), emptyList()))
         assertThat(noteService.get(added1.id)?.collections).extracting("id").isEmpty()
@@ -358,6 +370,7 @@ class NoteServiceTest : DatabaseTest() {
         assertThat(updated.dateUpdated).isEqualTo(updated.dateCreated)
         assertThat(added1.dateCreated).isNotEqualTo(updated.dateCreated)
         verify { entryAuditService.acceptAuditEvent(added1.id, any(), any()) }
+        verify { workerRegistry.acceptEntryRefWork(added1.id) }
 
         assertThat(noteService.get(added1.id)?.title).isEqualTo("n1")
     }
@@ -379,6 +392,7 @@ class NoteServiceTest : DatabaseTest() {
         assertThat(updated?.props?.getAttribute("key3")).isNull()
         assertThat(updated?.dateUpdated).isEqualTo(updated?.dateCreated)
         verify { entryAuditService.acceptAuditEvent(added.id, any(), any()) }
+        verify { workerRegistry.acceptEntryRefWork(added.id) }
     }
 
     @Test

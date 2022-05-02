@@ -1,17 +1,28 @@
-package lynks.util
+package lynks.util.markdown
 
+import com.vladsch.flexmark.ast.Link
+import com.vladsch.flexmark.util.ast.NodeVisitor
+import com.vladsch.flexmark.util.ast.VisitHandler
 import com.vladsch.flexmark.util.sequence.BasedSequence
+import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import lynks.common.Environment
-import lynks.util.markdown.EntryLinkInlineParserExtension
-import lynks.util.markdown.EntryLinkNode
-import lynks.util.markdown.MarkdownNodeVisitor
-import lynks.util.markdown.MarkdownUtils
+import lynks.common.IMAGE_UPLOAD_BASE
+import lynks.common.TEMP_URL
+import lynks.resource.Resource
+import lynks.resource.ResourceManager
+import lynks.resource.ResourceType
+import lynks.util.RandomUtils
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import java.nio.file.Path
 
-class MarkdownUtilsTest {
+class MarkdownProcessorTest {
+
+    private val resourceManager = mockk<ResourceManager>()
+    private val markdownProcessor = MarkdownProcessor(resourceManager)
 
     @Test
     fun testBasicConvert() {
@@ -25,7 +36,7 @@ class MarkdownUtilsTest {
 
     @Test
     fun testEntryLinks() {
-        val iterations = 1000
+        val iterations = 100
         val prefix = Environment.server.rootPath
         repeat(iterations) {
             val id = RandomUtils.generateUid()
@@ -79,45 +90,54 @@ class MarkdownUtilsTest {
     }
 
     @Test
-    fun testVisitAndReplaceNodes() {
-        val (replaced, markdown) = MarkdownUtils.visitAndReplaceNodes("first {second} {third}", object :
-            MarkdownNodeVisitor {
-            override val pattern = "\\{(.+?)\\}"
-
-            override fun replace(match: MatchResult): String {
-                return match.groupValues[1]
-            }
-        })
-        assertThat(replaced).isEqualTo(2)
-        assertThat(markdown).isEqualTo("first second third")
+    fun testMarkdownVisitor() {
+        val markdown = "first [Link1](href1) and another [Link2](href2) the end"
+        var visits = 0
+        markdownProcessor.visit(markdown, NodeVisitor(VisitHandler(Link::class.java) {
+            visits++
+        }))
+        assertThat(visits).isEqualTo(2)
     }
 
-    @Test
-    fun testVisitAndReplaceNodesNoReplacement() {
-        val input = "first {second} {third}"
-        val (replaced, markdown) = MarkdownUtils.visitAndReplaceNodes(input, object : MarkdownNodeVisitor {
-            override val pattern = "\\{(.+?)\\}"
+    @Nested
+    inner class TempImageReplace {
 
-            override fun replace(match: MatchResult): String? {
-                return null
-            }
-        })
-        assertThat(replaced).isZero()
-        assertThat(markdown).isEqualTo(input)
-    }
+        private val eid = "eid"
+        private val imageInput = "${TEMP_URL}abc/one.png"
+        private val fullInput = "![desc]($imageInput)"
 
-    @Test
-    fun testVisitAndReplaceNodesNoMatches() {
-        val input = "first second third"
-        val (replaced, markdown) = MarkdownUtils.visitAndReplaceNodes(input, object : MarkdownNodeVisitor {
-            override val pattern = "\\{(.+?)\\}"
+        @Test
+        fun testNoGroupFound() {
+            val raw = "some text"
+            val (replaced, markdown, html) = markdownProcessor.convertAndProcess(raw, eid)
+            assertThat(replaced).isZero()
+            assertThat(markdown.trim()).isEqualTo(raw)
+            assertThat(html).isEqualTo("<p>some text</p>\n")
+            verify(exactly = 0) { resourceManager.migrateGeneratedResources(eid, any()) }
+        }
 
-            override fun replace(match: MatchResult): String {
-                return match.groupValues[1]
-            }
-        })
-        assertThat(replaced).isZero()
-        assertThat(markdown).isEqualTo(input)
+        @Test
+        fun testGroupsReplaced() {
+            every { resourceManager.constructTempBasePath(IMAGE_UPLOAD_BASE) } returns Path.of("migrated/")
+            val resources = listOf(Resource("rid", "eid", "one", "png", ResourceType.UPLOAD, 12, 123L, 123L))
+            every { resourceManager.migrateGeneratedResources(eid, any()) } returns resources
+            val (replaced, markdown, html) = markdownProcessor.convertAndProcess(fullInput, eid)
+            assertThat(replaced).isOne()
+            assertThat(markdown).isEqualTo("![desc](${Environment.server.rootPath}/entry/$eid/resource/rid)\n")
+            assertThat(html).isEqualTo("<p><img src=\"/api/entry/eid/resource/rid\" alt=\"desc\" /></p>\n")
+            verify(exactly = 1) { resourceManager.migrateGeneratedResources(eid, any()) }
+        }
+
+        @Test
+        fun testNoResourcesMigrated() {
+            every { resourceManager.constructTempBasePath(IMAGE_UPLOAD_BASE) } returns Path.of("migrated/")
+            every { resourceManager.migrateGeneratedResources(eid, any()) } returns emptyList()
+            val (replaced, markdown) = markdownProcessor.convertAndProcess(fullInput, eid)
+            assertThat(replaced).isZero()
+            assertThat(markdown.trim()).isEqualTo(fullInput)
+            verify(exactly = 1) { resourceManager.migrateGeneratedResources(eid, any()) }
+        }
+
     }
 
     @Nested
@@ -142,7 +162,7 @@ class MarkdownUtilsTest {
     }
 
     private fun assertConvertEqual(input: String, output: String) {
-        val out = MarkdownUtils.convertToMarkdown(input)
+        val out = markdownProcessor.convertToMarkdown(input)
         assertThat(output).isEqualTo(out)
     }
 

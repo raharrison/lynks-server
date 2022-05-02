@@ -5,11 +5,17 @@ import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import lynks.entry.ref.EntryRefService
 import lynks.group.GroupIdSet
 import lynks.reminder.ReminderService
 import lynks.util.pageRequest
 
-fun Route.entry(entryService: EntryService, reminderService: ReminderService, entryAuditService: EntryAuditService) {
+fun Route.entry(
+    entryService: EntryService,
+    reminderService: ReminderService,
+    entryAuditService: EntryAuditService,
+    entryRefService: EntryRefService
+) {
 
     route("/entry") {
 
@@ -71,6 +77,11 @@ fun Route.entry(entryService: EntryService, reminderService: ReminderService, en
             val groupIds = call.receive<GroupIdSet>()
             if (entryService.updateEntryGroups(id, groupIds.tags, groupIds.collections)) call.respond(HttpStatusCode.OK)
             call.respond(HttpStatusCode.NotFound)
+        }
+
+        get("/{id}/refs") {
+            val id = call.parameters["id"]!!
+            call.respond(entryRefService.getRefsForEntry(id))
         }
     }
 }

@@ -12,6 +12,9 @@ import lynks.resource.Resource
 import lynks.resource.ResourceManager
 import lynks.resource.ResourceType
 import lynks.util.createDummyEntry
+import lynks.util.markdown.MarkdownProcessor
+import lynks.worker.CrudType
+import lynks.worker.WorkerRegistry
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -22,7 +25,8 @@ import java.sql.SQLException
 class CommentServiceTest : DatabaseTest() {
 
     private val resourceManager = mockk<ResourceManager>()
-    private val commentService = CommentService(resourceManager)
+    private val workerRegistry = mockk<WorkerRegistry>(relaxUnitFun = true)
+    private val commentService = CommentService(workerRegistry, MarkdownProcessor(resourceManager))
 
     @BeforeEach
     fun createEntries() {
@@ -50,6 +54,7 @@ class CommentServiceTest : DatabaseTest() {
         assertThat(added.plainText).isEqualTo(plain)
         assertThat(added.markdownText).isEqualTo(markdown)
         verify(exactly = 0) { resourceManager.migrateGeneratedResources("e1", any()) }
+        verify { workerRegistry.acceptCommentRefWork(added.entryId, added.id, CrudType.CREATE) }
     }
 
     @Test
@@ -60,8 +65,9 @@ class CommentServiceTest : DatabaseTest() {
         every { resourceManager.migrateGeneratedResources("e1", any()) } returns listOf(resource)
         val added = commentService.addComment("e1", newComment(content = plain))
         assertThat(added.entryId).isEqualTo("e1")
-        assertThat(added.plainText).isEqualTo("something ![desc](${Environment.server.rootPath}/entry/e1/resource/${resource.id})")
+        assertThat(added.plainText.trim()).isEqualTo("something ![desc](${Environment.server.rootPath}/entry/e1/resource/${resource.id})")
         verify(exactly = 1) { resourceManager.migrateGeneratedResources("e1", any()) }
+        verify { workerRegistry.acceptCommentRefWork(added.entryId, added.id, CrudType.CREATE) }
     }
 
     @Test
@@ -177,6 +183,8 @@ class CommentServiceTest : DatabaseTest() {
 
         assertThat(commentService.getCommentsFor("e1").content).isEmpty()
         assertThat(commentService.getComment(added2.entryId, added2.id)).isNull()
+        verify { workerRegistry.acceptCommentRefWork(added1.entryId, added1.id, CrudType.DELETE) }
+        verify { workerRegistry.acceptCommentRefWork(added2.entryId, added2.id, CrudType.DELETE) }
     }
 
     @Test
@@ -197,6 +205,7 @@ class CommentServiceTest : DatabaseTest() {
         assertThat(oldComm?.entryId).isEqualTo("e1")
         assertThat(oldComm?.plainText).isEqualTo("changed")
         assertThat(oldComm?.dateUpdated).isNotEqualTo(oldComm?.dateCreated)
+        verify { workerRegistry.acceptCommentRefWork(added1.entryId, added1.id, CrudType.UPDATE) }
     }
 
     @Test
@@ -207,8 +216,9 @@ class CommentServiceTest : DatabaseTest() {
         every { resourceManager.migrateGeneratedResources("e1", any()) } returns listOf(resource)
         val updated = commentService.updateComment("e1", newComment(added.id, "changed ![desc](${TEMP_URL}abc/one.png)"))
         assertThat(updated?.entryId).isEqualTo("e1")
-        assertThat(updated?.plainText).isEqualTo("changed ![desc](${Environment.server.rootPath}/entry/e1/resource/${resource.id})")
+        assertThat(updated?.plainText?.trim()).isEqualTo("changed ![desc](${Environment.server.rootPath}/entry/e1/resource/${resource.id})")
         verify(exactly = 1) { resourceManager.migrateGeneratedResources("e1", any()) }
+        verify { workerRegistry.acceptCommentRefWork(added.entryId, added.id, CrudType.UPDATE) }
     }
 
     @Test
@@ -224,6 +234,7 @@ class CommentServiceTest : DatabaseTest() {
         val comments = commentService.getCommentsFor("e1").content
         assertThat(comments).hasSize(2)
         assertThat(comments).extracting("id").containsOnly(added1.id, updated.id)
+        verify { workerRegistry.acceptCommentRefWork(added1.entryId, added1.id, CrudType.CREATE) }
     }
 
     private fun newComment(id: String? = null, content: String) = NewComment(id, content)

@@ -4,6 +4,7 @@ import lynks.comment.Comments
 import lynks.common.BaseProperties
 import lynks.common.Entries
 import lynks.common.EntryType
+import lynks.entry.ref.EntryRefs
 import lynks.group.GroupType
 import lynks.group.Groups
 import lynks.notify.NotificationMethod
@@ -133,5 +134,13 @@ fun createDummyUser(username: String, email: String? = null, displayName: String
 fun activateUser(username: String) = transaction {
     Users.update({ Users.username eq username }) {
         it[activated] = true
+    }
+}
+
+fun createDummyEntryRef(source: String, target: String, origin: String) = transaction {
+    EntryRefs.insert {
+        it[this.sourceEntryId] = source
+        it[this.targetEntryId] = target
+        it[this.originId] = origin
     }
 }
