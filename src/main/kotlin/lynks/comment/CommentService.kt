@@ -38,28 +38,28 @@ class CommentService(private val workerRegistry: WorkerRegistry, private val mar
         )
     }
 
-    private fun preprocess(eid: String, comment: NewComment): NewComment {
+    private fun postprocess(eid: String, cid: String, comment: NewComment): Comment? {
         val (replaced, markdown) = markdownProcessor.convertAndProcess(comment.plainText, eid)
         if (replaced > 0) {
-            return comment.copy(plainText = markdown)
+            return updateComment(eid, comment.copy(plainText = markdown))
         }
-        return comment
+        return getComment(eid, cid)
     }
 
     fun addComment(eId: String, comment: NewComment): Comment = transaction {
         val newId = RandomUtils.generateUid()
-        val processedComment = preprocess(eId, comment)
         val time = System.currentTimeMillis()
         Comments.insert {
             it[id] = newId
             it[entryId] = eId
-            it[plainText] = processedComment.plainText
-            it[markdownText] = markdownProcessor.convertToMarkdown(processedComment.plainText)
+            it[plainText] = comment.plainText
+            it[markdownText] = markdownProcessor.convertToMarkdown(comment.plainText)
             it[dateCreated] = time
             it[dateUpdated] = time
         }
-        workerRegistry.acceptCommentRefWork(eId, newId, CrudType.CREATE)
-        getComment(eId, newId)!!
+        postprocess(eId, newId, comment).also {
+            workerRegistry.acceptCommentRefWork(eId, newId, CrudType.CREATE)
+        }!!
     }
 
     fun updateComment(entryId: String, comment: NewComment): Comment? {
@@ -69,15 +69,15 @@ class CommentService(private val workerRegistry: WorkerRegistry, private val mar
             addComment(entryId, comment)
         } else {
             transaction {
-                val processedComment = preprocess(entryId, comment)
                 val updated = Comments.update({ Comments.id eq id and (Comments.entryId eq entryId) }) {
-                    it[plainText] = processedComment.plainText
-                    it[markdownText] = markdownProcessor.convertToMarkdown(processedComment.plainText)
+                    it[plainText] = comment.plainText
+                    it[markdownText] = markdownProcessor.convertToMarkdown(comment.plainText)
                     it[dateUpdated] = System.currentTimeMillis()
                 }
                 if (updated > 0) {
-                    workerRegistry.acceptCommentRefWork(entryId, id, CrudType.UPDATE)
-                    getComment(entryId, id)!!
+                    postprocess(entryId, id, comment).also {
+                        workerRegistry.acceptCommentRefWork(entryId, id, CrudType.UPDATE)
+                    }
                 } else {
                     log.info("No rows modified when updating comment id={} entry={}", id, entryId)
                     null
