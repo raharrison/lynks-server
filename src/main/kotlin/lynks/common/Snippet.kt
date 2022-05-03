@@ -15,8 +15,7 @@ data class Snippet(
     override val version: Int = 0,
     override val starred: Boolean = false
 ) : Entry {
-    @JvmField
-    val type = EntryType.SNIPPET
+    override val type = EntryType.SNIPPET
 }
 
 
@@ -36,6 +35,5 @@ data class SlimSnippet(
     override val collections: List<Collection> = emptyList(),
     override val starred: Boolean = false
 ) : SlimEntry {
-    @JvmField
-    val type = EntryType.SNIPPET
+    override val type = EntryType.SNIPPET
 }

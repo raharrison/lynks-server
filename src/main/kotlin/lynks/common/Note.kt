@@ -16,8 +16,7 @@ data class Note(
     override val version: Int = 0,
     override val starred: Boolean = false,
 ) : Entry {
-    @JvmField
-    val type = EntryType.NOTE
+    override val type = EntryType.NOTE
 }
 
 
@@ -38,6 +37,5 @@ data class SlimNote(
     override val collections: List<Collection> = emptyList(),
     override val starred: Boolean = false
 ) : SlimEntry {
-    @JvmField
-    val type = EntryType.NOTE
+    override val type = EntryType.NOTE
 }

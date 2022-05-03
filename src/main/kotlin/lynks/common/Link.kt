@@ -21,8 +21,7 @@ data class Link(
     var thumbnailId: String? = null,
     val read: Boolean = false
 ) : Entry {
-    @JvmField
-    val type = EntryType.LINK
+    override val type = EntryType.LINK
 }
 
 
@@ -47,6 +46,5 @@ data class SlimLink(
     val thumbnailId: String? = null,
     val read: Boolean = false
 ) : SlimEntry {
-    @JvmField
-    val type = EntryType.LINK
+    override val type = EntryType.LINK
 }

@@ -26,7 +26,7 @@ class CommentServiceTest : DatabaseTest() {
 
     private val resourceManager = mockk<ResourceManager>()
     private val workerRegistry = mockk<WorkerRegistry>(relaxUnitFun = true)
-    private val commentService = CommentService(workerRegistry, MarkdownProcessor(resourceManager))
+    private val commentService = CommentService(workerRegistry, MarkdownProcessor(resourceManager, mockk()))
 
     @BeforeEach
     fun createEntries() {

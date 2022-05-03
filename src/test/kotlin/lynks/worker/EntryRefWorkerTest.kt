@@ -20,10 +20,10 @@ import org.junit.jupiter.api.Test
 @ExperimentalCoroutinesApi
 class EntryRefWorkerTest {
 
-    private val markdownProcessor = MarkdownProcessor(mockk())
     private val entryRefService = mockk<EntryRefService>(relaxUnitFun = true)
     private val entryService = mockk<EntryService>()
     private val commentService = mockk<CommentService>()
+    private val markdownProcessor = MarkdownProcessor(mockk(), entryService)
 
     private val note1 = Note("id1", "title1", "one @id2 two @id3 three @id4 end", "content1", 123L, 123L)
     private val comment = Comment("cid1", "id1", "one @id2 two @id3 three @id4 end", "content1", 123L, 123L)

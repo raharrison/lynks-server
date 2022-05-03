@@ -9,11 +9,14 @@ import io.mockk.mockk
 import io.mockk.verify
 import lynks.common.Environment
 import lynks.common.IMAGE_UPLOAD_BASE
+import lynks.common.SlimNote
 import lynks.common.TEMP_URL
+import lynks.common.page.DefaultPageRequest
+import lynks.common.page.Page
+import lynks.entry.EntryService
 import lynks.resource.Resource
 import lynks.resource.ResourceManager
 import lynks.resource.ResourceType
-import lynks.util.RandomUtils
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -22,7 +25,8 @@ import java.nio.file.Path
 class MarkdownProcessorTest {
 
     private val resourceManager = mockk<ResourceManager>()
-    private val markdownProcessor = MarkdownProcessor(resourceManager)
+    private val entryService = mockk<EntryService>()
+    private val markdownProcessor = MarkdownProcessor(resourceManager, entryService)
 
     @Test
     fun testBasicConvert() {
@@ -36,19 +40,25 @@ class MarkdownProcessorTest {
 
     @Test
     fun testEntryLinks() {
-        val iterations = 100
-        val prefix = Environment.server.rootPath
-        repeat(iterations) {
-            val id = RandomUtils.generateUid()
-            assertConvertEqual(
-                "link is @$id",
-                "<p>link is <a href=\"$prefix/entry/$id\"><strong>@$id</strong></a></p>\n"
-            )
-            assertConvertEqual(
-                "link is @$id and more",
-                "<p>link is <a href=\"$prefix/entry/$id\"><strong>@$id</strong></a> and more</p>\n"
-            )
-        }
+        every { entryService.get(listOf("1234")) } returns Page.of(listOf(SlimNote("1234", "title", 1234L)), DefaultPageRequest, 1)
+
+        assertConvertEqual(
+            "link is @1234",
+            "<p>link is <a href=\"/entries/notes/1234\"><strong>@1234</strong></a></p>\n"
+        )
+        assertConvertEqual(
+            "link is @1234 and more",
+            "<p>link is <a href=\"/entries/notes/1234\"><strong>@1234</strong></a> and more</p>\n"
+        )
+
+        verify(exactly = 2) { entryService.get(listOf("1234")) }
+    }
+
+    @Test
+    fun testEntryLinkEntryNotFound() {
+        every { entryService.get(listOf("1234")) } returns Page.empty()
+        assertConvertEqual("something @1234 else", "<p>something @1234 else</p>\n")
+        verify(exactly = 1) { entryService.get(listOf("1234")) }
     }
 
     @Test

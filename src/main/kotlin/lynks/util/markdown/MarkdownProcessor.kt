@@ -9,10 +9,11 @@ import com.vladsch.flexmark.html.HtmlRenderer
 import com.vladsch.flexmark.parser.Parser
 import com.vladsch.flexmark.util.ast.NodeVisitor
 import com.vladsch.flexmark.util.data.MutableDataSet
+import lynks.entry.EntryService
 import lynks.resource.ResourceManager
 import lynks.resource.TempImageMarkdownVisitor
 
-class MarkdownProcessor(private val resourceManager: ResourceManager) {
+class MarkdownProcessor(private val resourceManager: ResourceManager, private val entryService: EntryService) {
 
     private val parser: Parser
     private val formatter: Formatter
@@ -31,7 +32,7 @@ class MarkdownProcessor(private val resourceManager: ResourceManager) {
                     StrikethroughSubscriptExtension.create(),
                     AutolinkExtension.create(),
                     TaskListExtension.create(),
-                    EntryLinkExtension()
+                    EntryLinkExtension(entryService)
                 )
             ).toImmutable()
         parser = Parser.builder(options).build()

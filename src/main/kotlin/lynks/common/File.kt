@@ -14,8 +14,7 @@ data class File(
     override val version: Int = 0,
     override val starred: Boolean = false,
 ) : Entry {
-    @JvmField
-    val type = EntryType.FILE
+    override val type = EntryType.FILE
 }
 
 
@@ -35,6 +34,5 @@ data class SlimFile(
     override val collections: List<Collection> = emptyList(),
     override val starred: Boolean = false
 ) : SlimEntry {
-    @JvmField
-    val type = EntryType.FILE
+    override val type = EntryType.FILE
 }

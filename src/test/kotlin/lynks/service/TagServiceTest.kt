@@ -75,7 +75,7 @@ class TagServiceTest : DatabaseTest() {
     fun testDeleteTagLinkedToEntry() {
         val noteService = NoteService(
             GroupSetService(tagService, CollectionService()),
-            mockk(relaxUnitFun = true), mockk(), mockk(relaxUnitFun = true), MarkdownProcessor(mockk())
+            mockk(relaxUnitFun = true), mockk(), mockk(relaxUnitFun = true), MarkdownProcessor(mockk(), mockk())
         )
         val note = noteService.add(NewNote(null, "n1", "content", listOf("t1")))
         assertThat(note.tags).hasSize(1).extracting("id").containsOnly("t1")

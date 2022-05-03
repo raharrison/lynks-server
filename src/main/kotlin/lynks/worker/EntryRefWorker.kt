@@ -53,7 +53,9 @@ class EntryRefWorker(
         val visitor = EntryRefVisitor()
         markdownProcessor.visit(markdown, NodeVisitor(VisitHandler(EntryLinkNode::class.java, visitor)))
         val refs = visitor.referencedEntries
-        return entryService.get(refs, PageRequest(1, refs.size)).content.map { it.id }
+        return refs.chunked(25).flatMap { chunk ->
+            entryService.get(chunk, PageRequest(1, chunk.size)).content.map { it.id }
+        }
     }
 
     private class EntryRefVisitor : Visitor<EntryLinkNode> {

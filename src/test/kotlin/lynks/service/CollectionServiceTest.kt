@@ -112,7 +112,7 @@ class CollectionServiceTest : DatabaseTest() {
     fun testDeleteCollectionLinkedToEntry() {
         val noteService = NoteService(
             GroupSetService(TagService(), collectionService),
-            mockk(relaxUnitFun = true), mockk(), mockk(relaxUnitFun = true), MarkdownProcessor(mockk())
+            mockk(relaxUnitFun = true), mockk(), mockk(relaxUnitFun = true), MarkdownProcessor(mockk(), mockk())
         )
         val note = noteService.add(NewNote(null, "n1", "content", emptyList(), listOf("c1")))
         assertThat(note.collections).hasSize(1).extracting("id").containsOnly("c1")

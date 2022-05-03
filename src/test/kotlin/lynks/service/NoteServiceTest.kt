@@ -33,7 +33,7 @@ class NoteServiceTest : DatabaseTest() {
     private val resourceManager = mockk<ResourceManager>()
     private val entryAuditService = mockk<EntryAuditService>(relaxUnitFun = true)
     private val workerRegistry = mockk<WorkerRegistry>(relaxUnitFun = true)
-    private val markdownProcessor = MarkdownProcessor(resourceManager)
+    private val markdownProcessor = MarkdownProcessor(resourceManager, mockk())
     private val noteService = NoteService(groupSetService, entryAuditService, resourceManager, workerRegistry, markdownProcessor)
 
     @BeforeEach
