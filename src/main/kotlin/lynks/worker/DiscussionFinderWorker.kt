@@ -92,8 +92,7 @@ class DiscussionFinderWorker(
                     notifyService.create(NewNotification.discussions(message, link.id))
                 }
             } else {
-                log.info("Discussion finder worker none found entry={}", link.id)
-                entryAuditService.acceptAuditEvent(link.id, DiscussionFinderWorker::class.simpleName, "No discussions found")
+                log.info("Discussion finder worker found found no items entry={}", link.id)
             }
 
             intervalIndex++

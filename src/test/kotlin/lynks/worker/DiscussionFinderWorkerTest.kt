@@ -57,7 +57,7 @@ class DiscussionFinderWorkerTest: DatabaseTest() {
         coVerify(exactly = 4) { linkService.get(link.id) }
         coVerify(exactly = 4 * 2) { retriever.getString(any()) }
         coVerify(exactly = 0) { notifyService.create(any()) }
-        coVerify(exactly = 4) { entryAuditService.acceptAuditEvent(link.id, any(), any()) }
+        coVerify(exactly = 0) { entryAuditService.acceptAuditEvent(link.id, any(), any()) }
         worker.close()
     }
 
@@ -184,7 +184,7 @@ class DiscussionFinderWorkerTest: DatabaseTest() {
 
         coVerify(exactly = 4 * 2) { retriever.getString(any()) }
         coVerify(exactly = 1) { notifyService.create(any()) }
-        coVerify(exactly = 4) { entryAuditService.acceptAuditEvent(link.id, any(), any()) }
+        coVerify(exactly = 1) { entryAuditService.acceptAuditEvent(link.id, any(), any()) }
         worker.close()
     }
 
@@ -208,7 +208,7 @@ class DiscussionFinderWorkerTest: DatabaseTest() {
 
         coVerify(exactly = 5 * 2) { retriever.getString(any()) }
         coVerify(exactly = 1) { notifyService.create(any()) }
-        coVerify(exactly = 4) { entryAuditService.acceptAuditEvent(link.id, any(), any()) }
+        coVerify(exactly = 1) { entryAuditService.acceptAuditEvent(link.id, any(), any()) }
         worker.close()
     }
 
