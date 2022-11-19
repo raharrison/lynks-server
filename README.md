@@ -1,9 +1,9 @@
-[![Kotlin](https://img.shields.io/badge/kotlin-1.6.20-blue.svg?logo=kotlin)](http://kotlinlang.org)
+[![Kotlin](https://img.shields.io/badge/kotlin-1.7.20-blue.svg?logo=kotlin)](http://kotlinlang.org)
 ![Build](https://github.com/raharrison/lynks-server/workflows/Build/badge.svg)
 
 ## Lynks Server - Self-hosted link and note manager
 
-**Updated for Kotlin 1.6.20 + Ktor 2.0.0 + Exposed 0.38.2**
+**Updated for Kotlin 1.7.20 + Ktor 2.1.3 + Exposed 0.41.1**
 
 Server side for the Lynks project offering backend web services for entry management. Accompanied by [lynks-ui](https://github.com/raharrison/lynks-ui) project
 which provides a front-end webapp.
@@ -23,16 +23,30 @@ which provides a front-end webapp.
 
 - Create and manage a number of different entry types:
   - links - bookmarks with dynamic extraction capabilities
-  - notes - markdown text
+  - notes - Markdown text
   - snippet - small code or text segments
+  - file - file uploads
 - Manage your entries within tags and collections with hierarchy support
 - Rich sorting, filtering and paging capabilities
 - Full-text search within notes and extracted webpage content (readable view)
 - Automatic extraction of link content (screenshots), thumbnail generation and text content extraction - keep the content forever even if the site becomes unavailable
 - Find and link to discussions about links on Reddit and Hacker News
-- Automated Youtube metadata retrieval and youtube-dl integration
+- Automated YouTube metadata retrieval and youtube-dl integration
 - Comment on your entries and add upload additional file attachments
 - Full history and audit on all entries - travel back in time to view or revert back to previous versions
 - Scheduled adhoc and recurring reminders with notifications through the webapp, Pushover or email
 - Scheduled digest emails to remind you of unread links in your collection
 - Easy single command Docker Compose based deployment
+
+
+## TODO:
+
+### Server
+
+- markdown @abcde --> keep same link in markdown (@abcde) and then transform in html for correct title
+
+### UI
+
+
+
+

@@ -15,6 +15,7 @@ import lynks.util.combine
 import lynks.util.findColumn
 import lynks.util.orderBy
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.like
 import org.jetbrains.exposed.sql.statements.InsertStatement
 import org.jetbrains.exposed.sql.statements.UpdateBuilder
@@ -215,9 +216,9 @@ abstract class EntryRepository<T : Entry, S : SlimEntry, U : NewEntry>(
         val newGroups = groups.toSet()
 
         currentGroups.filterNot { newGroups.contains(it) }
-            .forEach {
+            .forEach { gid ->
                 EntryGroups.deleteWhere {
-                    EntryGroups.entryId eq id and (EntryGroups.groupId eq it)
+                    EntryGroups.entryId eq id and (EntryGroups.groupId eq gid)
                 }
             }
 

@@ -1,34 +1,34 @@
 buildscript {
-    ext.kotlin_version = '1.6.20'
-    ext.ktor_version = '2.0.0'
+    ext.kotlin_version = '1.7.20'
+    ext.ktor_version = '2.1.3'
 
-    ext.h2_version = '2.1.212'
-    ext.postgres_version = '42.3.3'
-    ext.exposed_version = '0.38.2'
+    ext.h2_version = '2.1.214'
+    ext.postgres_version = '42.5.0'
+    ext.exposed_version = '0.41.1'
     ext.hikari_version = '5.0.1'
-    ext.flyway_version = '8.5.9'
+    ext.flyway_version = '9.8.2'
 
     ext.flexmark_version = '0.64.0'
-    ext.handlebars_version = '4.3.0'
+    ext.handlebars_version = '4.3.1'
     ext.commons_email_version = '1.5'
     ext.bcrypt_version = '0.9.0'
-    ext.logback_version = '1.2.11'
+    ext.logback_version = '1.4.4'
     ext.konf_version = '1.1.2'
     ext.commonslang_version = '3.12.0'
     ext.skedule_version = '0.4.0'
 
-    ext.kotlinx_coroutines_test_version = '1.6.1'
-    ext.rest_assured_version = '5.0.1'
-    ext.junit_version = '5.8.2'
-    ext.assertj_version = '3.22.0'
-    ext.mockk_version = '1.12.3'
-    ext.wiremock_version = '2.32.0'
+    ext.kotlinx_coroutines_test_version = '1.6.4'
+    ext.rest_assured_version = '5.3.0'
+    ext.junit_version = '5.9.0'
+    ext.assertj_version = '3.23.1'
+    ext.mockk_version = '1.13.2'
+    ext.wiremock_version = '2.35.0'
 }
 
 plugins {
     id 'application'
-    id 'org.jetbrains.kotlin.jvm' version '1.6.20'
-    id 'org.jetbrains.kotlinx.kover' version '0.5.0'
+    id 'org.jetbrains.kotlin.jvm' version '1.7.20'
+    id 'org.jetbrains.kotlinx.kover' version '0.6.1'
 }
 
 version = "1.3.7"

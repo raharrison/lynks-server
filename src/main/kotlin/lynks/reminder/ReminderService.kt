@@ -10,6 +10,7 @@ import lynks.worker.CrudType
 import lynks.worker.ReminderWorkerRequest
 import lynks.worker.WorkerRegistry
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.time.ZoneId
 import java.time.ZonedDateTime

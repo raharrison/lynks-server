@@ -3,6 +3,7 @@ package lynks.group
 import lynks.common.IdBasedNewEntity
 import lynks.util.RandomUtils
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.statements.InsertStatement
 import org.jetbrains.exposed.sql.statements.UpdateBuilder
 import org.jetbrains.exposed.sql.transactions.transaction

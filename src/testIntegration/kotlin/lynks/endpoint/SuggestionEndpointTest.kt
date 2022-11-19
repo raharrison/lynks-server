@@ -126,7 +126,7 @@ class SuggestionEndpointTest: ServerTest() {
                 .extract().`as`(Suggestion::class.java)
 
         assertThat(suggestion.url).isEqualTo("https://www.youtube.com/watch?v=JGvk4M0Rfxo")
-        assertThat(suggestion.title).isEqualTo("Welcome to Kotlin by JetBrains!")
+        assertThat(suggestion.title).isEqualTo("Welcome to the Kotlin YouTube Channel!")
         assertThat(suggestion.preview).isNotNull()
         assertThat(suggestion.thumbnail).isNotNull()
         assertThat(suggestion.keywords).isEmpty()

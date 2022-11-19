@@ -6,6 +6,7 @@ import lynks.util.FileUtils
 import lynks.util.RandomUtils
 import lynks.util.loggerFor
 import lynks.util.toUrlString
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.select
