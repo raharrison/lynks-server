@@ -129,7 +129,7 @@ class SuggestionEndpointTest: ServerTest() {
         assertThat(suggestion.title).isEqualTo("Welcome to the Kotlin YouTube Channel!")
         assertThat(suggestion.preview).isNotNull()
         assertThat(suggestion.thumbnail).isNotNull()
-        assertThat(suggestion.keywords).isEmpty()
+        assertThat(suggestion.keywords).isNotEmpty()
 
         retrieveTempResource(suggestion.thumbnail)
     }
