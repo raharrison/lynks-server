@@ -60,7 +60,7 @@ class CommentServiceTest : DatabaseTest() {
     @Test
     fun testCreateCommentWithTempImage() {
         val plain = "something ![desc](${TEMP_URL}abc/one.png)"
-        val resource = Resource("rid", "eid", "one", "png", ResourceType.UPLOAD, 12, 123L, 123L)
+        val resource = Resource("rid", "pid", "eid", 1, "one", "png", ResourceType.UPLOAD, 12, 123L)
         every { resourceManager.constructTempBasePath(IMAGE_UPLOAD_BASE) } returns Path.of("migrated/")
         every { resourceManager.migrateGeneratedResources("e1", any()) } returns listOf(resource)
         val added = commentService.addComment("e1", newComment(content = plain))
@@ -211,7 +211,7 @@ class CommentServiceTest : DatabaseTest() {
     @Test
     fun testUpdateExistingCommentWithTempImage() {
         val added = commentService.addComment("e1", newComment(content = "comment content 1"))
-        val resource = Resource("rid", "e1", "one", "png", ResourceType.UPLOAD, 12, 123L, 123L)
+        val resource = Resource("rid", "pid", "e1", 1, "one", "png", ResourceType.UPLOAD, 12, 123L)
         every { resourceManager.constructTempBasePath(IMAGE_UPLOAD_BASE) } returns Path.of("migrated/")
         every { resourceManager.migrateGeneratedResources("e1", any()) } returns listOf(resource)
         val updated = commentService.updateComment("e1", newComment(added.id, "changed ![desc](${TEMP_URL}abc/one.png)"))

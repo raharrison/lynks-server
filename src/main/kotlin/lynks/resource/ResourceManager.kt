@@ -6,12 +6,10 @@ import lynks.util.FileUtils
 import lynks.util.RandomUtils
 import lynks.util.loggerFor
 import lynks.util.toUrlString
+import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.deleteWhere
-import org.jetbrains.exposed.sql.insert
-import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.jetbrains.exposed.sql.update
 import java.io.File
 import java.io.InputStream
 import java.nio.file.Files
@@ -19,18 +17,27 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import kotlin.io.path.exists
 
-private val log = loggerFor<ResourceManager>()
-
 class ResourceManager {
 
+    private val log = loggerFor<ResourceManager>()
+
     fun getResourcesFor(entryId: String): List<Resource> = transaction {
-        Resources.select { Resources.entryId eq entryId }
+        Resources.innerJoin(ResourceVersions, {id}, {resourceId})
+            .select { Resources.entryId eq entryId }
+            .orderBy(Resources.dateCreated)
+            .map { toResource(it) }
+    }
+
+    private fun getResourceVersions(parentId: String): List<Resource> = transaction {
+        Resources.innerJoin(ResourceVersions, {id}, {resourceId})
+            .select { Resources.id eq parentId }
             .orderBy(Resources.dateCreated)
             .map { toResource(it) }
     }
 
     fun getResource(id: String): Resource? = transaction {
-        Resources.select { Resources.id eq id }.map { toResource(it) }.singleOrNull()
+        ResourceVersions.innerJoin(Resources, { resourceId }, { Resources.id })
+            .select { ResourceVersions.id eq id }.map { toResource(it) }.singleOrNull()
     }
 
     fun getResourceAsFile(id: String): Pair<Resource, File>? {
@@ -79,6 +86,14 @@ class ResourceManager {
         }
     }
 
+    // get resource grouping id and current max version based on entry id and name
+    private fun currentVersion(entryId: String, name: String): Pair<String, Int> = transaction {
+        Resources.slice(Resources.id, Resources.currentVersion)
+            .select { (Resources.entryId eq entryId) and (Resources.fileName eq name) }
+            .map { Pair(it[Resources.id], it[Resources.currentVersion]) }
+            .singleOrNull() ?: Pair(RandomUtils.generateUid(), 0)
+    }
+
     fun saveGeneratedResource(
         id: String = RandomUtils.generateUid(),
         entryId: String,
@@ -87,17 +102,35 @@ class ResourceManager {
         type: ResourceType,
         size: Long
     ): Resource {
+        val currentVersion = currentVersion(entryId, name)
+        val nextVersion = currentVersion.second + 1
         val time = System.currentTimeMillis()
         return transaction {
-            Resources.insert {
-                it[Resources.id] = id
-                it[Resources.entryId] = entryId
-                it[fileName] = name
-                it[Resources.extension] = extension
-                it[Resources.type] = type
-                it[Resources.size] = size
+            if (nextVersion == 1) {
+                // create new resource
+                Resources.insert {
+                    it[Resources.id] = currentVersion.first
+                    it[Resources.entryId] = entryId
+                    it[Resources.currentVersion] = nextVersion
+                    it[fileName] = name
+                    it[Resources.extension] = extension
+                    it[Resources.type] = type
+                    it[dateCreated] = time
+                    it[dateUpdated] = time
+                }
+            } else {
+                // new version of existing resource
+                Resources.update({Resources.id eq currentVersion.first}) {
+                    it[Resources.currentVersion] = nextVersion
+                    it[dateUpdated] = time
+                }
+            }
+            ResourceVersions.insert {
+                it[ResourceVersions.id] = id
+                it[resourceId] = currentVersion.first
+                it[version] = nextVersion
+                it[ResourceVersions.size] = size
                 it[dateCreated] = time
-                it[dateUpdated] = time
             }
             getResource(id)!!
         }
@@ -175,16 +208,19 @@ class ResourceManager {
             val resourceName = resource.name
             val format = FileUtils.getExtension(resourceName)
             transaction {
-                Resources.update({ Resources.id eq id }) {
+                Resources.update({ Resources.id eq originalResource.parentId }) {
                     it[fileName] = resourceName
                     it[extension] = format
                     it[dateUpdated] = System.currentTimeMillis()
                 }
                 val updatedResource = getResource(id)!!
-                val oldPath = constructPath(updatedResource.entryId, id, originalResource.extension)
-                val newPath = constructPath(updatedResource.entryId, id, updatedResource.extension)
-                log.info("Moving resources after entry update from={} to={} entry={}", oldPath.toString(), newPath.toString(), updatedResource.entryId)
-                Files.move(oldPath, newPath)
+                // move all versions of the resource to update file extensions
+                getResourceVersions(updatedResource.parentId).forEach { res ->
+                    val oldPath = constructPath(updatedResource.entryId, res.id, originalResource.extension)
+                    val newPath = constructPath(updatedResource.entryId, res.id, updatedResource.extension)
+                    log.info("Moving resources after entry update from={} to={} entry={}", oldPath.toString(), newPath.toString(), updatedResource.entryId)
+                    Files.move(oldPath, newPath)
+                }
                 updatedResource
             }
         }
@@ -193,7 +229,21 @@ class ResourceManager {
     fun delete(id: String): Boolean = transaction {
         val res = getResource(id)
         res?.let {
-            Resources.deleteWhere { Resources.id eq id }
+            ResourceVersions.deleteWhere { ResourceVersions.id eq id }
+            // find current max version (if any) after deletion
+            val maxVersion = ResourceVersions.slice(ResourceVersions.version.max())
+                .select { ResourceVersions.resourceId eq res.parentId }
+                .firstOrNull()?.get(ResourceVersions.version.max())
+            if (maxVersion == null) {
+                // no versions left, remove the parent resource
+                Resources.deleteWhere { Resources.id eq res.parentId }
+            } else {
+                // update the parent resource version
+                Resources.update({ Resources.id eq res.parentId }) {
+                    it[currentVersion] = maxVersion
+                    it[dateUpdated] = System.currentTimeMillis()
+                }
+            }
             val path = constructPath(res.entryId, res.id, res.extension).toFile()
             log.info("Deleting entry resource at {} entry={}", path, res.entryId)
             if (path.exists())
@@ -204,6 +254,10 @@ class ResourceManager {
     }
 
     fun deleteAll(entryId: String): Boolean = transaction {
+        val resourceIds = Resources.slice(Resources.id)
+            .select { Resources.entryId eq entryId }
+            .map { it[Resources.id] }
+        ResourceVersions.deleteWhere { resourceId.inList(resourceIds) }
         Resources.deleteWhere { Resources.entryId eq entryId }
         val path = constructPath(entryId, "", "")
         log.info("Recursively deleting all entry resources at {} entry={}", path.toString(), entryId)

@@ -3,7 +3,7 @@ package lynks.common
 import lynks.db.json
 import lynks.group.Collection
 import lynks.group.Tag
-import lynks.resource.Resources
+import lynks.resource.ResourceVersions
 import org.jetbrains.exposed.sql.Column
 import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.Table
@@ -27,13 +27,13 @@ abstract class BaseEntries(name: String) : Table(name) {
 object Entries : BaseEntries("ENTRY") {
     override val version = integer("VERSION").default(1)
     // as override to avoid cyclic foreign key issues between entries and resources
-    override val thumbnailId = varchar("THUMBNAIL_ID", 14).references(Resources.id, ReferenceOption.SET_NULL).nullable()
+    override val thumbnailId = varchar("THUMBNAIL_ID", 14).references(ResourceVersions.id, ReferenceOption.SET_NULL).nullable()
     override val primaryKey = PrimaryKey(id)
 }
 
 object EntryVersions : BaseEntries("ENTRY_VERSION") {
     override val version = integer("VERSION").default(1)
-    override val thumbnailId = varchar("THUMBNAIL_ID", 14).references(Resources.id, ReferenceOption.SET_NULL).nullable()
+    override val thumbnailId = varchar("THUMBNAIL_ID", 14).references(ResourceVersions.id, ReferenceOption.SET_NULL).nullable()
     override val primaryKey = PrimaryKey(id, version)
 }
 

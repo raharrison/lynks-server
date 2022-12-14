@@ -92,7 +92,7 @@ fun Route.resource(resourceManager: ResourceManager) {
             if (res != null) {
                 call.response.header(HttpHeaders.ContentDisposition, "inline; filename=\"${res.first.name}\"")
                 call.response.header(HttpHeaders.Expires, cacheExpiresAge)
-                call.response.header(HttpHeaders.ETag, HashUtils.sha1Hash(res.first.dateUpdated.toString()))
+                call.response.header(HttpHeaders.ETag, HashUtils.sha1Hash(res.first.dateCreated.toString()))
                 call.respondFile(res.second)
             } else call.respond(HttpStatusCode.NotFound)
         }

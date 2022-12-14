@@ -129,7 +129,7 @@ class MarkdownProcessorTest {
         @Test
         fun testGroupsReplaced() {
             every { resourceManager.constructTempBasePath(IMAGE_UPLOAD_BASE) } returns Path.of("migrated/")
-            val resources = listOf(Resource("rid", "eid", "one", "png", ResourceType.UPLOAD, 12, 123L, 123L))
+            val resources = listOf(Resource("rid", "pid", "eid", 1, "one", "png", ResourceType.UPLOAD, 12, 123L))
             every { resourceManager.migrateGeneratedResources(eid, any()) } returns resources
             val (replaced, markdown, html) = markdownProcessor.convertAndProcess(fullInput, eid)
             assertThat(replaced).isOne()

@@ -12,6 +12,7 @@ import lynks.group.EntryGroups
 import lynks.group.Groups
 import lynks.notify.Notifications
 import lynks.reminder.Reminders
+import lynks.resource.ResourceVersions
 import lynks.resource.Resources
 import lynks.user.Users
 import lynks.util.loggerFor
@@ -32,7 +33,7 @@ class DatabaseFactory {
 
     private val tables = listOf(
         Entries, EntryVersions, EntryAudit, EntryRefs,
-        Comments, Resources, Reminders, Users,
+        Comments, Resources, ResourceVersions, Reminders, Users,
         Groups, EntryGroups, WorkerSchedules, Notifications
     )
 

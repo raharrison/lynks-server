@@ -64,7 +64,7 @@ class YoutubeDlTaskTest {
                 path = path
             )
         } returns
-            Resource("rid", "eid", name, "", ResourceType.UPLOAD, 1, 1, 1)
+            Resource("rid", "pid", "eid", 1, name, "", ResourceType.UPLOAD, 1, 1)
 
         every { resourceManager.migrateGeneratedResources("eid", any()) } returns emptyList()
         mockkObject(ExecUtils)

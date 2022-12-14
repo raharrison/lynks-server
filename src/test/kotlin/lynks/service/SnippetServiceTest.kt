@@ -61,7 +61,7 @@ class SnippetServiceTest : DatabaseTest() {
     @Test
     fun testCreateSnippetWithTempImage() {
         val plain = "something ![desc](${TEMP_URL}abc/one.png)"
-        val resource = Resource("rid", "eid", "one", "png", ResourceType.UPLOAD, 12, 123L, 123L)
+        val resource = Resource("rid", "pid", "eid", 1, "one", "png", ResourceType.UPLOAD, 12, 123L)
         every { resourceManager.constructTempBasePath(IMAGE_UPLOAD_BASE) } returns Path.of("migrated/")
         every { resourceManager.migrateGeneratedResources(any(), any()) } returns listOf(resource)
         val snippet = snippetService.add(newSnippet("n1", plain))
@@ -306,7 +306,7 @@ class SnippetServiceTest : DatabaseTest() {
     @Test
     fun testUpdateExistingSnippetWithTempImage() {
         val added = snippetService.add(newSnippet("n1", "snippet content 1"))
-        val resource = Resource("rid", added.id, "one", "png", ResourceType.UPLOAD, 12, 123L, 123L)
+        val resource = Resource("rid", "pid", added.id, 1, "one", "png", ResourceType.UPLOAD, 12, 123L)
         every { resourceManager.constructTempBasePath(IMAGE_UPLOAD_BASE) } returns Path.of("migrated/")
         every { resourceManager.migrateGeneratedResources(added.id, any()) } returns listOf(resource)
         val updated = snippetService.update(newSnippet(added.id, "something ![desc](${TEMP_URL}abc/one.png)"))

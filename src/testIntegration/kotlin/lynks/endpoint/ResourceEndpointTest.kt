@@ -196,9 +196,9 @@ class ResourceEndpointTest : ServerTest() {
             .statusCode(200)
             .extract().to<Resource>()
         assertThat(updatedResource.name).isEqualTo("updated.xml")
+        assertThat(updatedResource.version).isOne()
         assertThat(updatedResource.type).isEqualTo(ResourceType.UPLOAD)
         assertThat(updatedResource.size).isEqualTo(data.size.toLong())
-        assertThat(updatedResource.dateCreated).isNotEqualTo(updatedResource.dateUpdated)
         assertThat(updatedResource.extension).isEqualTo("xml")
         assertThat(updatedResource.entryId).isEqualTo(generated.entryId)
 
@@ -217,8 +217,8 @@ class ResourceEndpointTest : ServerTest() {
 
     @Test
     fun testUpdateInvalidResource() {
-        val invalid = Resource("invalid", "eid", "file1.txt", "txt", ResourceType.UPLOAD,
-            12L, 1234, 12345)
+        val invalid = Resource("invalid", "pid", "eid", 1, "file1.txt", "txt", ResourceType.UPLOAD,
+            12L, 1234L)
         given()
             .contentType(ContentType.JSON)
             .body(invalid)

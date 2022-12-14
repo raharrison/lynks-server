@@ -7,6 +7,7 @@ import lynks.group.Tag
 import lynks.notify.Notification
 import lynks.notify.Notifications
 import lynks.resource.Resource
+import lynks.resource.ResourceVersions
 import lynks.resource.Resources
 import lynks.user.ActivityLogItem
 import org.jetbrains.exposed.sql.ResultRow
@@ -136,14 +137,15 @@ object RowMapper {
 
     fun toResource(row: ResultRow): Resource {
         return Resource(
-            id = row[Resources.id],
+            id = row[ResourceVersions.id],
+            parentId = row[Resources.id],
             entryId = row[Resources.entryId],
+            version = row[ResourceVersions.version],
             name = row[Resources.fileName],
             extension = row[Resources.extension],
             type = row[Resources.type],
-            size = row[Resources.size],
-            dateCreated = row[Resources.dateCreated],
-            dateUpdated = row[Resources.dateUpdated]
+            size = row[ResourceVersions.size],
+            dateCreated = row[ResourceVersions.dateCreated]
         )
     }
 

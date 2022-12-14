@@ -84,7 +84,7 @@ class YoutubeSubtitleTaskTest {
                 any()
             )
         } returns
-            Resource("rid", link.id, subtitleFile.name, subtitleFile.extension, ResourceType.GENERATED, 1, 1, 1)
+            Resource("rid", "pid", link.id, 1, subtitleFile.name, subtitleFile.extension, ResourceType.GENERATED, 1, 1)
 
         mockkObject(ExecUtils)
 

@@ -9,24 +9,34 @@ import java.util.*
 object Resources : Table("RESOURCE") {
     val id = varchar("ID", 14)
     val entryId = (varchar("ENTRY_ID", 14).references(Entries.id, ReferenceOption.CASCADE)).index()
+    val currentVersion = integer("CURRENT_VERSION")
     val fileName = varchar("FILENAME", 255)
     val extension = varchar("EXTENSION", 4)
     val type = enumeration("TYPE", ResourceType::class)
-    val size = long("SIZE")
     val dateCreated = long("DATE_CREATED")
     val dateUpdated = long("DATE_UPDATED")
     override val primaryKey = PrimaryKey(id)
 }
 
+object ResourceVersions : Table("RESOURCE_VERSIONS") {
+    val id = varchar("ID", 14)
+    val resourceId = varchar("RESOURCE_ID", 14).references(Resources.id, ReferenceOption.CASCADE).index()
+    val version = integer("RESOURCE_VERSION")
+    val size = long("SIZE")
+    val dateCreated = long("DATE_CREATED")
+    override val primaryKey = PrimaryKey(id)
+}
+
 data class Resource(
     override val id: String,
+    val parentId: String,
     val entryId: String,
+    val version: Int,
     val name: String,
     val extension: String,
     val type: ResourceType,
     val size: Long,
-    val dateCreated: Long,
-    val dateUpdated: Long
+    val dateCreated: Long
 ) : IdBasedCreatedEntity
 
 enum class ResourceType {

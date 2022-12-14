@@ -62,7 +62,7 @@ class NoteServiceTest : DatabaseTest() {
     @Test
     fun testCreateNoteWithTempImage() {
         val plain = "something ![desc](${TEMP_URL}abc/one.png)"
-        val resource = Resource("rid", "eid", "one", "png", ResourceType.UPLOAD, 12, 123L, 123L)
+        val resource = Resource("rid", "pid", "eid", 1, "one", "png", ResourceType.UPLOAD, 12, 123L)
         every { resourceManager.constructTempBasePath(IMAGE_UPLOAD_BASE) } returns Path.of("migrated/")
         every { resourceManager.migrateGeneratedResources(any(), any()) } returns listOf(resource)
         val note = noteService.add(newNote("n1", plain))
@@ -313,7 +313,7 @@ class NoteServiceTest : DatabaseTest() {
     @Test
     fun testUpdateExistingNoteWithTempImage() {
         val added = noteService.add(newNote("n1", "note content 1"))
-        val resource = Resource("rid", added.id, "one", "png", ResourceType.UPLOAD, 12, 123L, 123L)
+        val resource = Resource("rid", "pid", added.id, 1, "one", "png", ResourceType.UPLOAD, 12, 123L)
         every { resourceManager.constructTempBasePath(IMAGE_UPLOAD_BASE) } returns Path.of("migrated/")
         every { resourceManager.migrateGeneratedResources(added.id, any()) } returns listOf(resource)
         val updated = noteService.update(newNote(added.id, "updated", "something ![desc](${TEMP_URL}abc/one.png)"))

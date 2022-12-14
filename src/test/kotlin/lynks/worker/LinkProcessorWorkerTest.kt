@@ -81,9 +81,9 @@ class LinkProcessorWorkerTest {
 
             coEvery { processor.scrapeResources(resourceSet) } returns generatedResources
             every { resourceManager.migrateGeneratedResources(link.id, any()) } returns listOf(
-                Resource("rid1", link.id, "screenshot", PNG, ResourceType.SCREENSHOT, 1189, 100, 100),
-                Resource("rid2", link.id, "thumbnail", JPG, ResourceType.THUMBNAIL, 456, 100, 100),
-                Resource("rid3", link.id, "preview", JPG, ResourceType.PREVIEW, 743, 100, 100)
+                Resource("rid1", "pid1", link.id, 1, "screenshot", PNG, ResourceType.SCREENSHOT, 1189, 100),
+                Resource("rid2", "pid2", link.id, 1, "thumbnail", JPG, ResourceType.THUMBNAIL, 456, 100),
+                Resource("rid3", "pid3", link.id, 1, "preview", JPG, ResourceType.PREVIEW, 743, 100)
             )
             coEvery { processor.enrich(link.props) } just Runs
             every { processor.close() } just Runs

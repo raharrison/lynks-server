@@ -50,7 +50,7 @@ class ResourceRetrievingTaskTest {
         val bytes = byteArrayOf(1,2,3,4,5,6)
         coEvery { retriever.getFileResult(url) } returns Result.Success(bytes)
         every { resourceManager.saveUploadedResource("eid", name, any()) } returns
-                Resource("rid", "eid", name, "", ResourceType.UPLOAD, 1, 1, 1)
+                Resource("rid", "pid", "eid", 1, name, "", ResourceType.UPLOAD, 1, 1)
 
         runBlocking {
             resourceRetrievingTask.process(context)
