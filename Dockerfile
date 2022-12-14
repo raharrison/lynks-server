@@ -1,4 +1,4 @@
-FROM gradle:7-jdk17 AS build
+FROM gradle:7-jdk19-jammy AS build
 
 USER gradle
 WORKDIR /app
@@ -8,7 +8,7 @@ COPY src/ ./src
 
 RUN gradle installDist --no-daemon
 
-FROM openjdk:17-slim-bullseye
+FROM eclipse-temurin:19-jre-jammy
 
 RUN apt-get update \
     && apt-get install -y python3 ffmpeg \
