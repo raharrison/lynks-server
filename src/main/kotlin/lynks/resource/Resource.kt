@@ -2,13 +2,14 @@ package lynks.resource
 
 import lynks.common.Entries
 import lynks.common.IdBasedCreatedEntity
+import lynks.common.UID_LENGTH
 import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.Table
 import java.util.*
 
 object Resources : Table("RESOURCE") {
-    val id = varchar("ID", 14)
-    val entryId = (varchar("ENTRY_ID", 14).references(Entries.id, ReferenceOption.CASCADE)).index()
+    val id = varchar("ID", UID_LENGTH)
+    val entryId = (varchar("ENTRY_ID", UID_LENGTH).references(Entries.id, ReferenceOption.CASCADE)).index()
     val currentVersion = integer("CURRENT_VERSION")
     val fileName = varchar("FILENAME", 255)
     val extension = varchar("EXTENSION", 4)
@@ -19,8 +20,8 @@ object Resources : Table("RESOURCE") {
 }
 
 object ResourceVersions : Table("RESOURCE_VERSIONS") {
-    val id = varchar("ID", 14)
-    val resourceId = varchar("RESOURCE_ID", 14).references(Resources.id, ReferenceOption.CASCADE).index()
+    val id = varchar("ID", UID_LENGTH)
+    val resourceId = varchar("RESOURCE_ID", UID_LENGTH).references(Resources.id, ReferenceOption.CASCADE).index()
     val version = integer("RESOURCE_VERSION")
     val size = long("SIZE")
     val dateCreated = long("DATE_CREATED")

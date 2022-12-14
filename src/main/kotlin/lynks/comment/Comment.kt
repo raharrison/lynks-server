@@ -3,12 +3,13 @@ package lynks.comment
 import lynks.common.Entries
 import lynks.common.IdBasedCreatedEntity
 import lynks.common.IdBasedNewEntity
+import lynks.common.UID_LENGTH
 import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.Table
 
 object Comments : Table("COMMENT") {
-    val id = varchar("ID", 14)
-    val entryId = (varchar("ENTRY_ID", 14).references(Entries.id, ReferenceOption.CASCADE)).index()
+    val id = varchar("ID", UID_LENGTH)
+    val entryId = (varchar("ENTRY_ID", UID_LENGTH).references(Entries.id, ReferenceOption.CASCADE)).index()
     val plainText = text("PLAIN_TEXT")
     val markdownText = text("MARKDOWN_TEXT")
     val dateCreated = long("DATE_CREATED").index()

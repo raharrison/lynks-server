@@ -1,5 +1,8 @@
 package lynks.common
 
+// varchar length of generated uids
+const val UID_LENGTH = 14
+
 // path the temporary files
 val TEMP_URL = "${Environment.server.rootPath}/temp/"
 

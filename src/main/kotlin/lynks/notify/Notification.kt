@@ -2,15 +2,16 @@ package lynks.notify
 
 import lynks.common.Entries
 import lynks.common.EntryType
+import lynks.common.UID_LENGTH
 import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.Table
 
 object Notifications : Table("NOTIFICATION") {
-    val notificationId = varchar("ID", 14)
+    val notificationId = varchar("ID", UID_LENGTH)
     val notificationType = enumeration("TYPE", NotificationType::class)
     val message = varchar("MESSAGE", 255)
     val read = bool("READ")
-    val entryId = varchar("ENTRY_ID", 14).references(Entries.id, ReferenceOption.CASCADE).nullable()
+    val entryId = varchar("ENTRY_ID", UID_LENGTH).references(Entries.id, ReferenceOption.CASCADE).nullable()
     val dateCreated = long("DATE_CREATED").index()
     override val primaryKey = PrimaryKey(notificationId)
 }

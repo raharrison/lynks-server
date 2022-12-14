@@ -4,6 +4,7 @@ import com.vladsch.flexmark.parser.InlineParser
 import com.vladsch.flexmark.parser.InlineParserExtension
 import com.vladsch.flexmark.parser.InlineParserExtensionFactory
 import com.vladsch.flexmark.parser.LightInlineParser
+import lynks.common.UID_LENGTH
 import java.util.regex.Pattern
 
 internal class EntryLinkInlineParserExtension : InlineParserExtension {
@@ -35,7 +36,7 @@ internal class EntryLinkInlineParserExtension : InlineParserExtension {
 
     companion object {
         private val ENTRY_LINK_PATTERN = Pattern.compile(
-            "^(@)([a-z\\d-_](?:[a-z\\d-_]|-(?=[a-z\\d-_])){0,14})(?![\\w-])",
+            "^(@)([a-z\\d-_](?:[a-z\\d-_]|-(?=[a-z\\d-_])){0,$UID_LENGTH})(?![\\w-])",
             Pattern.CASE_INSENSITIVE
         )
     }
