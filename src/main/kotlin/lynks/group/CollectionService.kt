@@ -1,10 +1,26 @@
 package lynks.group
 
+import lynks.common.exception.InvalidModelException
 import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.statements.InsertStatement
 import org.jetbrains.exposed.sql.statements.UpdateBuilder
 
 class CollectionService : GroupService<Collection, NewCollection>(GroupType.COLLECTION) {
+
+    override fun add(group: NewCollection): Collection {
+        if (group.name.contains("/")) {
+            if (group.parentId != null) {
+                throw InvalidModelException("New collection cannot contain slashes if parent is defined")
+            }
+            val parents = group.name.split("/").toMutableList()
+            val name = parents.removeLast()
+            val parentPath = parents.joinToString("/")
+            val parent = resolveParentFromPath(parentPath)
+                ?: throw InvalidModelException("Parent collection '${parentPath}' could not be found")
+            return super.add(group.copy(name = name, parentId = parent.id))
+        }
+        return super.add(group)
+    }
 
     override fun toInsert(eId: String, entity: NewCollection): Groups.(InsertStatement<*>) -> Unit = {
         val time = System.currentTimeMillis()

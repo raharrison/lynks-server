@@ -3,6 +3,7 @@ package lynks.service
 import io.mockk.mockk
 import lynks.common.DatabaseTest
 import lynks.common.NewNote
+import lynks.common.exception.InvalidModelException
 import lynks.entry.NoteService
 import lynks.group.CollectionService
 import lynks.group.GroupSetService
@@ -13,6 +14,7 @@ import lynks.util.markdown.MarkdownProcessor
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 
 class CollectionServiceTest : DatabaseTest() {
 
@@ -167,6 +169,28 @@ class CollectionServiceTest : DatabaseTest() {
         assertThat(retr).isNotNull
         assertThat(retr?.children).isEmpty()
         assertThat(retr?.dateCreated).isEqualTo(retr?.dateUpdated)
+    }
+
+    @Test
+    fun testCreateCollectionWithParentByPath() {
+        val created = collectionService.add(NewCollection(null, "col2/col3/col6/newCollection"))
+        assertThat(created.name).isEqualTo("newCollection")
+        assertThat(created.path).isEqualTo("col2/col3/col6/newCollection")
+        assertThat(created.children).isEmpty()
+
+        val parent = collectionService.get("c6")
+        assertThat(parent?.children).hasSize(1).extracting("id").containsExactly(created.id)
+        assertThat(collectionService.get(created.id)).isEqualTo(created)
+    }
+
+    @Test
+    fun testCreateCollectionWithMissingParentThrows() {
+        assertThrows<InvalidModelException> { collectionService.add(NewCollection(null, "c1/missing"))  }
+    }
+
+    @Test
+    fun testCreateCollectionWithPathAndParentThrows() {
+        assertThrows<InvalidModelException> { collectionService.add(NewCollection(null, "c1/c2", "c1"))  }
     }
 
     @Test

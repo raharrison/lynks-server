@@ -61,6 +61,8 @@ class GroupCollection<T: Grouping<T>> {
 
     fun groupsIn(ids: Collection<String>): List<T> = ids.mapNotNull { groupLookup[it] }
 
+    fun groupByPath(path: String): T? = groupLookup.values.find { path == it.path }
+
     fun add(group: T, parent: String?): T {
         groupLookup[group.id] = group
         parent?.also {

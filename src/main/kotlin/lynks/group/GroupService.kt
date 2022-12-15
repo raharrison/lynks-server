@@ -22,6 +22,8 @@ abstract class GroupService<T : Grouping<T>, in U : IdBasedNewEntity>(private va
         Groups.select { (Groups.parentId eq id) and (Groups.type eq groupType) }.map { toModel(it) }.toMutableSet()
     }
 
+    protected fun resolveParentFromPath(path: String): T? = collection.groupByPath(path)
+
     private fun queryGroup(id: String): T? = transaction {
         Groups.select { Groups.id eq id and (Groups.type eq groupType) }
                 .map { toModel(it) }.singleOrNull()
@@ -47,7 +49,7 @@ abstract class GroupService<T : Grouping<T>, in U : IdBasedNewEntity>(private va
 
     fun sequence() = collection.all().asSequence()
 
-    fun add(group: U): T = transaction {
+    open fun add(group: U): T = transaction {
         val newId = RandomUtils.generateUid()
         Groups.insert(toInsert(newId, group))
         val created =  queryGroup(newId)!!

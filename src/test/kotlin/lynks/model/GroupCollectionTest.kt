@@ -86,6 +86,16 @@ class GroupCollectionTest {
     }
 
     @Test
+    fun testGroupByPath() {
+        val g1 = collection.groupByPath("1")
+        assertThat(g1?.id).isEqualTo("g1")
+        val g6 = collection.groupByPath("2/3/6")
+        assertThat(g6?.id).isEqualTo("g6")
+        val notFound = collection.groupByPath("2/3/invalid")
+        assertThat(notFound).isNull()
+    }
+
+    @Test
     fun testAdd() {
         var add = createCollection("9")
         var added = collection.add(add, null)
