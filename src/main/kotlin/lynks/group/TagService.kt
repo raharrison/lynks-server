@@ -1,6 +1,5 @@
 package lynks.group
 
-import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.statements.InsertStatement
 import org.jetbrains.exposed.sql.statements.UpdateBuilder
 
@@ -20,13 +19,13 @@ class TagService : GroupService<Tag, NewTag>(GroupType.TAG) {
         it[dateUpdated] = System.currentTimeMillis()
     }
 
-    override fun toModel(row: ResultRow): Tag {
+    override fun toModel(row: GroupRow, children: MutableSet<Tag>): Tag {
         return Tag(
-            id = row[Groups.id],
-            name = row[Groups.name],
-            path = row[Groups.name],
-            dateCreated = row[Groups.dateCreated],
-            dateUpdated = row[Groups.dateUpdated]
+            id = row.id,
+            name = row.name,
+            path = row.name,
+            dateCreated = row.dateCreated,
+            dateUpdated = row.dateUpdated
         )
     }
 

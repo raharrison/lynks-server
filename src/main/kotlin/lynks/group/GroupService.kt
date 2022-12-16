@@ -18,21 +18,48 @@ abstract class GroupService<T : Grouping<T>, in U : IdBasedNewEntity>(private va
         GroupCollection<T>().apply { build(queryAllGroups()) }
     }
 
-    protected fun getGroupChildren(id: String): MutableSet<T> = transaction {
-        Groups.select { (Groups.parentId eq id) and (Groups.type eq groupType) }.map { toModel(it) }.toMutableSet()
-    }
+    protected data class GroupRow(
+        val id: String,
+        val name: String,
+        val parentId: String?,
+        val dateCreated: Long,
+        val dateUpdated: Long
+    )
 
     protected fun resolveParentFromPath(path: String): T? = collection.groupByPath(path)
 
+    private fun getGroupChildren(id: String): MutableSet<T> = transaction {
+        Groups.select { (Groups.parentId eq id) and (Groups.type eq groupType) }
+            .map { toModel(toGroupRow(it), getGroupChildren(it[Groups.id])) }.toMutableSet()
+    }
+
     private fun queryGroup(id: String): T? = transaction {
         Groups.select { Groups.id eq id and (Groups.type eq groupType) }
-                .map { toModel(it) }.singleOrNull()
+            .map { toModel(toGroupRow(it), getGroupChildren(it[Groups.id])) }.singleOrNull()
     }
 
     private fun queryAllGroups(): List<T> = transaction {
-        Groups.select { Groups.parentId.isNull() and (Groups.type eq groupType) }
-                .map { toModel(it) }
+        val groups = Groups.select { (Groups.type eq groupType) }
+            .map { toGroupRow(it) }
+        val groupsByParent = groups.groupBy { it.parentId }
+        groupsByParent[null]?.map { row ->
+            toModel(row, findGroupChildren(groupsByParent, row.id))
+        } ?: emptyList()
     }
+
+    private fun findGroupChildren(groupsByParent: Map<String?, List<GroupRow>>, parentId: String?): MutableSet<T> {
+        return groupsByParent[parentId]
+            ?.map { toModel(it, findGroupChildren(groupsByParent, it.id)) }
+            ?.toMutableSet() ?: mutableSetOf()
+    }
+
+    private fun toGroupRow(row: ResultRow) = GroupRow(
+        id = row[Groups.id],
+        name = row[Groups.name],
+        parentId = row[Groups.parentId],
+        dateCreated = row[Groups.dateCreated],
+        dateUpdated = row[Groups.dateUpdated]
+    )
 
     fun rebuild() {
         log.info("Rebuilding group tree for {}s", groupType.name.lowercase())
@@ -52,7 +79,7 @@ abstract class GroupService<T : Grouping<T>, in U : IdBasedNewEntity>(private va
     open fun add(group: U): T = transaction {
         val newId = RandomUtils.generateUid()
         Groups.insert(toInsert(newId, group))
-        val created =  queryGroup(newId)!!
+        val created = queryGroup(newId)!!
         collection.add(created, extractParentId(group))
     }
 
@@ -63,7 +90,7 @@ abstract class GroupService<T : Grouping<T>, in U : IdBasedNewEntity>(private va
         } else {
             transaction {
                 val updated = Groups.update({ Groups.id eq id }, body = toUpdate(group))
-                if(updated > 0) {
+                if (updated > 0) {
                     collection.update(queryGroup(id)!!, extractParentId(group))
                 } else {
                     log.info("No rows modified when updating group id={}", id)
@@ -80,7 +107,7 @@ abstract class GroupService<T : Grouping<T>, in U : IdBasedNewEntity>(private va
         Groups.deleteWhere { Groups.id eq id }.also { collection.delete(id) } > 0
     }
 
-    protected abstract fun toModel(row: ResultRow): T
+    protected abstract fun toModel(row: GroupRow, children: MutableSet<T>): T
 
     protected abstract fun toInsert(eId: String, entity: U): Groups.(InsertStatement<*>) -> Unit
 

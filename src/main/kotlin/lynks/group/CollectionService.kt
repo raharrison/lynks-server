@@ -1,7 +1,6 @@
 package lynks.group
 
 import lynks.common.exception.InvalidModelException
-import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.statements.InsertStatement
 import org.jetbrains.exposed.sql.statements.UpdateBuilder
 
@@ -38,14 +37,14 @@ class CollectionService : GroupService<Collection, NewCollection>(GroupType.COLL
         it[dateUpdated] = System.currentTimeMillis()
     }
 
-    override fun toModel(row: ResultRow): Collection {
+    override fun toModel(row: GroupRow, children: MutableSet<Collection>): Collection {
         return Collection(
-            id = row[Groups.id],
-            name = row[Groups.name],
-            path = null,
-            children = getGroupChildren(row[Groups.id]),
-            dateCreated = row[Groups.dateCreated],
-            dateUpdated = row[Groups.dateUpdated]
+            id = row.id,
+            name = row.name,
+            path = row.name,
+            children = children,
+            dateCreated = row.dateCreated,
+            dateUpdated = row.dateUpdated
         )
     }
 
