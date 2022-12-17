@@ -44,9 +44,7 @@ import lynks.suggest.suggest
 import lynks.task.TaskService
 import lynks.task.task
 import lynks.task.youtube.YoutubeDlRunner
-import lynks.user.UserService
-import lynks.user.userProtected
-import lynks.user.userUnprotected
+import lynks.user.*
 import lynks.util.JsonMapper.defaultMapper
 import lynks.util.RandomUtils
 import lynks.util.markdown.MarkdownProcessor
@@ -93,6 +91,7 @@ fun Application.module() {
         register(workerRegistry)
         register(WebResourceRetriever())
         register(UserService())
+        register(TwoFactorService())
         register(PushoverClient(get()))
         register(NotifyService(get(), get()))
         register(ResourceManager())
@@ -146,6 +145,7 @@ private fun Route.protectedRoutes(serviceProvider: ServiceProvider) {
         notify(get())
         reminder(get())
         userProtected(get())
+        twoFactor(get())
     }
 }
 

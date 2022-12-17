@@ -12,6 +12,7 @@ object Users : Table("USER_PROFILE") {
     val dateCreated = long("DATE_CREATED")
     val dateUpdated = long("DATE_UPDATED")
     val activated = bool("ACTIVATED").default(false)
+    val totp = varchar("TOTP", 16).nullable()
     override val primaryKey: PrimaryKey = PrimaryKey(username)
 }
 
@@ -23,6 +24,9 @@ data class UserUpdateRequest(
     val displayName: String? = null,
     val digest: Boolean = false
 )
+
+data class TwoFactorUpdateRequest(val enabled: Boolean)
+data class TwoFactorValidateRequest(val code: String)
 
 data class User(
     val username: String,
