@@ -26,7 +26,30 @@ abstract class GroupService<T : Grouping<T>, in U : IdBasedNewEntity>(private va
         val dateUpdated: Long
     )
 
-    protected fun resolveParentFromPath(path: String): T? = collection.groupByPath(path)
+    protected fun getOrCreateFromPath(pathElements: List<String>): T {
+        val existingGroup = bestMatchingGroup(pathElements)
+        val remainingPath = pathElements.joinToString("/")
+            .removePrefix(existingGroup?.path ?: "").trim('/')
+        return if (existingGroup != null && remainingPath.isEmpty()) {
+            existingGroup
+        } else {
+            add(toCreateModel(pathElements.joinToString("/")))
+        }
+    }
+
+    // find the best matching group from a given path (forming a parent-child hierarchy)
+    private fun bestMatchingGroup(path: List<String>): T? {
+        val elements = path.toMutableList()
+        for (i in 0 until elements.size) {
+            val searchPath = elements.joinToString("/")
+            val group = collection.groupByPath(searchPath)
+            if(group != null) {
+                return group
+            }
+            elements.removeLast()
+        }
+        return null
+    }
 
     private fun getGroupChildren(id: String): MutableSet<T> = transaction {
         Groups.select { (Groups.parentId eq id) and (Groups.type eq groupType) }
@@ -72,6 +95,8 @@ abstract class GroupService<T : Grouping<T>, in U : IdBasedNewEntity>(private va
 
     fun get(id: String): T? = collection.group(id)?.copy()
 
+    fun getFromPath(path: String): T? = collection.groupByPath(path)?.copy()
+
     fun subtree(id: String): List<T> = collection.subtree(id).map { it.copy() }
 
     fun sequence() = collection.all().asSequence()
@@ -108,6 +133,8 @@ abstract class GroupService<T : Grouping<T>, in U : IdBasedNewEntity>(private va
     }
 
     protected abstract fun toModel(row: GroupRow, children: MutableSet<T>): T
+
+    protected abstract fun toCreateModel(name: String): @UnsafeVariance U
 
     protected abstract fun toInsert(eId: String, entity: U): Groups.(InsertStatement<*>) -> Unit
 

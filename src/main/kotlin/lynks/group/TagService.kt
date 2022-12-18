@@ -29,6 +29,8 @@ class TagService : GroupService<Tag, NewTag>(GroupType.TAG) {
         )
     }
 
+    override fun toCreateModel(name: String): NewTag = NewTag(name = name)
+
     override fun extractParentId(entity: NewTag): String? = null
 
 }

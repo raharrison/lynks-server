@@ -13,9 +13,10 @@ class CollectionService : GroupService<Collection, NewCollection>(GroupType.COLL
             }
             val parents = group.name.split("/").toMutableList()
             val name = parents.removeLast()
-            val parentPath = parents.joinToString("/")
-            val parent = resolveParentFromPath(parentPath)
-                ?: throw InvalidModelException("Parent collection '${parentPath}' could not be found")
+            if (name.isEmpty() || parents.any { it.isEmpty() }) {
+                throw InvalidModelException("Invalid group format, expected: 'parent1/parent2/group1'")
+            }
+            val parent = getOrCreateFromPath(parents)
             return super.add(group.copy(name = name, parentId = parent.id))
         }
         return super.add(group)
@@ -47,6 +48,8 @@ class CollectionService : GroupService<Collection, NewCollection>(GroupType.COLL
             dateUpdated = row.dateUpdated
         )
     }
+
+    override fun toCreateModel(name: String): NewCollection = NewCollection(name = name)
 
     override fun extractParentId(entity: NewCollection): String? = entity.parentId
 

@@ -172,7 +172,7 @@ class CollectionServiceTest : DatabaseTest() {
     }
 
     @Test
-    fun testCreateCollectionWithParentByPath() {
+    fun testCreateCollectionWithExistingParentByPath() {
         val created = collectionService.add(NewCollection(null, "col2/col3/col6/newCollection"))
         assertThat(created.name).isEqualTo("newCollection")
         assertThat(created.path).isEqualTo("col2/col3/col6/newCollection")
@@ -184,13 +184,47 @@ class CollectionServiceTest : DatabaseTest() {
     }
 
     @Test
-    fun testCreateCollectionWithMissingParentThrows() {
-        assertThrows<InvalidModelException> { collectionService.add(NewCollection(null, "c1/missing"))  }
+    fun testCreateCollectionWithNewParentByPath() {
+        val created = collectionService.add(NewCollection(null, "col2/col3/col6/new7/newCollection"))
+        assertThat(created.name).isEqualTo("newCollection")
+        assertThat(created.path).isEqualTo("col2/col3/col6/new7/newCollection")
+        assertThat(created.children).isEmpty()
+
+        val parent = collectionService.getFromPath("col2/col3/col6/new7")
+        assertThat(parent?.children).hasSize(1).extracting("id").containsExactly(created.id)
+        val parent2 = collectionService.get("c6")
+        assertThat(parent2?.children).hasSize(1).extracting("id").containsExactly(parent?.id)
+
+        assertThat(collectionService.get(created.id)).isEqualTo(created)
+    }
+
+    @Test
+    fun testCreateCollectionWithMultipleNewParentsByPath() {
+        val created = collectionService.add(NewCollection(null, "new1/new2/new3/newCollection"))
+        assertThat(created.name).isEqualTo("newCollection")
+        assertThat(created.path).isEqualTo("new1/new2/new3/newCollection")
+        assertThat(created.children).isEmpty()
+
+        val parent = collectionService.getFromPath("new1/new2/new3")
+        assertThat(parent?.children).hasSize(1).extracting("id").containsExactly(created.id)
+        val parent2 = collectionService.getFromPath("new1/new2")
+        assertThat(parent2?.children).hasSize(1).extracting("id").containsExactly(parent?.id)
+        val parent3 = collectionService.getFromPath("new1")
+        assertThat(parent3?.children).hasSize(1).extracting("id").containsExactly(parent2?.id)
+
+        assertThat(collectionService.get(created.id)).isEqualTo(created)
     }
 
     @Test
     fun testCreateCollectionWithPathAndParentThrows() {
         assertThrows<InvalidModelException> { collectionService.add(NewCollection(null, "c1/c2", "c1"))  }
+    }
+
+    @Test
+    fun testCreateCollectionWithInvalidPath() {
+        assertThrows<InvalidModelException> { collectionService.add(NewCollection(null, "/new"))  }
+        assertThrows<InvalidModelException> { collectionService.add(NewCollection(null, "new/"))  }
+        assertThrows<InvalidModelException> { collectionService.add(NewCollection(null, "new1//new2"))  }
     }
 
     @Test
