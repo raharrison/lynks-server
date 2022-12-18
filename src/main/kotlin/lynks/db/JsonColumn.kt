@@ -29,6 +29,6 @@ private class Json<out T : Any>(private val klass: Class<T>, private val jsonMap
     }
 }
 
-infix fun<T: Any?> ExpressionWithColumnType<T>.like(pattern: String): Op<Boolean> = LikeOp(this, QueryParameter(pattern, columnType))
+infix fun<T: Any?> ExpressionWithColumnType<T>.like(pattern: String): Op<Boolean> = LikeEscapeOp(this, QueryParameter(pattern, columnType), true, null)
 
-infix fun<T: Any?> ExpressionWithColumnType<T>.notLike(pattern: String): Op<Boolean> = NotLikeOp(this, QueryParameter(pattern, columnType))
+infix fun<T: Any?> ExpressionWithColumnType<T>.notLike(pattern: String): Op<Boolean> = LikeEscapeOp(this, QueryParameter(pattern, columnType), false, null)
