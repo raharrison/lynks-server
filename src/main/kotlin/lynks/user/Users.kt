@@ -16,7 +16,8 @@ object Users : Table("USER_PROFILE") {
     override val primaryKey: PrimaryKey = PrimaryKey(username)
 }
 
-data class AuthRequest(val username: String, val password: String)
+data class AuthRequest(val username: String, val password: String, val totp: String? = null)
+enum class AuthResult { SUCCESS, TOTP_REQUIRED, INVALID_CREDENTIALS }
 data class ChangePasswordRequest(val username: String, val oldPassword: String, val newPassword: String)
 data class UserUpdateRequest(
     val username: String,

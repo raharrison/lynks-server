@@ -53,7 +53,7 @@ fun Route.twoFactor(twoFactorService: TwoFactorService) {
             }
             val request = call.receive<TwoFactorValidateRequest>()
             if (call.isCallAuthorizedForUser(username)) {
-                val valid = twoFactorService.validateTotp(username, request.code)
+                val valid = twoFactorService.validateTotp(username, request.code) == AuthResult.SUCCESS
                 call.respond(HttpStatusCode.OK, mapOf("valid" to valid))
             } else {
                 call.respond(UnauthorizedResponse())

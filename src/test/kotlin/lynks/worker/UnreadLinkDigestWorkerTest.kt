@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit
 @ExperimentalCoroutinesApi
 class UnreadLinkDigestWorkerTest: DatabaseTest() {
 
-    private val userService = UserService()
+    private val userService = UserService(mockk())
     private val linkService = mockk<LinkService>()
     private val notifyService = mockk<NotifyService>(relaxUnitFun = true)
 

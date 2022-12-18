@@ -1,5 +1,8 @@
 package lynks.user
 
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.verify
 import lynks.common.DatabaseTest
 import lynks.common.EntryType
 import lynks.common.exception.InvalidModelException
@@ -14,8 +17,9 @@ import org.junit.jupiter.api.assertThrows
 
 class UserServiceTest : DatabaseTest() {
 
-    private val userService = UserService()
+    private val twoFactorService = mockk<TwoFactorService>()
     private val entryAuditService = EntryAuditService()
+    private val userService = UserService(twoFactorService)
 
     @BeforeEach
     fun setup() {
@@ -84,47 +88,71 @@ class UserServiceTest : DatabaseTest() {
     @Test
     fun testCheckAuthSuccess() {
         val pass = "pass123"
+        every { twoFactorService.validateTotp("user2", "totp") } returns AuthResult.SUCCESS
         val username = userService.register(AuthRequest("user2", pass))
         userService.activateUser(username)
-        assertThat(userService.checkAuth(AuthRequest(username, pass))).isTrue()
+        assertThat(userService.checkAuth(AuthRequest(username, pass, "totp"))).isEqualTo(AuthResult.SUCCESS)
+        verify(exactly = 1) { twoFactorService.validateTotp(username, "totp") }
     }
 
     @Test
-    fun testCheckAuthFailure() {
+    fun testCheckAuthFailureUserNotActivated() {
+        val username = userService.register(AuthRequest("user2", "pass123"))
+        assertThat(userService.checkAuth(AuthRequest(username, "pass123"))).isEqualTo(AuthResult.INVALID_CREDENTIALS)
+        verify(exactly = 0) { twoFactorService.validateTotp(any(), any())  }
+    }
+
+    @Test
+    fun testCheckAuthFailureInvalidUserNameOrPassword() {
+        every { twoFactorService.validateTotp("user2", null) } returns AuthResult.SUCCESS
         val username = userService.register(AuthRequest("user2", "pass123"))
         userService.activateUser(username)
         // invalid username
-        assertThat(userService.checkAuth(AuthRequest("invalid", "pass123"))).isFalse()
+        assertThat(userService.checkAuth(AuthRequest("invalid", "pass123"))).isEqualTo(AuthResult.INVALID_CREDENTIALS)
         // invalid password
-        assertThat(userService.checkAuth(AuthRequest(username, "invalid"))).isFalse()
+        assertThat(userService.checkAuth(AuthRequest(username, "invalid"))).isEqualTo(AuthResult.INVALID_CREDENTIALS)
+        verify(exactly = 1) { twoFactorService.validateTotp("user2", null)  }
+    }
+
+    @Test
+    fun testCheckAuthFailureInvalidTotp() {
+        val pass = "pass123"
+        every { twoFactorService.validateTotp("user2", null) } returns AuthResult.TOTP_REQUIRED
+        val username = userService.register(AuthRequest("user2", pass))
+        userService.activateUser(username)
+        assertThat(userService.checkAuth(AuthRequest(username, pass))).isEqualTo(AuthResult.TOTP_REQUIRED)
+        verify(exactly = 1) { twoFactorService.validateTotp(username, null) }
     }
 
     @Test
     fun testActivateUser() {
         val pass = "pass123"
+        every { twoFactorService.validateTotp("user2", any()) } returns AuthResult.SUCCESS
         val username = userService.register(AuthRequest("user2", pass))
-        assertThat(userService.checkAuth(AuthRequest(username, pass))).isFalse()
+        assertThat(userService.checkAuth(AuthRequest(username, pass))).isEqualTo(AuthResult.INVALID_CREDENTIALS)
         userService.activateUser(username)
-        assertThat(userService.checkAuth(AuthRequest(username, pass))).isTrue()
+        assertThat(userService.checkAuth(AuthRequest(username, pass))).isEqualTo(AuthResult.SUCCESS)
     }
 
     @Test
     fun testChangePasswordSuccess() {
         val originalPass = "pass123"
         val newPass = "pass456"
+        every { twoFactorService.validateTotp("user2", any()) } returns AuthResult.SUCCESS
         val username = userService.register(AuthRequest("user2", originalPass))
         userService.activateUser(username)
-        assertThat(userService.checkAuth(AuthRequest(username, originalPass))).isTrue()
+        assertThat(userService.checkAuth(AuthRequest(username, originalPass))).isEqualTo(AuthResult.SUCCESS)
         val changed = userService.changePassword(ChangePasswordRequest(username, originalPass, newPass))
         assertThat(changed).isTrue()
-        assertThat(userService.checkAuth(AuthRequest(username, originalPass))).isFalse()
-        assertThat(userService.checkAuth(AuthRequest(username, newPass))).isTrue()
+        assertThat(userService.checkAuth(AuthRequest(username, originalPass))).isEqualTo(AuthResult.INVALID_CREDENTIALS)
+        assertThat(userService.checkAuth(AuthRequest(username, newPass))).isEqualTo(AuthResult.SUCCESS)
     }
 
     @Test
     fun testChangePasswordBadAuth() {
         val originalPass = "pass123"
         val newPass = "pass456"
+        every { twoFactorService.validateTotp(any(), any()) } returns AuthResult.SUCCESS
         val username = userService.register(AuthRequest("user2", originalPass))
         userService.activateUser(username)
         // invalid username

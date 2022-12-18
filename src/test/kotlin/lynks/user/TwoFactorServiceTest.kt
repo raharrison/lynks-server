@@ -19,12 +19,15 @@ class TwoFactorServiceTest : DatabaseTest() {
 
     @Test
     fun testValidateTotp() {
-        assertThat(twoFactorService.validateTotp("invalid", "code")).isFalse()
-        assertThat(twoFactorService.validateTotp("user1", "code")).isFalse()
+        assertThat(twoFactorService.validateTotp("invalid", "code")).isEqualTo(AuthResult.INVALID_CREDENTIALS)
+        assertThat(twoFactorService.validateTotp("user1", "code")).isEqualTo(AuthResult.INVALID_CREDENTIALS)
+        assertThat(twoFactorService.validateTotp("user1", null)).isEqualTo(AuthResult.SUCCESS)
         twoFactorService.updateTwoFactorEnabled("user1", true)
         val secret = twoFactorService.getTwoFactorSecret("user1") ?: fail("No secret defined")
         val code = GoogleAuthenticator(secret.toByteArray()).generate()
-        assertThat(twoFactorService.validateTotp("user1", code)).isTrue()
+        assertThat(twoFactorService.validateTotp("user1", code)).isEqualTo(AuthResult.SUCCESS)
+        assertThat(twoFactorService.validateTotp("user1", "invalid")).isEqualTo(AuthResult.INVALID_CREDENTIALS)
+        assertThat(twoFactorService.validateTotp("user1", null)).isEqualTo(AuthResult.TOTP_REQUIRED)
     }
 
     @Test

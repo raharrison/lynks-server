@@ -90,8 +90,8 @@ fun Application.module() {
     val serviceProvider = ServiceProvider().apply {
         register(workerRegistry)
         register(WebResourceRetriever())
-        register(UserService())
         register(TwoFactorService())
+        register(UserService(get()))
         register(PushoverClient(get()))
         register(NotifyService(get(), get()))
         register(ResourceManager())

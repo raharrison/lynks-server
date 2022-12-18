@@ -25,7 +25,7 @@ import org.junit.jupiter.api.Test
 class NotifyServiceTest: DatabaseTest() {
 
     private val pushoverClient = mockk<PushoverClient>()
-    private val notifyService = NotifyService(UserService(), pushoverClient)
+    private val notifyService = NotifyService(UserService(mockk()), pushoverClient)
 
     @BeforeEach
     fun setup() {

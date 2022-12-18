@@ -2,6 +2,7 @@ package lynks.user
 
 import dev.turingcomplete.kotlinonetimepassword.GoogleAuthenticator
 import lynks.util.loggerFor
+import org.apache.commons.lang3.StringUtils
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -11,11 +12,16 @@ class TwoFactorService {
 
     private val log = loggerFor<TwoFactorService>()
 
-    fun validateTotp(username: String, code: String): Boolean {
-        val secret = getTwoFactorSecret(username) ?: return false
+    fun validateTotp(username: String, code: String?): AuthResult {
+        val secret = getTwoFactorSecret(username)
+            ?: return if(StringUtils.isEmpty(code)) AuthResult.SUCCESS else AuthResult.INVALID_CREDENTIALS
+        if(StringUtils.isEmpty(code)) {
+            // 2fa required but no code provided
+            return AuthResult.TOTP_REQUIRED
+        }
         val gen = GoogleAuthenticator(secret.toByteArray())
         log.info("Validating totp code for user={}", username)
-        return gen.generate() == code
+        return if(gen.generate() == code) AuthResult.SUCCESS else AuthResult.INVALID_CREDENTIALS
     }
 
     fun getTwoFactorSecret(username: String): String? = transaction {

@@ -14,7 +14,7 @@ import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 import kotlin.math.max
 
-class UserService {
+class UserService(private val twoFactorService: TwoFactorService) {
 
     private val log = loggerFor<UserService>()
     private val userColumns = Users.columns - Users.password
@@ -67,7 +67,7 @@ class UserService {
     }
 
     fun changePassword(request: ChangePasswordRequest): Boolean = transaction {
-        if (checkAuth(AuthRequest(request.username, request.oldPassword))) {
+        if (checkAuth(AuthRequest(request.username, request.oldPassword), false) == AuthResult.SUCCESS) {
             return@transaction Users.update({ Users.username eq request.username and Users.activated }) {
                 it[password] = HashUtils.bcryptHash(request.newPassword)
                 it[dateUpdated] = System.currentTimeMillis()
@@ -77,12 +77,21 @@ class UserService {
         false
     }
 
-    fun checkAuth(request: AuthRequest): Boolean = transaction {
+    fun checkAuth(request: AuthRequest, twoFactor: Boolean = true): AuthResult = transaction {
         val storedPassword = Users.slice(Users.password)
             .select { Users.username eq request.username and Users.activated }
             .map { it[Users.password].toCharArray() }.singleOrNull()
-            ?: return@transaction false
-        HashUtils.verifyBcryptHash(request.password.toCharArray(), storedPassword)
+            ?: return@transaction AuthResult.INVALID_CREDENTIALS
+
+        val twoFactorCheck = if(twoFactor) twoFactorService.validateTotp(request.username, request.totp) else AuthResult.SUCCESS
+        if (twoFactorCheck == AuthResult.SUCCESS) {
+            if (HashUtils.verifyBcryptHash(request.password.toCharArray(), storedPassword))
+                AuthResult.SUCCESS
+            else
+                AuthResult.INVALID_CREDENTIALS
+        } else {
+            twoFactorCheck
+        }
     }
 
     fun getDigestEnabledEmails(): Set<String> = transaction {

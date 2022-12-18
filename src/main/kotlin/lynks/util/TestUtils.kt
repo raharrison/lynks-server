@@ -121,7 +121,7 @@ fun createDummyUser(username: String, email: String? = null, displayName: String
     val time = System.currentTimeMillis()
     Users.insert {
         it[this.username] = username
-        it[password] = "pass"
+        it[password] = "\$2a\$08\$/QeU1nEQ5FgD7nM.mjDadOBfyvL5LDlGYoOvc/EMEUzsfkc6/84Hy"
         it[this.email] = email
         it[this.displayName] = displayName
         it[this.digest] = digest

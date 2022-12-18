@@ -85,6 +85,37 @@ class UserEndpointTest : ServerTest() {
     }
 
     @Test
+    fun testLoginUser() {
+        given()
+            .contentType(ContentType.JSON)
+            .body(AuthRequest("user1", "pass"))
+            .When()
+            .post("/login")
+            .then()
+            .statusCode(200)
+            .body("result", Matchers.equalTo(AuthResult.SUCCESS.name.lowercase()))
+
+        given()
+            .contentType(ContentType.JSON)
+            .body(AuthRequest("user1", "invalid"))
+            .When()
+            .post("/login")
+            .then()
+            .statusCode(200)
+            .body("result", Matchers.equalTo(AuthResult.INVALID_CREDENTIALS.name.lowercase()))
+    }
+
+    @Test
+    fun testLogout() {
+        given()
+            .contentType(ContentType.JSON)
+            .When()
+            .post("/logout")
+            .then()
+            .statusCode(200)
+    }
+
+    @Test
     fun testChangePassword() {
         given()
             .contentType(ContentType.JSON)

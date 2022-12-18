@@ -98,14 +98,13 @@ fun Route.userUnprotected(userService: UserService) {
 
     post("/login") {
         val request = call.receive<AuthRequest>()
-        if (userService.checkAuth(request)) {
+        val result = userService.checkAuth(request, twoFactor = true)
+        if (result == AuthResult.SUCCESS) {
             if(Environment.auth.enabled) {
                 call.sessions.set(UserSession(request.username))
             }
-            call.respond(HttpStatusCode.OK)
-        } else {
-            call.respond(HttpStatusCode.Unauthorized)
         }
+        call.respond(HttpStatusCode.OK, mapOf("result" to result))
     }
 
     post("/logout") {
