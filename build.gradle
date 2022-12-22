@@ -6,7 +6,7 @@ buildscript {
     ext.postgres_version = '42.5.1'
     ext.exposed_version = '0.41.1'
     ext.hikari_version = '5.0.1'
-    ext.flyway_version = '9.8.2'
+    ext.flyway_version = '9.10.2'
 
     ext.flexmark_version = '0.64.0'
     ext.handlebars_version = '4.3.1'
