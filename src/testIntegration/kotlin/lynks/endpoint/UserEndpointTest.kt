@@ -101,7 +101,7 @@ class UserEndpointTest : ServerTest() {
             .When()
             .post("/login")
             .then()
-            .statusCode(200)
+            .statusCode(401)
             .body("result", Matchers.equalTo(AuthResult.INVALID_CREDENTIALS.name.lowercase()))
     }
 
