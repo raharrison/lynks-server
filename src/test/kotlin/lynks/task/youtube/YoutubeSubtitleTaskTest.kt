@@ -11,7 +11,6 @@ import lynks.resource.Resource
 import lynks.resource.ResourceManager
 import lynks.resource.ResourceType
 import lynks.resource.WebResourceRetriever
-import lynks.task.TaskContext
 import lynks.util.ExecUtils
 import lynks.util.FileUtils
 import lynks.util.Result
@@ -39,7 +38,7 @@ class YoutubeSubtitleTaskTest {
         it.resourceRetriever = resourceRetriever
         it.entryAuditService = entryAuditService
     }
-    private val context = youtubeSubtitleTask.createContext(emptyMap())
+    private val context = youtubeSubtitleTask.createContext(mapOf("searchable" to "true"))
     private val link = Link("eid", "title", "youtube.com/watch?v=1234", "src", "", 123L, 123L)
 
     @AfterEach
@@ -50,14 +49,20 @@ class YoutubeSubtitleTaskTest {
     @Test
     fun testContextConstruct() {
         val context = youtubeSubtitleTask.createContext(emptyMap())
-        assertThat(context).isOfAnyClassIn(TaskContext::class.java)
+        assertThat(context.searchable).isTrue()
+        val context2 = youtubeSubtitleTask.createContext(mapOf("searchable" to "true"))
+        assertThat(context2.searchable).isTrue()
+        val context3 = youtubeSubtitleTask.createContext(mapOf("searchable" to "false"))
+        assertThat(context3.searchable).isFalse()
+        val context4 = youtubeSubtitleTask.createContext(mapOf("searchable" to "invalid"))
+        assertThat(context4.searchable).isFalse()
     }
 
     @Test
     fun testBuilder() {
         val builder = YoutubeSubtitleTask.build()
         assertThat(builder.clazz).isEqualTo(YoutubeSubtitleTask::class)
-        assertThat(builder.params).isEmpty()
+        assertThat(builder.params).extracting("name").containsOnly("searchable")
     }
 
     @Test
