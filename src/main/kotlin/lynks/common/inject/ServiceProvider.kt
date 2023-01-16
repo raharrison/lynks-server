@@ -1,27 +1,23 @@
 package lynks.common.inject
 
-import kotlin.reflect.KClass
-import kotlin.reflect.full.isSubclassOf
-
 class ServiceProvider {
 
-    class ServiceEntry<T: Any>(val kClass: KClass<out T>, val value: T)
+    class ServiceEntry<T : Any>(val clazz: Class<out T>, val value: T)
 
     val services = mutableListOf<ServiceEntry<*>>()
 
-    inline fun <reified T: Any> register(t: T) {
-        val kClass = t::class
-        services.add(ServiceEntry(kClass, t))
+    inline fun <reified T : Any> register(t: T) {
+        services.add(ServiceEntry(t::class.java, t))
     }
 
     inline fun <reified T: Any> get() : T {
-        return get(T::class)!!
+        return get(T::class.java)!!
     }
 
     @Suppress("UNCHECKED_CAST")
-    fun <T: Any> get(kClass: KClass<T>): T? {
+    fun <T : Any> get(clazz: Class<T>): T? {
         return services.find {
-            it.kClass == kClass || it.kClass.isSubclassOf(kClass)
+            it.clazz == clazz || clazz.isAssignableFrom(it.clazz)
         }?.let {
             it.value as T?
         }

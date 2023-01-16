@@ -8,12 +8,6 @@ import lynks.common.inject.ServiceProvider
 import lynks.entry.EntryService
 import lynks.util.loggerFor
 import lynks.worker.WorkerRegistry
-import kotlin.reflect.KMutableProperty1
-import kotlin.reflect.full.findAnnotation
-import kotlin.reflect.full.isSubclassOf
-import kotlin.reflect.full.memberProperties
-import kotlin.reflect.full.primaryConstructor
-import kotlin.reflect.jvm.jvmErasure
 
 class TaskService(private val entryService: EntryService,
                   private val serviceProvider: ServiceProvider,
@@ -38,24 +32,40 @@ class TaskService(private val entryService: EntryService,
 
     @Suppress("UNCHECKED_CAST")
     private fun convertToConcreteTask(taskId: String, eid: String, def: TaskDefinition): Task<TaskContext> {
-        val clazz = Class.forName(def.className).kotlin
-        if (clazz.isSubclassOf(Task::class)) {
-            return (clazz.primaryConstructor?.call(taskId, eid) as Task<TaskContext>).also(::autowire)
+        val clazz = Class.forName(def.className)
+        if (Task::class.java.isAssignableFrom(clazz)) {
+            val instance = clazz.getConstructor(String::class.java, String::class.java).newInstance(taskId, eid) as Task<TaskContext>
+            return instance.also(::autowire)
         } else {
             throw IllegalArgumentException("Task must be a subclass of: " + Task::class.qualifiedName)
         }
     }
 
     private fun autowire(task: Task<TaskContext>) {
-        task::class.memberProperties.forEach {
-            if(it.findAnnotation<Inject>() != null) {
-                if(it is KMutableProperty1) {
-                    val service = serviceProvider.get(it.returnType.jvmErasure)
-                    if(service != null)
-                        it.setter.call(task, service)
+        val types = findInjectableTypes(task::class.java)
+        task::class.java.methods
+            .filter {
+                // filter to property setters with @Inject annotation
+                it.parameterCount == 1 && it.name.startsWith("set") && types.contains(it.parameterTypes[0])
+            }
+            .forEach {
+                // perform type injection
+                val service = serviceProvider.get(it.parameterTypes[0])
+                if(service != null) {
+                    it.invoke(task, service)
                 }
             }
-        }
+    }
+
+    // find all types where specified class declares a property of that type with the @Inject annotation
+    private fun findInjectableTypes(clazz: Class<*>): List<Class<*>> {
+        // find all getters with annotation and remove Kotlin generated suffix
+        val annotatedMethodNames = clazz.declaredMethods
+            .filter { it.isAnnotationPresent( Inject::class.java) }
+            .map { it.name.removeSuffix("\$annotations") }.toSet()
+        return clazz.declaredMethods
+            .filter { annotatedMethodNames.contains(it.name) }
+            .map { it.returnType }
     }
 
     private fun formTaskParams(task: TaskDefinition, params: Map<String, String>): Map<String, String> {
