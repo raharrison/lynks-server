@@ -578,6 +578,15 @@ class LinkServiceTest : DatabaseTest() {
         assertThat(linkService.checkExistingWithUrl("amazon.com")).isEmpty()
     }
 
+    @Test
+    fun testUpdateSearchableContent() {
+        val added = linkService.add(newLink("n1", "google.com"))
+        assertThat(added.content).isNull()
+        linkService.updateSearchableContent(added.id, "updated content")
+        val updated = linkService.get(added.id)
+        assertThat(updated?.content).isEqualTo("updated content")
+    }
+
     private fun newLink(
         title: String,
         url: String,

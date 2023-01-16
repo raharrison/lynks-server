@@ -68,7 +68,7 @@ class YoutubeSubtitleTaskTest {
     @Test
     fun testProcessDownloadYoutubeSubtitles() {
         every { linkService.get(link.id) } returns link
-        every { linkService.update(any<Link>()) } returns link
+        every { linkService.updateSearchableContent(link.id, any()) } returns 1
         coEvery { resourceRetriever.getFileResult(any()) } returns Result.Success(byteArrayOf(1, 2, 3))
 
         val subtitleFile = Path.of(this.javaClass.getResource("/subtitles.en.ttml").toURI())
@@ -99,8 +99,6 @@ class YoutubeSubtitleTaskTest {
             youtubeSubtitleTask.process(context)
         }
 
-        assertThat(link.content).isNotEmpty()
-
         coVerify(exactly = 1) { resourceRetriever.getFileResult(any()) }
 
         verify(exactly = 1) {
@@ -114,7 +112,7 @@ class YoutubeSubtitleTaskTest {
         unmockkObject(ExecUtils)
 
         verify(exactly = 1) { linkService.get(link.id) }
-        verify(exactly = 1) { linkService.update(any<Link>()) }
+        verify(exactly = 1) { linkService.updateSearchableContent(link.id, any()) }
         verify(exactly = 1) {
             resourceManager.saveGeneratedResource(
                 link.id,

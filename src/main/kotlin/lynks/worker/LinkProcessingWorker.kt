@@ -123,7 +123,7 @@ class LinkProcessorWorker(
         // find readable resource and assign link content for searching
         resourcesByType[READABLE_TEXT]?.let {
             val readableContent = Files.readString(Path.of(it.targetPath))
-            link.content = Normalize.removeStopwords(Normalize.normalize(readableContent))
+            linkService.updateSearchableContent(link.id, readableContent)
         }
 
         return savedResources

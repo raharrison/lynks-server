@@ -7,6 +7,7 @@ import lynks.group.GroupSet
 import lynks.group.GroupSetService
 import lynks.resource.ResourceManager
 import lynks.resource.ResourceType
+import lynks.util.Normalize
 import lynks.util.URLUtils
 import lynks.util.combine
 import lynks.worker.PersistLinkProcessingRequest
@@ -103,6 +104,12 @@ class LinkService(
     fun checkExistingWithUrl(url: String): List<SlimLink> = transaction {
         val fullUrl = URLUtils.ensureUrlProtocol(url)
         getBaseQuery().adjustSlice { slice(slimColumnSet) }.combine { Entries.plainContent eq fullUrl }.map { toSlimModel(it) }
+    }
+
+    fun updateSearchableContent(id: String, content: String?) = transaction {
+        val normalizedContent = content?.let { Normalize.removeStopwords(Normalize.normalize(it)) }
+        Entries.update({ getBaseQuery().combine { Entries.id eq id }.where!! })
+        { it[Entries.content] = normalizedContent }
     }
 
 }

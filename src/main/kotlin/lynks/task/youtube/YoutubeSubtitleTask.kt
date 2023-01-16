@@ -58,8 +58,7 @@ class YoutubeSubtitleTask(id: String, entryId: String) : Task<YoutubeSubtitleTas
                         if (context.searchable) {
                             log.info("Updating link content with subtitles entryId={}", link.id)
                             val content = subLines.joinToString(" ") { it.text.lowercase() }
-                            link.content = Normalize.removeStopwords(Normalize.normalize(content))
-                            linkService.update(link)
+                            linkService.updateSearchableContent(link.id, content)
                             log.info("Link content successfully updated entryId={}", link.id)
                         }
                         val resourceContent = JsonMapper.defaultMapper.writeValueAsBytes(subLines)

@@ -67,7 +67,6 @@ class LinkProcessorWorkerTest {
         fun testDefaultPersistAllTypes() = runTest {
             val link = Link("id1", "title", "google.com", "google.com", "", 100, 100)
             val resourceSet = ResourceType.linkBaseline()
-            val content = "article content"
             val generatedResources =listOf(
                 GeneratedResource(ResourceType.SCREENSHOT, "screenshotPath", PNG),
                 GeneratedResource(ResourceType.THUMBNAIL, "thumbPath", JPG),
@@ -76,7 +75,7 @@ class LinkProcessorWorkerTest {
                 GeneratedResource(ResourceType.PAGE, "screenshotPath", HTML),
                 GeneratedResource(ResourceType.READABLE_TEXT, readableTextContentPath.toString(), TEXT),
             )
-            FileUtils.writeToFile(readableTextContentPath, content.toByteArray())
+            FileUtils.writeToFile(readableTextContentPath, "article content".toByteArray())
             val processor = mockk<LinkProcessor>(relaxUnitFun = true)
 
             coEvery { processor.scrapeResources(resourceSet) } returns generatedResources
@@ -91,7 +90,7 @@ class LinkProcessorWorkerTest {
             coEvery { processorFactory.createProcessors(link.url) } returns listOf(processor)
             every { resourceManager.deleteTempFiles(link.url) } just Runs
             link.thumbnailId = "rid2"
-            every { linkService.update(link) } returns link
+            every { linkService.updateSearchableContent(link.id, any()) } returns 1
             every { linkService.mergeProps(eq("id1"), any()) } just Runs
 
             val channel = worker.apply { runner = this@runTest.coroutineContext }.worker()
@@ -102,9 +101,8 @@ class LinkProcessorWorkerTest {
             coVerify(exactly = 1) { processorFactory.createProcessors(link.url) }
             verify(exactly = 1) { processor.close() }
             verify(exactly = 1) { linkService.mergeProps(eq("id1"), any()) }
-            verify(exactly = 1) { linkService.update(link) }
+            verify(exactly = 1) { linkService.updateSearchableContent(link.id, any()) }
             coVerify(exactly = 1) { notifyService.create(any()) }
-            assertThat(link.content).isEqualTo("article content")
 
             coVerify(exactly = 1) { processor.scrapeResources(resourceSet) }
             verify(exactly = 1) { entryAuditService.acceptAuditEvent(link.id, any(), any()) }
