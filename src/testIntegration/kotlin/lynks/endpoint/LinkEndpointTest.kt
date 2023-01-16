@@ -477,4 +477,29 @@ class LinkEndpointTest: ServerTest() {
             .statusCode(400)
     }
 
+    @Test
+    fun testUpdateLinkContent() {
+        given()
+            .body("updated content")
+            .When()
+            .post("/link/{id}/content", "e1")
+            .then()
+            .statusCode(200)
+        val retrieved = get("/link/{id}", "e1")
+            .then()
+            .statusCode(200)
+            .extract().to<Link>()
+        assertThat(retrieved.content).isEqualTo("updated content")
+    }
+
+    @Test
+    fun testUpdateLinkContentNotFound() {
+        given()
+            .body("updated content")
+            .When()
+            .post("/link/{id}/content", "invalid")
+            .then()
+            .statusCode(404)
+    }
+
 }
