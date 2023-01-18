@@ -1,7 +1,7 @@
 package lynks.common.page
 
 enum class SortDirection {
-    ASC, DESC;
+    ASC, DESC, RAND;
 }
 
 data class PageRequest(

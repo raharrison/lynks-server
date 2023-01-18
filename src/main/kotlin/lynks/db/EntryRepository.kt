@@ -97,11 +97,15 @@ abstract class EntryRepository<T : Entry, S : SlimEntry, U : NewEntry>(
             baseQuery = baseQuery.combine { predicate }
         }
 
-        val sortColumn = Entries.findColumn(pageRequest.sort) ?: Entries.dateUpdated
-        val sortOrder = pageRequest.direction ?: SortDirection.DESC
+        baseQuery = if (pageRequest.direction == SortDirection.RAND) {
+            baseQuery.orderBy(Random())
+        } else {
+            val sortColumn = Entries.findColumn(pageRequest.sort) ?: Entries.dateUpdated
+            val sortOrder = pageRequest.direction ?: SortDirection.DESC
+            baseQuery.orderBy(sortColumn, sortOrder)
+        }
 
         return Pair(baseQuery.copy().apply {
-            orderBy(sortColumn, sortOrder)
             limit(pageRequest.size, max(0, (pageRequest.page - 1) * pageRequest.size))
         }, baseQuery)
     }

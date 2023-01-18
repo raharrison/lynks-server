@@ -125,6 +125,14 @@ class EntryServiceTest: DatabaseTest() {
     }
 
     @Test
+    fun testRandomOrdering() {
+        val retrieved = entryService.get(PageRequest(1, 5, sort = null, direction = SortDirection.RAND))
+        assertThat(retrieved.content).hasSize(5)
+        assertThat(retrieved.page).isEqualTo(1L)
+        assertThat(retrieved.total).isEqualTo(5)
+    }
+
+    @Test
     fun testSearchSortOrdering() {
         val retrieved = entryService.get(PageRequest(0, 10, sort = "dateCreated", direction = SortDirection.ASC))
         assertThat(retrieved.content).extracting("id").containsExactly("id1", "id2", "id3", "id4", "id5")
