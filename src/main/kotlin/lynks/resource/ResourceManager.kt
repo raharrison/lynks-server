@@ -186,8 +186,7 @@ class ResourceManager {
     }
 
     private fun constructTempBasePath(name: String, type: ResourceType, extension: String): Path {
-        val date = System.currentTimeMillis()
-        return Paths.get(Environment.resource.resourceTempPath, FileUtils.createTempFileName(name), "${type.toString().lowercase()}-$date.$extension")
+        return Paths.get(Environment.resource.resourceTempPath, FileUtils.createTempFileName(name), "${type.toString().lowercase()}.$extension")
     }
 
     private fun constructTempBasePath(name: String, extension: String): Path {
