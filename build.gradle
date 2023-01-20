@@ -1,5 +1,4 @@
 buildscript {
-    ext.kotlin_version = '1.8.0'
     ext.ktor_version = '2.2.2'
 
     ext.h2_version = '2.1.214'
@@ -84,9 +83,17 @@ application {
     mainClass = "lynks.MainKt"
 }
 
-dependencies {
-    implementation "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
+compileKotlin {
+    kotlinOptions.useK2 = true
+}
+compileTestKotlin {
+    kotlinOptions.useK2 = true
+}
+compileTestIntegrationKotlin {
+    kotlinOptions.useK2 = true
+}
 
+dependencies {
     implementation "io.ktor:ktor-server-core:$ktor_version"
     implementation "io.ktor:ktor-server-netty:$ktor_version"
     implementation "io.ktor:ktor-server-status-pages:$ktor_version"
