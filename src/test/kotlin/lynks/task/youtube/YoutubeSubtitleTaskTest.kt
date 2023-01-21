@@ -68,7 +68,7 @@ class YoutubeSubtitleTaskTest {
     @Test
     fun testProcessDownloadYoutubeSubtitles() {
         every { linkService.get(link.id) } returns link
-        every { linkService.updateSearchableContent(link.id, any()) } returns 1
+        every { linkService.updateSearchableContent(link.id, any()) } returns "updated content"
         coEvery { resourceRetriever.getFileResult(any()) } returns Result.Success(byteArrayOf(1, 2, 3))
 
         val subtitleFile = Path.of(this.javaClass.getResource("/subtitles.en.ttml").toURI())

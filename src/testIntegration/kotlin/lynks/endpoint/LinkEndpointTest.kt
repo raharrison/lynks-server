@@ -479,17 +479,19 @@ class LinkEndpointTest: ServerTest() {
 
     @Test
     fun testUpdateLinkContent() {
-        given()
+        val responseContent = given()
             .body("updated content")
             .When()
             .post("/link/{id}/content", "e1")
             .then()
             .statusCode(200)
-        val retrieved = get("/link/{id}", "e1")
+            .extract().path<String>("content")
+        val retrievedContent = get("/link/{id}", "e1")
             .then()
             .statusCode(200)
             .extract().to<Link>()
-        assertThat(retrieved.content).isEqualTo("updated content")
+        assertThat(responseContent).isEqualTo(retrievedContent.content)
+        assertThat(retrievedContent.content).isEqualTo("updated content")
     }
 
     @Test

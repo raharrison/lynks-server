@@ -90,7 +90,8 @@ class LinkProcessorWorkerTest {
             coEvery { processorFactory.createProcessors(link.url) } returns listOf(processor)
             every { resourceManager.deleteTempFiles(link.url) } just Runs
             link.thumbnailId = "rid2"
-            every { linkService.updateSearchableContent(link.id, any()) } returns 1
+            link.content = "updated content"
+            every { linkService.updateSearchableContent(link.id, any()) } returns "updated content"
             every { linkService.mergeProps(eq("id1"), any()) } just Runs
 
             val channel = worker.apply { runner = this@runTest.coroutineContext }.worker()

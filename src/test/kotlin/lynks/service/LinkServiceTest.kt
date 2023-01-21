@@ -582,9 +582,17 @@ class LinkServiceTest : DatabaseTest() {
     fun testUpdateSearchableContent() {
         val added = linkService.add(newLink("n1", "google.com"))
         assertThat(added.content).isNull()
-        linkService.updateSearchableContent(added.id, "updated content")
+        val updatedContent = "updated content"
+        val result = linkService.updateSearchableContent(added.id, updatedContent)
+        assertThat(result).isEqualTo(updatedContent)
         val updated = linkService.get(added.id)
-        assertThat(updated?.content).isEqualTo("updated content")
+        assertThat(updated?.content).isEqualTo(updatedContent)
+    }
+
+    @Test
+    fun testUpdateSearchableContentNotFound() {
+        val result = linkService.updateSearchableContent("invalid", "updated content")
+        assertThat(result).isNull()
     }
 
     private fun newLink(

@@ -74,9 +74,9 @@ fun Route.link(linkService: LinkService) {
         post("/{id}/content") {
             val id = call.parameters["id"]!!
             val content = call.receive<String>()
-            val updated = linkService.updateSearchableContent(id, content)
-            if (updated == 0) call.respond(HttpStatusCode.NotFound)
-            else call.respond(updated)
+            val updatedContent = linkService.updateSearchableContent(id, content)
+            if (updatedContent == null) call.respond(HttpStatusCode.NotFound)
+            else call.respond(mapOf("content" to updatedContent))
         }
 
         get("/{id}/launch") {

@@ -106,10 +106,11 @@ class LinkService(
         getBaseQuery().adjustSlice { slice(slimColumnSet) }.combine { Entries.plainContent eq fullUrl }.map { toSlimModel(it) }
     }
 
-    fun updateSearchableContent(id: String, content: String?) = transaction {
+    fun updateSearchableContent(id: String, content: String?): String? = transaction {
         val normalizedContent = content?.let { Normalize.removeStopwords(Normalize.normalize(it)) }
-        Entries.update({ getBaseQuery().combine { Entries.id eq id }.where!! })
+        val updated = Entries.update({ getBaseQuery().combine { Entries.id eq id }.where!! })
         { it[Entries.content] = normalizedContent }
+        if(updated > 0) normalizedContent else null
     }
 
 }
