@@ -20,7 +20,7 @@ buildscript {
     ext.kotlinx_coroutines_test_version = '1.6.4'
     ext.rest_assured_version = '5.3.0'
     ext.junit_version = '5.9.1'
-    ext.assertj_version = '3.24.1'
+    ext.assertj_version = '3.24.2'
     ext.mockk_version = '1.13.3'
     ext.wiremock_version = '2.35.0'
 }
