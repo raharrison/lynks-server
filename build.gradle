@@ -1,5 +1,5 @@
 buildscript {
-    ext.ktor_version = '2.2.2'
+    ext.ktor_version = '2.2.3'
 
     ext.h2_version = '2.1.214'
     ext.postgres_version = '42.5.1'
