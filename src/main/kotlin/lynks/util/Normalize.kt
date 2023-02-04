@@ -19,26 +19,40 @@ object Normalize {
         "&gt;" to ">"
     )
 
+    private val stopwords : Set<String> by lazy {
+        javaClass.getResource("/stopwords/stopwords.txt")
+            .readText().lines().toSet()
+    }
+
     private fun normalizeEntities(str: String): String {
         return StringUtils.replaceEach(str, entities.keys.toTypedArray(), entities.values.toTypedArray())
     }
 
-    private fun normalizeSpaces(str: String): String {
+    // replace entities and remove all stopwords
+    fun normalize(str: String): String {
         if (StringUtils.isBlank(str)) {
             return ""
         }
-        return str.split("\\s+".toRegex()).joinToString(" ")
+        val replaced = normalizeEntities(str).replace("\\p{Punct}".toRegex(), "")
+        return replaced.lowercase().splitToSequence("\\s+".toRegex())
+            .filterNot { StringUtils.isWhitespace(it) }
+            .filterNot { stopwords.contains(it) }
+            .joinToString(" ")
     }
 
-    fun normalize(str: String): String {
-        return normalizeEntities(normalizeSpaces(str)).trim()
-    }
-
-    fun removeStopwords(str: String): String {
-        val stopwords = javaClass.getResource("/stopwords/stopwords.txt").readText().lines().toSet()
-        val words = str.lowercase().split(" ").toMutableList()
-        words.removeAll(stopwords)
-        return words.joinToString(" ")
+    fun mostCommonWords(str: String, n: Int): String {
+        val words = str.split("\\s+".toRegex())
+        val mostCommon = words
+            .groupingBy { it }
+            .eachCount()
+            .toList()
+            .sortedByDescending { it.second }
+            .take(n)
+            .map { it.first }
+            .toSet()
+        return words
+            .filter { mostCommon.contains(it) }
+            .joinToString(" ")
     }
 
     fun convertToDbColumnName(str: String?): String? {

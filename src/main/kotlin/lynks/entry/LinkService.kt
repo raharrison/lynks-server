@@ -107,7 +107,7 @@ class LinkService(
     }
 
     fun updateSearchableContent(id: String, content: String?): String? = transaction {
-        val normalizedContent = content?.let { Normalize.removeStopwords(Normalize.normalize(it)) }
+        val normalizedContent = content?.let { Normalize.mostCommonWords(Normalize.normalize(it), 500) }
         val updated = Entries.update({ getBaseQuery().combine { Entries.id eq id }.where!! })
         { it[Entries.content] = normalizedContent }
         if(updated > 0) normalizedContent else null
