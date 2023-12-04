@@ -20,9 +20,7 @@ import java.time.temporal.TemporalAdjusters
 
 fun Route.resource(resourceManager: ResourceManager) {
 
-    static("temp") {
-        files(Environment.resource.resourceTempPath)
-    }
+    staticFiles("temp", File(Environment.resource.resourceTempPath))
 
     fun deriveMimeType(filename: String): String {
         val contentType = ContentType.defaultForFilePath(filename)
