@@ -22,21 +22,6 @@ class YoutubeLinkProcessor(
     LinkProcessor(url, webResourceRetriever, resourceManager) {
 
     private val log = loggerFor<YoutubeLinkProcessor>()
-
-    private val apiKey = "AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8"
-    private val playerRequest = """
-        {
-                "context": {
-                    "client": {
-                        "clientName": "ANDROID",
-                        "clientVersion": "16.20"
-                    }
-                },
-                "api_key": "%s",
-                "videoId": "%s"
-        }
-    """.trimIndent()
-
     private lateinit var videoId: String
 
     private val videoInfo = lazy {
@@ -57,10 +42,7 @@ class YoutubeLinkProcessor(
 
     private fun parseVideoInfo(raw: String): JsonNode? {
         val responseJson = JsonMapper.defaultMapper.readTree(raw)
-        if (responseJson.has("videoDetails")) {
-            return responseJson["videoDetails"]
-        }
-        return null
+        return if(responseJson.has("title")) responseJson else null
     }
 
     private fun extractKeywords(): Set<String> {
@@ -109,9 +91,8 @@ class YoutubeLinkProcessor(
 
     private suspend fun downloadVideoInfo(): String? {
         log.info("Retrieving video info for Youtube video id={}", videoId)
-        val url = "https://youtubei.googleapis.com/youtubei/v1/player?key=$apiKey"
-        val requestBody = playerRequest.format(apiKey, videoId)
-        return when(val response = webResourceRetriever.postStringResult(url, requestBody)) {
+        val url = "https://yt.artemislena.eu/api/v1/videos/$videoId?fields=title%2Cdescription%2Ckeywords%2Cauthor%2CauthorId"
+        return when(val response = webResourceRetriever.getStringResult(url)) {
             is Result.Success -> response.value
             is Result.Failure -> null
         }

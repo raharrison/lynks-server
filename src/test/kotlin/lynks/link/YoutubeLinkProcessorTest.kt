@@ -33,19 +33,20 @@ class YoutubeLinkProcessorTest {
     @Test
     fun testSuggest() = runBlocking {
         val vidInfo = this.javaClass.getResource("/get_video_info.txt").readText()
-        coEvery { retriever.postStringResult(any(), any()) } returns Result.Success(vidInfo)
+        coEvery { retriever.getStringResult(any()) } returns Result.Success(vidInfo)
         val suggestResponse = processor.suggest(EnumSet.noneOf(ResourceType::class.java))
         assertThat(suggestResponse.details.url).isEqualTo(url)
         assertThat(suggestResponse.details.keywords).hasSizeGreaterThan(5)
         assertThat(suggestResponse.details.title).isEqualTo("When Your Phone is at 1%")
-        coVerify(exactly = 1) { retriever.postStringResult(any(), any()) }
+        coVerify(exactly = 1) { retriever.getStringResult(any()) }
     }
 
     @Test
     fun testGetTitleBadInfo() = runBlocking {
-        coEvery { retriever.postStringResult(any(), any()) } returns Result.Failure(ExecutionException("error"))
+        coEvery { retriever.getStringResult(any()) } returns Result.Failure(ExecutionException("error"))
         val suggestResponse = processor.suggest(EnumSet.noneOf(ResourceType::class.java))
         assertThat(suggestResponse.details.title).isEmpty()
+        coVerify(exactly = 1) { retriever.getStringResult(any()) }
     }
 
     @Test
