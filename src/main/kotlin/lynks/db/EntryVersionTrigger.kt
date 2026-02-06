@@ -3,9 +3,10 @@ package lynks.db
 import lynks.common.EntryVersions
 import org.h2.jdbc.JdbcClob
 import org.h2.tools.TriggerAdapter
-import org.jetbrains.exposed.sql.Column
-import org.jetbrains.exposed.sql.insert
-import org.jetbrains.exposed.sql.statements.InsertStatement
+import org.jetbrains.exposed.v1.core.Column
+import org.jetbrains.exposed.v1.core.EnumerationNameColumnType
+import org.jetbrains.exposed.v1.jdbc.insert
+import org.jetbrains.exposed.v1.json.JsonColumnType
 import java.io.Reader
 import java.sql.Connection
 import java.sql.ResultSet
@@ -25,18 +26,23 @@ class EntryVersionTrigger : TriggerAdapter() {
                 return
         }
 
-        val insert: EntryVersions.(InsertStatement<Number>) -> Unit = {
-            val statement = it
-            this.columns.forEach { column ->
-                val raw = newRow.getObject(column.name)
-                statement[column as Column<Any?>] = when (raw) {
-                    is Reader -> raw.readText()
-                    is JdbcClob -> raw.characterStream.readText()
-                    else -> raw
+        EntryVersions.insert {
+            EntryVersions.columns.forEach { column ->
+                newRow.getObject(column.name)?.let { raw ->
+                    val value = when {
+                        column.columnType is EnumerationNameColumnType<*> ||
+                            column.columnType is JsonColumnType<*> ->
+                            column.columnType.valueFromDB(raw)
+
+                        raw is Reader -> raw.readText()
+                        raw is JdbcClob -> raw.characterStream.readText()
+                        else -> raw
+                    }
+                    it[column as Column<Any?>] = value
                 }
             }
         }
-        EntryVersions.insert(insert)
+
     }
 
 }

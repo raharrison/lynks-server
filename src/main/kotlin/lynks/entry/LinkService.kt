@@ -2,7 +2,6 @@ package lynks.entry
 
 import lynks.common.*
 import lynks.db.EntryRepository
-import lynks.db.like
 import lynks.group.GroupSet
 import lynks.group.GroupSetService
 import lynks.resource.ResourceManager
@@ -12,10 +11,14 @@ import lynks.util.URLUtils
 import lynks.util.combine
 import lynks.worker.PersistLinkProcessingRequest
 import lynks.worker.WorkerRegistry
-import org.jetbrains.exposed.sql.*
-import org.jetbrains.exposed.sql.statements.InsertStatement
-import org.jetbrains.exposed.sql.statements.UpdateBuilder
-import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.v1.core.*
+import org.jetbrains.exposed.v1.core.statements.InsertStatement
+import org.jetbrains.exposed.v1.core.statements.UpdateBuilder
+import org.jetbrains.exposed.v1.jdbc.Query
+import org.jetbrains.exposed.v1.jdbc.select
+import org.jetbrains.exposed.v1.jdbc.selectAll
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.jetbrains.exposed.v1.jdbc.update
 
 class LinkService(
     groupSetService: GroupSetService, entryAuditService: EntryAuditService,
@@ -23,7 +26,7 @@ class LinkService(
 ) : EntryRepository<Link, SlimLink, NewLink>(groupSetService, entryAuditService, resourceManager) {
 
     override fun getBaseQuery(base: ColumnSet, where: BaseEntries): Query {
-        return base.select { where.type eq EntryType.LINK }
+        return base.selectAll().where { where.type eq EntryType.LINK }
     }
 
     override val slimColumnSet: List<Column<*>> = listOf(
@@ -98,12 +101,12 @@ class LinkService(
     }
 
     fun getDead(): List<Link> = transaction {
-        getBaseQuery().combine { Entries.props like "%\"$DEAD_LINK_PROP\":true%" }.map { toModel(it) }
+        getBaseQuery().combine { Entries.props.castTo(TextColumnType()).like("%\"$DEAD_LINK_PROP\":true%") }.map { toModel(it) }
     }
 
     fun checkExistingWithUrl(url: String): List<SlimLink> = transaction {
         val fullUrl = URLUtils.ensureUrlProtocol(url)
-        getBaseQuery().adjustSlice { slice(slimColumnSet) }.combine { Entries.plainContent eq fullUrl }.map { toSlimModel(it) }
+        getBaseQuery().adjustSelect { select(slimColumnSet) }.combine { Entries.plainContent eq fullUrl }.map { toSlimModel(it) }
     }
 
     fun updateSearchableContent(id: String, content: String?): String? = transaction {

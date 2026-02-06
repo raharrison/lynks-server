@@ -2,11 +2,13 @@ package lynks.resource
 
 import io.ktor.http.*
 import io.ktor.http.content.*
-import io.ktor.server.application.*
 import io.ktor.server.http.content.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import io.ktor.utils.io.*
+import io.ktor.utils.io.jvm.javaio.*
+import kotlinx.io.readByteArray
 import lynks.common.Environment
 import lynks.common.IMAGE_UPLOAD_BASE
 import lynks.common.MAX_IMAGE_UPLOAD_BYTES
@@ -17,6 +19,7 @@ import lynks.util.HashUtils
 import java.io.File
 import java.time.LocalDate
 import java.time.temporal.TemporalAdjusters
+import java.util.concurrent.ConcurrentHashMap
 
 fun Route.resource(resourceManager: ResourceManager) {
 
@@ -27,43 +30,73 @@ fun Route.resource(resourceManager: ResourceManager) {
         return contentType.withoutParameters().toString()
     }
 
-    route("/imageUpload") {
-        post {
-            val multipart = call.receiveMultipart()
-            var partData: PartData.FileItem? = null
-            multipart.forEachPart { part ->
-                if (part is PartData.FileItem) {
-                    partData = part
-                } else {
+    post("/imageUpload") {
+        val multipart = call.receiveMultipart()
+
+        var fileBytes: ByteArray? = null
+        var fileName: String? = null
+
+        multipart.forEachPart { part ->
+            when (part) {
+                is PartData.FileItem -> {
+                    fileName = part.originalFileName
+                    fileBytes = part.provider()
+                        .readRemaining()
+                        .readByteArray()
                     part.dispose()
                 }
+                else -> part.dispose()
             }
-            partData?.let {
-                val extension = FileUtils.getExtension(partData!!.originalFileName!!)
-                if (listOf("jpg", "jpeg", "png").contains(extension.lowercase())) {
-                    val data = partData!!.streamProvider().readBytes()
-                    if (data.size > MAX_IMAGE_UPLOAD_BYTES) {
-                        call.respond(HttpStatusCode.PayloadTooLarge, ImageUploadErrorResponse("fileTooLarge"))
-                    } else {
-                        val file = resourceManager.saveTempFile(IMAGE_UPLOAD_BASE, data, ResourceType.UPLOAD, extension)
-                        val uploadFilePath =
-                            "${TEMP_URL}${resourceManager.constructTempUrlFromPath(file)}"
-                        partData!!.dispose()
-                        call.respond(HttpStatusCode.OK, ImageUploadResponse(ImageUploadFilePath(uploadFilePath)))
-                    }
-                } else {
-                    call.respond(HttpStatusCode.UnsupportedMediaType, ImageUploadErrorResponse("typeNotAllowed"))
-                }
-            } ?: call.respond(HttpStatusCode.BadRequest, ImageUploadErrorResponse("noFileGiven"))
         }
+
+        if (fileBytes == null || fileName == null) {
+            call.respond(
+                HttpStatusCode.BadRequest,
+                ImageUploadErrorResponse("noFileGiven")
+            )
+            return@post
+        }
+
+        val extension = FileUtils.getExtension(fileName!!).lowercase()
+        if (extension !in listOf("jpg", "jpeg", "png")) {
+            call.respond(
+                HttpStatusCode.UnsupportedMediaType,
+                ImageUploadErrorResponse("typeNotAllowed")
+            )
+            return@post
+        }
+
+        if (fileBytes.size > MAX_IMAGE_UPLOAD_BYTES) {
+            call.respond(
+                HttpStatusCode.PayloadTooLarge,
+                ImageUploadErrorResponse("fileTooLarge")
+            )
+            return@post
+        }
+
+        val file = resourceManager.saveTempFile(
+            IMAGE_UPLOAD_BASE,
+            fileBytes,
+            ResourceType.UPLOAD,
+            extension
+        )
+
+        val uploadFilePath =
+            "$TEMP_URL${resourceManager.constructTempUrlFromPath(file)}"
+
+        call.respond(
+            HttpStatusCode.OK,
+            ImageUploadResponse(ImageUploadFilePath(uploadFilePath))
+        )
     }
+
 
     route("/entry/{entryId}/resource") {
 
         val cacheExpiresAge = LocalDate.now().plusYears(5).atStartOfDay()
             .with(TemporalAdjusters.firstDayOfYear())
         // used when retrieving resource files to prevent lookups
-        val resourceCache = mutableMapOf<String, Pair<Resource, File>>()
+        val resourceCache = ConcurrentHashMap<String, Pair<Resource, File>>()
 
         get {
             val id = call.parameters["entryId"]!!
@@ -82,10 +115,8 @@ fun Route.resource(resourceManager: ResourceManager) {
 
         get("/{id}") {
             val id = call.parameters["id"]!!
-            val res = if(id in resourceCache) resourceCache[id] else {
-                resourceManager.getResourceAsFile(id)?.also {
-                    resourceCache[id] = it
-                }
+            val res = resourceCache[id] ?: resourceManager.getResourceAsFile(id)?.also {
+                resourceCache[id] = it
             }
             if (res != null) {
                 call.response.header(HttpHeaders.ContentDisposition, "inline; filename=\"${res.first.name}\"")
@@ -102,12 +133,12 @@ fun Route.resource(resourceManager: ResourceManager) {
             multipart.forEachPart { part ->
                 if (part is PartData.FileItem) {
                     val name = part.originalFileName!!
-                    res = resourceManager.saveUploadedResource(entryId, name, part.streamProvider())
+                    res = resourceManager.saveUploadedResource(entryId, name, part.provider().toInputStream())
                 }
                 part.dispose()
             }
             if (res == null) throw InvalidModelException()
-            else call.respond(HttpStatusCode.Created, res!!)
+            else call.respond(HttpStatusCode.Created, res)
         }
 
         put {

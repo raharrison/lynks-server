@@ -3,12 +3,12 @@ package lynks.notify
 import lynks.common.Entries
 import lynks.common.EntryType
 import lynks.common.UID_LENGTH
-import org.jetbrains.exposed.sql.ReferenceOption
-import org.jetbrains.exposed.sql.Table
+import org.jetbrains.exposed.v1.core.ReferenceOption
+import org.jetbrains.exposed.v1.core.Table
 
 object Notifications : Table("NOTIFICATION") {
     val notificationId = varchar("ID", UID_LENGTH)
-    val notificationType = enumeration("TYPE", NotificationType::class)
+    val notificationType = enumerationByName<NotificationType>("TYPE", 16)
     val message = varchar("MESSAGE", 255)
     val read = bool("READ")
     val entryId = varchar("ENTRY_ID", UID_LENGTH).references(Entries.id, ReferenceOption.CASCADE).nullable()

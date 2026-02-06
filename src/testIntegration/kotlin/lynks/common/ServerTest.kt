@@ -29,13 +29,13 @@ open class ServerTest {
 
         private var serverStarted = false
 
-        private lateinit var server: ApplicationEngine
+        private lateinit var server: EmbeddedServer<*, *>
 
         @BeforeAll
         @JvmStatic
         fun startServer() {
             if(!serverStarted) {
-                server = embeddedServer(Netty, Environment.server.port, module = Application::module)
+                server = embeddedServer(Netty, port = Environment.server.port, host = "127.0.0.1", module = Application::module)
                 server.start()
                 serverStarted = true
 

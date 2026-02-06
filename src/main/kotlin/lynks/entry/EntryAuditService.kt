@@ -3,14 +3,15 @@ package lynks.entry
 import lynks.common.EntryAudit
 import lynks.common.EntryAuditItem
 import lynks.util.RandomUtils
-import org.jetbrains.exposed.sql.insert
-import org.jetbrains.exposed.sql.select
-import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.insert
+import org.jetbrains.exposed.v1.jdbc.selectAll
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 
 class EntryAuditService {
 
     fun getEntryAudit(entryId: String): List<EntryAuditItem> = transaction {
-        EntryAudit.select { EntryAudit.entryId eq entryId }
+        EntryAudit.selectAll().where { EntryAudit.entryId eq entryId }
             .orderBy(EntryAudit.timestamp)
             .map {
                 EntryAuditItem(

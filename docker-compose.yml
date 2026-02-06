@@ -3,7 +3,7 @@ services:
     image: raharrison/lynks-ui:1.2.3
     restart: on-failure:5
   lynks-server:
-    image: raharrison/lynks-server:1.4.0
+    image: raharrison/lynks-server:1.4.1
     env_file:
       - ./config/.env
     environment:
@@ -20,7 +20,7 @@ services:
     depends_on:
       - postgres
   lynks-scraper:
-    image: raharrison/lynks-scraper:1.0.4
+    image: raharrison/lynks-scraper:1.1.0
     init: true
     restart: on-failure:5
     volumes:

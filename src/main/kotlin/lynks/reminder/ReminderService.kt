@@ -9,9 +9,12 @@ import lynks.util.loggerFor
 import lynks.worker.CrudType
 import lynks.worker.ReminderWorkerRequest
 import lynks.worker.WorkerRegistry
-import org.jetbrains.exposed.sql.*
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.v1.core.ResultRow
+import org.jetbrains.exposed.v1.core.SortOrder
+import org.jetbrains.exposed.v1.core.and
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.*
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
@@ -42,7 +45,7 @@ class ReminderService(private val workerRegistry: WorkerRegistry) {
     }
 
     fun getRemindersForEntry(eId: String) = transaction {
-        Reminders.select { Reminders.entryId eq eId }
+        Reminders.selectAll().where { Reminders.entryId eq eId }
             .orderBy(Reminders.dateUpdated, SortOrder.DESC)
             .map { toModel(it) }
     }
@@ -54,18 +57,18 @@ class ReminderService(private val workerRegistry: WorkerRegistry) {
     }
 
     fun getAllActiveReminders() = transaction {
-        Reminders.select { Reminders.status eq ReminderStatus.ACTIVE }
+        Reminders.selectAll().where { Reminders.status eq ReminderStatus.ACTIVE }
             .map { toModel(it) }
     }
 
     fun get(id: String): Reminder? = transaction {
-        Reminders.select { Reminders.reminderId eq id }
+        Reminders.selectAll().where { Reminders.reminderId eq id }
                 .mapNotNull { toModel(it) }.singleOrNull()
     }
 
     fun isActive(id: String): Boolean = transaction {
-        Reminders.slice(Reminders.reminderId)
-            .select {
+        Reminders.select(Reminders.reminderId)
+            .where {
                 (Reminders.reminderId eq id) and
                     (Reminders.status eq ReminderStatus.ACTIVE)
             }.count() > 0
@@ -170,7 +173,7 @@ class ReminderService(private val workerRegistry: WorkerRegistry) {
         try {
             ZoneId.of(tz)
             return tz
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             throw IllegalArgumentException("Invalid timezone code: $tz")
         }
     }

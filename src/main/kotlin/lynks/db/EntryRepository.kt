@@ -14,12 +14,11 @@ import lynks.util.RandomUtils
 import lynks.util.combine
 import lynks.util.findColumn
 import lynks.util.orderBy
-import org.jetbrains.exposed.sql.*
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.like
-import org.jetbrains.exposed.sql.statements.InsertStatement
-import org.jetbrains.exposed.sql.statements.UpdateBuilder
-import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.v1.core.*
+import org.jetbrains.exposed.v1.core.statements.InsertStatement
+import org.jetbrains.exposed.v1.core.statements.UpdateBuilder
+import org.jetbrains.exposed.v1.jdbc.*
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import kotlin.math.max
 
 abstract class EntryRepository<T : Entry, S : SlimEntry, U : NewEntry>(
@@ -78,7 +77,7 @@ abstract class EntryRepository<T : Entry, S : SlimEntry, U : NewEntry>(
         }
 
         // slice to only query columns required for slim entry
-        var baseQuery = getBaseQuery(table).adjustSlice { slice(slimColumnSet + Entries.type) }
+        var baseQuery = getBaseQuery(table).adjustSelect { select(slimColumnSet + Entries.type) }
         val subtrees = groupSetService.subtrees(pageRequest.tags, pageRequest.collections)
 
         if (subtrees.tags.isNotEmpty()) {
@@ -106,7 +105,8 @@ abstract class EntryRepository<T : Entry, S : SlimEntry, U : NewEntry>(
         }
 
         return Pair(baseQuery.copy().apply {
-            limit(pageRequest.size, max(0, (pageRequest.page - 1) * pageRequest.size))
+            limit(pageRequest.size)
+            offset(max(0, (pageRequest.page - 1) * pageRequest.size))
         }, baseQuery)
     }
 
@@ -139,9 +139,7 @@ abstract class EntryRepository<T : Entry, S : SlimEntry, U : NewEntry>(
                 val updated = Entries.update({ where }, body = {
                     toUpdate(entry)(it)
                     if(newVersion) {
-                        with(SqlExpressionBuilder) {
-                            it.update(version, version + 1)
-                        }
+                        it.update(version, version + 1)
                     }
                 })
                 if (updated > 0) {
@@ -170,9 +168,7 @@ abstract class EntryRepository<T : Entry, S : SlimEntry, U : NewEntry>(
                 toUpdate(entry)(it)
                 if (newVersion) {
                     it[dateUpdated] = System.currentTimeMillis()
-                    with(SqlExpressionBuilder) {
-                        it.update(version, version + 1)
-                    }
+                    it.update(version, version + 1)
                 }
             })
             if (updated > 0) {
@@ -180,7 +176,7 @@ abstract class EntryRepository<T : Entry, S : SlimEntry, U : NewEntry>(
                 val updatedEntry = get(entry.id)
                 if (newVersion) {
                     entryAuditService.acceptAuditEvent(
-                        id, serviceName,
+                        entry.id, serviceName,
                         "Updated to version ${updatedEntry?.version}"
                     )
                 }
@@ -192,7 +188,7 @@ abstract class EntryRepository<T : Entry, S : SlimEntry, U : NewEntry>(
     }
 
     fun mergeProps(id: String, props: BaseProperties): Unit = transaction {
-        val row = getBaseQuery().adjustSlice { slice(Entries.props) }
+        val row = getBaseQuery().adjustSelect { select(Entries.props) }
             .combine { Entries.id eq id }
             .singleOrNull()
         row?.also {
@@ -206,7 +202,7 @@ abstract class EntryRepository<T : Entry, S : SlimEntry, U : NewEntry>(
     }
 
     open fun delete(id: String): Boolean = transaction {
-        val entry = getBaseQuery().adjustSlice { this.slice(Entries.type) }
+        val entry = getBaseQuery().adjustSelect { this.select(Entries.type) }
             .combine { Entries.id eq id }
             .singleOrNull()
 
@@ -236,7 +232,7 @@ abstract class EntryRepository<T : Entry, S : SlimEntry, U : NewEntry>(
     }
 
     private fun getGroupsForEntries(ids: List<String>): Map<String, GroupSet> {
-        return EntryGroups.select { EntryGroups.entryId.inList(ids) }
+        return EntryGroups.selectAll().where { EntryGroups.entryId.inList(ids) }
             .groupBy { it[EntryGroups.entryId] }
             .mapValues { entry ->
                 val groupIds = entry.value.map { it[EntryGroups.groupId] }
@@ -245,8 +241,8 @@ abstract class EntryRepository<T : Entry, S : SlimEntry, U : NewEntry>(
     }
 
     private fun getGroupsForEntry(id: String): GroupSet {
-        val groupIds = EntryGroups.slice(EntryGroups.groupId)
-            .select { EntryGroups.entryId eq id }
+        val groupIds = EntryGroups.select(EntryGroups.groupId)
+            .where { EntryGroups.entryId eq id }
             .map { it[EntryGroups.groupId] }
         return groupSetService.getIn(groupIds)
     }

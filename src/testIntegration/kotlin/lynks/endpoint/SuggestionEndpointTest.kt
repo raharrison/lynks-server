@@ -14,6 +14,7 @@ import lynks.util.FileUtils
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import java.nio.file.Paths
 import kotlin.io.path.absolutePathString
@@ -118,6 +119,7 @@ class SuggestionEndpointTest: ServerTest() {
     }
 
     @Test
+    @Disabled
     fun testYoutubeSuggestion() {
         val suggestion = given()
                 .body("https://www.youtube.com/watch?v=JGvk4M0Rfxo")

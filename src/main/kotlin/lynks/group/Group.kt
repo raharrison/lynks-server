@@ -4,12 +4,12 @@ import lynks.common.Entries
 import lynks.common.IdBasedCreatedEntity
 import lynks.common.IdBasedNewEntity
 import lynks.common.UID_LENGTH
-import org.jetbrains.exposed.sql.ReferenceOption
-import org.jetbrains.exposed.sql.Table
+import org.jetbrains.exposed.v1.core.ReferenceOption
+import org.jetbrains.exposed.v1.core.Table
 
 object Groups: Table("GROUP") {
     val id = varchar("ID", UID_LENGTH)
-    val type = enumeration("TYPE", GroupType::class).index()
+    val type = enumerationByName<GroupType>("TYPE", 16).index()
     val name = varchar("NAME", 255)
     val parentId = (varchar("PARENT_ID", UID_LENGTH) references id).nullable().index()
     val dateCreated = long("DATE_CREATED")

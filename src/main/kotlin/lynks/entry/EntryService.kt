@@ -11,11 +11,16 @@ import lynks.group.GroupSet
 import lynks.group.GroupSetService
 import lynks.resource.ResourceManager
 import lynks.util.findColumn
-import org.jetbrains.exposed.sql.*
-import org.jetbrains.exposed.sql.statements.UpdateBuilder
-import org.jetbrains.exposed.sql.statements.jdbc.JdbcConnectionImpl
-import org.jetbrains.exposed.sql.transactions.TransactionManager
-import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.v1.core.*
+import org.jetbrains.exposed.v1.core.statements.UpdateBuilder
+import org.jetbrains.exposed.v1.jdbc.Query
+import org.jetbrains.exposed.v1.jdbc.select
+import org.jetbrains.exposed.v1.jdbc.selectAll
+import org.jetbrains.exposed.v1.jdbc.statements.jdbc.JdbcConnectionImpl
+import org.jetbrains.exposed.v1.jdbc.statements.jdbc.JdbcResult
+import org.jetbrains.exposed.v1.jdbc.transactions.TransactionManager
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.jetbrains.exposed.v1.jdbc.update
 import java.sql.Connection
 import kotlin.math.max
 
@@ -104,7 +109,7 @@ class EntryService(
                 val fieldMap = columns.mapIndexed { index, expression -> expression to index }.toMap()
                 val resultRows = mutableListOf<ResultRow>()
                 while (set.next()) {
-                    resultRows.add(ResultRow.create(set, fieldMap))
+                    resultRows.add(ResultRow.create(JdbcResult(set), fieldMap))
                 }
                 resolveEntryRows(resultRows)
             }
@@ -151,8 +156,8 @@ class EntryService(
     }
 
     fun getEntryVersions(id: String): List<EntryVersion> = transaction {
-        EntryVersions.slice(EntryVersions.id, EntryVersions.version, EntryVersions.dateUpdated)
-            .select { EntryVersions.id eq id }
+        EntryVersions.select(EntryVersions.id, EntryVersions.version, EntryVersions.dateUpdated)
+            .where { EntryVersions.id eq id }
             .orderBy(EntryVersions.version, SortOrder.ASC)
             .map {
                 EntryVersion(

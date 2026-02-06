@@ -1,7 +1,7 @@
 package lynks.common
 
-import com.uchuhimo.konf.Config
-import com.uchuhimo.konf.ConfigSpec
+import com.voltstorage.konf.Config
+import com.voltstorage.konf.ConfigSpec
 import lynks.db.DatabaseDialect
 import lynks.util.loggerFor
 

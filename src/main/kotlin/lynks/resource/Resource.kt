@@ -3,8 +3,8 @@ package lynks.resource
 import lynks.common.Entries
 import lynks.common.IdBasedCreatedEntity
 import lynks.common.UID_LENGTH
-import org.jetbrains.exposed.sql.ReferenceOption
-import org.jetbrains.exposed.sql.Table
+import org.jetbrains.exposed.v1.core.ReferenceOption
+import org.jetbrains.exposed.v1.core.Table
 import java.util.*
 
 object Resources : Table("RESOURCE") {
@@ -13,7 +13,7 @@ object Resources : Table("RESOURCE") {
     val currentVersion = integer("CURRENT_VERSION")
     val fileName = varchar("FILENAME", 255)
     val extension = varchar("EXTENSION", 4)
-    val type = enumeration("TYPE", ResourceType::class)
+    val type = enumerationByName<ResourceType>("TYPE", 16)
     val dateCreated = long("DATE_CREATED")
     val dateUpdated = long("DATE_UPDATED")
     override val primaryKey = PrimaryKey(id)

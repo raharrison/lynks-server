@@ -5,8 +5,13 @@ import lynks.db.EntryRepository
 import lynks.group.GroupSet
 import lynks.group.GroupSetService
 import lynks.resource.ResourceManager
-import org.jetbrains.exposed.sql.*
-import org.jetbrains.exposed.sql.statements.UpdateBuilder
+import org.jetbrains.exposed.v1.core.Column
+import org.jetbrains.exposed.v1.core.ColumnSet
+import org.jetbrains.exposed.v1.core.ResultRow
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.statements.UpdateBuilder
+import org.jetbrains.exposed.v1.jdbc.Query
+import org.jetbrains.exposed.v1.jdbc.selectAll
 
 class FileService(
     groupSetService: GroupSetService, entryAuditService: EntryAuditService, resourceManager: ResourceManager
@@ -21,7 +26,7 @@ class FileService(
     }
 
     override fun getBaseQuery(base: ColumnSet, where: BaseEntries): Query {
-        return base.select { where.type eq EntryType.FILE }
+        return base.selectAll().where { where.type eq EntryType.FILE }
     }
 
     override val slimColumnSet: List<Column<*>> =

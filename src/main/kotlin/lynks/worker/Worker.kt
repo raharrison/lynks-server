@@ -4,9 +4,10 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.channels.actor
 import lynks.util.JsonMapper.defaultMapper
-import org.jetbrains.exposed.sql.*
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.v1.core.and
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.*
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
@@ -36,6 +37,7 @@ abstract class Worker<T> : CoroutineScope {
 
 abstract class ChannelBasedWorker<T> : Worker<T>() {
 
+    @OptIn(ObsoleteCoroutinesApi::class)
     fun worker(): SendChannel<T> = actor {
         beforeWork()
         for (request in channel) {
@@ -59,9 +61,9 @@ abstract class VariableWorkerRequest(val crudType: CrudType = CrudType.UPDATE)
 
 abstract class VariableChannelBasedWorker<T : VariableWorkerRequest> : ChannelBasedWorker<T>() {
 
-    private val jobs = ConcurrentHashMap<T, Job?>()
+    private val jobs = ConcurrentHashMap<T, Job>()
 
-    private fun launch(request: T) = super.onChannelReceive(request).also {
+    private fun launch(request: T) = super.onChannelReceive(request)?.also {
         jobs[request] = it
     }
 
@@ -82,12 +84,12 @@ abstract class VariableChannelBasedWorker<T : VariableWorkerRequest> : ChannelBa
     }
 
     fun cancelAll() {
-        jobs.values.forEach { it?.cancel() }
+        jobs.values.forEach { it.cancel() }
         supervisor.cancel()
     }
 
     override fun onWorkerFinished(request: T) {
-        // only remove if it exactly matches the original request
+        // only remove if it exactly matches the original request not via .equals
         jobs.keys.find { it === request }?.let {
             jobs.remove(request)
         }
@@ -107,7 +109,7 @@ abstract class PersistedVariableChannelBasedWorker<T : PersistVariableWorkerRequ
     override suspend fun beforeWork() {
         super.beforeWork()
         val requests = transaction {
-            WorkerSchedules.select { WorkerSchedules.worker eq workerName }.map {
+            WorkerSchedules.selectAll().where { WorkerSchedules.worker eq workerName }.map {
                 defaultMapper.readValue(it[WorkerSchedules.request], requestClass)
             }
         }
@@ -148,8 +150,8 @@ abstract class PersistedVariableChannelBasedWorker<T : PersistVariableWorkerRequ
     }
 
     protected fun getLastRunTime(request: T) = transaction {
-        WorkerSchedules.slice(WorkerSchedules.lastRun)
-            .select { (WorkerSchedules.worker eq workerName) and (WorkerSchedules.key eq request.key) }
+        WorkerSchedules.select(WorkerSchedules.lastRun)
+            .where { (WorkerSchedules.worker eq workerName) and (WorkerSchedules.key eq request.key) }
             .map { it[WorkerSchedules.lastRun] }
             .singleOrNull()
     }

@@ -1,8 +1,8 @@
 package lynks.group
 
 import lynks.common.exception.InvalidModelException
-import org.jetbrains.exposed.sql.statements.InsertStatement
-import org.jetbrains.exposed.sql.statements.UpdateBuilder
+import org.jetbrains.exposed.v1.core.statements.InsertStatement
+import org.jetbrains.exposed.v1.core.statements.UpdateBuilder
 
 class CollectionService : GroupService<Collection, NewCollection>(GroupType.COLLECTION) {
 

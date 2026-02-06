@@ -10,7 +10,7 @@ import lynks.resource.Resource
 import lynks.resource.ResourceVersions
 import lynks.resource.Resources
 import lynks.user.ActivityLogItem
-import org.jetbrains.exposed.sql.ResultRow
+import org.jetbrains.exposed.v1.core.ResultRow
 
 object RowMapper {
 

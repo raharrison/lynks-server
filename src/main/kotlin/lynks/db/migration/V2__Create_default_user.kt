@@ -6,8 +6,8 @@ import lynks.util.HashUtils
 import lynks.util.loggerFor
 import org.flywaydb.core.api.migration.BaseJavaMigration
 import org.flywaydb.core.api.migration.Context
-import org.jetbrains.exposed.sql.insert
-import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.v1.jdbc.insert
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 
 class V2__Create_default_user : BaseJavaMigration() {
 

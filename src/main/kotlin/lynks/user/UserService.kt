@@ -10,8 +10,14 @@ import lynks.common.page.SortDirection
 import lynks.util.HashUtils
 import lynks.util.loggerFor
 import lynks.util.orderBy
-import org.jetbrains.exposed.sql.*
-import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.v1.core.and
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.isNotNull
+import org.jetbrains.exposed.v1.jdbc.insert
+import org.jetbrains.exposed.v1.jdbc.select
+import org.jetbrains.exposed.v1.jdbc.selectAll
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.jetbrains.exposed.v1.jdbc.update
 import kotlin.math.max
 
 class UserService(private val twoFactorService: TwoFactorService) {
@@ -21,7 +27,7 @@ class UserService(private val twoFactorService: TwoFactorService) {
     private val activityLogColumns = EntryAudit.columns + listOf(Entries.type, Entries.title)
 
     fun getUser(username: String): User? = transaction {
-        Users.slice(userColumns).select { Users.username eq username and Users.activated }.map {
+        Users.select(userColumns).where { Users.username eq username and Users.activated }.map {
             User(
                 it[Users.username],
                 it[Users.email],
@@ -34,7 +40,7 @@ class UserService(private val twoFactorService: TwoFactorService) {
     }
 
     fun register(request: AuthRequest): String = transaction {
-        if (Users.select { Users.username eq request.username }.count() > 0) {
+        if (Users.selectAll().where { Users.username eq request.username }.count() > 0) {
             throw InvalidModelException("User with that name already exists")
         }
         val currentTime = System.currentTimeMillis()
@@ -78,8 +84,8 @@ class UserService(private val twoFactorService: TwoFactorService) {
     }
 
     fun checkAuth(request: AuthRequest, twoFactor: Boolean = true): AuthResult = transaction {
-        val storedPassword = Users.slice(Users.password)
-            .select { Users.username eq request.username and Users.activated }
+        val storedPassword = Users.select(Users.password)
+            .where { Users.username eq request.username and Users.activated }
             .map { it[Users.password].toCharArray() }.singleOrNull()
             ?: return@transaction AuthResult.INVALID_CREDENTIALS
 
@@ -95,18 +101,19 @@ class UserService(private val twoFactorService: TwoFactorService) {
     }
 
     fun getDigestEnabledEmails(): Set<String> = transaction {
-        Users.slice(Users.email)
-            .select { Users.digest and Users.email.isNotNull() and Users.activated }
+        Users.select(Users.email)
+            .where { Users.digest and Users.email.isNotNull() and Users.activated }
             .mapNotNull { it[Users.email] }.toSet()
     }
 
     fun getUserActivityLog(pageRequest: PageRequest = PageRequest()): Page<ActivityLogItem> = transaction {
         val sortOrder = pageRequest.direction ?: SortDirection.DESC
-        val baseQuery = EntryAudit.leftJoin(Entries).slice(activityLogColumns).selectAll()
+        val baseQuery = EntryAudit.leftJoin(Entries).select(activityLogColumns)
         Page.of(
             baseQuery.copy()
                 .orderBy(EntryAudit.timestamp, sortOrder)
-                .limit(pageRequest.size, max(0, (pageRequest.page - 1) * pageRequest.size))
+                .limit(pageRequest.size)
+                .offset(max(0, (pageRequest.page - 1) * pageRequest.size))
                 .map { RowMapper.toActivityLogItem(it) }, pageRequest, baseQuery.count()
         )
     }

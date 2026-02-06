@@ -1,7 +1,7 @@
 package lynks.common
 
-import org.jetbrains.exposed.sql.ReferenceOption
-import org.jetbrains.exposed.sql.Table
+import org.jetbrains.exposed.v1.core.ReferenceOption
+import org.jetbrains.exposed.v1.core.Table
 
 object EntryAudit : Table("ENTRY_AUDIT") {
     val auditId = varchar("AUDIT_ID", UID_LENGTH)

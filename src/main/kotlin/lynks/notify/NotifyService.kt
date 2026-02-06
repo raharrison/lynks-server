@@ -1,6 +1,7 @@
 package lynks.notify
 
 import io.ktor.websocket.*
+import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.channels.SendChannel
 import lynks.common.Entries
 import lynks.common.Environment
@@ -17,11 +18,12 @@ import lynks.util.findColumn
 import lynks.util.loggerFor
 import lynks.util.orderBy
 import org.apache.commons.mail.HtmlEmail
-import org.jetbrains.exposed.sql.insert
-import org.jetbrains.exposed.sql.select
-import org.jetbrains.exposed.sql.selectAll
-import org.jetbrains.exposed.sql.transactions.transaction
-import org.jetbrains.exposed.sql.update
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.insert
+import org.jetbrains.exposed.v1.jdbc.select
+import org.jetbrains.exposed.v1.jdbc.selectAll
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.jetbrains.exposed.v1.jdbc.update
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.max
 
@@ -41,23 +43,25 @@ class NotifyService(private val userService: UserService, private val pushoverCl
                 add(Notifications.dateCreated to SortDirection.DESC)
             }
         }
-        val baseQuery = Notifications.leftJoin(Entries).slice(notificationQuerySlice).selectAll()
+        val baseQuery = Notifications.leftJoin(Entries).selectAll()
         Page.of(
             baseQuery.copy()
                 .orderBy(orders)
-                .limit(pageRequest.size, max(0, (pageRequest.page - 1) * pageRequest.size))
+                .limit(pageRequest.size)
+                .offset(max(0, (pageRequest.page - 1) * pageRequest.size))
                 .map { toNotification(it) }, pageRequest, baseQuery.count()
         )
     }
 
     fun getNotification(id: String): Notification? = transaction {
-        Notifications.leftJoin(Entries).slice(notificationQuerySlice)
-            .select { Notifications.notificationId eq id }
+        Notifications.leftJoin(Entries)
+            .select(notificationQuerySlice)
+            .where { Notifications.notificationId eq id }
             .mapNotNull { toNotification(it) }.singleOrNull()
     }
 
     fun getUnreadCount(): Long = transaction {
-        Notifications.select { Notifications.read eq false }.count()
+        Notifications.selectAll().where { Notifications.read eq false }.count()
     }
 
     suspend fun create(newNotification: NewNotification, sendWeb: Boolean = true): Notification {
@@ -100,6 +104,7 @@ class NotifyService(private val userService: UserService, private val pushoverCl
         webNotifiers -= outgoing
     }
 
+    @OptIn(DelicateCoroutinesApi::class)
     suspend fun sendWebNotification(notification: Notification) {
         log.info("Sending web ${notification.type} notification: ${notification.message}")
         webNotifiers.forEach {

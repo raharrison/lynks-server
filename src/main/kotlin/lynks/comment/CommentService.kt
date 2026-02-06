@@ -12,9 +12,13 @@ import lynks.util.markdown.MarkdownProcessor
 import lynks.util.orderBy
 import lynks.worker.CrudType
 import lynks.worker.WorkerRegistry
-import org.jetbrains.exposed.sql.*
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.v1.core.and
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.deleteWhere
+import org.jetbrains.exposed.v1.jdbc.insert
+import org.jetbrains.exposed.v1.jdbc.selectAll
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.jetbrains.exposed.v1.jdbc.update
 import kotlin.math.max
 
 private val log = loggerFor<CommentService>()
@@ -22,7 +26,7 @@ private val log = loggerFor<CommentService>()
 class CommentService(private val workerRegistry: WorkerRegistry, private val markdownProcessor: MarkdownProcessor) {
 
     fun getComment(entryId: String, id: String): Comment? = transaction {
-        Comments.select { Comments.id eq id and (Comments.entryId eq entryId) }.mapNotNull {
+        Comments.selectAll().where { Comments.id eq id and (Comments.entryId eq entryId) }.mapNotNull {
             toComment(it)
         }.singleOrNull()
     }
@@ -30,11 +34,12 @@ class CommentService(private val workerRegistry: WorkerRegistry, private val mar
     fun getCommentsFor(id: String, pageRequest: PageRequest = DefaultPageRequest): Page<Comment> = transaction {
         val sortColumn = Comments.findColumn(pageRequest.sort) ?: Comments.dateCreated
         val sortOrder = pageRequest.direction ?: SortDirection.ASC
-        val baseQuery = Comments.select { Comments.entryId eq id }
+        val baseQuery = Comments.selectAll().where { Comments.entryId eq id }
         Page.of(
             baseQuery.copy()
                 .orderBy(sortColumn, sortOrder)
-                .limit(pageRequest.size, max(0, (pageRequest.page - 1) * pageRequest.size))
+                .limit(pageRequest.size)
+                .offset(max(0, (pageRequest.page - 1) * pageRequest.size))
                 .map { toComment(it) }, pageRequest, baseQuery.count()
         )
     }

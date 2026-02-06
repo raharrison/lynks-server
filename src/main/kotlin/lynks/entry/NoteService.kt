@@ -7,8 +7,13 @@ import lynks.group.GroupSetService
 import lynks.resource.ResourceManager
 import lynks.util.markdown.MarkdownProcessor
 import lynks.worker.WorkerRegistry
-import org.jetbrains.exposed.sql.*
-import org.jetbrains.exposed.sql.statements.UpdateBuilder
+import org.jetbrains.exposed.v1.core.Column
+import org.jetbrains.exposed.v1.core.ColumnSet
+import org.jetbrains.exposed.v1.core.ResultRow
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.statements.UpdateBuilder
+import org.jetbrains.exposed.v1.jdbc.Query
+import org.jetbrains.exposed.v1.jdbc.selectAll
 
 class NoteService(
     groupSetService: GroupSetService,
@@ -35,7 +40,7 @@ class NoteService(
     }
 
     override fun getBaseQuery(base: ColumnSet, where: BaseEntries): Query {
-        return base.select { where.type eq EntryType.NOTE }
+        return base.selectAll().where { where.type eq EntryType.NOTE }
     }
 
     override val slimColumnSet: List<Column<*>> =

@@ -6,10 +6,9 @@ import lynks.util.FileUtils
 import lynks.util.RandomUtils
 import lynks.util.loggerFor
 import lynks.util.toUrlString
-import org.jetbrains.exposed.sql.*
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
-import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.v1.core.*
+import org.jetbrains.exposed.v1.jdbc.*
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import java.io.File
 import java.io.InputStream
 import java.nio.file.Files
@@ -23,21 +22,21 @@ class ResourceManager {
 
     fun getResourcesFor(entryId: String): List<Resource> = transaction {
         Resources.innerJoin(ResourceVersions, {id}, {resourceId})
-            .select { Resources.entryId eq entryId }
+            .selectAll().where { Resources.entryId eq entryId }
             .orderBy(Resources.dateCreated)
             .map { toResource(it) }
     }
 
     private fun getResourceVersions(parentId: String): List<Resource> = transaction {
         Resources.innerJoin(ResourceVersions, {id}, {resourceId})
-            .select { Resources.id eq parentId }
+            .selectAll().where { Resources.id eq parentId }
             .orderBy(Resources.dateCreated)
             .map { toResource(it) }
     }
 
     fun getResource(id: String): Resource? = transaction {
         ResourceVersions.innerJoin(Resources, { resourceId }, { Resources.id })
-            .select { ResourceVersions.id eq id }.map { toResource(it) }.singleOrNull()
+            .selectAll().where { ResourceVersions.id eq id }.map { toResource(it) }.singleOrNull()
     }
 
     fun getResourceAsFile(id: String): Pair<Resource, File>? {
@@ -88,8 +87,8 @@ class ResourceManager {
 
     // get resource grouping id and current max version based on entry id and name
     private fun currentVersion(entryId: String, name: String): Pair<String, Int> = transaction {
-        Resources.slice(Resources.id, Resources.currentVersion)
-            .select { (Resources.entryId eq entryId) and (Resources.fileName eq name) }
+        Resources.select(Resources.id, Resources.currentVersion)
+            .where { (Resources.entryId eq entryId) and (Resources.fileName eq name) }
             .map { Pair(it[Resources.id], it[Resources.currentVersion]) }
             .singleOrNull() ?: Pair(RandomUtils.generateUid(), 0)
     }
@@ -230,9 +229,9 @@ class ResourceManager {
         res?.let {
             ResourceVersions.deleteWhere { ResourceVersions.id eq id }
             // find current max version (if any) after deletion
-            val maxVersion = ResourceVersions.slice(ResourceVersions.version.max())
-                .select { ResourceVersions.resourceId eq res.parentId }
-                .firstOrNull()?.get(ResourceVersions.version.max())
+            val maxVersion: Int? = ResourceVersions.select(ResourceVersions.version.max())
+                .where { ResourceVersions.resourceId eq res.parentId }
+                .singleOrNull()?.let { it[ResourceVersions.version.max()] }
             if (maxVersion == null) {
                 // no versions left, remove the parent resource
                 Resources.deleteWhere { Resources.id eq res.parentId }
@@ -253,8 +252,8 @@ class ResourceManager {
     }
 
     fun deleteAll(entryId: String): Boolean = transaction {
-        val resourceIds = Resources.slice(Resources.id)
-            .select { Resources.entryId eq entryId }
+        val resourceIds = Resources.select(Resources.id)
+            .where { Resources.entryId eq entryId }
             .map { it[Resources.id] }
         ResourceVersions.deleteWhere { resourceId.inList(resourceIds) }
         Resources.deleteWhere { Resources.entryId eq entryId }

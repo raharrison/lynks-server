@@ -2,11 +2,16 @@ package lynks.group
 
 import lynks.common.IdBasedNewEntity
 import lynks.util.RandomUtils
-import org.jetbrains.exposed.sql.*
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.statements.InsertStatement
-import org.jetbrains.exposed.sql.statements.UpdateBuilder
-import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.v1.core.ResultRow
+import org.jetbrains.exposed.v1.core.and
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.statements.InsertStatement
+import org.jetbrains.exposed.v1.core.statements.UpdateBuilder
+import org.jetbrains.exposed.v1.jdbc.deleteWhere
+import org.jetbrains.exposed.v1.jdbc.insert
+import org.jetbrains.exposed.v1.jdbc.selectAll
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.jetbrains.exposed.v1.jdbc.update
 import org.slf4j.LoggerFactory
 
 abstract class GroupService<T : Grouping<T>, in U : IdBasedNewEntity>(private val groupType: GroupType) {
@@ -52,17 +57,17 @@ abstract class GroupService<T : Grouping<T>, in U : IdBasedNewEntity>(private va
     }
 
     private fun getGroupChildren(id: String): MutableSet<T> = transaction {
-        Groups.select { (Groups.parentId eq id) and (Groups.type eq groupType) }
+        Groups.selectAll().where { (Groups.parentId eq id) and (Groups.type eq groupType) }
             .map { toModel(toGroupRow(it), getGroupChildren(it[Groups.id])) }.toMutableSet()
     }
 
     private fun queryGroup(id: String): T? = transaction {
-        Groups.select { Groups.id eq id and (Groups.type eq groupType) }
+        Groups.selectAll().where { Groups.id eq id and (Groups.type eq groupType) }
             .map { toModel(toGroupRow(it), getGroupChildren(it[Groups.id])) }.singleOrNull()
     }
 
     private fun queryAllGroups(): List<T> = transaction {
-        val groups = Groups.select { (Groups.type eq groupType) }
+        val groups = Groups.selectAll().where { (Groups.type eq groupType) }
             .map { toGroupRow(it) }
         val groupsByParent = groups.groupBy { it.parentId }
         groupsByParent[null]?.map { row ->
@@ -127,7 +132,7 @@ abstract class GroupService<T : Grouping<T>, in U : IdBasedNewEntity>(private va
 
     fun delete(id: String): Boolean = transaction {
         // delete children first
-        Groups.select { Groups.parentId eq id and (Groups.type eq groupType) }.forEach { delete(it[Groups.id]) }
+        Groups.selectAll().where { Groups.parentId eq id and (Groups.type eq groupType) }.forEach { delete(it[Groups.id]) }
         // delete main group
         Groups.deleteWhere { Groups.id eq id }.also { collection.delete(id) } > 0
     }

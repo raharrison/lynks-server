@@ -1,12 +1,14 @@
 package lynks.common
 
-import lynks.db.json
+import com.fasterxml.jackson.module.kotlin.readValue
 import lynks.group.Collection
 import lynks.group.Tag
 import lynks.resource.ResourceVersions
-import org.jetbrains.exposed.sql.Column
-import org.jetbrains.exposed.sql.ReferenceOption
-import org.jetbrains.exposed.sql.Table
+import lynks.util.JsonMapper
+import org.jetbrains.exposed.v1.core.Column
+import org.jetbrains.exposed.v1.core.ReferenceOption
+import org.jetbrains.exposed.v1.core.Table
+import org.jetbrains.exposed.v1.json.json
 
 abstract class BaseEntries(name: String) : Table(name) {
     val id = varchar("ID", UID_LENGTH)
@@ -14,10 +16,10 @@ abstract class BaseEntries(name: String) : Table(name) {
     val plainContent = text("PLAIN_CONTENT").nullable()
     val content = text("CONTENT").nullable()
     val src = varchar("SOURCE", 255)
-    val type = enumeration("TYPE", EntryType::class).index()
+    val type = enumerationByName<EntryType>("TYPE", 8).index()
     val dateCreated = long("DATE_CREATED")
     val dateUpdated = long("DATE_UPDATED").index()
-    val props = json("PROPS", BaseProperties::class.java).nullable()
+    val props = json("PROPS", { JsonMapper.defaultMapper.writeValueAsString(it) }, { JsonMapper.defaultMapper.readValue<BaseProperties>(it) }).nullable()
     abstract val version: Column<Int>
     val starred = bool("STARRED").default(false)
     val read = bool("READ").nullable()

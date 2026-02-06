@@ -2,9 +2,13 @@ package lynks.entry.ref
 
 import lynks.common.Entries
 import lynks.util.loggerFor
-import org.jetbrains.exposed.sql.*
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.v1.core.JoinType
+import org.jetbrains.exposed.v1.core.and
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.batchInsert
+import org.jetbrains.exposed.v1.jdbc.deleteWhere
+import org.jetbrains.exposed.v1.jdbc.select
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 
 class EntryRefService {
 
@@ -13,16 +17,16 @@ class EntryRefService {
     fun getRefsForEntry(eid: String): EntryRefSet = transaction {
         val inbound =
             EntryRefs.join(Entries, JoinType.INNER, EntryRefs.sourceEntryId, Entries.id)
-                .slice(EntryRefs.sourceEntryId, Entries.type, Entries.title)
-                .select { EntryRefs.targetEntryId eq eid }
+                .select(EntryRefs.sourceEntryId, Entries.type, Entries.title)
+                .where { EntryRefs.targetEntryId eq eid }
                 .map {
                     EntryRefItem(it[EntryRefs.sourceEntryId], it[Entries.type], it[Entries.title])
                 }
                 .toList()
         val outbound =
             EntryRefs.join(Entries, JoinType.INNER, EntryRefs.targetEntryId, Entries.id)
-                .slice(EntryRefs.targetEntryId, Entries.type, Entries.title)
-                .select { EntryRefs.sourceEntryId eq eid }
+                .select(EntryRefs.targetEntryId, Entries.type, Entries.title)
+                .where { EntryRefs.sourceEntryId eq eid }
                 .map {
                     EntryRefItem(it[EntryRefs.targetEntryId], it[Entries.type], it[Entries.title])
                 }

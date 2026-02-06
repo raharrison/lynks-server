@@ -6,13 +6,14 @@ import lynks.common.Environment
 import lynks.common.UserSession
 import lynks.common.page.PageRequest
 import lynks.common.page.SortDirection
-import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.v1.core.*
+import org.jetbrains.exposed.v1.jdbc.Query
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.nio.file.Path
 
-fun Query.combine(block: SqlExpressionBuilder.() -> Op<Boolean>): Query {
-    return adjustWhere { this?.and(SqlExpressionBuilder.block()) ?: SqlExpressionBuilder.block() }
+fun Query.combine(block: () -> Op<Boolean>): Query {
+    return adjustWhere { this?.and(block()) ?: block() }
 }
 
 fun ApplicationCall.pageRequest(): PageRequest {

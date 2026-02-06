@@ -1,7 +1,7 @@
 package lynks.user
 
 import lynks.common.EntryType
-import org.jetbrains.exposed.sql.Table
+import org.jetbrains.exposed.v1.core.Table
 
 object Users : Table("USER_PROFILE") {
     val username = varchar("USERNAME", 25)

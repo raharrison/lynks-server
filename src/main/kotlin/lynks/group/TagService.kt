@@ -1,7 +1,8 @@
 package lynks.group
 
-import org.jetbrains.exposed.sql.statements.InsertStatement
-import org.jetbrains.exposed.sql.statements.UpdateBuilder
+import org.jetbrains.exposed.v1.core.statements.InsertStatement
+import org.jetbrains.exposed.v1.core.statements.UpdateBuilder
+
 
 class TagService : GroupService<Tag, NewTag>(GroupType.TAG) {
 

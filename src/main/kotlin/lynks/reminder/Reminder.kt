@@ -3,18 +3,18 @@ package lynks.reminder
 import lynks.common.Entries
 import lynks.common.UID_LENGTH
 import lynks.notify.NotificationMethod
-import org.jetbrains.exposed.sql.ReferenceOption
-import org.jetbrains.exposed.sql.Table
+import org.jetbrains.exposed.v1.core.ReferenceOption
+import org.jetbrains.exposed.v1.core.Table
 
 object Reminders : Table("REMINDER") {
     val reminderId = varchar("REMINDER_ID", UID_LENGTH)
     val entryId = (varchar("ENTRY_ID", UID_LENGTH).references(Entries.id, ReferenceOption.CASCADE)).index()
-    val type = enumeration("REMINDER_TYPE", ReminderType::class)
+    val type = enumerationByName<ReminderType>("REMINDER_TYPE", 16)
     val notifyMethods = varchar("NOTIFY_METHODS", 16)
     val message = varchar("MESSAGE", 255).nullable()
     val spec = varchar("SPEC", 64)
     val tz = varchar("TZ", 32)
-    val status = enumeration("STATUS", ReminderStatus::class)
+    val status = enumerationByName<ReminderStatus>("STATUS", 16)
     val dateCreated = long("DATE_CREATED")
     val dateUpdated = long("DATE_UPDATED")
     override val primaryKey = PrimaryKey(reminderId)

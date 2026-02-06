@@ -7,7 +7,7 @@ import io.ktor.server.auth.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import io.ktor.server.plugins.callid.*
-import io.ktor.server.plugins.callloging.*
+import io.ktor.server.plugins.calllogging.*
 import io.ktor.server.plugins.compression.*
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.plugins.defaultheaders.*
@@ -114,7 +114,7 @@ fun Application.module() {
         workerRegistry.init(this)
     }
 
-    install(Routing) {
+    routing {
         val prefix = Environment.server.rootPath
         route(prefix) {
             unprotectedRoutes(serviceProvider)
@@ -161,7 +161,7 @@ private fun Application.installAuth() {
         cookie<UserSession>("lynks_session", SessionStorageMemory()) {
             cookie.path = "/"
             cookie.secure = Environment.mode == ConfigMode.PROD
-            if(Environment.auth.signingKey == null) {
+            if (Environment.auth.signingKey == null) {
                 throw IllegalArgumentException("Must provide a signing key in properties when auth is enabled")
             }
             val secretSignKey = Environment.auth.signingKey
@@ -188,7 +188,8 @@ private fun Application.installProdFeatures() {
 }
 
 fun main() {
-    embeddedServer(Netty, Environment.server.port, configure = {
-        responseWriteTimeoutSeconds = 30
-    }, module = Application::module).start(wait = true)
+    val port = Environment.server.port
+    embeddedServer(Netty, port = port, host = "0.0.0.0", module = Application::module)
+        .start(wait = true)
+    // TODO: responseWriteTimeoutSeconds = 30
 }

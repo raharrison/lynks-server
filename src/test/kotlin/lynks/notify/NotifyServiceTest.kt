@@ -2,7 +2,7 @@ package lynks.notify
 
 import io.ktor.websocket.*
 import io.mockk.*
-import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
@@ -21,7 +21,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
-@ExperimentalCoroutinesApi
+@DelicateCoroutinesApi
 class NotifyServiceTest: DatabaseTest() {
 
     private val pushoverClient = mockk<PushoverClient>()

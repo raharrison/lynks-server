@@ -3,10 +3,11 @@ package lynks.user
 import dev.turingcomplete.kotlinonetimepassword.GoogleAuthenticator
 import lynks.util.loggerFor
 import org.apache.commons.lang3.StringUtils
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.select
-import org.jetbrains.exposed.sql.transactions.transaction
-import org.jetbrains.exposed.sql.update
+import org.jetbrains.exposed.v1.core.and
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.select
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.jetbrains.exposed.v1.jdbc.update
 
 class TwoFactorService {
 
@@ -25,8 +26,8 @@ class TwoFactorService {
     }
 
     fun getTwoFactorSecret(username: String): String? = transaction {
-        Users.slice(Users.totp)
-            .select { Users.username eq username and Users.activated }
+        Users.select(Users.totp)
+            .where { Users.username eq username and Users.activated }
             .map { it[Users.totp] }
             .singleOrNull()
     }

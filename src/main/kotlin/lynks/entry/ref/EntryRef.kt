@@ -3,8 +3,8 @@ package lynks.entry.ref
 import lynks.common.Entries
 import lynks.common.EntryType
 import lynks.common.UID_LENGTH
-import org.jetbrains.exposed.sql.ReferenceOption
-import org.jetbrains.exposed.sql.Table
+import org.jetbrains.exposed.v1.core.ReferenceOption
+import org.jetbrains.exposed.v1.core.Table
 
 object EntryRefs : Table("ENTRY_REF") {
     val sourceEntryId = (varchar("SOURCE_ENTRY_ID", UID_LENGTH).references(Entries.id, ReferenceOption.CASCADE))
