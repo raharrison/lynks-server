@@ -51,12 +51,15 @@ class LinkSummarizer(private val resourceRetriever: ResourceRetriever) {
     }
 
     private fun mapToSummary(response: SmmryResponse): Summary {
-        val content = response.content!!.split("[BREAK]").joinToString("") { "<p>$it</p>" }
-        return Summary(
-            response.title!!,
-            content,
-            response.keywords!!,
-            response.reduced!!
-        )
+        val content = response.content
+            ?: throw ExecutionException("Smmry response missing content")
+        val title = response.title
+            ?: throw ExecutionException("Smmry response missing title")
+        val keywords = response.keywords
+            ?: throw ExecutionException("Smmry response missing keywords")
+        val reduced = response.reduced
+            ?: throw ExecutionException("Smmry response missing reduced content")
+        val htmlContent = content.split("[BREAK]").joinToString("") { "<p>$it</p>" }
+        return Summary(title, htmlContent, keywords, reduced)
     }
 }

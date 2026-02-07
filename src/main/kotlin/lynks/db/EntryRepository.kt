@@ -10,7 +10,6 @@ import lynks.group.EntryGroups
 import lynks.group.GroupSet
 import lynks.group.GroupSetService
 import lynks.resource.ResourceManager
-import lynks.util.RandomUtils
 import lynks.util.combine
 import lynks.util.findColumn
 import lynks.util.orderBy
@@ -114,7 +113,7 @@ abstract class EntryRepository<T : Entry, S : SlimEntry, U : NewEntry>(
     open fun add(entry: U): T {
         val serviceName = this::class.simpleName
         return transaction {
-            val newId = EntryId(RandomUtils.generateUid())
+            val newId = newEntryId()
             groupSetService.assertGroups(entry.tags, entry.collections)
             Entries.insert(toInsert(newId, entry))
             for (group in entry.tags + entry.collections) {
@@ -136,7 +135,8 @@ abstract class EntryRepository<T : Entry, S : SlimEntry, U : NewEntry>(
             groupSetService.assertGroups(entry.tags, entry.collections)
             val serviceName = this::class.simpleName
             transaction {
-                val where = getBaseQuery().combine { Entries.id eq id.value }.where!!
+                val where = getBaseQuery().combine { Entries.id eq id.value }.where
+                    ?: throw IllegalStateException("Missing where clause for entry update id=${id.value}")
                 val updated = Entries.update({ where }, body = {
                     toUpdate(entry)(it)
                     if(newVersion) {
@@ -164,7 +164,8 @@ abstract class EntryRepository<T : Entry, S : SlimEntry, U : NewEntry>(
         val serviceName = this::class.simpleName
         return transaction {
             groupSetService.assertGroups(entry.tags.map { it.id }, entry.collections.map { it.id })
-            val where = getBaseQuery().combine { Entries.id eq entry.id.value }.where!!
+            val where = getBaseQuery().combine { Entries.id eq entry.id.value }.where
+                ?: throw IllegalStateException("Missing where clause for entry update id=${entry.id.value}")
             val updated = Entries.update({ where }, body = {
                 toUpdate(entry)(it)
                 if (newVersion) {
@@ -193,7 +194,8 @@ abstract class EntryRepository<T : Entry, S : SlimEntry, U : NewEntry>(
             .combine { Entries.id eq id.value }
             .singleOrNull()
         row?.also {
-            val where = getBaseQuery().combine { Entries.id eq id.value }.where!!
+            val where = getBaseQuery().combine { Entries.id eq id.value }.where
+                ?: throw IllegalStateException("Missing where clause for entry props update id=${id.value}")
             val originalProps = row[Entries.props] ?: BaseProperties()
             val newProps = originalProps.merge(props)
             Entries.update({ where }) {
@@ -248,7 +250,8 @@ abstract class EntryRepository<T : Entry, S : SlimEntry, U : NewEntry>(
         return groupSetService.getIn(groupIds)
     }
 
-    protected open fun postprocess(eid: EntryId, entry: U) : T = get(eid)!!
+    protected open fun postprocess(eid: EntryId, entry: U) : T =
+        get(eid) ?: throw IllegalStateException("Entry ${eid.value} not found after postprocess")
 
     protected abstract fun getBaseQuery(base: ColumnSet = Entries, where: BaseEntries = Entries): Query
 

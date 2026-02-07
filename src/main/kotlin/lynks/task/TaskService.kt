@@ -77,7 +77,8 @@ class TaskService(private val entryService: EntryService,
         task.params.forEach {
             if(it.type == TaskParameterType.STATIC) {
                 // take static values from stored task definition not user input
-                taskParams[it.name] = it.value!!
+                val value = it.value ?: throw InvalidModelException("Static param '${it.name}' has no value")
+                taskParams[it.name] = value
             } else if(it.required && !params.containsKey(it.name)) {
                 throw InvalidModelException("'${it.name}' is required parameter for task")
             }

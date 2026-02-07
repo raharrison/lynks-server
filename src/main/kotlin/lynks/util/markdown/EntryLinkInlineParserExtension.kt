@@ -24,9 +24,9 @@ internal class EntryLinkInlineParserExtension : InlineParserExtension {
             val matches = inlineParser.matchWithGroups(ENTRY_LINK_PATTERN)
             if (matches != null) {
                 inlineParser.flushTextNode()
-                val openMarker = matches[1]
-                val text = matches[2]
-                val entryLinkNode = EntryLinkNode(openMarker!!, text!!)
+                val openMarker = matches[1] ?: return false
+                val text = matches[2] ?: return false
+                val entryLinkNode = EntryLinkNode(openMarker, text)
                 inlineParser.block.appendChild(entryLinkNode)
                 return true
             }

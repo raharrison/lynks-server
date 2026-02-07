@@ -54,7 +54,7 @@ fun Route.resource(resourceManager: ResourceManager) {
             return@post
         }
 
-        val extension = FileUtils.getExtension(fileName!!).lowercase()
+        val extension = FileUtils.getExtension(fileName ?: throw InvalidModelException("Missing fileName")).lowercase()
         if (extension !in listOf("jpg", "jpeg", "png")) {
             call.respond(
                 HttpStatusCode.UnsupportedMediaType,
@@ -96,12 +96,12 @@ fun Route.resource(resourceManager: ResourceManager) {
         val resourceCache = ConcurrentHashMap<ResourceId, Pair<Resource, File>>()
 
         get {
-            val id = EntryId(call.parameters["entryId"]!!)
+            val id = EntryId(call.parameters["entryId"] ?: throw InvalidModelException("Missing entryId"))
             call.respond(resourceManager.getResourcesFor(id))
         }
 
         get("/{id}/info") {
-            val id = ResourceId(call.parameters["id"]!!)
+            val id = ResourceId(call.parameters["id"] ?: throw InvalidModelException("Missing id"))
             val resource = resourceManager.getResource(id)
             if (resource == null) call.respond(HttpStatusCode.NotFound)
             else {
@@ -111,7 +111,7 @@ fun Route.resource(resourceManager: ResourceManager) {
         }
 
         get("/{id}") {
-            val id = ResourceId(call.parameters["id"]!!)
+            val id = ResourceId(call.parameters["id"] ?: throw InvalidModelException("Missing id"))
             val res = resourceCache[id] ?: resourceManager.getResourceAsFile(id)?.also {
                 resourceCache[id] = it
             }
@@ -124,12 +124,12 @@ fun Route.resource(resourceManager: ResourceManager) {
         }
 
         post {
-            val entryId = EntryId(call.parameters["entryId"]!!)
+            val entryId = EntryId(call.parameters["entryId"] ?: throw InvalidModelException("Missing entryId"))
             val multipart = call.receiveMultipart()
             var res: Resource? = null
             multipart.forEachPart { part ->
                 if (part is PartData.FileItem) {
-                    val name = part.originalFileName!!
+                    val name = part.originalFileName ?: throw InvalidModelException("Missing fileName")
                     res = resourceManager.saveUploadedResource(entryId, name, part.provider().toInputStream())
                 }
                 part.dispose()
@@ -149,7 +149,7 @@ fun Route.resource(resourceManager: ResourceManager) {
         }
 
         delete("/{id}") {
-            val id = ResourceId(call.parameters["id"]!!)
+            val id = ResourceId(call.parameters["id"] ?: throw InvalidModelException("Missing id"))
             val removed = resourceManager.delete(id)
             if (removed) {
                 resourceCache.remove(id)

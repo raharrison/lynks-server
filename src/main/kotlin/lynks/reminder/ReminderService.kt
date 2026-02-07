@@ -5,8 +5,8 @@ import com.github.shyiko.skedule.Schedule
 import lynks.common.EntryId
 import lynks.common.ReminderId
 import lynks.common.exception.InvalidModelException
+import lynks.common.newReminderId
 import lynks.notify.NotificationMethod
-import lynks.util.RandomUtils
 import lynks.util.loggerFor
 import lynks.worker.CrudType
 import lynks.worker.ReminderWorkerRequest
@@ -90,17 +90,18 @@ class ReminderService(private val workerRegistry: WorkerRegistry) {
             it[dateCreated] = time
             it[dateUpdated] = time
         }
-        get(reminder.reminderId)!!.also {
-            log.info("Created reminder, submitting worker request id={}", reminder.reminderId)
-            workerRegistry.acceptReminderWork(ReminderWorkerRequest(it, CrudType.CREATE))
-        }
+        val created = get(reminder.reminderId)
+            ?: throw IllegalStateException("Reminder ${reminder.reminderId.value} not found after insert")
+        log.info("Created reminder, submitting worker request id={}", reminder.reminderId)
+        workerRegistry.acceptReminderWork(ReminderWorkerRequest(created, CrudType.CREATE))
+        created
     }
 
     fun addReminder(reminder: NewReminder): Reminder = transaction {
-        val id = RandomUtils.generateUid()
+        val id = newReminderId()
         val time = System.currentTimeMillis()
         Reminders.insert {
-            it[reminderId] = id
+            it[reminderId] = id.value
             it[entryId] = reminder.entryId.value
             it[type] = reminder.type
             it[notifyMethods] = reminder.notifyMethods.joinToString(",")
@@ -111,10 +112,11 @@ class ReminderService(private val workerRegistry: WorkerRegistry) {
             it[dateCreated] = time
             it[dateUpdated] = time
         }
-        get(ReminderId(id))!!.also {
-            log.info("Created reminder, submitting worker request id={}", id)
-            workerRegistry.acceptReminderWork(ReminderWorkerRequest(it, CrudType.CREATE))
-        }
+        val created = get(id)
+            ?: throw IllegalStateException("Reminder ${id.value} not found after insert")
+        log.info("Created reminder, submitting worker request id={}", id.value)
+        workerRegistry.acceptReminderWork(ReminderWorkerRequest(created, CrudType.CREATE))
+        created
     }
 
     fun updateReminder(reminder: NewReminder): Reminder? = transaction {

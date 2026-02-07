@@ -18,7 +18,7 @@ object RowMapper {
         return Link(
             id = EntryId(row[table.id]),
             title = row[table.title],
-            url = row[table.plainContent]!!,
+            url = row[table.plainContent] ?: throw IllegalStateException("Missing link url for id=${row[table.id]}"),
             source = row[table.src],
             content = row[table.content],
             dateCreated = row[table.dateCreated],
@@ -51,8 +51,8 @@ object RowMapper {
         return Note(
             id = EntryId(row[table.id]),
             title = row[table.title],
-            plainText = row[table.plainContent]!!,
-            markdownText = row[table.content]!!,
+            plainText = row[table.plainContent] ?: throw IllegalStateException("Missing note plainText for id=${row[table.id]}"),
+            markdownText = row[table.content] ?: throw IllegalStateException("Missing note markdownText for id=${row[table.id]}"),
             dateCreated = row[table.dateCreated],
             dateUpdated = row[table.dateUpdated],
             tags = tags,
@@ -77,8 +77,8 @@ object RowMapper {
     fun toSnippet(table: BaseEntries, row: ResultRow, tags: List<Tag>, collections: List<Collection>): Snippet {
         return Snippet(
             id = EntryId(row[table.id]),
-            plainText = row[table.plainContent]!!,
-            markdownText = row[table.content]!!,
+            plainText = row[table.plainContent] ?: throw IllegalStateException("Missing snippet plainText for id=${row[table.id]}"),
+            markdownText = row[table.content] ?: throw IllegalStateException("Missing snippet markdownText for id=${row[table.id]}"),
             dateCreated = row[table.dateCreated],
             dateUpdated = row[table.dateUpdated],
             tags = tags,
@@ -92,7 +92,7 @@ object RowMapper {
     fun toSlimSnippet(table: BaseEntries, row: ResultRow, tags: List<Tag>, collections: List<Collection>): SlimSnippet {
         return SlimSnippet(
             id = EntryId(row[table.id]),
-            markdownText = row[table.content]!!,
+            markdownText = row[table.content] ?: throw IllegalStateException("Missing slim snippet markdownText for id=${row[table.id]}"),
             dateUpdated = row[table.dateUpdated],
             tags = tags,
             collections = collections,

@@ -77,6 +77,7 @@ repositories {
 
 tasks.test {
     useJUnitPlatform()
+    jvmArgs("-XX:+EnableDynamicAgentLoading")
     systemProperty("CONFIG_MODE", "TEST")
     testLogging {
         events("failed")

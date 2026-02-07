@@ -1,7 +1,6 @@
 package lynks.user
 
 import io.ktor.http.*
-import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
@@ -38,7 +37,7 @@ fun Route.userProtected(userService: UserService) {
         }
 
         get("/{id}") {
-            val username = call.parameters["id"]!!
+            val username = call.parameters["id"] ?: throw InvalidModelException("Missing id")
             if (call.isCallAuthorizedForUser(username)) {
                 val user = userService.getUser(username)
                 if (user == null) call.respond(UnauthorizedResponse())

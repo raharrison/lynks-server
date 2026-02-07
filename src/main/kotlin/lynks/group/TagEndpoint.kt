@@ -1,10 +1,10 @@
 package lynks.group
 
 import io.ktor.http.*
-import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import lynks.common.exception.InvalidModelException
 
 fun Route.tag(tagService: TagService) {
 
@@ -15,7 +15,7 @@ fun Route.tag(tagService: TagService) {
         }
 
         get("/{id}") {
-            val tag = tagService.get(call.parameters["id"]!!)
+            val tag = tagService.get(call.parameters["id"] ?: throw InvalidModelException("Missing id"))
             if (tag == null) call.respond(HttpStatusCode.NotFound)
             else call.respond(tag)
         }
@@ -33,7 +33,7 @@ fun Route.tag(tagService: TagService) {
         }
 
         delete("/{id}") {
-            val id = call.parameters["id"]!!
+            val id = call.parameters["id"] ?: throw InvalidModelException("Missing id")
             val removed = tagService.delete(id)
             if (removed) call.respond(HttpStatusCode.OK)
             else call.respond(HttpStatusCode.NotFound)

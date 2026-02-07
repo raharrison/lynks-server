@@ -24,8 +24,8 @@ fun Route.task(taskService: TaskService) {
     }
 
     post("/entry/{entryId}/task/{id}") {
-        val entryId = EntryId(call.parameters["entryId"]!!)
-        val taskId = TaskId(call.parameters["id"]!!)
+        val entryId = EntryId(call.parameters["entryId"] ?: throw InvalidModelException("Missing entryId"))
+        val taskId = TaskId(call.parameters["id"] ?: throw InvalidModelException("Missing id"))
         val rawInput = call.receive(Map::class)
         val params = validateInputParams(rawInput)
         if (taskService.runTask(entryId, taskId, params))

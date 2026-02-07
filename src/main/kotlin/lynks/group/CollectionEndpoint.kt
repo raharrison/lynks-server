@@ -1,10 +1,10 @@
 package lynks.group
 
 import io.ktor.http.*
-import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import lynks.common.exception.InvalidModelException
 
 fun Route.collection(collectionService: CollectionService) {
 
@@ -15,7 +15,7 @@ fun Route.collection(collectionService: CollectionService) {
         }
 
         get("/{id}") {
-            val collection = collectionService.get(call.parameters["id"]!!)
+            val collection = collectionService.get(call.parameters["id"] ?: throw InvalidModelException("Missing id"))
             if (collection == null) call.respond(HttpStatusCode.NotFound)
             else call.respond(collection)
         }
@@ -33,7 +33,7 @@ fun Route.collection(collectionService: CollectionService) {
         }
 
         delete("/{id}") {
-            val id = call.parameters["id"]!!
+            val id = call.parameters["id"] ?: throw InvalidModelException("Missing id")
             val removed = collectionService.delete(id)
             if (removed) call.respond(HttpStatusCode.OK)
             else call.respond(HttpStatusCode.NotFound)

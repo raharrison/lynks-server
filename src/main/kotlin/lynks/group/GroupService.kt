@@ -109,7 +109,8 @@ abstract class GroupService<T : Grouping<T>, in U : IdBasedNewEntity>(private va
     open fun add(group: U): T = transaction {
         val newId = RandomUtils.generateUid()
         Groups.insert(toInsert(newId, group))
-        val created = queryGroup(newId)!!
+        val created = queryGroup(newId)
+            ?: throw IllegalStateException("Group $newId not found after insert")
         collection.add(created, extractParentId(group))
     }
 
@@ -121,7 +122,9 @@ abstract class GroupService<T : Grouping<T>, in U : IdBasedNewEntity>(private va
             transaction {
                 val updated = Groups.update({ Groups.id eq id }, body = toUpdate(group))
                 if (updated > 0) {
-                    collection.update(queryGroup(id)!!, extractParentId(group))
+                    val existing = queryGroup(id)
+                        ?: throw IllegalStateException("Group $id not found after update")
+                    collection.update(existing, extractParentId(group))
                 } else {
                     log.info("No rows modified when updating group id={}", id)
                     null

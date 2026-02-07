@@ -188,8 +188,11 @@ private fun Application.installProdFeatures() {
 }
 
 fun main() {
-    val port = Environment.server.port
-    embeddedServer(Netty, port = port, host = "0.0.0.0", module = Application::module)
-        .start(wait = true)
-    // TODO: responseWriteTimeoutSeconds = 30
+    embeddedServer(Netty, configure = {
+        connectors.add(EngineConnectorBuilder().apply {
+            host = "0.0.0.0"
+            port = Environment.server.port
+        })
+        responseWriteTimeoutSeconds = 30
+    }, module = Application::module).start(true)
 }

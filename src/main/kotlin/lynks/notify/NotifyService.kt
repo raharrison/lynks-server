@@ -7,6 +7,7 @@ import lynks.common.Entries
 import lynks.common.Environment
 import lynks.common.NotificationId
 import lynks.common.RowMapper.toNotification
+import lynks.common.newNotificationId
 import lynks.common.page.DefaultPageRequest
 import lynks.common.page.Page
 import lynks.common.page.PageRequest
@@ -14,7 +15,6 @@ import lynks.common.page.SortDirection
 import lynks.notify.pushover.PushoverClient
 import lynks.user.UserService
 import lynks.util.JsonMapper.defaultMapper
-import lynks.util.RandomUtils
 import lynks.util.findColumn
 import lynks.util.loggerFor
 import lynks.util.orderBy
@@ -67,7 +67,7 @@ class NotifyService(private val userService: UserService, private val pushoverCl
 
     suspend fun create(newNotification: NewNotification, sendWeb: Boolean = true): Notification {
         val notification = transaction {
-            val id = NotificationId(RandomUtils.generateUid())
+            val id = newNotificationId()
             val time = System.currentTimeMillis()
             Notifications.insert {
                 it[notificationId] = id.value
@@ -77,7 +77,7 @@ class NotifyService(private val userService: UserService, private val pushoverCl
                 it[entryId] = newNotification.entryId?.value
                 it[dateCreated] = time
             }
-            getNotification(id)!!
+            getNotification(id) ?: throw IllegalStateException("Notification ${id.value} not found after insert")
         }
         if (sendWeb) {
             sendWebNotification(notification)

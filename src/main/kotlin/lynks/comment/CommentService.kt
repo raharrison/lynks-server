@@ -3,11 +3,11 @@ package lynks.comment
 import lynks.common.CommentId
 import lynks.common.EntryId
 import lynks.common.RowMapper.toComment
+import lynks.common.newCommentId
 import lynks.common.page.DefaultPageRequest
 import lynks.common.page.Page
 import lynks.common.page.PageRequest
 import lynks.common.page.SortDirection
-import lynks.util.RandomUtils
 import lynks.util.findColumn
 import lynks.util.loggerFor
 import lynks.util.markdown.MarkdownProcessor
@@ -55,19 +55,20 @@ class CommentService(private val workerRegistry: WorkerRegistry, private val mar
     }
 
     fun addComment(eId: EntryId, comment: NewComment): Comment = transaction {
-        val newId = RandomUtils.generateUid()
+        val newId = newCommentId()
         val time = System.currentTimeMillis()
         Comments.insert {
-            it[id] = newId
+            it[id] = newId.value
             it[entryId] = eId.value
             it[plainText] = comment.plainText
             it[markdownText] = markdownProcessor.convertToMarkdown(comment.plainText)
             it[dateCreated] = time
             it[dateUpdated] = time
         }
-        postprocess(eId, CommentId(newId), comment).also {
-            workerRegistry.acceptCommentRefWork(eId, CommentId(newId), CrudType.CREATE)
-        }!!
+        val created = postprocess(eId, newId, comment)
+            ?: throw IllegalStateException("Comment ${newId.value} not found after insert")
+        workerRegistry.acceptCommentRefWork(eId, newId, CrudType.CREATE)
+        created
     }
 
     fun updateComment(entryId: EntryId, comment: NewComment): Comment? {

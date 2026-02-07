@@ -7,6 +7,7 @@ import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
 import io.ktor.websocket.*
 import lynks.common.NotificationId
+import lynks.common.exception.InvalidModelException
 import lynks.util.pageRequest
 
 fun Route.notify(notifyService: NotifyService) {
@@ -19,7 +20,7 @@ fun Route.notify(notifyService: NotifyService) {
         }
 
         get("/{id}") {
-            val notificationId = NotificationId(call.parameters["id"]!!)
+            val notificationId = NotificationId(call.parameters["id"] ?: throw InvalidModelException("Missing id"))
             val notification = notifyService.getNotification(notificationId)
             if (notification == null) call.respond(HttpStatusCode.NotFound)
             else call.respond(notification)
@@ -32,14 +33,14 @@ fun Route.notify(notifyService: NotifyService) {
         }
 
         post("/{id}/read") {
-            val notificationId = NotificationId(call.parameters["id"]!!)
+            val notificationId = NotificationId(call.parameters["id"] ?: throw InvalidModelException("Missing id"))
             val updated = notifyService.read(notificationId, true)
             if (updated == 0) call.respond(HttpStatusCode.NotFound)
             else call.respond(HttpStatusCode.OK)
         }
 
         post("/{id}/unread") {
-            val notificationId = NotificationId(call.parameters["id"]!!)
+            val notificationId = NotificationId(call.parameters["id"] ?: throw InvalidModelException("Missing id"))
             val updated = notifyService.read(notificationId, false)
             if (updated == 0) call.respond(HttpStatusCode.NotFound)
             else call.respond(HttpStatusCode.OK)

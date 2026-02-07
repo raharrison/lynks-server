@@ -21,14 +21,14 @@ fun Route.link(linkService: LinkService) {
         }
 
         get("/{id}") {
-            val link = linkService.get(EntryId(call.parameters["id"]!!))
+            val link = linkService.get(EntryId(call.parameters["id"] ?: throw InvalidModelException("Missing id")))
             if (link == null) call.respond(HttpStatusCode.NotFound)
             else call.respond(link)
         }
 
         get("/{id}/{version}") {
-            val id = call.parameters["id"]!!
-            val version = call.parameters["version"]!!
+            val id = call.parameters["id"] ?: throw InvalidModelException("Missing id")
+            val version = call.parameters["version"] ?: throw InvalidModelException("Missing version")
             val link = linkService.get(EntryId(id), version.toInt())
             if (link == null) call.respond(HttpStatusCode.NotFound)
             else call.respond(link)
@@ -52,27 +52,27 @@ fun Route.link(linkService: LinkService) {
         }
 
         delete("/{id}") {
-            val removed = linkService.delete(EntryId(call.parameters["id"]!!))
+            val removed = linkService.delete(EntryId(call.parameters["id"] ?: throw InvalidModelException("Missing id")))
             if (removed) call.respond(HttpStatusCode.OK)
             else call.respond(HttpStatusCode.NotFound)
         }
 
         post("/{id}/read") {
-            val id = call.parameters["id"]!!
+            val id = call.parameters["id"] ?: throw InvalidModelException("Missing id")
             val updated = linkService.read(EntryId(id), true)
             if (updated == null) call.respond(HttpStatusCode.NotFound)
             else call.respond(updated)
         }
 
         post("/{id}/unread") {
-            val id = call.parameters["id"]!!
+            val id = call.parameters["id"] ?: throw InvalidModelException("Missing id")
             val updated = linkService.read(EntryId(id), false)
             if (updated == null) call.respond(HttpStatusCode.NotFound)
             else call.respond(updated)
         }
 
         post("/{id}/content") {
-            val id = call.parameters["id"]!!
+            val id = call.parameters["id"] ?: throw InvalidModelException("Missing id")
             val content = call.receive<String>()
             val updatedContent = linkService.updateSearchableContent(EntryId(id), content)
             if (updatedContent == null) call.respond(HttpStatusCode.NotFound)
@@ -80,7 +80,7 @@ fun Route.link(linkService: LinkService) {
         }
 
         get("/{id}/launch") {
-            val id = call.parameters["id"]!!
+            val id = call.parameters["id"] ?: throw InvalidModelException("Missing id")
             val read = linkService.read(EntryId(id), true)
             if (read == null) call.respond(HttpStatusCode.NotFound)
             else call.respondRedirect(read.url)

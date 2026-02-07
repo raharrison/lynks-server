@@ -1,6 +1,27 @@
 package lynks.group
 
+import kotlin.IllegalStateException
+import kotlin.String
+import kotlin.Unit
+import kotlin.also
 import kotlin.collections.Collection
+import kotlin.collections.List
+import kotlin.collections.MutableMap
+import kotlin.collections.MutableSet
+import kotlin.collections.filter
+import kotlin.collections.find
+import kotlin.collections.forEach
+import kotlin.collections.getOrPut
+import kotlin.collections.mapNotNull
+import kotlin.collections.mutableMapOf
+import kotlin.collections.mutableSetOf
+import kotlin.collections.plus
+import kotlin.collections.remove
+import kotlin.collections.set
+import kotlin.collections.setOf
+import kotlin.collections.toList
+import kotlin.let
+import kotlin.plus
 
 class GroupCollection<T: Grouping<T>> {
 
@@ -40,12 +61,9 @@ class GroupCollection<T: Grouping<T>> {
     }
 
     private fun traverseParents(id: String, block: (T) -> Unit) {
-        if (groupParents.containsKey(id)) {
-            groupParents[id]?.also {
-                block(groupParents[id]!!)
-                traverseParents(it.id, block)
-            }
-        }
+        val parent = groupParents[id] ?: return
+        block(parent)
+        traverseParents(parent.id, block)
     }
 
     private fun generatePath(group: T): String {
@@ -66,7 +84,8 @@ class GroupCollection<T: Grouping<T>> {
     fun add(group: T, parent: String?): T {
         groupLookup[group.id] = group
         parent?.also {
-            val parentGroup = group(parent)!!
+            val parentGroup = group(parent)
+                ?: throw IllegalStateException("Parent group $parent not found")
             parentGroup.children.add(group)
             groupParents[group.id] = parentGroup
         }
@@ -80,20 +99,23 @@ class GroupCollection<T: Grouping<T>> {
         if(currentParentId != newParentId) {
             // had a parent before so remove from children
             if(currentParentId != null) {
-                val currentParent = group(currentParentId)!!
+                val currentParent = group(currentParentId)
+                    ?: throw IllegalStateException("Current parent $currentParentId not found")
                 currentParent.children.remove(group)
             }
 
             // add as child to new parent
             if(newParentId != null) {
-                val newParent = group(newParentId)!!
+                val newParent = group(newParentId)
+                    ?: throw IllegalStateException("New parent $newParentId not found")
                 newParent.children.add(group)
             }
 
             // recursive update of parents
             build(all().toList())
         }
-        val current = group(group.id)!!
+        val current = group(group.id)
+            ?: throw IllegalStateException("Group ${group.id} not found during update")
         current.name = group.name
         current.path = generatePath(current)
         current.children = group.children

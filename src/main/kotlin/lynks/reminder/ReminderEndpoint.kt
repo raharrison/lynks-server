@@ -5,6 +5,7 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import lynks.common.ReminderId
+import lynks.common.exception.InvalidModelException
 
 fun Route.reminder(reminderService: ReminderService) {
 
@@ -15,7 +16,7 @@ fun Route.reminder(reminderService: ReminderService) {
         }
 
         get("/{id}") {
-            val id = call.parameters["id"]!!
+            val id = call.parameters["id"] ?: throw InvalidModelException("Missing id")
             val reminder = reminderService.get(ReminderId(id))
             if (reminder == null) call.respond(HttpStatusCode.NotFound)
             else call.respond(reminder)
@@ -34,7 +35,7 @@ fun Route.reminder(reminderService: ReminderService) {
         }
 
         delete("/{id}") {
-            val id = call.parameters["id"]!!
+            val id = call.parameters["id"] ?: throw InvalidModelException("Missing id")
             val removed = reminderService.delete(ReminderId(id))
             if (removed) call.respond(HttpStatusCode.OK)
             else call.respond(HttpStatusCode.NotFound)

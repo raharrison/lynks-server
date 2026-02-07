@@ -6,6 +6,7 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import lynks.common.CommentId
 import lynks.common.EntryId
+import lynks.common.exception.InvalidModelException
 import lynks.util.pageRequest
 
 fun Route.comment(commentService: CommentService) {
@@ -14,13 +15,13 @@ fun Route.comment(commentService: CommentService) {
 
         get {
             val page = call.pageRequest()
-            val entryId = EntryId(call.parameters["entryId"]!!)
+            val entryId = EntryId(call.parameters["entryId"] ?: throw InvalidModelException("Missing entryId"))
             call.respond(commentService.getCommentsFor(entryId, page))
         }
 
         get("/{id}") {
-            val commentId = CommentId(call.parameters["id"]!!)
-            val entryId = EntryId(call.parameters["entryId"]!!)
+            val commentId = CommentId(call.parameters["id"] ?: throw InvalidModelException("Missing id"))
+            val entryId = EntryId(call.parameters["entryId"] ?: throw InvalidModelException("Missing entryId"))
             val comment = commentService.getComment(entryId, commentId)
             if (comment == null) call.respond(HttpStatusCode.NotFound)
             else call.respond(comment)
@@ -28,21 +29,21 @@ fun Route.comment(commentService: CommentService) {
 
         post {
             val comment = call.receive<NewComment>()
-            val entryId = EntryId(call.parameters["entryId"]!!)
+            val entryId = EntryId(call.parameters["entryId"] ?: throw InvalidModelException("Missing entryId"))
             call.respond(HttpStatusCode.Created, commentService.addComment(entryId, comment))
         }
 
         put {
             val comment = call.receive<NewComment>()
-            val entryId = EntryId(call.parameters["entryId"]!!)
+            val entryId = EntryId(call.parameters["entryId"] ?: throw InvalidModelException("Missing entryId"))
             val updated = commentService.updateComment(entryId, comment)
             if (updated == null) call.respond(HttpStatusCode.NotFound)
             else call.respond(HttpStatusCode.OK, updated)
         }
 
         delete("/{id}") {
-            val commentId = CommentId(call.parameters["id"]!!)
-            val entryId = EntryId(call.parameters["entryId"]!!)
+            val commentId = CommentId(call.parameters["id"] ?: throw InvalidModelException("Missing id"))
+            val entryId = EntryId(call.parameters["entryId"] ?: throw InvalidModelException("Missing entryId"))
             val removed = commentService.deleteComment(entryId, commentId)
             if (removed) call.respond(HttpStatusCode.OK)
             else call.respond(HttpStatusCode.NotFound)

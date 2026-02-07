@@ -1,7 +1,6 @@
 package lynks.common
 
 import lynks.task.TaskBuilder
-import lynks.util.RandomUtils
 
 open class BaseProperties {
 
@@ -34,7 +33,9 @@ open class BaseProperties {
     }
 
     fun addTask(description: String, task: TaskBuilder): TaskDefinition {
-        val definition = TaskDefinition(TaskId(RandomUtils.generateUid()), description, task.clazz.qualifiedName!!, task.params)
+        val className = task.clazz.qualifiedName
+            ?: throw IllegalStateException("Task class has no qualifiedName")
+        val definition = TaskDefinition(newTaskId(), description, className, task.params)
         addTask(definition)
         return definition
     }

@@ -89,7 +89,9 @@ class LinkService(
     }
 
     fun read(id: EntryId, read: Boolean): Link? = transaction {
-        Entries.update({ getBaseQuery().combine { Entries.id eq id.value }.where!! }) { it[Entries.read] = read }
+        val where = getBaseQuery().combine { Entries.id eq id.value }.where
+            ?: throw IllegalStateException("Missing where clause for link read update id=${id.value}")
+        Entries.update({ where }) { it[Entries.read] = read }
         val readMessage = if (read) "read" else "unread"
         get(id)?.also {
             entryAuditService.acceptAuditEvent(id, LinkService::class.simpleName, "Link marked as $readMessage")
@@ -111,8 +113,9 @@ class LinkService(
 
     fun updateSearchableContent(id: EntryId, content: String?): String? = transaction {
         val normalizedContent = content?.let { Normalize.mostCommonWords(Normalize.normalize(it), 500) }
-        val updated = Entries.update({ getBaseQuery().combine { Entries.id eq id.value }.where!! })
-        { it[Entries.content] = normalizedContent }
+        val where = getBaseQuery().combine { Entries.id eq id.value }.where
+            ?: throw IllegalStateException("Missing where clause for content update id=${id.value}")
+        val updated = Entries.update({ where }) { it[Entries.content] = normalizedContent }
         if(updated > 0) normalizedContent else null
     }
 

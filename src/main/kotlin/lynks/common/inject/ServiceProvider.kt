@@ -11,7 +11,7 @@ class ServiceProvider {
     }
 
     inline fun <reified T: Any> get() : T {
-        return get(T::class.java)!!
+        return get(T::class.java) ?: throw IllegalStateException("No service registered for ${T::class.java.name}")
     }
 
     @Suppress("UNCHECKED_CAST")

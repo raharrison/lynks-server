@@ -97,7 +97,7 @@ class ReminderWorker(
     private suspend fun reminderElapsed(reminder: Reminder) {
         log.info("Reminder elapsed entry={} reminder={}", reminder.entryId, reminder.reminderId)
 
-        val message = if(reminder.message == null) "Reminder Elapsed" else reminder.message!!
+        val message = reminder.message ?: "Reminder Elapsed"
         val notification = notifyService.create(NewNotification.reminder(message, reminder.entryId), false)
 
         for (notifyMethod in EnumSet.copyOf(reminder.notifyMethods)) {

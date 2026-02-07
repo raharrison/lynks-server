@@ -26,7 +26,8 @@ class SnippetService(
     override fun postprocess(eid: EntryId, entry: NewSnippet): Snippet {
         val (replaced, markdown) = markdownProcessor.convertAndProcess(entry.plainText, eid)
         if (replaced > 0) {
-            return update(entry.copy(id = eid, plainText = markdown), newVersion = false)!!
+            return update(entry.copy(id = eid, plainText = markdown), newVersion = false)
+                ?: throw IllegalStateException("Snippet ${eid.value} not found after markdown update")
         }
         return super.postprocess(eid, entry)
     }

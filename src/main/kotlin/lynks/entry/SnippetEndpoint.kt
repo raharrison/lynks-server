@@ -6,6 +6,7 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import lynks.common.EntryId
 import lynks.common.NewSnippet
+import lynks.common.exception.InvalidModelException
 import lynks.util.pageRequest
 
 fun Route.snippet(snippetService: SnippetService) {
@@ -17,14 +18,14 @@ fun Route.snippet(snippetService: SnippetService) {
         }
 
         get("/{id}") {
-            val snippet = snippetService.get(EntryId(call.parameters["id"]!!))
+            val snippet = snippetService.get(EntryId(call.parameters["id"] ?: throw InvalidModelException("Missing id")))
             if (snippet == null) call.respond(HttpStatusCode.NotFound)
             else call.respond(snippet)
         }
 
         get("/{id}/{version}") {
-            val id = call.parameters["id"]!!
-            val version = call.parameters["version"]!!
+            val id = call.parameters["id"] ?: throw InvalidModelException("Missing id")
+            val version = call.parameters["version"] ?: throw InvalidModelException("Missing version")
             val snippet = snippetService.get(EntryId(id), version.toInt())
             if (snippet == null) call.respond(HttpStatusCode.NotFound)
             else call.respond(snippet)
@@ -44,7 +45,7 @@ fun Route.snippet(snippetService: SnippetService) {
         }
 
         delete("/{id}") {
-            val removed = snippetService.delete(EntryId(call.parameters["id"]!!))
+            val removed = snippetService.delete(EntryId(call.parameters["id"] ?: throw InvalidModelException("Missing id")))
             if (removed) call.respond(HttpStatusCode.OK)
             else call.respond(HttpStatusCode.NotFound)
         }

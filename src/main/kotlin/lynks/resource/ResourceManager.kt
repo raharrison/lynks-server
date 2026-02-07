@@ -4,6 +4,7 @@ import lynks.common.EntryId
 import lynks.common.Environment
 import lynks.common.ResourceId
 import lynks.common.RowMapper.toResource
+import lynks.common.newResourceId
 import lynks.util.FileUtils
 import lynks.util.RandomUtils
 import lynks.util.loggerFor
@@ -88,15 +89,15 @@ class ResourceManager {
     }
 
     // get resource grouping id and current max version based on entry id and name
-    private fun currentVersion(entryId: EntryId, name: String): Pair<String, Int> = transaction {
+    private fun currentVersion(entryId: EntryId, name: String): Pair<ResourceId, Int> = transaction {
         Resources.select(Resources.id, Resources.currentVersion)
             .where { (Resources.entryId eq entryId.value) and (Resources.fileName eq name) }
-            .map { Pair(it[Resources.id], it[Resources.currentVersion]) }
-            .singleOrNull() ?: Pair(RandomUtils.generateUid(), 0)
+            .map { Pair(ResourceId(it[Resources.id]), it[Resources.currentVersion]) }
+            .singleOrNull() ?: Pair(newResourceId(), 0)
     }
 
     fun saveGeneratedResource(
-        id: ResourceId = ResourceId(RandomUtils.generateUid()),
+        id: ResourceId = newResourceId(),
         entryId: EntryId,
         name: String,
         extension: String,
@@ -110,7 +111,7 @@ class ResourceManager {
             if (nextVersion == 1) {
                 // create new resource
                 Resources.insert {
-                    it[Resources.id] = currentVersion.first
+                    it[Resources.id] = currentVersion.first.value
                     it[Resources.entryId] = entryId.value
                     it[Resources.currentVersion] = nextVersion
                     it[fileName] = name
@@ -121,19 +122,19 @@ class ResourceManager {
                 }
             } else {
                 // new version of existing resource
-                Resources.update({Resources.id eq currentVersion.first}) {
+                Resources.update({Resources.id eq currentVersion.first.value}) {
                     it[Resources.currentVersion] = nextVersion
                     it[dateUpdated] = time
                 }
             }
             ResourceVersions.insert {
                 it[ResourceVersions.id] = id.value
-                it[resourceId] = currentVersion.first
+                it[resourceId] = currentVersion.first.value
                 it[version] = nextVersion
                 it[ResourceVersions.size] = size
                 it[dateCreated] = time
             }
-            getResource(id)!!
+            getResource(id) ?: throw IllegalStateException("Resource ${id.value} not found after insert")
         }
     }
 
@@ -152,7 +153,7 @@ class ResourceManager {
     }
 
     fun saveGeneratedResource(entryId: EntryId, type: ResourceType, path: Path): Resource {
-        val id = ResourceId(RandomUtils.generateUid())
+        val id = newResourceId()
         val name = path.fileName.toString()
         val extension = FileUtils.getExtension(name)
         val target = constructPath(entryId, id, extension)
@@ -164,7 +165,7 @@ class ResourceManager {
     }
 
     fun saveUploadedResource(entryId: EntryId, name: String, input: InputStream): Resource {
-        val id = ResourceId(RandomUtils.generateUid())
+        val id = newResourceId()
         val ext = FileUtils.getExtension(name)
         val path = constructPath(entryId, id, ext)
         log.info("Saving uploaded resource to {} entry={}", path.toString(), entryId)
@@ -176,7 +177,7 @@ class ResourceManager {
         return saveGeneratedResource(id, entryId, name, ext, ResourceType.UPLOAD, file.length())
     }
 
-    internal fun constructPath(entryId: EntryId, id: ResourceId = ResourceId(RandomUtils.generateUid())): Path {
+    internal fun constructPath(entryId: EntryId, id: ResourceId = newResourceId()): Path {
         val eid = entryId.value
         val firstDir = eid.substring(0, 1); val secondDir = eid.substring(0, 2)
         return Paths.get(Environment.resource.resourceBasePath, firstDir, secondDir, eid, id.value)
@@ -214,7 +215,7 @@ class ResourceManager {
                     it[extension] = format
                     it[dateUpdated] = System.currentTimeMillis()
                 }
-                val updatedResource = getResource(id)!!
+                val updatedResource = getResource(id) ?: return@transaction null
                 // move all versions of the resource to update file extensions
                 getResourceVersions(updatedResource.parentId).forEach { res ->
                     val oldPath = constructPath(updatedResource.entryId, res.id, originalResource.extension)
