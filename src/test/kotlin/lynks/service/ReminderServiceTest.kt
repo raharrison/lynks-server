@@ -3,7 +3,9 @@ package lynks.service
 import io.mockk.mockk
 import io.mockk.verify
 import lynks.common.DatabaseTest
+import lynks.common.EntryId
 import lynks.common.EntryType
+import lynks.common.ReminderId
 import lynks.common.exception.InvalidModelException
 import lynks.notify.NotificationMethod
 import lynks.reminder.*
@@ -31,10 +33,10 @@ class ReminderServiceTest : DatabaseTest() {
 
     @Test
     fun testAddNewReminderDirectly() {
-        val reminder = reminderService.add(reminder("sid", "e1", ReminderType.ADHOC,
+        val reminder = reminderService.add(reminder(ReminderId("sid"), EntryId("e1"), ReminderType.ADHOC,
             listOf(NotificationMethod.EMAIL, NotificationMethod.WEB), "text", 100, ReminderStatus.ACTIVE))
-        assertThat(reminder.reminderId).isEqualTo("sid")
-        assertThat(reminder.entryId).isEqualTo("e1")
+        assertThat(reminder.reminderId).isEqualTo(ReminderId("sid"))
+        assertThat(reminder.entryId).isEqualTo(EntryId("e1"))
         assertThat(reminder.spec).isEqualTo("100")
         assertThat(reminder.message).isEqualTo("text")
         assertThat(reminder.notifyMethods).containsExactly(NotificationMethod.EMAIL, NotificationMethod.WEB)
@@ -47,9 +49,9 @@ class ReminderServiceTest : DatabaseTest() {
 
     @Test
     fun testAddNewReminder() {
-        val reminder1 = NewReminder(null, "e1", ReminderType.ADHOC,
+        val reminder1 = NewReminder(null, EntryId("e1"), ReminderType.ADHOC,
             listOf(NotificationMethod.EMAIL, NotificationMethod.WEB), "message", "100", tz, ReminderStatus.ACTIVE)
-        val reminder2 = NewReminder(null, "e1", ReminderType.RECURRING,
+        val reminder2 = NewReminder(null, EntryId("e1"), ReminderType.RECURRING,
             listOf(NotificationMethod.PUSHOVER, NotificationMethod.EMAIL), "message2", "every", tz, ReminderStatus.DISABLED)
         val saved1 = reminderService.addReminder(reminder1)
         val saved2 = reminderService.addReminder(reminder2)
@@ -77,19 +79,19 @@ class ReminderServiceTest : DatabaseTest() {
     @Test
     fun testAddReminderInvalidTimeZone() {
         assertThrows<IllegalArgumentException> {
-            reminderService.addReminder(NewReminder(null, "e1", ReminderType.ADHOC,
+            reminderService.addReminder(NewReminder(null, EntryId("e1"), ReminderType.ADHOC,
                 listOf(NotificationMethod.WEB), "message", "100", "invalid", ReminderStatus.ACTIVE))
         }
     }
 
     @Test
     fun testAddReminderGivenIdDoesNotPerformUpdate() {
-        val rem = reminderService.addReminder(NewReminder(null, "e1", ReminderType.ADHOC,
+        val rem = reminderService.addReminder(NewReminder(null, EntryId("e1"), ReminderType.ADHOC,
             listOf(NotificationMethod.EMAIL), "message", "100", tz, ReminderStatus.ACTIVE))
-        val res = reminderService.addReminder(NewReminder(rem.reminderId, "e1", ReminderType.RECURRING,
+        val res = reminderService.addReminder(NewReminder(rem.reminderId, EntryId("e1"), ReminderType.RECURRING,
             listOf(NotificationMethod.WEB), "message", "200", tz, ReminderStatus.COMPLETED))
         assertThat(rem.reminderId).isNotEqualTo(res.reminderId)
-        assertThat(res.entryId).isEqualTo("e1")
+        assertThat(res.entryId).isEqualTo(EntryId("e1"))
         assertThat(res.type).isEqualTo(ReminderType.RECURRING)
         assertThat(res.message).isEqualTo("message")
         assertThat(res.spec).isEqualTo("200")
@@ -108,28 +110,30 @@ class ReminderServiceTest : DatabaseTest() {
     @Test
     fun testAddReminderNoEntry() {
         assertThrows<SQLException> {
-            reminderService.add(reminder("sid", "nothing", ReminderType.ADHOC,
+            reminderService.add(reminder(ReminderId("sid"), EntryId("nothing"), ReminderType.ADHOC,
                 listOf(NotificationMethod.WEB), "message", 100, ReminderStatus.ACTIVE))
         }
         assertThrows<SQLException> {
-            reminderService.addReminder(NewReminder(null, "nothing", ReminderType.ADHOC,
+            reminderService.addReminder(NewReminder(null, EntryId("nothing"), ReminderType.ADHOC,
                 listOf(NotificationMethod.EMAIL), "message", "100", tz, ReminderStatus.ACTIVE))
         }
     }
 
     @Test
     fun testGetAllReminders() {
-        reminderService.add(reminder("sid", "e1", ReminderType.ADHOC,
+        reminderService.add(reminder(ReminderId("sid"), EntryId("e1"), ReminderType.ADHOC,
             listOf(NotificationMethod.WEB), "message", 100, ReminderStatus.ACTIVE))
-        reminderService.add(reminder("sid2", "e1", ReminderType.RECURRING,
+        reminderService.add(reminder(ReminderId("sid2"), EntryId("e1"), ReminderType.RECURRING,
             listOf(NotificationMethod.EMAIL), "message", 200, ReminderStatus.COMPLETED))
-        reminderService.add(reminder("sid3", "e2", ReminderType.RECURRING,
+        reminderService.add(reminder(ReminderId("sid3"), EntryId("e2"), ReminderType.RECURRING,
             listOf(NotificationMethod.EMAIL, NotificationMethod.WEB), "message", 300, ReminderStatus.DISABLED))
 
         val reminders = reminderService.getAllReminders()
         assertThat(reminders).hasSize(3)
-        assertThat(reminders).extracting("reminderId").containsExactlyInAnyOrder("sid", "sid2", "sid3")
-        assertThat(reminders).extracting("entryId").containsOnly("e1", "e2")
+        assertThat(reminders).extracting<ReminderId> { it.reminderId }
+            .containsExactlyInAnyOrder(ReminderId("sid"), ReminderId("sid2"), ReminderId("sid3"))
+        assertThat(reminders).extracting<EntryId> { it.entryId }
+            .containsOnly(EntryId("e1"), EntryId("e2"))
         assertThat(reminders).extracting("type").containsOnly(ReminderType.RECURRING, ReminderType.ADHOC)
         assertThat(reminders).extracting("notifyMethods").containsExactlyInAnyOrder(
             listOf(NotificationMethod.WEB), listOf(NotificationMethod.EMAIL),
@@ -144,40 +148,43 @@ class ReminderServiceTest : DatabaseTest() {
 
     @Test
     fun testGetAllActiveReminders() {
-        reminderService.add(reminder("sid", "e1", ReminderType.ADHOC,
+        reminderService.add(reminder(ReminderId("sid"), EntryId("e1"), ReminderType.ADHOC,
             listOf(NotificationMethod.WEB), "message", 100, ReminderStatus.COMPLETED))
-        reminderService.add(reminder("sid2", "e1", ReminderType.RECURRING,
+        reminderService.add(reminder(ReminderId("sid2"), EntryId("e1"), ReminderType.RECURRING,
             listOf(NotificationMethod.EMAIL), "message", 200, ReminderStatus.ACTIVE))
-        reminderService.add(reminder("sid3", "e2", ReminderType.RECURRING,
+        reminderService.add(reminder(ReminderId("sid3"), EntryId("e2"), ReminderType.RECURRING,
             listOf(NotificationMethod.EMAIL, NotificationMethod.WEB), "message", 300, ReminderStatus.DISABLED))
 
         val reminders = reminderService.getAllActiveReminders()
         assertThat(reminders).hasSize(1)
-        assertThat(reminders).extracting("reminderId").containsExactly("sid2")
+        assertThat(reminders).extracting<ReminderId> { it.reminderId }
+            .containsExactly(ReminderId("sid2"))
         assertThat(reminders).extracting("status").containsExactly(ReminderStatus.ACTIVE)
     }
 
     @Test
     fun testGetRemindersForEntry() {
-        reminderService.add(reminder("sid", "e1", ReminderType.ADHOC,
+        reminderService.add(reminder(ReminderId("sid"), EntryId("e1"), ReminderType.ADHOC,
             listOf(NotificationMethod.EMAIL, NotificationMethod.WEB), "message", 100, ReminderStatus.ACTIVE))
-        reminderService.add(reminder("sid2", "e1", ReminderType.RECURRING,
+        reminderService.add(reminder(ReminderId("sid2"), EntryId("e1"), ReminderType.RECURRING,
             listOf(NotificationMethod.EMAIL), "message", 200, ReminderStatus.COMPLETED))
-        reminderService.add(reminder("sid3", "e2", ReminderType.RECURRING,
+        reminderService.add(reminder(ReminderId("sid3"), EntryId("e2"), ReminderType.RECURRING,
             listOf(NotificationMethod.WEB), "message", 300, ReminderStatus.DISABLED))
 
-        val remsE1 = reminderService.getRemindersForEntry("e1")
-        assertThat(remsE1).hasSize(2).extracting("reminderId").containsExactlyInAnyOrder("sid", "sid2")
-        val remsE12 = reminderService.getRemindersForEntry("e2")
-        assertThat(remsE12).hasSize(1).extracting("reminderId").containsExactlyInAnyOrder("sid3")
-        assertThat(reminderService.getRemindersForEntry("nothing")).isEmpty()
+        val remsE1 = reminderService.getRemindersForEntry(EntryId("e1"))
+        assertThat(remsE1).hasSize(2).extracting<ReminderId> { it.reminderId }
+            .containsExactlyInAnyOrder(ReminderId("sid"), ReminderId("sid2"))
+        val remsE12 = reminderService.getRemindersForEntry(EntryId("e2"))
+        assertThat(remsE12).hasSize(1).extracting<ReminderId> { it.reminderId }
+            .containsExactlyInAnyOrder(ReminderId("sid3"))
+        assertThat(reminderService.getRemindersForEntry(EntryId("nothing"))).isEmpty()
     }
 
     @Test
     fun testGetRemindersReturnsType() {
-        val s1 = reminderService.add(reminder("sid", "e1", ReminderType.ADHOC,
+        val s1 = reminderService.add(reminder(ReminderId("sid"), EntryId("e1"), ReminderType.ADHOC,
             listOf(NotificationMethod.WEB), "message", 100, ReminderStatus.DISABLED))
-        val s2 = reminderService.add(reminder("sid3", "e2", ReminderType.RECURRING,
+        val s2 = reminderService.add(reminder(ReminderId("sid3"), EntryId("e2"), ReminderType.RECURRING,
             listOf(NotificationMethod.EMAIL), "message", 300, ReminderStatus.ACTIVE))
         assertThat(reminderService.get(s1.reminderId)).isInstanceOf(Reminder::class.java)
         assertThat(reminderService.get(s2.reminderId)).isInstanceOf(RecurringReminder::class.java)
@@ -185,17 +192,17 @@ class ReminderServiceTest : DatabaseTest() {
 
     @Test
     fun testUpdateReminderNoRow() {
-        assertThat(reminderService.updateReminder(NewReminder("invalid", "e1", ReminderType.ADHOC,
+        assertThat(reminderService.updateReminder(NewReminder(ReminderId("invalid"), EntryId("e1"), ReminderType.ADHOC,
             listOf(NotificationMethod.WEB), "message", "300", tz, ReminderStatus.ACTIVE))).isNull()
         verify(exactly = 0) { workerRegistry.acceptReminderWork(any()) }
     }
 
     @Test
     fun testUpdateReminderNoId() {
-        val res = reminderService.updateReminder(NewReminder(null, "e1", ReminderType.ADHOC,
+        val res = reminderService.updateReminder(NewReminder(null, EntryId("e1"), ReminderType.ADHOC,
             listOf(NotificationMethod.EMAIL, NotificationMethod.WEB), "message", "300", tz, ReminderStatus.ACTIVE))
-        assertThat(res?.reminderId).isNotBlank()
-        assertThat(res?.entryId).isEqualTo("e1")
+        assertThat(res?.reminderId?.value).isNotBlank()
+        assertThat(res?.entryId).isEqualTo(EntryId("e1"))
         assertThat(res?.type).isEqualTo(ReminderType.ADHOC)
         assertThat(res?.notifyMethods).contains(NotificationMethod.EMAIL, NotificationMethod.WEB)
         assertThat(res?.message).isEqualTo("message")
@@ -209,15 +216,16 @@ class ReminderServiceTest : DatabaseTest() {
 
     @Test
     fun testUpdateReminder() {
-        val res1 = reminderService.addReminder(NewReminder(null, "e1", ReminderType.ADHOC,
+        val res1 = reminderService.addReminder(NewReminder(null, EntryId("e1"), ReminderType.ADHOC,
             listOf(NotificationMethod.EMAIL), "message", "100", tz, ReminderStatus.ACTIVE))
-        val res2 = reminderService.addReminder(NewReminder(null, "e1", ReminderType.RECURRING,
+        val res2 = reminderService.addReminder(NewReminder(null, EntryId("e1"), ReminderType.RECURRING,
             listOf(NotificationMethod.WEB), "message", "200", tz, ReminderStatus.DISABLED))
-        assertThat(reminderService.getAllReminders()).hasSize(2).extracting("reminderId").doesNotHaveDuplicates()
+        assertThat(reminderService.getAllReminders()).hasSize(2).extracting<ReminderId> { it.reminderId }
+            .doesNotHaveDuplicates()
 
-        val updated = reminderService.updateReminder(NewReminder(res1.reminderId, "e1", ReminderType.RECURRING,
+        val updated = reminderService.updateReminder(NewReminder(res1.reminderId, EntryId("e1"), ReminderType.RECURRING,
             listOf(NotificationMethod.EMAIL, NotificationMethod.PUSHOVER), "message2", "500", tz, ReminderStatus.COMPLETED))
-        assertThat(updated?.entryId).isEqualTo("e1")
+        assertThat(updated?.entryId).isEqualTo(EntryId("e1"))
         assertThat(updated?.type).isEqualTo(ReminderType.RECURRING)
         assertThat(updated?.notifyMethods).containsExactly(NotificationMethod.EMAIL, NotificationMethod.PUSHOVER)
         assertThat(updated?.message).isEqualTo("message2")
@@ -227,9 +235,9 @@ class ReminderServiceTest : DatabaseTest() {
         assertThat(reminderService.get(res1.reminderId)).isEqualTo(updated)
 
         // cannot update entryId
-        val updated2 = reminderService.updateReminder(NewReminder(res2.reminderId, "e2", ReminderType.ADHOC,
+        val updated2 = reminderService.updateReminder(NewReminder(res2.reminderId, EntryId("e2"), ReminderType.ADHOC,
             listOf(NotificationMethod.EMAIL), "message3", "800", "America/New_York", ReminderStatus.ACTIVE))
-        assertThat(updated2?.entryId).isEqualTo("e1")
+        assertThat(updated2?.entryId).isEqualTo(EntryId("e1"))
         assertThat(updated2?.type).isEqualTo(ReminderType.ADHOC)
         assertThat(updated2?.notifyMethods).containsOnly(NotificationMethod.EMAIL)
         assertThat(updated2?.message).isEqualTo("message3")
@@ -244,17 +252,17 @@ class ReminderServiceTest : DatabaseTest() {
 
     @Test
     fun testUpdateReminderInvalidTimeZone() {
-        val res1 = reminderService.addReminder(NewReminder(null, "e1", ReminderType.ADHOC,
+        val res1 = reminderService.addReminder(NewReminder(null, EntryId("e1"), ReminderType.ADHOC,
             listOf(NotificationMethod.PUSHOVER), "message", "100", tz, ReminderStatus.ACTIVE))
         assertThrows<IllegalArgumentException> {
-            reminderService.updateReminder(NewReminder(res1.reminderId, "e1", ReminderType.RECURRING,
+            reminderService.updateReminder(NewReminder(res1.reminderId, EntryId("e1"), ReminderType.RECURRING,
                 listOf(NotificationMethod.WEB), "message", "500", "invalid", ReminderStatus.DISABLED))
         }
     }
 
     @Test
     fun testUpdateReminderStatus() {
-        val res1 = reminderService.addReminder(NewReminder(null, "e1", ReminderType.ADHOC,
+        val res1 = reminderService.addReminder(NewReminder(null, EntryId("e1"), ReminderType.ADHOC,
             listOf(NotificationMethod.PUSHOVER), "message", "100", tz, ReminderStatus.ACTIVE))
         val updated = reminderService.updateReminderStatus(res1.reminderId, ReminderStatus.COMPLETED)
         assertThat(updated).isOne()
@@ -264,7 +272,7 @@ class ReminderServiceTest : DatabaseTest() {
 
     @Test
     fun testDeleteReminder() {
-        val s1 = reminderService.add(reminder("sid", "e2", ReminderType.RECURRING,
+        val s1 = reminderService.add(reminder(ReminderId("sid"), EntryId("e2"), ReminderType.RECURRING,
             listOf(NotificationMethod.EMAIL), "message", 300, ReminderStatus.ACTIVE))
         assertThat(reminderService.getAllReminders()).hasSize(1)
 
@@ -276,14 +284,14 @@ class ReminderServiceTest : DatabaseTest() {
 
     @Test
     fun testIsActive() {
-        val res1 = reminderService.addReminder(NewReminder(null, "e1", ReminderType.ADHOC,
+        val res1 = reminderService.addReminder(NewReminder(null, EntryId("e1"), ReminderType.ADHOC,
             listOf(NotificationMethod.EMAIL), "elapsed", "100", tz, ReminderStatus.ACTIVE))
-        val res2 = reminderService.addReminder(NewReminder(null, "e1", ReminderType.RECURRING,
+        val res2 = reminderService.addReminder(NewReminder(null, EntryId("e1"), ReminderType.RECURRING,
             listOf(NotificationMethod.WEB), "elapsed", "200", tz, ReminderStatus.DISABLED))
         assertThat(reminderService.isActive(res1.reminderId)).isTrue()
         assertThat(reminderService.isActive(res2.reminderId)).isFalse()
-        assertThat(reminderService.isActive("invalid")).isFalse()
-        assertThat(reminderService.isActive("")).isFalse()
+        assertThat(reminderService.isActive(ReminderId("invalid"))).isFalse()
+        assertThat(reminderService.isActive(ReminderId(""))).isFalse()
     }
 
     @Test
@@ -293,7 +301,7 @@ class ReminderServiceTest : DatabaseTest() {
         assertThrows<InvalidModelException> { reminderService.validateAndTranscribeSchedule("every invalid 17:00") }
     }
 
-    private fun reminder(sid: String, eId: String, type: ReminderType, notifyMethods: List<NotificationMethod> = listOf(NotificationMethod.EMAIL),
+    private fun reminder(sid: ReminderId, eId: EntryId, type: ReminderType, notifyMethods: List<NotificationMethod> = listOf(NotificationMethod.EMAIL),
                          message: String? = null, interval: Long = 0, status: ReminderStatus): Reminder {
         val time = System.currentTimeMillis()
         return when (type) {

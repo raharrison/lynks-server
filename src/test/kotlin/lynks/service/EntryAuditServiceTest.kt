@@ -1,6 +1,7 @@
 package lynks.service
 
 import lynks.common.DatabaseTest
+import lynks.common.EntryId
 import lynks.common.EntryType
 import lynks.entry.EntryAuditService
 import lynks.util.createDummyEntry
@@ -19,18 +20,19 @@ class EntryAuditServiceTest: DatabaseTest() {
 
     @Test
     fun testCreateAndGetAuditItem() {
-        entryAuditService.acceptAuditEvent("e1", "source", "message")
-        entryAuditService.acceptAuditEvent("e1", "source2", "message2")
+        entryAuditService.acceptAuditEvent(EntryId("e1"), "source", "message")
+        entryAuditService.acceptAuditEvent(EntryId("e1"), "source2", "message2")
 
-        val entryAudit = entryAuditService.getEntryAudit("e1")
+        val entryAudit = entryAuditService.getEntryAudit(EntryId("e1"))
         assertThat(entryAudit).hasSize(2)
-        assertThat(entryAudit).extracting("entryId").containsOnly("e1")
+        assertThat(entryAudit).extracting<EntryId> { it.entryId }
+            .containsOnly(EntryId("e1"))
         assertThat(entryAudit).extracting("src").containsExactly("source", "source2")
         assertThat(entryAudit).extracting("details").containsExactly("message", "message2")
     }
 
     @Test
     fun testGetAuditItemsNotExists() {
-        assertThat(entryAuditService.getEntryAudit("invalid")).isEmpty()
+        assertThat(entryAuditService.getEntryAudit(EntryId("invalid"))).isEmpty()
     }
 }

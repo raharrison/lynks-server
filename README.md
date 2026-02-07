@@ -48,8 +48,7 @@ which provides a front-end webapp.
 
 ### UI
 
-- update to Angular 15 when libs are updated
 - file sets with multiple uploads
 - entry colours
-- two-factor auth pages
-- hint for users to create new collections with parents by path
+- adjust main header with search/filter info
+- subtitle searchable task test

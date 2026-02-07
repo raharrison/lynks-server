@@ -1,8 +1,6 @@
 package lynks.resource
 
-import lynks.common.Entries
-import lynks.common.IdBasedCreatedEntity
-import lynks.common.UID_LENGTH
+import lynks.common.*
 import org.jetbrains.exposed.v1.core.ReferenceOption
 import org.jetbrains.exposed.v1.core.Table
 import java.util.*
@@ -29,16 +27,16 @@ object ResourceVersions : Table("RESOURCE_VERSIONS") {
 }
 
 data class Resource(
-    override val id: String,
+    override val id: ResourceId,
     val parentId: String,
-    val entryId: String,
+    val entryId: EntryId,
     val version: Int,
     val name: String,
     val extension: String,
     val type: ResourceType,
     val size: Long,
     val dateCreated: Long
-) : IdBasedCreatedEntity
+) : TypedIdEntity<ResourceId>
 
 enum class ResourceType {
     UPLOAD, // user uploaded

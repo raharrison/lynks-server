@@ -56,7 +56,7 @@ class EntryService(
         Entries.starred, Entries.thumbnailId, Entries.read
     )
 
-    override fun toInsert(eId: String, entry: NewEntry): BaseEntries.(UpdateBuilder<*>) -> Unit {
+    override fun toInsert(eId: EntryId, entry: NewEntry): BaseEntries.(UpdateBuilder<*>) -> Unit {
         throw NotImplementedError()
     }
 
@@ -137,13 +137,13 @@ class EntryService(
                     val res = set.getArray("KEYS")
                     (res.array as Array<*>).forEach { keys.add(it.toString()) }
                 }
-                get(keys, page)
+                get(keys.map { EntryId(it) }, page)
             }
         }
     }
 
-    fun star(id: String, starred: Boolean): Entry? = transaction {
-        val updated = Entries.update({ Entries.id eq id }) {
+    fun star(id: EntryId, starred: Boolean): Entry? = transaction {
+        val updated = Entries.update({ Entries.id eq id.value }) {
             it[Entries.starred] = starred
         }
         if (updated > 0) {
@@ -155,20 +155,20 @@ class EntryService(
         }
     }
 
-    fun getEntryVersions(id: String): List<EntryVersion> = transaction {
+    fun getEntryVersions(id: EntryId): List<EntryVersion> = transaction {
         EntryVersions.select(EntryVersions.id, EntryVersions.version, EntryVersions.dateUpdated)
-            .where { EntryVersions.id eq id }
+            .where { EntryVersions.id eq id.value }
             .orderBy(EntryVersions.version, SortOrder.ASC)
             .map {
                 EntryVersion(
-                    id = it[EntryVersions.id],
+                    id = EntryId(it[EntryVersions.id]),
                     version = it[EntryVersions.version],
                     dateUpdated = it[EntryVersions.dateUpdated]
                 )
             }
     }
 
-    fun updateEntryGroups(entryId: String, tagIds: List<String>, collectionIds: List<String>): Boolean {
+    fun updateEntryGroups(entryId: EntryId, tagIds: List<String>, collectionIds: List<String>): Boolean {
         groupSetService.assertGroups(tagIds, collectionIds)
         if (get(entryId) == null) return false
         transaction {

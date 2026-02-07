@@ -4,6 +4,9 @@ import io.mockk.*
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runTest
+import lynks.common.EntryId
+import lynks.common.NotificationId
+import lynks.common.ReminderId
 import lynks.entry.EntryService
 import lynks.notify.Notification
 import lynks.notify.NotificationMethod
@@ -32,9 +35,9 @@ class ReminderWorkerTest {
     fun before() {
         every { reminderService.getAllActiveReminders() } returns emptyList()
         every { reminderService.updateReminderStatus(any(), any()) } returns 1
-        every { entryService.get("e1") } returns null
+        every { entryService.get(EntryId("e1")) } returns null
         coEvery { notifyService.create(any(), false) } returns Notification(
-            "n1", NotificationType.DISCUSSIONS, "found", false, dateCreated = System.currentTimeMillis()
+            NotificationId("n1"), NotificationType.DISCUSSIONS, "found", false, dateCreated = System.currentTimeMillis()
         )
         coEvery { notifyService.sendWebNotification(any()) } just Runs
         coEvery { notifyService.sendEmail(any(), any(), any()) } just Runs
@@ -53,10 +56,10 @@ class ReminderWorkerTest {
         val tz = ZoneId.systemDefault()
         val fire = Instant.now().plus(15, ChronoUnit.MINUTES).toEpochMilli()
         val fire2 = Instant.now().plus(45, ChronoUnit.MINUTES).toEpochMilli()
-        val reminder = AdhocReminder("sc1", "e1",
+        val reminder = AdhocReminder(ReminderId("sc1"), EntryId("e1"),
             listOf(NotificationMethod.WEB), "message1", fire, tz.id, ReminderStatus.ACTIVE,
             1234, 1234)
-        val reminder2 = AdhocReminder("sc2", "e1",
+        val reminder2 = AdhocReminder(ReminderId("sc2"), EntryId("e1"),
             listOf(NotificationMethod.WEB, NotificationMethod.EMAIL), "message2", fire2,
             tz.id, ReminderStatus.ACTIVE, 1234, 1234)
 
@@ -94,10 +97,10 @@ class ReminderWorkerTest {
         val tz = ZoneId.of("Asia/Singapore")
         val fire = Instant.now().plus(2, ChronoUnit.HOURS).toEpochMilli()
         val fire2 = Instant.now().plus(2, ChronoUnit.HOURS).plus(30, ChronoUnit.MINUTES).toEpochMilli()
-        val reminder = AdhocReminder("sc1", "e1",
+        val reminder = AdhocReminder(ReminderId("sc1"), EntryId("e1"),
             listOf(NotificationMethod.WEB, NotificationMethod.PUSHOVER), "message1", fire, tz.id,
             ReminderStatus.ACTIVE, 1234, 1234)
-        val reminder2 = AdhocReminder("sc2", "e1",
+        val reminder2 = AdhocReminder(ReminderId("sc2"), EntryId("e1"),
             listOf(NotificationMethod.WEB), "message2", fire2,
             tz.id, ReminderStatus.ACTIVE, 1234, 1234)
 
@@ -133,7 +136,7 @@ class ReminderWorkerTest {
     @Test
     fun testRecurringReminderSameTimezone() = runTest {
         val tz = ZoneId.systemDefault()
-        val reminder = RecurringReminder("sc2", "e1",
+        val reminder = RecurringReminder(ReminderId("sc2"), EntryId("e1"),
             listOf(NotificationMethod.WEB, NotificationMethod.PUSHOVER), "message", "every 30 minutes",
             tz.id, ReminderStatus.ACTIVE, 1234, 1234)
 
@@ -168,7 +171,7 @@ class ReminderWorkerTest {
     @Test
     fun testRecurringReminderDifferentTimezone() = runTest {
         val tz = ZoneId.of("Asia/Singapore")
-        val reminder = RecurringReminder("sc1", "e1",
+        val reminder = RecurringReminder(ReminderId("sc1"), EntryId("e1"),
             listOf(NotificationMethod.WEB), "message", "every day 06:00",
             tz.id, ReminderStatus.ACTIVE, 1234, 1234)
 
@@ -200,7 +203,7 @@ class ReminderWorkerTest {
     @Test
     fun testReminderNotExecutedIfNotActive() = runTest {
         val fire = Instant.now().plus(15, ChronoUnit.MINUTES).toEpochMilli()
-        val reminder = AdhocReminder("sc1", "e1",
+        val reminder = AdhocReminder(ReminderId("sc1"), EntryId("e1"),
             listOf(NotificationMethod.WEB, NotificationMethod.PUSHOVER), "message", fire,
             ZoneId.systemDefault().id, ReminderStatus.ACTIVE, 1234, 1234)
 
@@ -221,7 +224,7 @@ class ReminderWorkerTest {
 
     @Test
     fun testRecurringNotExecutedIfNotActive() = runTest {
-        val reminder = RecurringReminder("sc1", "e1",
+        val reminder = RecurringReminder(ReminderId("sc1"), EntryId("e1"),
             listOf(NotificationMethod.WEB, NotificationMethod.PUSHOVER), "message", "every 3 hours",
             ZoneId.systemDefault().id, ReminderStatus.ACTIVE, 1234, 1234)
 
@@ -243,10 +246,10 @@ class ReminderWorkerTest {
     fun testInitFromStart() = runTest {
         val tz = ZoneId.systemDefault()
         val fire = Instant.now().plus(15, ChronoUnit.MINUTES).toEpochMilli()
-        val reminder = AdhocReminder("sc1", "e1",
+        val reminder = AdhocReminder(ReminderId("sc1"), EntryId("e1"),
             listOf(NotificationMethod.WEB), "message1", fire,
             tz.id, ReminderStatus.ACTIVE, 1234, 1234)
-        val recurring = RecurringReminder("sc1", "e1",
+        val recurring = RecurringReminder(ReminderId("sc1"), EntryId("e1"),
             listOf(NotificationMethod.WEB, NotificationMethod.PUSHOVER), "message2", "every 3 hours",
             tz.id, ReminderStatus.ACTIVE, 1234, 1234)
 
@@ -270,13 +273,13 @@ class ReminderWorkerTest {
     fun testOnlyActiveRemindersStarted() = runTest {
         val tz = ZoneId.systemDefault()
         val fire = Instant.now().plus(15, ChronoUnit.MINUTES).toEpochMilli()
-        val active = AdhocReminder("sc1", "e1",
+        val active = AdhocReminder(ReminderId("sc1"), EntryId("e1"),
             listOf(NotificationMethod.WEB), "message1", fire,
             tz.id, ReminderStatus.ACTIVE, 1234, 1234)
-        val disabled = AdhocReminder("sc2", "e1",
+        val disabled = AdhocReminder(ReminderId("sc2"), EntryId("e1"),
             listOf(NotificationMethod.WEB), "message2", fire,
             tz.id, ReminderStatus.DISABLED, 1234, 1234)
-        val completed = AdhocReminder("sc3", "e1",
+        val completed = AdhocReminder(ReminderId("sc3"), EntryId("e1"),
             listOf(NotificationMethod.WEB), "message3", fire,
             tz.id, ReminderStatus.COMPLETED, 1234, 1234)
 
@@ -300,7 +303,7 @@ class ReminderWorkerTest {
     fun testUpdateReminder() = runTest {
         val tz = ZoneId.systemDefault()
         val fire = Instant.now().plus(2, ChronoUnit.HOURS).toEpochMilli()
-        val reminder = AdhocReminder("sc1", "e1",
+        val reminder = AdhocReminder(ReminderId("sc1"), EntryId("e1"),
             listOf(NotificationMethod.WEB), "message", fire, tz.id,ReminderStatus.ACTIVE, 1234, 1234)
 
         val worker = createWorker(coroutineContext)
@@ -326,7 +329,7 @@ class ReminderWorkerTest {
     fun testUpdateReminderToDisabled() = runTest {
         val tz = ZoneId.systemDefault()
         val fire = Instant.now().plus(2, ChronoUnit.HOURS).toEpochMilli()
-        val reminder = AdhocReminder("sc1", "e1",
+        val reminder = AdhocReminder(ReminderId("sc1"), EntryId("e1"),
             listOf(NotificationMethod.WEB), "message", fire, tz.id,ReminderStatus.ACTIVE, 1234, 1234)
 
         val worker = createWorker(coroutineContext)
@@ -350,7 +353,7 @@ class ReminderWorkerTest {
     fun testDeleteReminder() = runTest {
         val tz = ZoneId.systemDefault()
         val fire = Instant.now().plus(2, ChronoUnit.HOURS).toEpochMilli()
-        val reminder = AdhocReminder("sc1", "e1",
+        val reminder = AdhocReminder(ReminderId("sc1"), EntryId("e1"),
             listOf(NotificationMethod.WEB), "message", fire, tz.id, ReminderStatus.ACTIVE, 1234, 1234)
 
         val worker = createWorker(coroutineContext)

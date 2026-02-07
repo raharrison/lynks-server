@@ -16,7 +16,7 @@ object RowMapper {
 
     fun toLink(table: BaseEntries, row: ResultRow, tags: List<Tag>, collections: List<Collection>): Link {
         return Link(
-            id = row[table.id],
+            id = EntryId(row[table.id]),
             title = row[table.title],
             url = row[table.plainContent]!!,
             source = row[table.src],
@@ -28,28 +28,28 @@ object RowMapper {
             props = row[table.props] ?: BaseProperties(),
             version = row[table.version],
             starred = row[table.starred],
-            thumbnailId = row[table.thumbnailId],
+            thumbnailId = row[table.thumbnailId]?.let { ResourceId(it) },
             read = row[table.read] ?: false
         )
     }
 
     fun toSlimLink(table: BaseEntries, row: ResultRow, tags: List<Tag>, collections: List<Collection>): SlimLink {
         return SlimLink(
-            id = row[table.id],
+            id = EntryId(row[table.id]),
             title = row[table.title],
             source = row[table.src],
             dateUpdated = row[table.dateUpdated],
             tags = tags,
             collections = collections,
             starred = row[table.starred],
-            thumbnailId = row[table.thumbnailId],
+            thumbnailId = row[table.thumbnailId]?.let { ResourceId(it) },
             read = row[table.read] ?: false
         )
     }
 
     fun toNote(table: BaseEntries, row: ResultRow, tags: List<Tag>, collections: List<Collection>): Note {
         return Note(
-            id = row[table.id],
+            id = EntryId(row[table.id]),
             title = row[table.title],
             plainText = row[table.plainContent]!!,
             markdownText = row[table.content]!!,
@@ -65,7 +65,7 @@ object RowMapper {
 
     fun toSlimNote(table: BaseEntries, row: ResultRow, tags: List<Tag>, collections: List<Collection>): SlimNote {
         return SlimNote(
-            id = row[table.id],
+            id = EntryId(row[table.id]),
             title = row[table.title],
             dateUpdated = row[table.dateUpdated],
             tags = tags,
@@ -76,7 +76,7 @@ object RowMapper {
 
     fun toSnippet(table: BaseEntries, row: ResultRow, tags: List<Tag>, collections: List<Collection>): Snippet {
         return Snippet(
-            id = row[table.id],
+            id = EntryId(row[table.id]),
             plainText = row[table.plainContent]!!,
             markdownText = row[table.content]!!,
             dateCreated = row[table.dateCreated],
@@ -91,7 +91,7 @@ object RowMapper {
 
     fun toSlimSnippet(table: BaseEntries, row: ResultRow, tags: List<Tag>, collections: List<Collection>): SlimSnippet {
         return SlimSnippet(
-            id = row[table.id],
+            id = EntryId(row[table.id]),
             markdownText = row[table.content]!!,
             dateUpdated = row[table.dateUpdated],
             tags = tags,
@@ -102,7 +102,7 @@ object RowMapper {
 
     fun toFile(table: BaseEntries, row: ResultRow, tags: List<Tag>, collections: List<Collection>): File {
         return File(
-            id = row[table.id],
+            id = EntryId(row[table.id]),
             title = row[table.title],
             dateCreated = row[table.dateCreated],
             dateUpdated = row[table.dateUpdated],
@@ -116,7 +116,7 @@ object RowMapper {
 
     fun toSlimFile(table: BaseEntries, row: ResultRow, tags: List<Tag>, collections: List<Collection>): SlimFile {
         return SlimFile(
-            id = row[table.id],
+            id = EntryId(row[table.id]),
             title = row[table.title],
             dateUpdated = row[table.dateUpdated],
             tags = tags,
@@ -127,8 +127,8 @@ object RowMapper {
 
     fun toComment(row: ResultRow): Comment =
         Comment(
-            id = row[Comments.id],
-            entryId = row[Comments.entryId],
+            id = CommentId(row[Comments.id]),
+            entryId = EntryId(row[Comments.entryId]),
             plainText = row[Comments.plainText],
             markdownText = row[Comments.markdownText],
             dateCreated = row[Comments.dateCreated],
@@ -137,9 +137,9 @@ object RowMapper {
 
     fun toResource(row: ResultRow): Resource {
         return Resource(
-            id = row[ResourceVersions.id],
+            id = ResourceId(row[ResourceVersions.id]),
             parentId = row[Resources.id],
-            entryId = row[Resources.entryId],
+            entryId = EntryId(row[Resources.entryId]),
             version = row[ResourceVersions.version],
             name = row[Resources.fileName],
             extension = row[Resources.extension],
@@ -151,11 +151,11 @@ object RowMapper {
 
     fun toNotification(row: ResultRow): Notification {
         return Notification(
-            id = row[Notifications.notificationId],
+            id = NotificationId(row[Notifications.notificationId]),
             type = row[Notifications.notificationType],
             message = row[Notifications.message],
             read = row[Notifications.read],
-            entryId = row[Notifications.entryId],
+            entryId = row[Notifications.entryId]?.let { EntryId(it) },
             entryType = row[Entries.type],
             entryTitle = row[Entries.title],
             dateCreated = row[Notifications.dateCreated]
@@ -165,7 +165,7 @@ object RowMapper {
     fun toActivityLogItem(row: ResultRow): ActivityLogItem {
         return ActivityLogItem(
             id = row[EntryAudit.auditId],
-            entryId = row[EntryAudit.entryId],
+            entryId = EntryId(row[EntryAudit.entryId]),
             src = row[EntryAudit.src],
             details = row[EntryAudit.details],
             entryType = row[Entries.type],

@@ -3,7 +3,9 @@ package lynks.task.link
 import io.mockk.*
 import kotlinx.coroutines.runBlocking
 import lynks.common.BaseProperties
+import lynks.common.EntryId
 import lynks.common.Link
+import lynks.common.TaskId
 import lynks.common.exception.ExecutionException
 import lynks.entry.EntryAuditService
 import lynks.entry.LinkService
@@ -21,7 +23,7 @@ class LinkSummarizerTaskTest {
     private val entryAuditService = mockk<EntryAuditService>(relaxUnitFun = true)
     private val propsSlot = slot<BaseProperties>()
 
-    private val linkSummarizerTask = LinkSummarizerTask("tid", "eid").also {
+    private val linkSummarizerTask = LinkSummarizerTask(TaskId("tid"), EntryId("eid")).also {
         it.resourceRetriever = resourceRetriever
         it.linkService = linkService
         it.entryAuditService = entryAuditService
@@ -43,10 +45,10 @@ class LinkSummarizerTaskTest {
     @Test
     fun testProcessGeneratesSummary() {
         val context = linkSummarizerTask.createContext(emptyMap())
-        val link = Link("eid", "title", "url", "", "", 1, 1)
+        val link = Link(EntryId("eid"), "title", "url", "", "", 1, 1)
 
-        every { linkService.get("eid") } returns link
-        every { linkService.mergeProps("eid", any()) } just Runs
+        every { linkService.get(EntryId("eid")) } returns link
+        every { linkService.mergeProps(EntryId("eid"), any()) } just Runs
         val successResponse = this.javaClass.getResource("/smmry_response.json").readText()
         coEvery { resourceRetriever.getStringResult(any()) } returns Result.Success(successResponse)
 
@@ -54,9 +56,9 @@ class LinkSummarizerTaskTest {
             linkSummarizerTask.process(context)
         }
 
-        verify(exactly = 1) { linkService.get("eid") }
-        verify(exactly = 1) { linkService.mergeProps("eid", capture(propsSlot)) }
-        verify(exactly = 1) { entryAuditService.acceptAuditEvent("eid", any(), any()) }
+        verify(exactly = 1) { linkService.get(EntryId("eid")) }
+        verify(exactly = 1) { linkService.mergeProps(EntryId("eid"), capture(propsSlot)) }
+        verify(exactly = 1) { entryAuditService.acceptAuditEvent(EntryId("eid"), any(), any()) }
 
         assertThat(propsSlot.captured.getAttribute("summary")).isNotNull()
         assertThat(propsSlot.captured.getAttribute("summary")).isInstanceOf(Summary::class.java)
@@ -65,31 +67,31 @@ class LinkSummarizerTaskTest {
     @Test
     fun testSummaryGenerationReturnsError() {
         val context = linkSummarizerTask.createContext(emptyMap())
-        val link = Link("eid", "title", "url", "", "", 1, 1)
+        val link = Link(EntryId("eid"), "title", "url", "", "", 1, 1)
 
-        every { linkService.get("eid") } returns link
+        every { linkService.get(EntryId("eid")) } returns link
         coEvery { resourceRetriever.getStringResult(any()) } returns Result.Failure(ExecutionException("error"))
 
         runBlocking {
             linkSummarizerTask.process(context)
         }
 
-        verify(exactly = 1) { linkService.get("eid") }
-        verify(exactly = 0) { linkService.mergeProps("eid", any()) }
-        verify(exactly = 1) { entryAuditService.acceptAuditEvent("eid", any(), any()) }
+        verify(exactly = 1) { linkService.get(EntryId("eid")) }
+        verify(exactly = 0) { linkService.mergeProps(EntryId("eid"), any()) }
+        verify(exactly = 1) { entryAuditService.acceptAuditEvent(EntryId("eid"), any(), any()) }
     }
 
     @Test
     fun testProcessLinkDoesntExist() {
         val context = linkSummarizerTask.createContext(emptyMap())
 
-        every { linkService.get("eid") } returns null
+        every { linkService.get(EntryId("eid")) } returns null
 
         runBlocking {
             linkSummarizerTask.process(context)
         }
 
-        verify(exactly = 1) { linkService.get("eid") }
+        verify(exactly = 1) { linkService.get(EntryId("eid")) }
     }
 
 }

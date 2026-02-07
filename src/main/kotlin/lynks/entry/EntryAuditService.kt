@@ -2,6 +2,7 @@ package lynks.entry
 
 import lynks.common.EntryAudit
 import lynks.common.EntryAuditItem
+import lynks.common.EntryId
 import lynks.util.RandomUtils
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.insert
@@ -10,13 +11,13 @@ import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 
 class EntryAuditService {
 
-    fun getEntryAudit(entryId: String): List<EntryAuditItem> = transaction {
-        EntryAudit.selectAll().where { EntryAudit.entryId eq entryId }
+    fun getEntryAudit(entryId: EntryId): List<EntryAuditItem> = transaction {
+        EntryAudit.selectAll().where { EntryAudit.entryId eq entryId.value }
             .orderBy(EntryAudit.timestamp)
             .map {
                 EntryAuditItem(
                     it[EntryAudit.auditId],
-                    it[EntryAudit.entryId],
+                    EntryId(it[EntryAudit.entryId]),
                     it[EntryAudit.src],
                     it[EntryAudit.details],
                     it[EntryAudit.timestamp]
@@ -24,12 +25,12 @@ class EntryAuditService {
             }
     }
 
-    fun acceptAuditEvent(entryId: String, src: String?, details: String): Unit = transaction {
+    fun acceptAuditEvent(entryId: EntryId, src: String?, details: String): Unit = transaction {
         val id = RandomUtils.generateUid()
         val time = System.currentTimeMillis()
         EntryAudit.insert {
             it[auditId] = id
-            it[EntryAudit.entryId] = entryId
+            it[EntryAudit.entryId] = entryId.value
             it[EntryAudit.src] = src
             it[EntryAudit.details] = details
             it[timestamp] = time

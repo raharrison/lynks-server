@@ -2,6 +2,7 @@ package lynks.endpoint
 
 import io.restassured.RestAssured.*
 import io.restassured.http.ContentType
+import lynks.common.EntryId
 import lynks.common.EntryType
 import lynks.common.ServerTest
 import lynks.common.page.Page
@@ -223,9 +224,10 @@ class UserEndpointTest : ServerTest() {
         assertThat(activityLog.page).isEqualTo(1)
         assertThat(activityLog.content).hasSize(2)
         assertThat(activityLog.content).extracting("id").doesNotHaveDuplicates()
-        assertThat(activityLog.content).extracting("entryId").containsOnly("e1")
+        assertThat(activityLog.content).extracting<EntryId> { it.entryId }
+            .containsOnly(EntryId("e1"))
         assertThat(activityLog.content).extracting("details").doesNotHaveDuplicates()
-        assertThat(activityLog.content).extracting("entryType").containsOnly(EntryType.NOTE.name.lowercase())
+        assertThat(activityLog.content).extracting("entryType").containsOnly(EntryType.NOTE)
         assertThat(activityLog.content).extracting("entryTitle").containsOnly("note1")
         assertThat(activityLog.content).extracting("details").doesNotHaveDuplicates()
         assertThat(activityLog.content).extracting("timestamp").doesNotContainNull()

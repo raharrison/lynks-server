@@ -2,6 +2,8 @@ package lynks.reminder
 
 import com.github.shyiko.skedule.InvalidScheduleException
 import com.github.shyiko.skedule.Schedule
+import lynks.common.EntryId
+import lynks.common.ReminderId
 import lynks.common.exception.InvalidModelException
 import lynks.notify.NotificationMethod
 import lynks.util.RandomUtils
@@ -27,12 +29,12 @@ class ReminderService(private val workerRegistry: WorkerRegistry) {
     private fun toModel(row: ResultRow): Reminder {
         return when (row[Reminders.type]) {
             ReminderType.ADHOC -> AdhocReminder(
-                    row[Reminders.reminderId], row[Reminders.entryId], toNotifyMethods(row[Reminders.notifyMethods]),
+                ReminderId(row[Reminders.reminderId]), EntryId(row[Reminders.entryId]), toNotifyMethods(row[Reminders.notifyMethods]),
                     row[Reminders.message], row[Reminders.spec].toLong(), row[Reminders.tz], row[Reminders.status],
                     row[Reminders.dateCreated], row[Reminders.dateUpdated]
             )
             ReminderType.RECURRING -> RecurringReminder(
-                    row[Reminders.reminderId], row[Reminders.entryId], toNotifyMethods(row[Reminders.notifyMethods]),
+                    ReminderId(row[Reminders.reminderId]), EntryId(row[Reminders.entryId]), toNotifyMethods(row[Reminders.notifyMethods]),
                     row[Reminders.message], row[Reminders.spec], row[Reminders.tz], row[Reminders.status],
                     row[Reminders.dateCreated], row[Reminders.dateUpdated]
             )
@@ -44,8 +46,8 @@ class ReminderService(private val workerRegistry: WorkerRegistry) {
         return str.split(',').map { NotificationMethod.valueOf(it) }
     }
 
-    fun getRemindersForEntry(eId: String) = transaction {
-        Reminders.selectAll().where { Reminders.entryId eq eId }
+    fun getRemindersForEntry(eId: EntryId) = transaction {
+        Reminders.selectAll().where { Reminders.entryId eq eId.value }
             .orderBy(Reminders.dateUpdated, SortOrder.DESC)
             .map { toModel(it) }
     }
@@ -61,15 +63,15 @@ class ReminderService(private val workerRegistry: WorkerRegistry) {
             .map { toModel(it) }
     }
 
-    fun get(id: String): Reminder? = transaction {
-        Reminders.selectAll().where { Reminders.reminderId eq id }
+    fun get(id: ReminderId): Reminder? = transaction {
+        Reminders.selectAll().where { Reminders.reminderId eq id.value }
                 .mapNotNull { toModel(it) }.singleOrNull()
     }
 
-    fun isActive(id: String): Boolean = transaction {
+    fun isActive(id: ReminderId): Boolean = transaction {
         Reminders.select(Reminders.reminderId)
             .where {
-                (Reminders.reminderId eq id) and
+                (Reminders.reminderId eq id.value) and
                     (Reminders.status eq ReminderStatus.ACTIVE)
             }.count() > 0
     }
@@ -77,8 +79,8 @@ class ReminderService(private val workerRegistry: WorkerRegistry) {
     fun add(reminder: Reminder): Reminder = transaction {
         val time = System.currentTimeMillis()
         Reminders.insert {
-            it[reminderId] = reminder.reminderId
-            it[entryId] = reminder.entryId
+            it[reminderId] = reminder.reminderId.value
+            it[entryId] = reminder.entryId.value
             it[type] = reminder.type
             it[notifyMethods] = reminder.notifyMethods.joinToString(",")
             it[message] = reminder.message
@@ -99,7 +101,7 @@ class ReminderService(private val workerRegistry: WorkerRegistry) {
         val time = System.currentTimeMillis()
         Reminders.insert {
             it[reminderId] = id
-            it[entryId] = reminder.entryId
+            it[entryId] = reminder.entryId.value
             it[type] = reminder.type
             it[notifyMethods] = reminder.notifyMethods.joinToString(",")
             it[message] = reminder.message
@@ -109,7 +111,7 @@ class ReminderService(private val workerRegistry: WorkerRegistry) {
             it[dateCreated] = time
             it[dateUpdated] = time
         }
-        get(id)!!.also {
+        get(ReminderId(id))!!.also {
             log.info("Created reminder, submitting worker request id={}", id)
             workerRegistry.acceptReminderWork(ReminderWorkerRequest(it, CrudType.CREATE))
         }
@@ -120,7 +122,7 @@ class ReminderService(private val workerRegistry: WorkerRegistry) {
             log.info("No reminder id found, defaulting to adding new reminder")
             addReminder(reminder)
         } else {
-            val updatedCount = Reminders.update({ Reminders.reminderId eq reminder.reminderId }) {
+            val updatedCount = Reminders.update({ Reminders.reminderId eq reminder.reminderId.value }) {
                 it[type] = reminder.type
                 it[notifyMethods] = reminder.notifyMethods.joinToString(",")
                 it[message] = reminder.message
@@ -141,16 +143,16 @@ class ReminderService(private val workerRegistry: WorkerRegistry) {
         }
     }
 
-    fun updateReminderStatus(reminderId: String, status: ReminderStatus) = transaction {
-        Reminders.update({ Reminders.reminderId eq reminderId }) {
+    fun updateReminderStatus(reminderId: ReminderId, status: ReminderStatus) = transaction {
+        Reminders.update({ Reminders.reminderId eq reminderId.value }) {
             it[Reminders.status] = status
         }
     }
 
-    fun delete(id: String): Boolean = transaction {
+    fun delete(id: ReminderId): Boolean = transaction {
         val reminder = get(id)
         if (reminder != null) {
-            Reminders.deleteWhere { Reminders.reminderId eq id }
+            Reminders.deleteWhere { Reminders.reminderId eq id.value }
             workerRegistry.acceptReminderWork(ReminderWorkerRequest(reminder, CrudType.DELETE))
             return@transaction true
         }

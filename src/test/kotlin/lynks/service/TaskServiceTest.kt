@@ -34,7 +34,7 @@ class TaskServiceTest {
         val props = BaseProperties()
         props.addTask(
             TaskDefinition(
-                "task1", "description", LinkProcessingTask::class.qualifiedName!!,
+                TaskId("task1"), "description", LinkProcessingTask::class.qualifiedName!!,
                 listOf(
                     TaskParameter("p1", TaskParameterType.STATIC, value = "v1"),
                     TaskParameter("p2", TaskParameterType.TEXT),
@@ -43,21 +43,21 @@ class TaskServiceTest {
                 )
             )
         )
-        val entry = Link("entry1", "title", "google.com", "src", "", 1234, 1234L, emptyList(), emptyList(), props)
-        every { entryService.get("entry1") } returns entry
+        val entry = Link(EntryId("entry1"), "title", "google.com", "src", "", 1234, 1234L, emptyList(), emptyList(), props)
+        every { entryService.get(EntryId("entry1")) } returns entry
         every { workerRegistry.acceptTaskWork(any(), any()) } just Runs
 
-        val res = taskService.runTask("entry1", "task1", mapOf("p1" to "v3", "p2" to "v2", "p3" to "e2"))
+        val res = taskService.runTask(EntryId("entry1"), TaskId("task1"), mapOf("p1" to "v3", "p2" to "v2", "p3" to "e2"))
 
         assertThat(res).isTrue()
 
         val context = LinkProcessingTask.LinkProcessingTaskContext(mapOf("p1" to "v1", "p2" to "v2", "p3" to "e2"))
-        verify(exactly = 1) { entryService.get("entry1") }
+        verify(exactly = 1) { entryService.get(EntryId("entry1")) }
         verify { workerRegistry.acceptTaskWork(match {
             if(it::class == LinkProcessingTask::class) {
                 val processingTask = it as LinkProcessingTask
-                assertThat(processingTask.id).isEqualTo("task1")
-                assertThat(processingTask.entryId).isEqualTo("entry1")
+                assertThat(processingTask.id).isEqualTo(TaskId("task1"))
+                assertThat(processingTask.entryId).isEqualTo(EntryId("entry1"))
                 assertThat(processingTask.workerRegistry).isEqualTo(workerRegistry)
                 assertThat(processingTask.linkService).isEqualTo(linkService)
                 return@match true
@@ -71,17 +71,17 @@ class TaskServiceTest {
         val props = BaseProperties()
         props.addTask(
             TaskDefinition(
-                "task1", "description", LinkProcessingTask::class.qualifiedName!!,
+                TaskId("task1"), "description", LinkProcessingTask::class.qualifiedName!!,
                 listOf(
                     TaskParameter("p1", TaskParameterType.STATIC, value = "v1"),
                     TaskParameter("p2", TaskParameterType.TEXT)
                 )
             )
         )
-        val entry = Link("entry1", "title", "google.com", "src", "", 1234, 1234L, emptyList(), emptyList(), props)
-        every { entryService.get("entry1") } returns entry
+        val entry = Link(EntryId("entry1"), "title", "google.com", "src", "", 1234, 1234L, emptyList(), emptyList(), props)
+        every { entryService.get(EntryId("entry1")) } returns entry
 
-        assertThrows<InvalidModelException> { taskService.runTask("entry1", "task1", emptyMap()) }
+        assertThrows<InvalidModelException> { taskService.runTask(EntryId("entry1"), TaskId("task1"), emptyMap()) }
     }
 
     @Test
@@ -89,24 +89,24 @@ class TaskServiceTest {
         val props = BaseProperties()
         props.addTask(
             TaskDefinition(
-                "task1", "description", LinkProcessingTask::class.qualifiedName!!,
+                TaskId("task1"), "description", LinkProcessingTask::class.qualifiedName!!,
                 listOf(
                     TaskParameter("p1", TaskParameterType.ENUM, options = listOf("v1", "v2"))
                 )
             )
         )
-        val entry = Link("entry1", "title", "google.com", "src", "", 1234, 1234L, emptyList(), emptyList(), props)
-        every { entryService.get("entry1") } returns entry
+        val entry = Link(EntryId("entry1"), "title", "google.com", "src", "", 1234, 1234L, emptyList(), emptyList(), props)
+        every { entryService.get(EntryId("entry1")) } returns entry
 
-        assertThrows<InvalidModelException> { taskService.runTask("entry1", "task1", mapOf("p1" to "invalid")) }
+        assertThrows<InvalidModelException> { taskService.runTask(EntryId("entry1"), TaskId("task1"), mapOf("p1" to "invalid")) }
     }
 
     @Test
     fun testNoEntryReturnsFalse() {
-        every { entryService.get("invalid") } returns null
-        val res = taskService.runTask("invalid", "task1", emptyMap())
+        every { entryService.get(EntryId("invalid")) } returns null
+        val res = taskService.runTask(EntryId("invalid"), TaskId("task1"), emptyMap())
         assertThat(res).isFalse()
-        verify(exactly = 1) { entryService.get("invalid") }
+        verify(exactly = 1) { entryService.get(EntryId("invalid")) }
     }
 
     @Test
@@ -114,29 +114,29 @@ class TaskServiceTest {
         val props = BaseProperties()
         props.addTask(
             TaskDefinition(
-                "task1",
+                TaskId("task1"),
                 "description",
                 LinkProcessingTask::class.qualifiedName!!
             )
         )
-        val entry = Link("entry1", "title", "google.com", "src", "", 1234, 1234, emptyList(), emptyList(), props)
-        every { entryService.get("entry1") } returns entry
+        val entry = Link(EntryId("entry1"), "title", "google.com", "src", "", 1234, 1234, emptyList(), emptyList(), props)
+        every { entryService.get(EntryId("entry1")) } returns entry
 
-        val res = taskService.runTask("entry1", "invalid", emptyMap())
+        val res = taskService.runTask(EntryId("entry1"), TaskId("invalid"), emptyMap())
         assertThat(res).isFalse()
-        verify(exactly = 1) { entryService.get("entry1") }
+        verify(exactly = 1) { entryService.get(EntryId("entry1")) }
     }
 
     @Test
     fun testRunInvalidTaskClassThrows() {
         val props = BaseProperties().apply {
-            addTask(TaskDefinition("task1", "description", TaskService::class.qualifiedName!!))
+            addTask(TaskDefinition(TaskId("task1"), "description", TaskService::class.qualifiedName!!))
         }
-        val entry = Link("entry1", "title", "google.com", "src", "", 1234, 1234L, emptyList(), emptyList(), props)
-        every { entryService.get("entry1") } returns entry
+        val entry = Link(EntryId("entry1"), "title", "google.com", "src", "", 1234, 1234L, emptyList(), emptyList(), props)
+        every { entryService.get(EntryId("entry1")) } returns entry
 
         assertThrows<IllegalArgumentException> {
-            taskService.runTask("entry1", "task1", emptyMap())
+            taskService.runTask(EntryId("entry1"), TaskId("task1"), emptyMap())
         }
     }
 }

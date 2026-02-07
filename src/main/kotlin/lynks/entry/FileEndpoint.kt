@@ -1,10 +1,10 @@
 package lynks.entry
 
 import io.ktor.http.*
-import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import lynks.common.EntryId
 import lynks.common.NewFile
 import lynks.util.pageRequest
 
@@ -17,7 +17,7 @@ fun Route.file(fileService: FileService) {
         }
 
         get("/{id}") {
-            val file = fileService.get(call.parameters["id"]!!)
+            val file = fileService.get(EntryId(call.parameters["id"]!!))
             if (file == null) call.respond(HttpStatusCode.NotFound)
             else call.respond(file)
         }
@@ -25,7 +25,7 @@ fun Route.file(fileService: FileService) {
         get("/{id}/{version}") {
             val id = call.parameters["id"]!!
             val version = call.parameters["version"]!!
-            val file = fileService.get(id, version.toInt())
+            val file = fileService.get(EntryId(id), version.toInt())
             if (file == null) call.respond(HttpStatusCode.NotFound)
             else call.respond(file)
         }
@@ -44,7 +44,7 @@ fun Route.file(fileService: FileService) {
         }
 
         delete("/{id}") {
-            val removed = fileService.delete(call.parameters["id"]!!)
+            val removed = fileService.delete(EntryId(call.parameters["id"]!!))
             if (removed) call.respond(HttpStatusCode.OK)
             else call.respond(HttpStatusCode.NotFound)
         }

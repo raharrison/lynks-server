@@ -1,5 +1,7 @@
 package lynks.task.link
 
+import lynks.common.EntryId
+import lynks.common.TaskId
 import lynks.common.inject.Inject
 import lynks.entry.LinkService
 import lynks.task.Task
@@ -7,7 +9,7 @@ import lynks.task.TaskBuilder
 import lynks.task.TaskContext
 import lynks.worker.WorkerRegistry
 
-class DiscussionFinderTask(id: String, entryId: String) : Task<TaskContext>(id, entryId) {
+class DiscussionFinderTask(id: TaskId, entryId: EntryId) : Task<TaskContext>(id, entryId) {
 
     @Inject
     lateinit var workerRegistry: WorkerRegistry

@@ -9,6 +9,7 @@ import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import lynks.common.DatabaseTest
+import lynks.common.EntryId
 import lynks.common.Link
 import lynks.entry.LinkService
 import lynks.notify.NotifyService
@@ -27,7 +28,7 @@ class UnreadLinkDigestWorkerTest: DatabaseTest() {
 
     @BeforeEach
     fun setup() {
-        every { linkService.getUnread() } returns listOf(Link("id", "title", "url", "src", "", 0, 0))
+        every { linkService.getUnread() } returns listOf(Link(EntryId("id"), "title", "url", "src", "", 0, 0))
     }
 
     @Test

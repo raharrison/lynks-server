@@ -1,5 +1,7 @@
 package lynks.task.youtube
 
+import lynks.common.EntryId
+import lynks.common.TaskId
 import lynks.common.TaskParameter
 import lynks.common.TaskParameterType
 import lynks.common.inject.Inject
@@ -10,7 +12,7 @@ import lynks.task.TaskContext
 import lynks.util.loggerFor
 import java.util.*
 
-class YoutubeDlAudioTask(id: String, entryId: String) :
+class YoutubeDlAudioTask(id: TaskId, entryId: EntryId) :
     Task<YoutubeDlAudioTask.YoutubeDlAudioTaskContext>(id, entryId) {
 
     private val log = loggerFor<YoutubeDlAudioTask>()

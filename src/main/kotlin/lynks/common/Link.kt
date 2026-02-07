@@ -4,11 +4,11 @@ import lynks.group.Collection
 import lynks.group.Tag
 
 data class Link(
-    override val id: String,
+    override val id: EntryId,
     val title: String,
     val url: String,
     val source: String,
-    var content: String?,
+    val content: String?,
     override val dateCreated: Long,
     override val dateUpdated: Long,
     override val tags: List<Tag> = emptyList(),
@@ -16,7 +16,7 @@ data class Link(
     override val props: BaseProperties = BaseProperties(),
     override val version: Int = 0,
     override val starred: Boolean = false,
-    var thumbnailId: String? = null,
+    val thumbnailId: ResourceId? = null,
     val read: Boolean = false
 ) : Entry {
     override val type = EntryType.LINK
@@ -24,7 +24,7 @@ data class Link(
 
 
 data class NewLink(
-    override val id: String? = null,
+    override val id: EntryId? = null,
     val title: String,
     val url: String,
     override val tags: List<String> = emptyList(),
@@ -34,14 +34,14 @@ data class NewLink(
 
 
 data class SlimLink(
-    override val id: String,
+    override val id: EntryId,
     val title: String,
     val source: String,
     override val dateUpdated: Long,
     override val tags: List<Tag> = emptyList(),
     override val collections: List<Collection> = emptyList(),
     override val starred: Boolean = false,
-    val thumbnailId: String? = null,
+    val thumbnailId: ResourceId? = null,
     val read: Boolean = false
 ) : SlimEntry {
     override val type = EntryType.LINK

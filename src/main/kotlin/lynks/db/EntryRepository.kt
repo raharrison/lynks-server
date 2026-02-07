@@ -27,15 +27,15 @@ abstract class EntryRepository<T : Entry, S : SlimEntry, U : NewEntry>(
     protected val resourceManager: ResourceManager
 ) {
 
-    fun get(id: String): T? = transaction {
-        getBaseQuery().combine { Entries.id eq id }
+    fun get(id: EntryId): T? = transaction {
+        getBaseQuery().combine { Entries.id eq id.value }
             .mapNotNull { toModel(it) }
             .singleOrNull()
     }
 
-    fun get(id: String, version: Int): T? = transaction {
+    fun get(id: EntryId, version: Int): T? = transaction {
         getBaseQuery(EntryVersions, EntryVersions).combine {
-            EntryVersions.id eq id and
+            EntryVersions.id eq id.value and
                 (EntryVersions.version eq version)
         }
             .mapNotNull { toModel(it, EntryVersions) }
@@ -47,14 +47,15 @@ abstract class EntryRepository<T : Entry, S : SlimEntry, U : NewEntry>(
         Page.of(resolveEntryRows(queries.first.toList()), pageRequest, queries.second.count())
     }
 
-    fun get(ids: List<String>, pageRequest: PageRequest = DefaultPageRequest): Page<S> = transaction {
+    fun get(ids: List<EntryId>, pageRequest: PageRequest = DefaultPageRequest): Page<S> = transaction {
         if (ids.isEmpty()) Page.empty()
         else {
             val queries = createPagedQuery(pageRequest)
+            val idValues = ids.map { it.value }
             Page.of(
-                resolveEntryRows(queries.first.combine { Entries.id inList ids }.toList()),
+                resolveEntryRows(queries.first.combine { Entries.id inList idValues }.toList()),
                 pageRequest,
-                queries.second.combine { Entries.id inList ids }.count()
+                queries.second.combine { Entries.id inList idValues }.count()
             )
         }
     }
@@ -113,13 +114,13 @@ abstract class EntryRepository<T : Entry, S : SlimEntry, U : NewEntry>(
     open fun add(entry: U): T {
         val serviceName = this::class.simpleName
         return transaction {
-            val newId = RandomUtils.generateUid()
+            val newId = EntryId(RandomUtils.generateUid())
             groupSetService.assertGroups(entry.tags, entry.collections)
             Entries.insert(toInsert(newId, entry))
             for (group in entry.tags + entry.collections) {
                 EntryGroups.insert {
                     it[groupId] = group
-                    it[entryId] = newId
+                    it[entryId] = newId.value
                 }
             }
             entryAuditService.acceptAuditEvent(newId, serviceName, "Created")
@@ -135,7 +136,7 @@ abstract class EntryRepository<T : Entry, S : SlimEntry, U : NewEntry>(
             groupSetService.assertGroups(entry.tags, entry.collections)
             val serviceName = this::class.simpleName
             transaction {
-                val where = getBaseQuery().combine { Entries.id eq id }.where!!
+                val where = getBaseQuery().combine { Entries.id eq id.value }.where!!
                 val updated = Entries.update({ where }, body = {
                     toUpdate(entry)(it)
                     if(newVersion) {
@@ -163,7 +164,7 @@ abstract class EntryRepository<T : Entry, S : SlimEntry, U : NewEntry>(
         val serviceName = this::class.simpleName
         return transaction {
             groupSetService.assertGroups(entry.tags.map { it.id }, entry.collections.map { it.id })
-            val where = getBaseQuery().combine { Entries.id eq entry.id }.where!!
+            val where = getBaseQuery().combine { Entries.id eq entry.id.value }.where!!
             val updated = Entries.update({ where }, body = {
                 toUpdate(entry)(it)
                 if (newVersion) {
@@ -187,12 +188,12 @@ abstract class EntryRepository<T : Entry, S : SlimEntry, U : NewEntry>(
         }
     }
 
-    fun mergeProps(id: String, props: BaseProperties): Unit = transaction {
+    fun mergeProps(id: EntryId, props: BaseProperties): Unit = transaction {
         val row = getBaseQuery().adjustSelect { select(Entries.props) }
-            .combine { Entries.id eq id }
+            .combine { Entries.id eq id.value }
             .singleOrNull()
         row?.also {
-            val where = getBaseQuery().combine { Entries.id eq id }.where!!
+            val where = getBaseQuery().combine { Entries.id eq id.value }.where!!
             val originalProps = row[Entries.props] ?: BaseProperties()
             val newProps = originalProps.merge(props)
             Entries.update({ where }) {
@@ -201,24 +202,24 @@ abstract class EntryRepository<T : Entry, S : SlimEntry, U : NewEntry>(
         }
     }
 
-    open fun delete(id: String): Boolean = transaction {
+    open fun delete(id: EntryId): Boolean = transaction {
         val entry = getBaseQuery().adjustSelect { this.select(Entries.type) }
-            .combine { Entries.id eq id }
+            .combine { Entries.id eq id.value }
             .singleOrNull()
 
         entry?.let {
-            Entries.deleteWhere { Entries.id eq id } > 0 && resourceManager.deleteAll(id)
+            Entries.deleteWhere { Entries.id eq id.value } > 0 && resourceManager.deleteAll(id)
         } ?: false
     }
 
-    protected fun updateGroupsForEntry(groups: List<String>, id: String) {
+    protected fun updateGroupsForEntry(groups: List<String>, id: EntryId) {
         val currentGroups = getGroupsForEntry(id).run { tags.map { it.id } + collections.map { it.id } }
         val newGroups = groups.toSet()
 
         currentGroups.filterNot { newGroups.contains(it) }
             .forEach { gid ->
                 EntryGroups.deleteWhere {
-                    EntryGroups.entryId eq id and (EntryGroups.groupId eq gid)
+                    EntryGroups.entryId eq id.value and (EntryGroups.groupId eq gid)
                 }
             }
 
@@ -226,7 +227,7 @@ abstract class EntryRepository<T : Entry, S : SlimEntry, U : NewEntry>(
             .forEach { group ->
                 EntryGroups.insert {
                     it[groupId] = group
-                    it[entryId] = id
+                    it[entryId] = id.value
                 }
             }
     }
@@ -240,20 +241,20 @@ abstract class EntryRepository<T : Entry, S : SlimEntry, U : NewEntry>(
             }
     }
 
-    private fun getGroupsForEntry(id: String): GroupSet {
+    private fun getGroupsForEntry(id: EntryId): GroupSet {
         val groupIds = EntryGroups.select(EntryGroups.groupId)
-            .where { EntryGroups.entryId eq id }
+            .where { EntryGroups.entryId eq id.value }
             .map { it[EntryGroups.groupId] }
         return groupSetService.getIn(groupIds)
     }
 
-    protected open fun postprocess(eid: String, entry: U) : T = get(eid)!!
+    protected open fun postprocess(eid: EntryId, entry: U) : T = get(eid)!!
 
     protected abstract fun getBaseQuery(base: ColumnSet = Entries, where: BaseEntries = Entries): Query
 
     protected abstract val slimColumnSet: List<Expression<*>>
 
-    protected abstract fun toInsert(eId: String, entry: U): BaseEntries.(InsertStatement<*>) -> Unit
+    protected abstract fun toInsert(eId: EntryId, entry: U): BaseEntries.(InsertStatement<*>) -> Unit
 
     protected abstract fun toUpdate(entry: U): BaseEntries.(UpdateBuilder<*>) -> Unit
 
@@ -264,7 +265,7 @@ abstract class EntryRepository<T : Entry, S : SlimEntry, U : NewEntry>(
     protected abstract fun toSlimModel(row: ResultRow, groups: GroupSet = GroupSet(), table: BaseEntries = Entries): S
 
     protected fun toModel(row: ResultRow, table: BaseEntries = Entries): T {
-        return toModel(row, getGroupsForEntry(row[table.id]), table)
+        return toModel(row, getGroupsForEntry(EntryId(row[table.id])), table)
     }
 
 }

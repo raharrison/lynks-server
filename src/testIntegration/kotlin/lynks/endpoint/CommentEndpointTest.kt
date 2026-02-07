@@ -4,6 +4,8 @@ import io.restassured.RestAssured.*
 import io.restassured.http.ContentType
 import lynks.comment.Comment
 import lynks.comment.NewComment
+import lynks.common.CommentId
+import lynks.common.EntryId
 import lynks.common.EntryType
 import lynks.common.ServerTest
 import lynks.common.page.Page
@@ -38,12 +40,12 @@ class CommentEndpointTest: ServerTest() {
                 .then()
                 .statusCode(201)
                 .extract().to<Comment>()
-        assertThat(created.entryId).isEqualTo("e1")
+        assertThat(created.entryId).isEqualTo(EntryId("e1"))
         assertThat(created.plainText).isEqualTo(newComment.plainText)
         assertThat(created.markdownText).isEqualTo("<p>some markdown text</p>\n")
-        assertThat(created.entryId).isEqualTo("e1")
+        assertThat(created.entryId).isEqualTo(EntryId("e1"))
         assertThat(created.dateCreated).isEqualTo(created.dateUpdated)
-        val retrieved = get("/entry/{entryId}/comments/{id}", created.entryId, created.id)
+        val retrieved = get("/entry/{entryId}/comments/{id}", created.entryId.value, created.id.value)
                 .then()
                 .extract().to<Comment>()
         assertThat(created).isEqualTo(retrieved)
@@ -62,8 +64,8 @@ class CommentEndpointTest: ServerTest() {
                 .then()
                 .statusCode(200)
                 .extract().to<Comment>()
-        assertThat(comment.id).isEqualTo("c2")
-        assertThat(comment.entryId).isEqualTo("e2")
+        assertThat(comment.id).isEqualTo(CommentId("c2"))
+        assertThat(comment.entryId).isEqualTo(EntryId("e2"))
         assertThat(comment.plainText).isEqualTo("comment content2")
         assertThat(comment.dateCreated).isNotZero()
         assertThat(comment.dateUpdated).isNotZero()
@@ -95,7 +97,7 @@ class CommentEndpointTest: ServerTest() {
 
     @Test
     fun testUpdateComment() {
-        val updatedComment = NewComment("c2", "modified")
+        val updatedComment = NewComment(CommentId("c2"), "modified")
         val updated = given()
                 .contentType(ContentType.JSON)
                 .body(updatedComment)
@@ -114,7 +116,7 @@ class CommentEndpointTest: ServerTest() {
 
     @Test
     fun testUpdateCommentReturnsNotFound() {
-        val updatedComment = NewComment("c2", "modified")
+        val updatedComment = NewComment(CommentId("c2"), "modified")
         given()
                 .contentType(ContentType.JSON)
                 .body(updatedComment)
@@ -132,7 +134,8 @@ class CommentEndpointTest: ServerTest() {
                 .extract().to<Page<Comment>>()
         assertThat(comments.page).isEqualTo(1)
         assertThat(comments.total).isEqualTo(2)
-        assertThat(comments.content).hasSize(2).extracting("id").containsExactlyInAnyOrder("c1", "c3")
+        assertThat(comments.content).hasSize(2).extracting<CommentId> { it.id }
+            .containsExactlyInAnyOrder(CommentId("c1"), CommentId("c3"))
     }
 
     @Test
@@ -149,7 +152,8 @@ class CommentEndpointTest: ServerTest() {
         assertThat(comments.page).isEqualTo(2)
         assertThat(comments.size).isEqualTo(1)
         assertThat(comments.total).isEqualTo(2)
-        assertThat(comments.content).hasSize(1).extracting("id").containsExactly("c3")
+        assertThat(comments.content).hasSize(1).extracting<CommentId> { it.id }
+            .containsExactly(CommentId("c3"))
     }
 
 }

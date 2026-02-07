@@ -15,7 +15,7 @@ class TaskEndpointTest : ServerTest() {
         val props = BaseProperties()
         props.addTask(
             TaskDefinition(
-                "t1", "dummy", LinkProcessingTask::class.qualifiedName!!,
+                TaskId("t1"), "dummy", LinkProcessingTask::class.qualifiedName!!,
                 listOf(TaskParameter("k1", TaskParameterType.TEXT))
             )
         )

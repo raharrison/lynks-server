@@ -1,8 +1,6 @@
 package lynks.service
 
-import lynks.common.DatabaseTest
-import lynks.common.EntryType
-import lynks.common.Environment
+import lynks.common.*
 import lynks.resource.*
 import lynks.util.FileUtils.getExtension
 import lynks.util.FileUtils.removeExtension
@@ -31,17 +29,17 @@ class ResourceManagerTest: DatabaseTest() {
 
     @Test
     fun testGetResourcesNoEntry() {
-        assertThat(resourceManager.getResourcesFor("nothing")).isEmpty()
+        assertThat(resourceManager.getResourcesFor(EntryId("nothing"))).isEmpty()
     }
 
     @Test
     fun testGetResourceDoesntExist() {
-        assertThat(resourceManager.getResource("nothing")).isNull()
+        assertThat(resourceManager.getResource(ResourceId("nothing"))).isNull()
     }
 
     @Test
     fun testGetResourceAsFileDoesntExist() {
-        assertThat(resourceManager.getResourceAsFile("nothing")).isNull()
+        assertThat(resourceManager.getResourceAsFile(ResourceId("nothing"))).isNull()
     }
 
     @Test
@@ -131,38 +129,40 @@ class ResourceManagerTest: DatabaseTest() {
             GeneratedResource(ResourceType.DOCUMENT, path1, HTML),
             GeneratedResource(ResourceType.THUMBNAIL, path2, JPG),
         )
-        val migratedResources = resourceManager.migrateGeneratedResources("eid", generatedResources)
+        val migratedResources = resourceManager.migrateGeneratedResources(EntryId("eid"), generatedResources)
         assertThat(migratedResources).hasSize(2)
-        assertThat(migratedResources).extracting("id").doesNotHaveDuplicates()
+        assertThat(migratedResources).extracting<ResourceId> { it.id }
+            .doesNotHaveDuplicates()
         assertThat(migratedResources).extracting("parentId").doesNotHaveDuplicates()
         assertThat(migratedResources).extracting("version").containsOnly(1)
-        assertThat(migratedResources).extracting("entryId").containsOnly("eid")
+        assertThat(migratedResources).extracting<EntryId> { it.entryId }
+            .containsOnly(EntryId("eid"))
         assertThat(migratedResources).extracting("extension").containsOnly(HTML, JPG)
         assertThat(migratedResources).extracting("extension").containsOnly(HTML, JPG)
 
         // check resources generated
-        val resources = resourceManager.getResourcesFor("eid")
+        val resources = resourceManager.getResourcesFor(EntryId("eid"))
         assertThat(resources).hasSize(2)
         for (resource in resources) {
-            assertThat(resource.entryId).isEqualTo("eid")
+            assertThat(resource.entryId).isEqualTo(EntryId("eid"))
             assertThat(resource.name).startsWith(resource.type.name.lowercase())
             when(resource.type) {
                 ResourceType.DOCUMENT -> {
                     assertThat(resource.extension).isEqualTo(HTML)
                     assertThat(resource.size).isEqualTo(data1.size.toLong())
-                    assertFileContents(resourceManager.constructPath("eid", "${resource.id}.${resource.extension}").toString(), data1)
+                    assertFileContents(resourceManager.constructPath(EntryId("eid"), ResourceId("${resource.id}.${resource.extension}")).toString(), data1)
                 }
                 ResourceType.THUMBNAIL -> {
                     assertThat(resource.extension).isEqualTo(JPG)
                     assertThat(resource.size).isEqualTo(data2.size.toLong())
-                    assertFileContents(resourceManager.constructPath("eid", "${resource.id}.${resource.extension}").toString(), data2)
+                    assertFileContents(resourceManager.constructPath(EntryId("eid"), ResourceId("${resource.id}.${resource.extension}")).toString(), data2)
                 }
                 else -> fail("wrong type")
             }
         }
 
         // check files moved to main area
-        assertFileCount(resourceManager.constructPath("eid", "").toString(), 2)
+        assertFileCount(resourceManager.constructPath(EntryId("eid"), ResourceId("")).toString(), 2)
 
         // check temp files
         assertThat(fileExists(path1)).isFalse()
@@ -172,19 +172,19 @@ class ResourceManagerTest: DatabaseTest() {
     @Test
     fun testMigrateResourcesDoesntExist() {
         val generatedResources = listOf(GeneratedResource(ResourceType.THUMBNAIL, "invalid.txt", TEXT))
-        val resources = resourceManager.migrateGeneratedResources("eid", generatedResources)
+        val resources = resourceManager.migrateGeneratedResources(EntryId("eid"), generatedResources)
         assertThat(resources).isEmpty()
     }
 
     @Test
     fun testConstructPath() {
-        val eid = "id1"
+        val eid = EntryId("id1")
         val file = "file.txt"
-        val path = resourceManager.constructPath(eid, file)
+        val path = resourceManager.constructPath(eid, ResourceId(file))
         val pathStr = path.toUrlString()
         assertThat(pathStr).startsWith(Environment.resource.resourceBasePath)
         assertThat(path.fileName.toString()).isEqualTo(file)
-        assertThat(path.parent.fileName.toString()).isEqualTo(eid)
+        assertThat(path.parent.fileName.toString()).isEqualTo(eid.value)
     }
 
     @Test
@@ -193,12 +193,12 @@ class ResourceManagerTest: DatabaseTest() {
         val extension = "txt"
         val length = 127L
         val resource = resourceManager.saveGeneratedResource(
-                entryId = "eid",
+                entryId = EntryId("eid"),
                 name = filename,
                 extension = extension,
                 size = length,
                 type = ResourceType.UPLOAD)
-        assertThat(resource.entryId).isEqualTo("eid")
+        assertThat(resource.entryId).isEqualTo(EntryId("eid"))
         assertThat(resource.version).isOne()
         assertThat(resource.name).isEqualTo(filename)
         assertThat(resource.extension).isEqualTo(extension)
@@ -210,12 +210,12 @@ class ResourceManagerTest: DatabaseTest() {
 
         // save another version
         val resource2 = resourceManager.saveGeneratedResource(
-            entryId = "eid",
+            entryId = EntryId("eid"),
             name = filename,
             extension = extension,
             size = length,
             type = ResourceType.UPLOAD)
-        assertThat(resource2.entryId).isEqualTo("eid")
+        assertThat(resource2.entryId).isEqualTo(EntryId("eid"))
         assertThat(resource2.version).isEqualTo(2)
         assertThat(resource2.name).isEqualTo(filename)
         assertThat(resource2.extension).isEqualTo(extension)
@@ -228,37 +228,37 @@ class ResourceManagerTest: DatabaseTest() {
 
     @Test
     fun testGetResourceById() {
-        val resource1 = resourceManager.saveGeneratedResource("rid", "eid", "file1.txt", "txt", ResourceType.UPLOAD, 12L)
-        val resource2 = resourceManager.saveGeneratedResource("rid2", "eid2", "file2.html", HTML, ResourceType.SCREENSHOT, 15L)
+        val resource1 = resourceManager.saveGeneratedResource(ResourceId("rid"), EntryId("eid"), "file1.txt", "txt", ResourceType.UPLOAD, 12L)
+        val resource2 = resourceManager.saveGeneratedResource(ResourceId("rid2"), EntryId("eid2"), "file2.html", HTML, ResourceType.SCREENSHOT, 15L)
 
-        val retrieved1 = resourceManager.getResource("rid")
+        val retrieved1 = resourceManager.getResource(ResourceId("rid"))
         assertThat(retrieved1).isNotNull.isEqualTo(resource1)
-        assertThat(retrieved1).isEqualTo(Resource("rid", resource1.parentId, "eid", 1, "file1.txt", "txt", ResourceType.UPLOAD, 12L, resource1.dateCreated))
+        assertThat(retrieved1).isEqualTo(Resource(ResourceId("rid"), resource1.parentId, EntryId("eid"), 1, "file1.txt", "txt", ResourceType.UPLOAD, 12L, resource1.dateCreated))
 
-        val retrieved2 = resourceManager.getResource("rid2")
+        val retrieved2 = resourceManager.getResource(ResourceId("rid2"))
         assertThat(retrieved2).isNotNull.isEqualTo(resource2)
-        assertThat(retrieved2).isEqualTo(Resource("rid2", resource2.parentId, "eid2", 1, "file2.html", HTML, ResourceType.SCREENSHOT, 15L, resource2.dateCreated))
+        assertThat(retrieved2).isEqualTo(Resource(ResourceId("rid2"), resource2.parentId, EntryId("eid2"), 1, "file2.html", HTML, ResourceType.SCREENSHOT, 15L, resource2.dateCreated))
     }
 
     @Test
     fun testGetResourcesForEntry() {
-        val resource1 = resourceManager.saveGeneratedResource("rid", "eid", "file1.txt", "txt", ResourceType.UPLOAD, 12L)
-        val resource12 = resourceManager.saveGeneratedResource("rid12", "eid", "file1.txt", "txt", ResourceType.UPLOAD, 15L)
-        val resource13 = resourceManager.saveGeneratedResource("rid13", "eid", "file1.txt", "txt", ResourceType.UPLOAD, 122L)
-        val resource2 = resourceManager.saveGeneratedResource("rid2", "eid2", "file2.html", HTML, ResourceType.SCREENSHOT, 15L)
-        val resource3 = resourceManager.saveGeneratedResource("rid3", "eid2", "file3.kt", "kt", ResourceType.DOCUMENT, 22L)
+        val resource1 = resourceManager.saveGeneratedResource(ResourceId("rid"), EntryId("eid"), "file1.txt", "txt", ResourceType.UPLOAD, 12L)
+        val resource12 = resourceManager.saveGeneratedResource(ResourceId("rid12"), EntryId("eid"), "file1.txt", "txt", ResourceType.UPLOAD, 15L)
+        val resource13 = resourceManager.saveGeneratedResource(ResourceId("rid13"), EntryId("eid"), "file1.txt", "txt", ResourceType.UPLOAD, 122L)
+        val resource2 = resourceManager.saveGeneratedResource(ResourceId("rid2"), EntryId("eid2"), "file2.html", HTML, ResourceType.SCREENSHOT, 15L)
+        val resource3 = resourceManager.saveGeneratedResource(ResourceId("rid3"), EntryId("eid2"), "file3.kt", "kt", ResourceType.DOCUMENT, 22L)
 
-        val e1 = resourceManager.getResourcesFor("eid")
+        val e1 = resourceManager.getResourcesFor(EntryId("eid"))
         assertThat(e1).hasSize(3).containsExactly(resource1, resource12, resource13)
         assertThat(e1).extracting("parentId").containsOnly(resource1.parentId)
 
-        val e2 = resourceManager.getResourcesFor("eid2")
+        val e2 = resourceManager.getResourcesFor(EntryId("eid2"))
         assertThat(e2).hasSize(2).containsExactlyInAnyOrder(resource2, resource3)
     }
 
     @Test
     fun testSaveGeneratedResourceWithData() {
-        val entryId = "eid"
+        val entryId = EntryId("eid")
         val extension = JPG
         val data = byteArrayOf(1,2,3,4,5)
         val data2 = byteArrayOf(5,4,3,2,1)
@@ -277,11 +277,11 @@ class ResourceManagerTest: DatabaseTest() {
         assertThat(resource2.type).isEqualTo(ResourceType.SCREENSHOT)
         assertThat(resource2.name).isEqualTo("res1.jpg")
 
-        assertFileContents(resourceManager.constructPath(entryId, "${resource.id}.${resource.extension}").toString(), data)
-        assertFileContents(resourceManager.constructPath(entryId, "${resource2.id}.${resource2.extension}").toString(), data2)
+        assertFileContents(resourceManager.constructPath(entryId, ResourceId("${resource.id}.${resource.extension}")).toString(), data)
+        assertFileContents(resourceManager.constructPath(entryId, ResourceId("${resource2.id}.${resource2.extension}")).toString(), data2)
         resourceManager.saveGeneratedResource(entryId, "res2.jpg", ResourceType.THUMBNAIL, data)
-        assertFileCount(resourceManager.constructPath(entryId, "").toString(), 3)
-        assertFileContents(resourceManager.constructPath(entryId, "${resource.id}.${resource.extension}").toString(), data)
+        assertFileCount(resourceManager.constructPath(entryId, ResourceId("")).toString(), 3)
+        assertFileContents(resourceManager.constructPath(entryId, ResourceId("${resource.id}.${resource.extension}")).toString(), data)
 
         val res = resourceManager.getResourceAsFile(resource.id)
         assertThat(res?.first).isEqualTo(resource)
@@ -299,18 +299,18 @@ class ResourceManagerTest: DatabaseTest() {
 
     @Test
     fun testSaveGeneratedResourceFromFile() {
-        val entryId = "eid"
+        val entryId = EntryId("eid")
         val data = byteArrayOf(1,2,3,4,5)
-        val path = resourceManager.constructPath(entryId, "res1.jpg")
+        val path = resourceManager.constructPath(entryId, ResourceId("res1.jpg"))
         path.toFile().apply {
             parentFile.mkdirs()
             createNewFile()
         }
         Files.write(path, data)
-        assertFileCount(resourceManager.constructPath(entryId, "").toString(), 1)
+        assertFileCount(resourceManager.constructPath(entryId, ResourceId("")).toString(), 1)
         assertFileContents(path.toString(), data)
 
-        val resource = resourceManager.saveGeneratedResource("eid", ResourceType.GENERATED, path)
+        val resource = resourceManager.saveGeneratedResource(EntryId("eid"), ResourceType.GENERATED, path)
         assertThat(resource.entryId).isEqualTo(entryId)
         assertThat(resource.version).isOne()
         assertThat(resource.extension).isEqualTo(JPG)
@@ -319,16 +319,16 @@ class ResourceManagerTest: DatabaseTest() {
         assertThat(resource.name).isEqualTo("res1.jpg")
 
         assertThat(path.toFile().exists()).isFalse()
-        val newPath = resourceManager.constructPath(entryId, "${resource.id}.${resource.extension}")
+        val newPath = resourceManager.constructPath(entryId, ResourceId("${resource.id}.${resource.extension}"))
         assertThat(newPath.toFile().exists()).isTrue()
-        assertFileCount(resourceManager.constructPath(entryId, "").toString(), 1)
+        assertFileCount(resourceManager.constructPath(entryId, ResourceId("")).toString(), 1)
         assertFileContents(newPath.toString(), data)
     }
 
     @Test
     fun testGetResourceAsFile() {
         val data = byteArrayOf(1,2,3,4,5)
-        val resource = resourceManager.saveGeneratedResource("eid", "res.jpg", ResourceType.SCREENSHOT, data)
+        val resource = resourceManager.saveGeneratedResource(EntryId("eid"), "res.jpg", ResourceType.SCREENSHOT, data)
         val res = resourceManager.getResourceAsFile(resource.id)
         assertThat(res?.second?.readBytes()).isEqualTo(data)
         assertThat(res?.second?.name).isEqualTo("${resource.id}.$JPG")
@@ -336,7 +336,7 @@ class ResourceManagerTest: DatabaseTest() {
 
     @Test
     fun testSaveUploadedResource() {
-        val entryId = "eid"
+        val entryId = EntryId("eid")
         val name = "content.txt"
         val data = byteArrayOf(1,2,3)
         val resource = resourceManager.saveUploadedResource(entryId, name, data.inputStream())
@@ -369,7 +369,7 @@ class ResourceManagerTest: DatabaseTest() {
 
     @Test
     fun testUpdateResource() {
-        val entryId = "eid"
+        val entryId = EntryId("eid")
         val name = "content.txt"
         val data = byteArrayOf(1,2,3,4,5,6,7,8,9)
         val data2 = byteArrayOf(5,4,3,2,1)
@@ -381,7 +381,7 @@ class ResourceManagerTest: DatabaseTest() {
         assertThat(resource.extension).isEqualTo("txt")
         assertThat(resource.version).isOne()
         assertThat(resource2.version).isEqualTo(2)
-        assertFileCount(resourceManager.constructPath(entryId, "").toString(), 2)
+        assertFileCount(resourceManager.constructPath(entryId, ResourceId("")).toString(), 2)
         val originalResourceAsFile = resourceManager.getResourceAsFile(resource.id)
         assertThat(originalResourceAsFile?.second?.name).endsWith("${resource.id}.txt")
         assertFileContents(originalResourceAsFile?.second.toString(), data)
@@ -402,7 +402,7 @@ class ResourceManagerTest: DatabaseTest() {
 
         val retrievedResource = resourceManager.getResource(resource.id)
         assertThat(retrievedResource).isEqualTo(updatedResource)
-        assertFileCount(resourceManager.constructPath(entryId, "").toString(), 2)
+        assertFileCount(resourceManager.constructPath(entryId, ResourceId("")).toString(), 2)
 
         val retrievedResource2 = resourceManager.getResource(resource2.id)
         assertThat(retrievedResource2?.version).isEqualTo(2)
@@ -423,52 +423,52 @@ class ResourceManagerTest: DatabaseTest() {
 
     @Test
     fun testUpdateResourceDoesntExist() {
-        val resource = Resource("invalid", "pid", "eid", 1, "file1.txt", "txt", ResourceType.UPLOAD, 12L, 1234)
+        val resource = Resource(ResourceId("invalid"), "pid", EntryId("eid"), 1, "file1.txt", "txt", ResourceType.UPLOAD, 12L, 1234)
         val updated = resourceManager.updateResource(resource)
         assertThat(updated).isNull()
     }
 
     @Test
     fun testDeleteResourceDoesntExist() {
-        assertThat(resourceManager.delete("nothing")).isFalse()
+        assertThat(resourceManager.delete(ResourceId("nothing"))).isFalse()
     }
 
     @Test
     fun testDeleteAllForEntryDoesntExist() {
         // still successfully deleted everything
-        assertThat(resourceManager.deleteAll("nothing")).isTrue()
+        assertThat(resourceManager.deleteAll(EntryId("nothing"))).isTrue()
     }
 
     @Test
     fun testDeleteLastResourceVersion() {
-        val entryId = "eid"
+        val entryId = EntryId("eid")
         val data = byteArrayOf(1,2,3,4,5)
         val resource = resourceManager.saveGeneratedResource(entryId, "res.jpg", ResourceType.SCREENSHOT, data)
         assertThat(resourceManager.getResource(resource.id)).isNotNull()
-        assertFileCount(resourceManager.constructPath(entryId, "").toString(), 1)
+        assertFileCount(resourceManager.constructPath(entryId, ResourceId("")).toString(), 1)
         assertThat(resourceManager.delete(resource.id)).isTrue()
         assertThat(resourceManager.getResource(resource.id)).isNull()
-        assertFileCount(resourceManager.constructPath(entryId, "").toString(), 0)
+        assertFileCount(resourceManager.constructPath(entryId, ResourceId("")).toString(), 0)
     }
 
     @Test
     fun testDeleteResourceVersion() {
-        val entryId = "eid"
+        val entryId = EntryId("eid")
         val data = byteArrayOf(1,2,3,4,5)
         val resource = resourceManager.saveGeneratedResource(entryId, "res.jpg", ResourceType.SCREENSHOT, data)
         val resource2 = resourceManager.saveGeneratedResource(entryId, "res.jpg", ResourceType.SCREENSHOT, data)
         assertThat(resourceManager.getResource(resource.id)).isNotNull()
         assertThat(resourceManager.getResource(resource2.id)).isNotNull()
-        assertFileCount(resourceManager.constructPath(entryId, "").toString(), 2)
+        assertFileCount(resourceManager.constructPath(entryId, ResourceId("")).toString(), 2)
         assertThat(resourceManager.delete(resource2.id)).isTrue()
         assertThat(resourceManager.getResource(resource.id)).isNotNull()
         assertThat(resourceManager.getResource(resource2.id)).isNull()
-        assertFileCount(resourceManager.constructPath(entryId, "").toString(), 1)
+        assertFileCount(resourceManager.constructPath(entryId, ResourceId("")).toString(), 1)
     }
 
     @Test
     fun testDeleteEntry() {
-        val entryId = "eid"
+        val entryId = EntryId("eid")
         val data = byteArrayOf(1,2,3,4,5)
         val data2 = byteArrayOf(5,6,7,8,9)
         val resource = resourceManager.saveGeneratedResource(entryId, "res1.jpg", ResourceType.THUMBNAIL, data)
@@ -477,11 +477,11 @@ class ResourceManagerTest: DatabaseTest() {
         assertThat(resourceManager.getResource(resource.id)).isNotNull()
         assertThat(resourceManager.getResource(resource2.id)).isNotNull()
 
-        assertFileCount(resourceManager.constructPath(entryId, "").toString(), 2)
+        assertFileCount(resourceManager.constructPath(entryId, ResourceId("")).toString(), 2)
         assertThat(resourceManager.deleteAll(entryId)).isTrue()
         assertThat(resourceManager.getResource(resource.id)).isNull()
         assertThat(resourceManager.getResource(resource2.id)).isNull()
-        assertThat(Files.exists(resourceManager.constructPath(entryId, ""))).isFalse()
+        assertThat(Files.exists(resourceManager.constructPath(entryId, ResourceId("")))).isFalse()
     }
 
     private fun fileExists(path: String) = Files.exists(Paths.get(path))

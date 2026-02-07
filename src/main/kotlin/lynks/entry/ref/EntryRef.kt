@@ -1,6 +1,7 @@
 package lynks.entry.ref
 
 import lynks.common.Entries
+import lynks.common.EntryId
 import lynks.common.EntryType
 import lynks.common.UID_LENGTH
 import org.jetbrains.exposed.v1.core.ReferenceOption
@@ -13,5 +14,5 @@ object EntryRefs : Table("ENTRY_REF") {
     override val primaryKey = PrimaryKey(sourceEntryId, targetEntryId, originId)
 }
 
-data class EntryRefItem(val entryId: String, val entryType: EntryType, val title: String? = null)
+data class EntryRefItem(val entryId: EntryId, val entryType: EntryType, val title: String? = null)
 data class EntryRefSet(val inbound: List<EntryRefItem>, val outbound: List<EntryRefItem>)

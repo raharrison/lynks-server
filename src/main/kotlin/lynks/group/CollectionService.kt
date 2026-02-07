@@ -22,9 +22,9 @@ class CollectionService : GroupService<Collection, NewCollection>(GroupType.COLL
         return super.add(group)
     }
 
-    override fun toInsert(eId: String, entity: NewCollection): Groups.(InsertStatement<*>) -> Unit = {
+    override fun toInsert(gid: String, entity: NewCollection): Groups.(InsertStatement<*>) -> Unit = {
         val time = System.currentTimeMillis()
-        it[id] = eId
+        it[id] = gid
         it[name] = entity.name
         it[type] = GroupType.COLLECTION
         it[parentId] = entity.parentId

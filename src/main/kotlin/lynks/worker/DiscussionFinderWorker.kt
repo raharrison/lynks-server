@@ -3,6 +3,7 @@ package lynks.worker
 import com.fasterxml.jackson.databind.JsonNode
 import kotlinx.coroutines.time.delay
 import lynks.common.DISCUSSIONS_PROP
+import lynks.common.EntryId
 import lynks.entry.EntryAuditService
 import lynks.entry.LinkService
 import lynks.notify.NewNotification
@@ -13,9 +14,9 @@ import java.net.URLEncoder
 import java.time.Duration
 import java.time.Instant
 
-data class DiscussionFinderWorkerRequest(val linkId: String, val intervalIndex: Int = -1) :
+data class DiscussionFinderWorkerRequest(val linkId: EntryId, val intervalIndex: Int = -1) :
     PersistVariableWorkerRequest() {
-    override val key = linkId
+    override val key = linkId.value
     override fun hashCode() = key.hashCode()
     override fun equals(other: Any?) = other is DiscussionFinderWorkerRequest && other.key == key
 }
@@ -64,7 +65,7 @@ class DiscussionFinderWorker(
         }
     }
 
-    private suspend fun findDiscussions(linkId: String, initialIntervalIndex: Int) {
+    private suspend fun findDiscussions(linkId: EntryId, initialIntervalIndex: Int) {
         var intervalIndex = initialIntervalIndex
 
         while (true) {

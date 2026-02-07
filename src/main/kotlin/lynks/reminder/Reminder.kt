@@ -1,6 +1,8 @@
 package lynks.reminder
 
 import lynks.common.Entries
+import lynks.common.EntryId
+import lynks.common.ReminderId
 import lynks.common.UID_LENGTH
 import lynks.notify.NotificationMethod
 import org.jetbrains.exposed.v1.core.ReferenceOption
@@ -32,8 +34,8 @@ enum class ReminderStatus {
 }
 
 interface Reminder {
-    val reminderId: String
-    val entryId: String
+    val reminderId: ReminderId
+    val entryId: EntryId
     val type: ReminderType
     val notifyMethods: List<NotificationMethod>
     val message: String?
@@ -44,8 +46,8 @@ interface Reminder {
     val dateUpdated: Long
 }
 
-data class AdhocReminder(override val reminderId: String,
-                         override val entryId: String,
+data class AdhocReminder(override val reminderId: ReminderId,
+                         override val entryId: EntryId,
                          override val notifyMethods: List<NotificationMethod>,
                          override val message: String?,
                          val interval: Long,
@@ -57,8 +59,8 @@ data class AdhocReminder(override val reminderId: String,
     override val spec: String = interval.toString()
 }
 
-data class RecurringReminder(override val reminderId: String,
-                             override val entryId: String,
+data class RecurringReminder(override val reminderId: ReminderId,
+                             override val entryId: EntryId,
                              override val notifyMethods: List<NotificationMethod>,
                              override val message: String?,
                              val fire: String,
@@ -70,6 +72,6 @@ data class RecurringReminder(override val reminderId: String,
     override val spec: String = fire
 }
 
-data class NewReminder(val reminderId: String? = null, val entryId: String, val type: ReminderType,
+data class NewReminder(val reminderId: ReminderId? = null, val entryId: EntryId, val type: ReminderType,
                        val notifyMethods: List<NotificationMethod>, val message: String? = null,
                        val spec: String, val tz: String, val status: ReminderStatus)

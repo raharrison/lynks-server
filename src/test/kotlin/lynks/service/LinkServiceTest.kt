@@ -89,7 +89,7 @@ class LinkServiceTest : DatabaseTest() {
         val workerRegistry = mockk<WorkerRegistry>()
         every { workerRegistry.acceptLinkWork(any()) } just Runs
         linkService = LinkService(groupSetService, entryAuditService, resourceManager, workerRegistry)
-        val link = linkService.add(newLink("n1", "google.com", "url", listOf("t1", "t2"), listOf("c1"), false))
+        val link = linkService.add(newLink(EntryId("n1"), "google.com", "url", listOf("t1", "t2"), listOf("c1"), false))
 
         verify(exactly = 1) { workerRegistry.acceptLinkWork(any()) }
         verify(exactly = 0) { workerRegistry.acceptDiscussionWork(link.id) }
@@ -130,7 +130,7 @@ class LinkServiceTest : DatabaseTest() {
 
     @Test
     fun testGetLinkDoesntExist() {
-        assertThat(linkService.get("invalid")).isNull()
+        assertThat(linkService.get(EntryId("invalid"))).isNull()
     }
 
     @Test
@@ -219,10 +219,12 @@ class LinkServiceTest : DatabaseTest() {
         val l2 = linkService.add(newLink("l2", "amazon.com/content/more", listOf("t1")))
         val linksFromSource = linkService.get(PageRequest(source = "amazon.com"))
         assertThat(linksFromSource.total).isEqualTo(1)
-        assertThat(linksFromSource.content).hasSize(1).extracting("id").containsOnly(l2.id)
+        assertThat(linksFromSource.content).hasSize(1).extracting<EntryId> { it.id }
+            .containsOnly(l2.id)
         val linksByWildcardSource = linkService.get(PageRequest(source = "goog%"))
         assertThat(linksByWildcardSource.total).isEqualTo(1)
-        assertThat(linksByWildcardSource.content).hasSize(1).extracting("id").containsOnly(l1.id)
+        assertThat(linksByWildcardSource.content).hasSize(1).extracting<EntryId> { it.id }
+            .containsOnly(l1.id)
         val linksFromMissingSource = linkService.get(PageRequest(source = "invalid"))
         assertThat(linksFromMissingSource.total).isZero()
         assertThat(linksFromMissingSource.content).isEmpty()
@@ -268,12 +270,12 @@ class LinkServiceTest : DatabaseTest() {
 
     @Test
     fun testDeleteLink() {
-        assertThat(linkService.delete("invalid")).isFalse()
+        assertThat(linkService.delete(EntryId("invalid"))).isFalse()
 
         val added1 = linkService.add(newLink("n1", "google.com"))
         val added2 = linkService.add(newLink("n12", "amazon.com"))
 
-        assertThat(linkService.delete("e1")).isFalse()
+        assertThat(linkService.delete(EntryId("e1"))).isFalse()
         assertThat(linkService.delete(added1.id)).isTrue()
 
         assertThat(linkService.get().content).hasSize(1)
@@ -338,9 +340,9 @@ class LinkServiceTest : DatabaseTest() {
         // keeping same Link instance - update content
         val added = linkService.add(newLink("n1", "google.com"))
         assertThat(added.content).isNull()
-        added.content = "modified"
-        val updated = linkService.update(added)
-        assertThat(added.content).isEqualTo(updated!!.content)
+        val modified = added.copy(content = "modified")
+        val updated = linkService.update(modified)
+        assertThat(modified.content).isEqualTo(updated!!.content)
         assertThat(updated.content).isEqualTo("modified")
         assertThat(updated.dateCreated).isEqualTo(updated.dateUpdated)
         val retrieved = linkService.get(added.id)
@@ -389,7 +391,7 @@ class LinkServiceTest : DatabaseTest() {
 
         val updated = linkService.update(newLink("updated", "amazon.com"))
         assertThat(linkService.get(updated!!.id)?.id).isNotEqualTo(added1.id)
-        assertThat(added1.id).isNotEqualToIgnoringCase(updated.id)
+        assertThat(added1.id).isNotEqualTo(updated.id)
         assertThat(updated.title).isEqualTo("updated")
         assertThat(updated.url).isEqualTo("https://amazon.com")
         assertThat(updated.dateUpdated).isEqualTo(updated.dateCreated)
@@ -418,14 +420,14 @@ class LinkServiceTest : DatabaseTest() {
     @Test
     fun testUpdatePropsTasksDoesntUpdate() {
         val added = linkService.add(newLink("n1", "google.com"))
-        val task = TaskDefinition("t1", "description", "className")
+        val task = TaskDefinition(TaskId("t1"), "description", "className")
         added.props.addTask(task)
 
         linkService.update(added)
 
         val updated = linkService.get(added.id)
         assertThat(updated?.dateUpdated).isEqualTo(updated?.dateCreated)
-        assertThat(updated?.props?.getTask("t1")).isNull()
+        assertThat(updated?.props?.getTask(TaskId("t1"))).isNull()
         assertThat(updated?.props?.getAttribute("t3")).isNull()
     }
 
@@ -434,14 +436,14 @@ class LinkServiceTest : DatabaseTest() {
         val added = linkService.add(newLink("n1", "google.com"))
         added.props.addAttribute("key1", "attribute1")
         added.props.addAttribute("key2", "attribute2")
-        val task = TaskDefinition("t1", "description", "className")
+        val task = TaskDefinition(TaskId("t1"), "description", "className")
         added.props.addTask(task)
         linkService.mergeProps(added.id, added.props)
 
         val updatedProps = BaseProperties()
         updatedProps.addAttribute("key2", "updated")
         updatedProps.addAttribute("key3", "attribute3")
-        val updatedTask = TaskDefinition("t3", "description", "className")
+        val updatedTask = TaskDefinition(TaskId("t3"), "description", "className")
         updatedProps.addTask(updatedTask)
 
         linkService.mergeProps(added.id, updatedProps)
@@ -453,15 +455,15 @@ class LinkServiceTest : DatabaseTest() {
         assertThat(updated?.props?.getAttribute("key3")).isEqualTo("attribute3")
 
         assertThat(updated?.props?.tasks).hasSize(1)
-        assertThat(updated?.props?.getTask("t1")).isNull()
-        assertThat(updated?.props?.getTask("t3")?.description).isEqualTo("description")
-        assertThat(updated?.props?.getTask("t3")?.params).isEmpty()
+        assertThat(updated?.props?.getTask(TaskId("t1"))).isNull()
+        assertThat(updated?.props?.getTask(TaskId("t3"))?.description).isEqualTo("description")
+        assertThat(updated?.props?.getTask(TaskId("t3"))?.params).isEmpty()
     }
 
     @Test
     fun testVersioning() {
         val added = linkService.add(newLink("n1", "google.com"))
-        resourceManager.saveGeneratedResource("r1", added.id, "resource name", "jpg", ResourceType.SCREENSHOT, 11)
+        resourceManager.saveGeneratedResource(ResourceId("r1"), added.id, "resource name", "jpg", ResourceType.SCREENSHOT, 11)
         val version1 = linkService.get(added.id, 1)
         assertThat(added.version).isOne()
         assertThat(added).usingRecursiveComparison().ignoringFields("props").isEqualTo(version1)
@@ -482,7 +484,7 @@ class LinkServiceTest : DatabaseTest() {
         assertThat(first?.dateCreated).isEqualTo(first?.dateUpdated)
 
         // update directly
-        val updatedDirect = linkService.update(updated!!.copy(title = "new title", thumbnailId = "r1"), true)
+        val updatedDirect = linkService.update(updated!!.copy(title = "new title", thumbnailId = ResourceId("r1")), true)
         val version3 = linkService.get(added.id)
         assertThat(version3?.title).isEqualTo(updatedDirect?.title)
         assertThat(version3?.version).isEqualTo(3)
@@ -511,7 +513,7 @@ class LinkServiceTest : DatabaseTest() {
         assertThat(linkService.get(added.id, 0)).isNull()
         assertThat(linkService.get(added.id, 2)).isNull()
         assertThat(linkService.get(added.id, -1)).isNull()
-        assertThat(linkService.get("invalid", 0)).isNull()
+        assertThat(linkService.get(EntryId("invalid"), 0)).isNull()
     }
 
     @Test
@@ -535,18 +537,20 @@ class LinkServiceTest : DatabaseTest() {
 
     @Test
     fun testSetReadInvalidLink() {
-        assertThat(linkService.read("invalid", true)).isNull()
-        assertThat(linkService.read("invalid", false)).isNull()
+        assertThat(linkService.read(EntryId("invalid"), true)).isNull()
+        assertThat(linkService.read(EntryId("invalid"), false)).isNull()
     }
 
     @Test
     fun testGetUnreadLinks() {
         val added = linkService.add(newLink("n1", "google.com"))
 
-        assertThat(linkService.getUnread()).hasSize(1).extracting("id").containsOnly(added.id)
+        assertThat(linkService.getUnread()).hasSize(1).extracting<EntryId> { it.id }
+            .containsOnly(added.id)
 
         linkService.read(added.id, false)
-        assertThat(linkService.getUnread()).hasSize(1).extracting("id").containsOnly(added.id)
+        assertThat(linkService.getUnread()).hasSize(1).extracting<EntryId> { it.id }
+            .containsOnly(added.id)
 
         linkService.read(added.id, true)
         assertThat(linkService.getUnread()).isEmpty()
@@ -559,7 +563,8 @@ class LinkServiceTest : DatabaseTest() {
 
         added.props.addAttribute(DEAD_LINK_PROP, true)
         linkService.mergeProps(added.id, added.props)
-        assertThat(linkService.getDead()).hasSize(1).extracting("id").containsExactly(added.id)
+        assertThat(linkService.getDead()).hasSize(1).extracting<EntryId> { it.id }
+            .containsExactly(added.id)
 
         added.props.addAttribute(DEAD_LINK_PROP, false)
         linkService.mergeProps(added.id, added.props)
@@ -573,7 +578,8 @@ class LinkServiceTest : DatabaseTest() {
         val added2 = linkService.add(newLink("n1", "google.com/content?param=one"))
 
         val existing = linkService.checkExistingWithUrl("google.com/content?param=one")
-        assertThat(existing).hasSize(2).extracting("id").containsExactly(added1.id, added2.id)
+        assertThat(existing).hasSize(2).extracting<EntryId> { it.id }
+            .containsExactly(added1.id, added2.id)
 
         assertThat(linkService.checkExistingWithUrl("amazon.com")).isEmpty()
     }
@@ -591,7 +597,7 @@ class LinkServiceTest : DatabaseTest() {
 
     @Test
     fun testUpdateSearchableContentNotFound() {
-        val result = linkService.updateSearchableContent("invalid", "updated content")
+        val result = linkService.updateSearchableContent(EntryId("invalid"), "updated content")
         assertThat(result).isNull()
     }
 
@@ -603,7 +609,7 @@ class LinkServiceTest : DatabaseTest() {
     ) = NewLink(null, title, url, tags, cols)
 
     private fun newLink(
-        id: String,
+        id: EntryId,
         title: String,
         url: String,
         tags: List<String> = emptyList(),

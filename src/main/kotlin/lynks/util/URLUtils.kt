@@ -12,7 +12,7 @@ object URLUtils {
     fun extractSource(url: String): String {
         var uri = url.lowercase()
         if (!uri.startsWith("http://") and !uri.startsWith("https://")) {
-            uri = "http://$url"
+            uri = "https://$url"
         }
         val host = URI(uri).host
         if (host == null) {

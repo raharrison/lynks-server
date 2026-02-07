@@ -7,7 +7,9 @@ import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import lynks.common.DatabaseTest
+import lynks.common.EntryId
 import lynks.common.EntryType
+import lynks.common.NotificationId
 import lynks.common.page.PageRequest
 import lynks.common.page.SortDirection
 import lynks.notify.NewNotification.Companion.discussions
@@ -35,11 +37,11 @@ class NotifyServiceTest: DatabaseTest() {
 
     @Test
     fun testGetNotification() = runBlocking {
-        val notification = notifyService.create(reminder("elapsed", "e1"), false)
+        val notification = notifyService.create(reminder("elapsed", EntryId("e1")), false)
         assertThat(notification.type).isEqualTo(NotificationType.REMINDER)
         assertThat(notification.message).isEqualTo("elapsed")
         assertThat(notification.read).isFalse()
-        assertThat(notification.entryId).isEqualTo("e1")
+        assertThat(notification.entryId).isEqualTo(EntryId("e1"))
         assertThat(notification.entryTitle).isEqualTo("title")
         assertThat(notification.entryType).isEqualTo(EntryType.NOTE)
         val retrieved = notifyService.getNotification(notification.id)
@@ -49,7 +51,7 @@ class NotifyServiceTest: DatabaseTest() {
 
     @Test
     fun testGetNotificationNotFound() = runBlocking {
-        val notification = notifyService.getNotification("notfound")
+        val notification = notifyService.getNotification(NotificationId("notfound"))
         assertThat(notification).isNull()
     }
 
@@ -66,28 +68,32 @@ class NotifyServiceTest: DatabaseTest() {
         assertThat(notifications.page).isEqualTo(1L)
         assertThat(notifications.size).isEqualTo(1)
         assertThat(notifications.total).isEqualTo(3)
-        assertThat(notifications.content).extracting("id").containsExactly(reminder.id)
+        assertThat(notifications.content).extracting<NotificationId> { it.id }
+            .containsExactly(reminder.id)
 
         notifications = notifyService.getNotifications(PageRequest(2, 1))
         assertThat(notifications.content).hasSize(1)
         assertThat(notifications.page).isEqualTo(2L)
         assertThat(notifications.size).isEqualTo(1)
         assertThat(notifications.total).isEqualTo(3)
-        assertThat(notifications.content).extracting("id").containsExactly(discussions.id)
+        assertThat(notifications.content).extracting<NotificationId> { it.id }
+            .containsExactly(discussions.id)
 
         notifications = notifyService.getNotifications(PageRequest(1, 3))
         assertThat(notifications.content).hasSize(3)
         assertThat(notifications.page).isEqualTo(1L)
         assertThat(notifications.size).isEqualTo(3)
         assertThat(notifications.total).isEqualTo(3)
-        assertThat(notifications.content).extracting("id").containsExactly(reminder.id, discussions.id, processed.id)
+        assertThat(notifications.content).extracting<NotificationId> { it.id }
+            .containsExactly(reminder.id, discussions.id, processed.id)
 
         notifications = notifyService.getNotifications(PageRequest(1, 10))
         assertThat(notifications.content).hasSize(3)
         assertThat(notifications.page).isEqualTo(1L)
         assertThat(notifications.size).isEqualTo(10)
         assertThat(notifications.total).isEqualTo(3)
-        assertThat(notifications.content).extracting("id").doesNotHaveDuplicates()
+        assertThat(notifications.content).extracting<NotificationId> { it.id }
+            .doesNotHaveDuplicates()
         Unit
     }
 
@@ -100,13 +106,15 @@ class NotifyServiceTest: DatabaseTest() {
         val reminder = notifyService.create(reminder(), false)
 
         var notifications = notifyService.getNotifications(PageRequest(1, 10, sort = "dateCreated", direction = SortDirection.DESC))
-        assertThat(notifications.content).extracting("id").containsExactly(reminder.id, discussions.id, processed.id)
+        assertThat(notifications.content).extracting<NotificationId> { it.id }
+            .containsExactly(reminder.id, discussions.id, processed.id)
         assertThat(notifications.page).isEqualTo(1L)
         assertThat(notifications.size).isEqualTo(10)
         assertThat(notifications.total).isEqualTo(3)
 
         notifications = notifyService.getNotifications(PageRequest(1, 10, sort = "dateCreated", direction = SortDirection.ASC))
-        assertThat(notifications.content).extracting("id").containsExactly(processed.id, discussions.id, reminder.id)
+        assertThat(notifications.content).extracting<NotificationId> { it.id }
+            .containsExactly(processed.id, discussions.id, reminder.id)
         assertThat(notifications.page).isEqualTo(1L)
         assertThat(notifications.size).isEqualTo(10)
         assertThat(notifications.total).isEqualTo(3)
@@ -126,7 +134,7 @@ class NotifyServiceTest: DatabaseTest() {
         val notifications = notifyService.getNotifications(PageRequest(sort = "read", direction = SortDirection.ASC))
         assertThat(notifications.content).hasSize(3)
         assertThat(notifications.total).isEqualTo(3)
-        assertThat(notifications.content).extracting<String> { it.id }
+        assertThat(notifications.content).extracting<NotificationId> { it.id }
             .containsExactly(discussions.id, processed.id, reminder.id)
         Unit
     }
@@ -154,11 +162,11 @@ class NotifyServiceTest: DatabaseTest() {
 
     @Test
     fun testCreateNotificationWithEntry() = runBlocking {
-        val notification = notifyService.create(discussions("found", "e2"), false)
+        val notification = notifyService.create(discussions("found", EntryId("e2")), false)
         assertThat(notification.type).isEqualTo(NotificationType.DISCUSSIONS)
         assertThat(notification.message).isEqualTo("found")
         assertThat(notification.read).isFalse()
-        assertThat(notification.entryId).isEqualTo("e2")
+        assertThat(notification.entryId).isEqualTo(EntryId("e2"))
         assertThat(notification.entryTitle).isEqualTo("title2")
         assertThat(notification.entryType).isEqualTo(EntryType.LINK)
         Unit
@@ -171,13 +179,13 @@ class NotifyServiceTest: DatabaseTest() {
         coEvery { channel.send(any()) } just Runs
 
         notifyService.join(channel)
-        notifyService.create(error("error", "e2"), true)
+        notifyService.create(error("error", EntryId("e2")), true)
         coVerify(exactly = 1) { channel.send(any()) }
     }
 
     @Test
     fun testReadNotificationSuccess() = runBlocking {
-        val notification = notifyService.create(error("error", "e2"), false)
+        val notification = notifyService.create(error("error", EntryId("e2")), false)
         assertThat(notification.read).isFalse()
 
         val readUpdate = notifyService.read(notification.id, true)
@@ -194,7 +202,7 @@ class NotifyServiceTest: DatabaseTest() {
 
     @Test
     fun testReadNotificationNotFound() = runBlocking {
-        val updated = notifyService.read("notfound", true)
+        val updated = notifyService.read(NotificationId("notfound"), true)
         assertThat(updated).isZero()
         Unit
     }

@@ -2,8 +2,7 @@ package lynks.task.youtube
 
 import io.mockk.*
 import kotlinx.coroutines.runBlocking
-import lynks.common.Environment
-import lynks.common.Link
+import lynks.common.*
 import lynks.common.exception.ExecutionException
 import lynks.entry.EntryAuditService
 import lynks.notify.Notification
@@ -29,12 +28,12 @@ class YoutubeDlTaskTest {
 
     private val youtubeDlRunner = YoutubeDlRunner(resourceRetriever, resourceManager, entryAuditService, notifyService)
 
-    private val link = Link("eid", "title", "youtube.com/watch?v=1234", "src", "", 123L, 123L)
+    private val link = Link(EntryId("eid"), "title", "youtube.com/watch?v=1234", "src", "", 123L, 123L)
 
     @BeforeEach
     fun setup() {
         coEvery { notifyService.create(any()) } returns Notification(
-            "n1", NotificationType.PROCESSED, "completed", false, dateCreated = System.currentTimeMillis()
+            NotificationId("n1"), NotificationType.PROCESSED, "completed", false, dateCreated = System.currentTimeMillis()
         )
     }
 
@@ -59,14 +58,14 @@ class YoutubeDlTaskTest {
 
         every {
             resourceManager.saveGeneratedResource(
-                entryId = "eid",
+                entryId = EntryId("eid"),
                 type = ResourceType.GENERATED,
                 path = path
             )
         } returns
-            Resource("rid", "pid", "eid", 1, name, "", ResourceType.UPLOAD, 1, 1)
+            Resource(ResourceId("rid"), "pid", EntryId("eid"), 1, name, "", ResourceType.UPLOAD, 1, 1)
 
-        every { resourceManager.migrateGeneratedResources("eid", any()) } returns emptyList()
+        every { resourceManager.migrateGeneratedResources(EntryId("eid"), any()) } returns emptyList()
         mockkObject(ExecUtils)
 
         every { ExecUtils.executeCommand(any()) } returns Result.Success(commandResult)
@@ -85,13 +84,13 @@ class YoutubeDlTaskTest {
 
         unmockkObject(ExecUtils)
 
-        verify(exactly = 1) { resourceManager.migrateGeneratedResources("eid", match {
+        verify(exactly = 1) { resourceManager.migrateGeneratedResources(EntryId("eid"), match {
             it.size == 1 && it[0] == GeneratedResource(ResourceType.GENERATED, path.toString(), FileUtils.getExtension(path.toString()))
         }) }
 
         verify(exactly = 1) { resourceManager.constructTempBasePath("eid") }
         coVerify { notifyService.create(any()) }
-        verify(exactly = 1) { entryAuditService.acceptAuditEvent("eid", any(), any()) }
+        verify(exactly = 1) { entryAuditService.acceptAuditEvent(EntryId("eid"), any(), any()) }
     }
 
     @Test
@@ -114,9 +113,9 @@ class YoutubeDlTaskTest {
 
         coVerify(exactly = 0) { resourceRetriever.getFileResult(any()) }
         verify(exactly = 1) { resourceManager.constructTempBasePath("eid") }
-        verify(exactly = 0) { resourceManager.migrateGeneratedResources("eid", any()) }
+        verify(exactly = 0) { resourceManager.migrateGeneratedResources(EntryId("eid"), any()) }
         coVerify { notifyService.create(any()) }
-        verify(exactly = 1) { entryAuditService.acceptAuditEvent("eid", any(), any()) }
+        verify(exactly = 1) { entryAuditService.acceptAuditEvent(EntryId("eid"), any(), any()) }
     }
 
     @Test
@@ -133,7 +132,7 @@ class YoutubeDlTaskTest {
 
         unmockkObject(ExecUtils)
 
-        verify(exactly = 0) { resourceManager.migrateGeneratedResources("eid", any()) }
+        verify(exactly = 0) { resourceManager.migrateGeneratedResources(EntryId("eid"), any()) }
     }
 
     @Test

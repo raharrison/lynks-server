@@ -1,6 +1,8 @@
 package lynks.resource
 
+import lynks.common.EntryId
 import lynks.common.Environment
+import lynks.common.ResourceId
 import lynks.common.RowMapper.toResource
 import lynks.util.FileUtils
 import lynks.util.RandomUtils
@@ -20,9 +22,9 @@ class ResourceManager {
 
     private val log = loggerFor<ResourceManager>()
 
-    fun getResourcesFor(entryId: String): List<Resource> = transaction {
+    fun getResourcesFor(entryId: EntryId): List<Resource> = transaction {
         Resources.innerJoin(ResourceVersions, {id}, {resourceId})
-            .selectAll().where { Resources.entryId eq entryId }
+            .selectAll().where { Resources.entryId eq entryId.value }
             .orderBy(Resources.dateCreated)
             .map { toResource(it) }
     }
@@ -34,12 +36,12 @@ class ResourceManager {
             .map { toResource(it) }
     }
 
-    fun getResource(id: String): Resource? = transaction {
+    fun getResource(id: ResourceId): Resource? = transaction {
         ResourceVersions.innerJoin(Resources, { resourceId }, { Resources.id })
-            .selectAll().where { ResourceVersions.id eq id }.map { toResource(it) }.singleOrNull()
+            .selectAll().where { ResourceVersions.id eq id.value }.map { toResource(it) }.singleOrNull()
     }
 
-    fun getResourceAsFile(id: String): Pair<Resource, File>? {
+    fun getResourceAsFile(id: ResourceId): Pair<Resource, File>? {
         val res = getResource(id)
         return res?.let {
             val path = constructPath(res.entryId, res.id, res.extension)
@@ -60,7 +62,7 @@ class ResourceManager {
         return TempFile(src, extension, path)
     }
 
-    fun migrateGeneratedResources(entryId: String, generatedResources: List<GeneratedResource>): List<Resource> {
+    fun migrateGeneratedResources(entryId: EntryId, generatedResources: List<GeneratedResource>): List<Resource> {
         val resources = mutableListOf<Resource>()
         log.info("Migrating {} temporary resources for entry={}", generatedResources.size, entryId)
         for (generatedResource in generatedResources) {
@@ -86,16 +88,16 @@ class ResourceManager {
     }
 
     // get resource grouping id and current max version based on entry id and name
-    private fun currentVersion(entryId: String, name: String): Pair<String, Int> = transaction {
+    private fun currentVersion(entryId: EntryId, name: String): Pair<String, Int> = transaction {
         Resources.select(Resources.id, Resources.currentVersion)
-            .where { (Resources.entryId eq entryId) and (Resources.fileName eq name) }
+            .where { (Resources.entryId eq entryId.value) and (Resources.fileName eq name) }
             .map { Pair(it[Resources.id], it[Resources.currentVersion]) }
             .singleOrNull() ?: Pair(RandomUtils.generateUid(), 0)
     }
 
     fun saveGeneratedResource(
-        id: String = RandomUtils.generateUid(),
-        entryId: String,
+        id: ResourceId = ResourceId(RandomUtils.generateUid()),
+        entryId: EntryId,
         name: String,
         extension: String,
         type: ResourceType,
@@ -109,7 +111,7 @@ class ResourceManager {
                 // create new resource
                 Resources.insert {
                     it[Resources.id] = currentVersion.first
-                    it[Resources.entryId] = entryId
+                    it[Resources.entryId] = entryId.value
                     it[Resources.currentVersion] = nextVersion
                     it[fileName] = name
                     it[Resources.extension] = extension
@@ -125,7 +127,7 @@ class ResourceManager {
                 }
             }
             ResourceVersions.insert {
-                it[ResourceVersions.id] = id
+                it[ResourceVersions.id] = id.value
                 it[resourceId] = currentVersion.first
                 it[version] = nextVersion
                 it[ResourceVersions.size] = size
@@ -135,7 +137,7 @@ class ResourceManager {
         }
     }
 
-    fun saveGeneratedResource(entryId: String, name: String, type: ResourceType, file: ByteArray): Resource {
+    fun saveGeneratedResource(entryId: EntryId, name: String, type: ResourceType, file: ByteArray): Resource {
         val extension = FileUtils.getExtension(name)
         return saveGeneratedResource(
                 entryId = entryId,
@@ -149,8 +151,8 @@ class ResourceManager {
         }
     }
 
-    fun saveGeneratedResource(entryId: String, type: ResourceType, path: Path): Resource {
-        val id = RandomUtils.generateUid()
+    fun saveGeneratedResource(entryId: EntryId, type: ResourceType, path: Path): Resource {
+        val id = ResourceId(RandomUtils.generateUid())
         val name = path.fileName.toString()
         val extension = FileUtils.getExtension(name)
         val target = constructPath(entryId, id, extension)
@@ -161,8 +163,8 @@ class ResourceManager {
         }
     }
 
-    fun saveUploadedResource(entryId: String, name: String, input: InputStream): Resource {
-        val id = RandomUtils.generateUid()
+    fun saveUploadedResource(entryId: EntryId, name: String, input: InputStream): Resource {
+        val id = ResourceId(RandomUtils.generateUid())
         val ext = FileUtils.getExtension(name)
         val path = constructPath(entryId, id, ext)
         log.info("Saving uploaded resource to {} entry={}", path.toString(), entryId)
@@ -174,14 +176,15 @@ class ResourceManager {
         return saveGeneratedResource(id, entryId, name, ext, ResourceType.UPLOAD, file.length())
     }
 
-    internal fun constructPath(entryId: String, id: String = RandomUtils.generateUid()): Path {
-        val firstDir = entryId.substring(0, 1); val secondDir = entryId.substring(0, 2)
-        return Paths.get(Environment.resource.resourceBasePath, firstDir, secondDir, entryId, id)
+    internal fun constructPath(entryId: EntryId, id: ResourceId = ResourceId(RandomUtils.generateUid())): Path {
+        val eid = entryId.value
+        val firstDir = eid.substring(0, 1); val secondDir = eid.substring(0, 2)
+        return Paths.get(Environment.resource.resourceBasePath, firstDir, secondDir, eid, id.value)
     }
 
-    private fun constructPath(entryId: String, id: String, extension: String): Path {
-        val resId = if (extension.isNotEmpty()) "$id.$extension" else id
-        return constructPath(entryId, resId)
+    private fun constructPath(entryId: EntryId, id: ResourceId, extension: String): Path {
+        val resId = if (extension.isNotEmpty()) "$id.$extension" else id.value
+        return constructPath(entryId, ResourceId(resId))
     }
 
     private fun constructTempBasePath(name: String, type: ResourceType, extension: String): Path {
@@ -195,7 +198,7 @@ class ResourceManager {
     fun constructTempUrlFromPath(path: String): String {
         val resolvedPath = Path.of(path)
         return if(resolvedPath.isAbsolute) Paths.get(Environment.resource.resourceTempPath).toAbsolutePath().relativize(Path.of(path)).toUrlString()
-        else return Path.of(path).toUrlString()
+        else Path.of(path).toUrlString()
     }
 
     fun constructTempBasePath(name: String): Path = Paths.get(Environment.resource.resourceTempPath, FileUtils.createTempFileName(name))
@@ -224,10 +227,10 @@ class ResourceManager {
         }
     }
 
-    fun delete(id: String): Boolean = transaction {
+    fun delete(id: ResourceId): Boolean = transaction {
         val res = getResource(id)
         res?.let {
-            ResourceVersions.deleteWhere { ResourceVersions.id eq id }
+            ResourceVersions.deleteWhere { ResourceVersions.id eq id.value }
             // find current max version (if any) after deletion
             val maxVersion: Int? = ResourceVersions.select(ResourceVersions.version.max())
                 .where { ResourceVersions.resourceId eq res.parentId }
@@ -251,13 +254,13 @@ class ResourceManager {
         false
     }
 
-    fun deleteAll(entryId: String): Boolean = transaction {
+    fun deleteAll(entryId: EntryId): Boolean = transaction {
         val resourceIds = Resources.select(Resources.id)
-            .where { Resources.entryId eq entryId }
+            .where { Resources.entryId eq entryId.value }
             .map { it[Resources.id] }
         ResourceVersions.deleteWhere { resourceId.inList(resourceIds) }
-        Resources.deleteWhere { Resources.entryId eq entryId }
-        val path = constructPath(entryId, "", "")
+        Resources.deleteWhere { Resources.entryId eq entryId.value }
+        val path = constructPath(entryId, ResourceId(""), "")
         log.info("Recursively deleting all entry resources at {} entry={}", path.toString(), entryId)
         path.toFile().let {
             if (it.exists()) it.deleteRecursively() else true

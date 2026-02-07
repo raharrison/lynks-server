@@ -5,6 +5,9 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.runBlocking
+import lynks.common.EntryId
+import lynks.common.ResourceId
+import lynks.common.TaskId
 import lynks.common.exception.ExecutionException
 import lynks.resource.Resource
 import lynks.resource.ResourceManager
@@ -19,7 +22,7 @@ class ResourceRetrievingTaskTest {
     private val resourceManager = mockk<ResourceManager>()
     private val retriever = mockk<ResourceRetriever>()
 
-    private val resourceRetrievingTask = ResourceRetrievingTask("tid", "eid").also {
+    private val resourceRetrievingTask = ResourceRetrievingTask(TaskId("tid"), EntryId("eid")).also {
         it.resourceManager = resourceManager
         it.resourceRetriever = retriever
     }
@@ -49,15 +52,15 @@ class ResourceRetrievingTaskTest {
         val context = resourceRetrievingTask.createContext(mapOf("url" to url, "name" to name))
         val bytes = byteArrayOf(1,2,3,4,5,6)
         coEvery { retriever.getFileResult(url) } returns Result.Success(bytes)
-        every { resourceManager.saveUploadedResource("eid", name, any()) } returns
-                Resource("rid", "pid", "eid", 1, name, "", ResourceType.UPLOAD, 1, 1)
+        every { resourceManager.saveUploadedResource(EntryId("eid"), name, any()) } returns
+                Resource(ResourceId("rid"), "pid", EntryId("eid"), 1, name, "", ResourceType.UPLOAD, 1, 1)
 
         runBlocking {
             resourceRetrievingTask.process(context)
         }
 
         coVerify(exactly = 1) { retriever.getFileResult(url)  }
-        coVerify(exactly = 1) { resourceManager.saveUploadedResource("eid", name, any())  }
+        coVerify(exactly = 1) { resourceManager.saveUploadedResource(EntryId("eid"), name, any())  }
     }
 
     @Test
@@ -71,7 +74,7 @@ class ResourceRetrievingTaskTest {
         }
 
         coVerify(exactly = 1) { retriever.getFileResult(url)  }
-        coVerify(exactly = 0) { resourceManager.saveUploadedResource("eid", any(), any())  }
+        coVerify(exactly = 0) { resourceManager.saveUploadedResource(EntryId("eid"), any(), any())  }
     }
 
 

@@ -1,10 +1,10 @@
 package lynks.entry
 
 import io.ktor.http.*
-import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import lynks.common.EntryId
 import lynks.common.NewNote
 import lynks.util.pageRequest
 
@@ -17,7 +17,7 @@ fun Route.note(noteService: NoteService) {
         }
 
         get("/{id}") {
-            val note = noteService.get(call.parameters["id"]!!)
+            val note = noteService.get(EntryId(call.parameters["id"]!!))
             if (note == null) call.respond(HttpStatusCode.NotFound)
             else call.respond(note)
         }
@@ -25,7 +25,7 @@ fun Route.note(noteService: NoteService) {
         get("/{id}/{version}") {
             val id = call.parameters["id"]!!
             val version = call.parameters["version"]!!
-            val note = noteService.get(id, version.toInt())
+            val note = noteService.get(EntryId(id), version.toInt())
             if (note == null) call.respond(HttpStatusCode.NotFound)
             else call.respond(note)
         }
@@ -44,7 +44,7 @@ fun Route.note(noteService: NoteService) {
         }
 
         delete("/{id}") {
-            val removed = noteService.delete(call.parameters["id"]!!)
+            val removed = noteService.delete(EntryId(call.parameters["id"]!!))
             if (removed) call.respond(HttpStatusCode.OK)
             else call.respond(HttpStatusCode.NotFound)
         }

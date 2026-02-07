@@ -2,10 +2,7 @@ package lynks.endpoint
 
 import io.restassured.RestAssured.*
 import io.restassured.http.ContentType
-import lynks.common.EntryType
-import lynks.common.NewSnippet
-import lynks.common.ServerTest
-import lynks.common.Snippet
+import lynks.common.*
 import lynks.common.page.Page
 import lynks.util.createDummyCollection
 import lynks.util.createDummyEntry
@@ -46,7 +43,7 @@ class SnippetEndpointTest: ServerTest() {
         assertThat(created.tags).hasSize(1).extracting("id").containsExactly("t1")
         assertThat(created.collections).hasSize(1).extracting("id").containsExactly("c1")
         assertThat(created.dateCreated).isEqualTo(created.dateUpdated)
-        val retrieved = get("/snippet/{id}", created.id)
+        val retrieved = get("/snippet/{id}", created.id.value)
                 .then()
                 .extract().to<Snippet>()
         assertThat(created).usingRecursiveComparison().ignoringFields("props").isEqualTo(retrieved)
@@ -84,7 +81,7 @@ class SnippetEndpointTest: ServerTest() {
                 .then()
                 .statusCode(200)
                 .extract().to<Snippet>()
-        assertThat(snippet.id).isEqualTo("e2")
+        assertThat(snippet.id).isEqualTo(EntryId("e2"))
         assertThat(snippet.plainText).isEqualTo("content2")
         assertThat(snippet.dateCreated).isEqualTo(snippet.dateUpdated)
     }
@@ -115,7 +112,7 @@ class SnippetEndpointTest: ServerTest() {
 
     @Test
     fun testUpdateSnippet() {
-        val updatedSnippet = NewSnippet("e2", "modified", listOf("t1"), listOf("c1"))
+        val updatedSnippet = NewSnippet(EntryId("e2"), "modified", listOf("t1"), listOf("c1"))
         val updated = given()
                 .contentType(ContentType.JSON)
                 .body(updatedSnippet)
@@ -137,7 +134,7 @@ class SnippetEndpointTest: ServerTest() {
     @Test
     fun testCannotUpdateNonSnippet() {
         // e1 = existing snippet entry
-        val updatedSnippet = NewSnippet("e1", "modified", emptyList())
+        val updatedSnippet = NewSnippet(EntryId("e1"), "modified", emptyList())
         given()
                 .contentType(ContentType.JSON)
                 .body(updatedSnippet)
@@ -149,7 +146,7 @@ class SnippetEndpointTest: ServerTest() {
 
     @Test
     fun testUpdateSnippetReturnsNotFound() {
-        val updatedSnippet = NewSnippet("invalid", "modified", emptyList())
+        val updatedSnippet = NewSnippet(EntryId("invalid"), "modified", emptyList())
         given()
                 .contentType(ContentType.JSON)
                 .body(updatedSnippet)
@@ -166,10 +163,11 @@ class SnippetEndpointTest: ServerTest() {
                 .get("/snippet")
                 .then()
                 .statusCode(200)
-                .extract().to<Page<Snippet>>()
+                .extract().to<Page<SlimSnippet>>()
         assertThat(snippets.page).isEqualTo(1)
         assertThat(snippets.total).isEqualTo(2)
-        assertThat(snippets.content).hasSize(2).extracting("id").doesNotHaveDuplicates()
+        assertThat(snippets.content).hasSize(2).extracting<EntryId> { it.id }
+            .doesNotHaveDuplicates()
     }
 
     @Test
@@ -181,12 +179,13 @@ class SnippetEndpointTest: ServerTest() {
                 .get("/snippet")
                 .then()
                 .statusCode(200)
-                .extract().to<Page<Snippet>>()
+                .extract().to<Page<SlimSnippet>>()
         // newest snippet first
         assertThat(snippets.page).isEqualTo(2)
         assertThat(snippets.size).isEqualTo(1)
         assertThat(snippets.total).isEqualTo(2)
-        assertThat(snippets.content).hasSize(1).extracting("id").containsExactly("e2")
+        assertThat(snippets.content).hasSize(1).extracting<EntryId> { it.id }
+            .containsExactly(EntryId("e2"))
     }
 
     @Test
@@ -198,10 +197,11 @@ class SnippetEndpointTest: ServerTest() {
             .get("/snippet")
             .then()
             .statusCode(200)
-            .extract().to<Page<Snippet>>()
+            .extract().to<Page<SlimSnippet>>()
         // oldest snippet first
         assertThat(snippets.total).isEqualTo(2)
-        assertThat(snippets.content).hasSize(2).extracting("id").containsExactly("e2", "e3")
+        assertThat(snippets.content).hasSize(2).extracting<EntryId> { it.id }
+            .containsExactly(EntryId("e2"), EntryId("e3"))
     }
 
     @Test
@@ -222,7 +222,7 @@ class SnippetEndpointTest: ServerTest() {
             .get("/snippet")
             .then()
             .statusCode(200)
-            .extract().to<Page<Snippet>>()
+            .extract().to<Page<SlimSnippet>>()
         assertThat(snippetsTag.total).isZero()
         assertThat(snippetsTag.content).isEmpty()
 
@@ -234,9 +234,10 @@ class SnippetEndpointTest: ServerTest() {
             .get("/snippet")
             .then()
             .statusCode(200)
-            .extract().to<Page<Snippet>>()
+            .extract().to<Page<SlimSnippet>>()
         assertThat(snippetsCollection.total).isEqualTo(1)
-        assertThat(snippetsCollection.content).hasSize(1).extracting("id").containsExactly(created.id)
+        assertThat(snippetsCollection.content).hasSize(1).extracting<EntryId> { it.id }
+            .containsExactly(created.id)
 
         // filter by source
         val snippetsSource = given()
@@ -246,9 +247,10 @@ class SnippetEndpointTest: ServerTest() {
             .get("/snippet")
             .then()
             .statusCode(200)
-            .extract().to<Page<Snippet>>()
+            .extract().to<Page<SlimSnippet>>()
         assertThat(snippetsSource.total).isEqualTo(1)
-        assertThat(snippetsSource.content).hasSize(1).extracting("id").containsExactly(created.id)
+        assertThat(snippetsSource.content).hasSize(1).extracting<EntryId> { it.id }
+            .containsExactly(created.id)
     }
 
     @Test
@@ -290,7 +292,7 @@ class SnippetEndpointTest: ServerTest() {
         assertThat(updated.dateCreated).isNotEqualTo(updated.dateUpdated)
 
         // retrieve versions
-        val original = get("/snippet/{id}/{version}", created.id, 1)
+        val original = get("/snippet/{id}/{version}", created.id.value, 1)
                 .then()
                 .statusCode(200)
                 .extract().to<Snippet>()
@@ -298,7 +300,7 @@ class SnippetEndpointTest: ServerTest() {
         assertThat(original.plainText).isEqualTo(newSnippet.plainText)
         assertThat(original.dateCreated).isEqualTo(original.dateUpdated)
 
-        val current = get("/snippet/{id}", created.id)
+        val current = get("/snippet/{id}", created.id.value)
                 .then()
                 .statusCode(200)
                 .extract().to<Snippet>()
@@ -327,9 +329,10 @@ class SnippetEndpointTest: ServerTest() {
         val updateSnippet = NewSnippet(created.id, "new content", emptyList())
         val updated = given()
             .contentType(ContentType.JSON)
+            .queryParam("newVersion", false)
             .body(updateSnippet)
             .When()
-            .put("/snippet?newVersion=false")
+            .put("/snippet")
             .then()
             .statusCode(200)
             .extract().to<Snippet>()
@@ -339,7 +342,7 @@ class SnippetEndpointTest: ServerTest() {
         assertThat(updated.dateCreated).isNotEqualTo(updated.dateUpdated)
 
         // retrieve latest version
-        val current = get("/snippet/{id}", created.id)
+        val current = get("/snippet/{id}", created.id.value)
             .then()
             .statusCode(200)
             .extract().to<Snippet>()

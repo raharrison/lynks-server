@@ -34,9 +34,9 @@ class LinkService(
         Entries.starred, Entries.thumbnailId, Entries.read
     )
 
-    override fun toInsert(eId: String, entry: NewLink): BaseEntries.(InsertStatement<*>) -> Unit = {
+    override fun toInsert(eId: EntryId, entry: NewLink): BaseEntries.(InsertStatement<*>) -> Unit = {
         val time = System.currentTimeMillis()
-        it[id] = eId
+        it[id] = eId.value
         it[title] = entry.title
         it[plainContent] = entry.url
         it[src] = URLUtils.extractSource(entry.url)
@@ -84,12 +84,12 @@ class LinkService(
         it[Entries.plainContent] = entry.url
         it[Entries.content] = entry.content
         it[Entries.src] = URLUtils.extractSource(entry.url)
-        it[Entries.thumbnailId] = entry.thumbnailId
+        it[Entries.thumbnailId] = entry.thumbnailId?.value
         // explicitly not updating props to prevent overriding
     }
 
-    fun read(id: String, read: Boolean): Link? = transaction {
-        Entries.update({ getBaseQuery().combine { Entries.id eq id }.where!! }) { it[Entries.read] = read }
+    fun read(id: EntryId, read: Boolean): Link? = transaction {
+        Entries.update({ getBaseQuery().combine { Entries.id eq id.value }.where!! }) { it[Entries.read] = read }
         val readMessage = if (read) "read" else "unread"
         get(id)?.also {
             entryAuditService.acceptAuditEvent(id, LinkService::class.simpleName, "Link marked as $readMessage")
@@ -109,9 +109,9 @@ class LinkService(
         getBaseQuery().adjustSelect { select(slimColumnSet) }.combine { Entries.plainContent eq fullUrl }.map { toSlimModel(it) }
     }
 
-    fun updateSearchableContent(id: String, content: String?): String? = transaction {
+    fun updateSearchableContent(id: EntryId, content: String?): String? = transaction {
         val normalizedContent = content?.let { Normalize.mostCommonWords(Normalize.normalize(it), 500) }
-        val updated = Entries.update({ getBaseQuery().combine { Entries.id eq id }.where!! })
+        val updated = Entries.update({ getBaseQuery().combine { Entries.id eq id.value }.where!! })
         { it[Entries.content] = normalizedContent }
         if(updated > 0) normalizedContent else null
     }

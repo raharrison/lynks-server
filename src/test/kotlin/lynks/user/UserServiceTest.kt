@@ -4,6 +4,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import lynks.common.DatabaseTest
+import lynks.common.EntryId
 import lynks.common.EntryType
 import lynks.common.exception.InvalidModelException
 import lynks.common.page.PageRequest
@@ -172,15 +173,16 @@ class UserServiceTest : DatabaseTest() {
     @Test
     fun testGetActivityLog() {
         createDummyEntry("e1", "note1", "note content", EntryType.NOTE)
-        entryAuditService.acceptAuditEvent("e1", "source", "message")
+        entryAuditService.acceptAuditEvent(EntryId("e1"), "source", "message")
         Thread.sleep(10)
-        entryAuditService.acceptAuditEvent("e1", "source2", "message2")
+        entryAuditService.acceptAuditEvent(EntryId("e1"), "source2", "message2")
 
         val activityLog = userService.getUserActivityLog()
         assertThat(activityLog.total).isEqualTo(2)
         assertThat(activityLog.page).isOne()
         assertThat(activityLog.content).hasSize(2)
-        assertThat(activityLog.content).extracting("entryId").containsOnly("e1")
+        assertThat(activityLog.content).extracting<EntryId> { it.entryId }
+            .containsOnly(EntryId("e1"))
         assertThat(activityLog.content).extracting("details").doesNotContainNull()
         assertThat(activityLog.content).extracting("entryType").containsOnly(EntryType.NOTE)
         assertThat(activityLog.content).extracting("details").containsOnly("message2", "message")
@@ -190,7 +192,8 @@ class UserServiceTest : DatabaseTest() {
         assertThat(activityLogPaged.page).isEqualTo(2)
         assertThat(activityLogPaged.size).isOne()
         assertThat(activityLogPaged.content).hasSize(1)
-        assertThat(activityLogPaged.content).extracting("entryId").containsOnly("e1")
+        assertThat(activityLogPaged.content).extracting<EntryId> { it.entryId }
+            .containsOnly(EntryId("e1"))
         assertThat(activityLogPaged.content).extracting("details").doesNotContainNull()
         assertThat(activityLogPaged.content).extracting("entryType").containsOnly(EntryType.NOTE)
         assertThat(activityLogPaged.content).extracting("entryTitle").containsOnly("note1")

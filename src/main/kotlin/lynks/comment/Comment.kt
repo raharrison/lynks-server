@@ -1,9 +1,6 @@
 package lynks.comment
 
-import lynks.common.Entries
-import lynks.common.IdBasedCreatedEntity
-import lynks.common.IdBasedNewEntity
-import lynks.common.UID_LENGTH
+import lynks.common.*
 import org.jetbrains.exposed.v1.core.ReferenceOption
 import org.jetbrains.exposed.v1.core.Table
 
@@ -19,16 +16,16 @@ object Comments : Table("COMMENT") {
 
 
 data class Comment(
-        override val id: String,
-        val entryId: String,
+        override val id: CommentId,
+        val entryId: EntryId,
         val plainText: String,
         val markdownText: String,
         val dateCreated: Long,
         val dateUpdated: Long
-): IdBasedCreatedEntity
+): TypedIdEntity<CommentId>
 
 
 data class NewComment(
-        override val id: String?,
+        override val id: CommentId?,
         val plainText: String
-): IdBasedNewEntity
+): NewTypedIdEntity<CommentId>

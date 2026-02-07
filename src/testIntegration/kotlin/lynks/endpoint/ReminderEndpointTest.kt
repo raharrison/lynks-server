@@ -2,7 +2,9 @@ package lynks.endpoint
 
 import io.restassured.RestAssured.*
 import io.restassured.http.ContentType
+import lynks.common.EntryId
 import lynks.common.EntryType
+import lynks.common.ReminderId
 import lynks.common.ServerTest
 import lynks.notify.NotificationMethod
 import lynks.reminder.*
@@ -27,7 +29,7 @@ class ReminderEndpointTest : ServerTest() {
         val reminders = get("/reminder")
                 .then()
                 .statusCode(200)
-                .extract().to<List<Reminder>>()
+                .extract().to<List<*>>()
         assertThat(reminders).hasSize(1)
         assertThat(reminders).extracting("reminderId").containsOnly("r1")
         assertThat(reminders).extracting("entryId").containsOnly("e1")
@@ -46,8 +48,8 @@ class ReminderEndpointTest : ServerTest() {
                 .then()
                 .statusCode(200)
                 .extract().to<AdhocReminder>()
-        assertThat(reminder.reminderId).isEqualTo("r1")
-        assertThat(reminder.entryId).isEqualTo("e1")
+        assertThat(reminder.reminderId).isEqualTo(ReminderId("r1"))
+        assertThat(reminder.entryId).isEqualTo(EntryId("e1"))
         assertThat(reminder.type).isEqualTo(ReminderType.ADHOC)
         assertThat(reminder.notifyMethods).containsExactly(NotificationMethod.WEB, NotificationMethod.EMAIL)
         assertThat(reminder.message).isEqualTo("message")
@@ -64,7 +66,7 @@ class ReminderEndpointTest : ServerTest() {
 
     @Test
     fun testCreateReminder() {
-        val reminder = NewReminder(null, "e1", ReminderType.RECURRING, listOf(NotificationMethod.WEB, NotificationMethod.EMAIL),
+        val reminder = NewReminder(null, EntryId("e1"), ReminderType.RECURRING, listOf(NotificationMethod.WEB, NotificationMethod.EMAIL),
                 "message", "every 30 minutes", ZoneId.systemDefault().id, status = ReminderStatus.DISABLED)
         val created = given()
                 .contentType(ContentType.JSON)
@@ -85,7 +87,7 @@ class ReminderEndpointTest : ServerTest() {
         assertThat(created.status).isEqualTo(ReminderStatus.DISABLED)
         assertThat(created.dateCreated).isEqualTo(created.dateUpdated)
 
-        val retrieved = get("/reminder/{id}", created.reminderId)
+        val retrieved = get("/reminder/{id}", created.reminderId.value)
                 .then()
                 .statusCode(200)
                 .extract().to<RecurringReminder>()
@@ -101,7 +103,7 @@ class ReminderEndpointTest : ServerTest() {
     @Test
     fun testUpdateReminder() {
         val reminder = NewReminder(
-            "r1", "e1", ReminderType.RECURRING,
+            ReminderId("r1"), EntryId("e1"), ReminderType.RECURRING,
             listOf(NotificationMethod.EMAIL), "updated", "every 30 minutes", "Asia/Singapore",
             ReminderStatus.DISABLED
         )
@@ -123,7 +125,7 @@ class ReminderEndpointTest : ServerTest() {
         assertThat(updated.status).isEqualTo(ReminderStatus.DISABLED)
         assertThat(updated.dateUpdated).isNotEqualTo(updated.dateCreated)
 
-        val retrieved = get("/reminder/{id}", reminder.reminderId)
+        val retrieved = get("/reminder/{id}", reminder.reminderId?.value)
                 .then()
                 .statusCode(200)
                 .extract().to<RecurringReminder>()
@@ -133,7 +135,7 @@ class ReminderEndpointTest : ServerTest() {
     @Test
     fun testUpdateReminderReturnsNotFound() {
         val reminder = NewReminder(
-            "invalid", "e1", ReminderType.RECURRING,
+            ReminderId("invalid"), EntryId("e1"), ReminderType.RECURRING,
             listOf(NotificationMethod.WEB), "", "every 30 minutes", ZoneId.systemDefault().id,
             status = ReminderStatus.ACTIVE
         )

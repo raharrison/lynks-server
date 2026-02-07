@@ -4,6 +4,7 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.coroutineScope
 import lynks.common.DEAD_LINK_PROP
 import lynks.common.Link
+import lynks.common.ResourceId
 import lynks.entry.EntryAuditService
 import lynks.entry.LinkService
 import lynks.group.GroupSetService
@@ -50,7 +51,7 @@ class LinkProcessorWorker(
 
     private suspend fun processLinkPersist(link: Link, resourceSet: EnumSet<ResourceType>, process: Boolean) {
         try {
-            val originalLink = link.copy(props = link.props)
+            val originalLink = link
             resourceManager.deleteTempFiles(link.url)
             link.props.clearTasks()
             val resources = processorFactory.createProcessors(link.url).flatMap {
@@ -64,24 +65,24 @@ class LinkProcessorWorker(
                     }
                 }
             }
-            link.thumbnailId = findThumbnail(resources) ?: link.thumbnailId
+            val updatedLink = link.copy(thumbnailId = findThumbnail(resources) ?: link.thumbnailId)
             link.props.addAttribute(DEAD_LINK_PROP, false)
-            linkService.mergeProps(link.id, link.props)
+            linkService.mergeProps(updatedLink.id, updatedLink.props)
 
-            if (link != originalLink) {
-                linkService.update(link)
+            if (updatedLink != originalLink) {
+                linkService.update(updatedLink)
             } else {
                 log.info("No changes found after link processing, not updating entity")
             }
-            log.info("Link processing worker request complete, saved {} resources for entry={}", resources.size, link.id)
+            log.info("Link processing worker request complete, saved {} resources for entry={}", resources.size, updatedLink.id)
             val message = "Link processed successfully, ${resources.size} resources created"
             if (process) {
                 entryAuditService.acceptAuditEvent(
-                    link.id,
+                    updatedLink.id,
                     LinkProcessorWorker::class.simpleName,
                     message
                 )
-                notifyService.create(NewNotification.processed(message, link.id))
+                notifyService.create(NewNotification.processed(message, updatedLink.id))
             }
         } catch (e: Exception) {
             log.error("Link processing worker failed for entry={}", link.id, e)
@@ -94,7 +95,7 @@ class LinkProcessorWorker(
         }
     }
 
-    private fun findThumbnail(resources: List<Resource>): String? {
+    private fun findThumbnail(resources: List<Resource>): ResourceId? {
         return resources
             .filter { it.type == THUMBNAIL }
             .map { it.id }
@@ -120,10 +121,10 @@ class LinkProcessorWorker(
         }
         val savedResources = resourceManager.migrateGeneratedResources(link.id, generatedResources.values.toList())
 
-        // find readable resource and assign link content for searching
+        // find readable resource and update link content for searching
         resourcesByType[READABLE_TEXT]?.let {
             val readableContent = Files.readString(Path.of(it.targetPath))
-            link.content = linkService.updateSearchableContent(link.id, readableContent)
+            linkService.updateSearchableContent(link.id, readableContent)
         }
 
         return savedResources

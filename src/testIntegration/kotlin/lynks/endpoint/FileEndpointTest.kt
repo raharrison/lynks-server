@@ -2,10 +2,7 @@ package lynks.endpoint
 
 import io.restassured.RestAssured.*
 import io.restassured.http.ContentType
-import lynks.common.EntryType
-import lynks.common.File
-import lynks.common.NewFile
-import lynks.common.ServerTest
+import lynks.common.*
 import lynks.common.page.Page
 import lynks.util.createDummyCollection
 import lynks.util.createDummyEntry
@@ -45,7 +42,7 @@ class FileEndpointTest : ServerTest() {
         assertThat(created.tags).hasSize(1).extracting("id").containsExactly("t1")
         assertThat(created.collections).hasSize(1).extracting("id").containsExactly("c1")
         assertThat(created.dateCreated).isEqualTo(created.dateUpdated)
-        val retrieved = get("/file/{id}", created.id)
+        val retrieved = get("/file/{id}", created.id.value)
             .then()
             .extract().to<File>()
         assertThat(created).usingRecursiveComparison().ignoringFields("props").isEqualTo(retrieved)
@@ -83,7 +80,7 @@ class FileEndpointTest : ServerTest() {
             .then()
             .statusCode(200)
             .extract().to<File>()
-        assertThat(file.id).isEqualTo("e2")
+        assertThat(file.id).isEqualTo(EntryId("e2"))
         assertThat(file.title).isEqualTo("title2")
         assertThat(file.dateCreated).isEqualTo(file.dateUpdated)
     }
@@ -114,7 +111,7 @@ class FileEndpointTest : ServerTest() {
 
     @Test
     fun testUpdateFile() {
-        val updatedFile = NewFile("e2", "modified", listOf("t1"), listOf("c1"))
+        val updatedFile = NewFile(EntryId("e2"), "modified", listOf("t1"), listOf("c1"))
         val updated = given()
             .contentType(ContentType.JSON)
             .body(updatedFile)
@@ -135,7 +132,7 @@ class FileEndpointTest : ServerTest() {
     @Test
     fun testCannotUpdateNonFile() {
         // e1 = existing file entry
-        val updatedFile = NewFile("e1", "modified", emptyList())
+        val updatedFile = NewFile(EntryId("e1"), "modified", emptyList())
         given()
             .contentType(ContentType.JSON)
             .body(updatedFile)
@@ -147,7 +144,7 @@ class FileEndpointTest : ServerTest() {
 
     @Test
     fun testUpdateFileReturnsNotFound() {
-        val updatedFile = NewFile("invalid", "modified", emptyList())
+        val updatedFile = NewFile(EntryId("invalid"), "modified", emptyList())
         given()
             .contentType(ContentType.JSON)
             .body(updatedFile)
@@ -164,10 +161,11 @@ class FileEndpointTest : ServerTest() {
             .get("/file")
             .then()
             .statusCode(200)
-            .extract().to<Page<File>>()
+            .extract().to<Page<SlimFile>>()
         assertThat(files.page).isEqualTo(1)
         assertThat(files.total).isEqualTo(2)
-        assertThat(files.content).hasSize(2).extracting("id").doesNotHaveDuplicates()
+        assertThat(files.content).hasSize(2).extracting<EntryId> { it.id }
+            .doesNotHaveDuplicates()
     }
 
     @Test
@@ -179,12 +177,13 @@ class FileEndpointTest : ServerTest() {
             .get("/file")
             .then()
             .statusCode(200)
-            .extract().to<Page<File>>()
+            .extract().to<Page<SlimFile>>()
         // newest file first
         assertThat(files.page).isEqualTo(2)
         assertThat(files.size).isEqualTo(1)
         assertThat(files.total).isEqualTo(2)
-        assertThat(files.content).hasSize(1).extracting("id").containsExactly("e2")
+        assertThat(files.content).hasSize(1).extracting<EntryId> { it.id }
+            .containsExactly(EntryId("e2"))
     }
 
     @Test
@@ -196,10 +195,11 @@ class FileEndpointTest : ServerTest() {
             .get("/file")
             .then()
             .statusCode(200)
-            .extract().to<Page<File>>()
+            .extract().to<Page<SlimFile>>()
         // oldest file first
         assertThat(files.total).isEqualTo(2)
-        assertThat(files.content).hasSize(2).extracting("id").containsExactly("e2", "e3")
+        assertThat(files.content).hasSize(2).extracting<EntryId> { it.id }
+            .containsExactly(EntryId("e2"), EntryId("e3"))
     }
 
     @Test
@@ -220,7 +220,7 @@ class FileEndpointTest : ServerTest() {
             .get("/file")
             .then()
             .statusCode(200)
-            .extract().to<Page<File>>()
+            .extract().to<Page<SlimFile>>()
         assertThat(filesTag.total).isZero()
         assertThat(filesTag.content).isEmpty()
 
@@ -232,9 +232,10 @@ class FileEndpointTest : ServerTest() {
             .get("/file")
             .then()
             .statusCode(200)
-            .extract().to<Page<File>>()
+            .extract().to<Page<SlimFile>>()
         assertThat(filesCollection.total).isEqualTo(1)
-        assertThat(filesCollection.content).hasSize(1).extracting("id").containsExactly(created.id)
+        assertThat(filesCollection.content).hasSize(1).extracting<EntryId> { it.id }
+            .containsExactly(created.id)
 
         // filter by source
         val filesSource = given()
@@ -244,9 +245,10 @@ class FileEndpointTest : ServerTest() {
             .get("/file")
             .then()
             .statusCode(200)
-            .extract().to<Page<File>>()
+            .extract().to<Page<SlimFile>>()
         assertThat(filesSource.total).isEqualTo(1)
-        assertThat(filesSource.content).hasSize(1).extracting("id").containsExactly(created.id)
+        assertThat(filesSource.content).hasSize(1).extracting<EntryId> { it.id }
+            .containsExactly(created.id)
     }
 
     @Test
@@ -288,7 +290,7 @@ class FileEndpointTest : ServerTest() {
         assertThat(updated.dateCreated).isNotEqualTo(updated.dateUpdated)
 
         // retrieve versions
-        val original = get("/file/{id}/{version}", created.id, 1)
+        val original = get("/file/{id}/{version}", created.id.value, 1)
             .then()
             .statusCode(200)
             .extract().to<File>()
@@ -296,7 +298,7 @@ class FileEndpointTest : ServerTest() {
         assertThat(original.title).isEqualTo(newFile.title)
         assertThat(original.dateCreated).isEqualTo(original.dateUpdated)
 
-        val current = get("/file/{id}", created.id)
+        val current = get("/file/{id}", created.id.value)
             .then()
             .statusCode(200)
             .extract().to<File>()
@@ -325,9 +327,10 @@ class FileEndpointTest : ServerTest() {
         val updateFile = NewFile(created.id, "new title", emptyList())
         val updated = given()
             .contentType(ContentType.JSON)
+            .queryParam("newVersion", false)
             .body(updateFile)
             .When()
-            .put("/file?newVersion=false")
+            .put("/file")
             .then()
             .statusCode(200)
             .extract().to<File>()
@@ -337,7 +340,7 @@ class FileEndpointTest : ServerTest() {
         assertThat(updated.dateCreated).isNotEqualTo(updated.dateUpdated)
 
         // retrieve latest version
-        val current = get("/file/{id}", created.id)
+        val current = get("/file/{id}", created.id.value)
             .then()
             .statusCode(200)
             .extract().to<File>()

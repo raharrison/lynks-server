@@ -32,9 +32,9 @@ class FileService(
     override val slimColumnSet: List<Column<*>> =
         listOf(Entries.id, Entries.title, Entries.dateUpdated, Entries.starred)
 
-    override fun toInsert(eId: String, entry: NewFile): BaseEntries.(UpdateBuilder<*>) -> Unit = {
+    override fun toInsert(eId: EntryId, entry: NewFile): BaseEntries.(UpdateBuilder<*>) -> Unit = {
         val time = System.currentTimeMillis()
-        it[id] = eId
+        it[id] = eId.value
         it[title] = entry.title
         it[src] = "me"
         it[type] = EntryType.FILE

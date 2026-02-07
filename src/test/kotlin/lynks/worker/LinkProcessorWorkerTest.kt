@@ -5,9 +5,7 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
-import lynks.common.DEAD_LINK_PROP
-import lynks.common.Environment
-import lynks.common.Link
+import lynks.common.*
 import lynks.entry.EntryAuditService
 import lynks.entry.LinkService
 import lynks.group.Collection
@@ -50,7 +48,7 @@ class LinkProcessorWorkerTest {
     @BeforeEach
     fun setup() {
         coEvery { notifyService.create(any()) } returns Notification(
-            "n1", NotificationType.DISCUSSIONS, "found", false, dateCreated = System.currentTimeMillis()
+            NotificationId("n1"), NotificationType.DISCUSSIONS, "found", false, dateCreated = System.currentTimeMillis()
         )
     }
 
@@ -65,7 +63,7 @@ class LinkProcessorWorkerTest {
     inner class Persist {
         @Test
         fun testDefaultPersistAllTypes() = runTest {
-            val link = Link("id1", "title", "google.com", "google.com", "", 100, 100)
+            val link = Link(EntryId("id1"), "title", "google.com", "google.com", "", 100, 100)
             val resourceSet = ResourceType.linkBaseline()
             val generatedResources =listOf(
                 GeneratedResource(ResourceType.SCREENSHOT, "screenshotPath", PNG),
@@ -80,19 +78,18 @@ class LinkProcessorWorkerTest {
 
             coEvery { processor.scrapeResources(resourceSet) } returns generatedResources
             every { resourceManager.migrateGeneratedResources(link.id, any()) } returns listOf(
-                Resource("rid1", "pid1", link.id, 1, "screenshot", PNG, ResourceType.SCREENSHOT, 1189, 100),
-                Resource("rid2", "pid2", link.id, 1, "thumbnail", JPG, ResourceType.THUMBNAIL, 456, 100),
-                Resource("rid3", "pid3", link.id, 1, "preview", JPG, ResourceType.PREVIEW, 743, 100)
+                Resource(ResourceId("rid1"), "pid1", link.id, 1, "screenshot", PNG, ResourceType.SCREENSHOT, 1189, 100),
+                Resource(ResourceId("rid2"), "pid2", link.id, 1, "thumbnail", JPG, ResourceType.THUMBNAIL, 456, 100),
+                Resource(ResourceId("rid3"), "pid3", link.id, 1, "preview", JPG, ResourceType.PREVIEW, 743, 100)
             )
             coEvery { processor.enrich(link.props) } just Runs
             every { processor.close() } just Runs
 
             coEvery { processorFactory.createProcessors(link.url) } returns listOf(processor)
             every { resourceManager.deleteTempFiles(link.url) } just Runs
-            link.thumbnailId = "rid2"
-            link.content = "updated content"
             every { linkService.updateSearchableContent(link.id, any()) } returns "updated content"
-            every { linkService.mergeProps(eq("id1"), any()) } just Runs
+            every { linkService.update(any<Link>()) } returns link
+            every { linkService.mergeProps(eq(EntryId("id1")), any()) } just Runs
 
             val channel = worker.apply { runner = this@runTest.coroutineContext }.worker()
             channel.send(PersistLinkProcessingRequest(link, resourceSet, true))
@@ -101,7 +98,7 @@ class LinkProcessorWorkerTest {
 
             coVerify(exactly = 1) { processorFactory.createProcessors(link.url) }
             verify(exactly = 1) { processor.close() }
-            verify(exactly = 1) { linkService.mergeProps(eq("id1"), any()) }
+            verify(exactly = 1) { linkService.mergeProps(eq(EntryId("id1")), any()) }
             verify(exactly = 1) { linkService.updateSearchableContent(link.id, any()) }
             coVerify(exactly = 1) { notifyService.create(any()) }
 
@@ -111,7 +108,7 @@ class LinkProcessorWorkerTest {
 
         @Test
         fun testDefaultPersistSingleType() = runTest {
-            val link = Link("id1", "title", "google.com", "google.com", "", 100, 100)
+            val link = Link(EntryId("id1"), "title", "google.com", "google.com", "", 100, 100)
             val resourceSet = EnumSet.of(ResourceType.SCREENSHOT)
 
             val generatedResources =listOf(
@@ -127,7 +124,7 @@ class LinkProcessorWorkerTest {
             coEvery { processorFactory.createProcessors(link.url) } returns listOf(processor)
             every { resourceManager.deleteTempFiles(link.url) } just Runs
             every { linkService.update(link) } returns link
-            every { linkService.mergeProps(eq("id1"), any()) } just Runs
+            every { linkService.mergeProps(eq(EntryId("id1")), any()) } just Runs
 
             val channel = worker.apply { runner = this@runTest.coroutineContext }.worker()
             channel.send(PersistLinkProcessingRequest(link, resourceSet, true))
@@ -136,7 +133,7 @@ class LinkProcessorWorkerTest {
 
             coVerify(exactly = 1) { processorFactory.createProcessors(link.url) }
             verify(exactly = 1) { processor.close() }
-            verify(exactly = 1) { linkService.mergeProps(eq("id1"), any()) }
+            verify(exactly = 1) { linkService.mergeProps(eq(EntryId("id1")), any()) }
             coVerify(exactly = 1) { notifyService.create(any()) }
             coVerify(exactly = 1) { processor.scrapeResources(resourceSet) }
             verify(exactly = 1) { resourceManager.migrateGeneratedResources(link.id, generatedResources) }
@@ -145,7 +142,7 @@ class LinkProcessorWorkerTest {
 
         @Test
         fun testDefaultPersistNoProcessFlag() = runTest {
-            val link = Link("id1", "title", "google.com", "google.com", "", 100, 100)
+            val link = Link(EntryId("id1"), "title", "google.com", "google.com", "", 100, 100)
 
             val processor = mockk<LinkProcessor>(relaxUnitFun = true)
             coEvery { processor.enrich(link.props) } just Runs
@@ -153,7 +150,7 @@ class LinkProcessorWorkerTest {
 
             coEvery { processorFactory.createProcessors(link.url) } returns listOf(processor)
             every { linkService.update(link) } returns link
-            every { linkService.mergeProps(eq("id1"), any()) } just Runs
+            every { linkService.mergeProps(eq(EntryId("id1")), any()) } just Runs
             every { resourceManager.deleteTempFiles(link.url) } just Runs
 
             val channel = worker.apply { runner = this@runTest.coroutineContext }.worker()
@@ -163,7 +160,7 @@ class LinkProcessorWorkerTest {
 
             coVerify(exactly = 1) { processorFactory.createProcessors(link.url) }
             verify(exactly = 1) { processor.close() }
-            verify(exactly = 1) { linkService.mergeProps(eq("id1"), any()) }
+            verify(exactly = 1) { linkService.mergeProps(eq(EntryId("id1")), any()) }
             coVerify(exactly = 0) { notifyService.create(any()) }
 
             coVerify(exactly = 0) { processor.scrapeResources(any()) }
@@ -172,13 +169,13 @@ class LinkProcessorWorkerTest {
 
         @Test
         fun testDefaultPersistNoResourceTypes() = runTest {
-            val link = Link("id1", "title", "google.com", "google.com", "", 100, 100)
+            val link = Link(EntryId("id1"), "title", "google.com", "google.com", "", 100, 100)
 
             val processor = mockk<LinkProcessor>(relaxUnitFun = true)
 
             coEvery { processorFactory.createProcessors(link.url) } returns listOf(processor)
             every { linkService.update(link) } returns link
-            every { linkService.mergeProps(eq("id1"), any()) } just Runs
+            every { linkService.mergeProps(eq(EntryId("id1")), any()) } just Runs
             every { resourceManager.deleteTempFiles(link.url) } just Runs
 
             val channel = worker.apply { runner = this@runTest.coroutineContext }.worker()
@@ -188,7 +185,7 @@ class LinkProcessorWorkerTest {
 
             coVerify(exactly = 1) { processorFactory.createProcessors(link.url) }
             verify(exactly = 1) { processor.close() }
-            verify(exactly = 1) { linkService.mergeProps(eq("id1"), any()) }
+            verify(exactly = 1) { linkService.mergeProps(eq(EntryId("id1")), any()) }
             coVerify(exactly = 1) { notifyService.create(any()) }
 
             coVerify(exactly = 0) { processor.scrapeResources(any()) }
@@ -197,7 +194,7 @@ class LinkProcessorWorkerTest {
 
         @Test
         fun testDefaultPersistCompletedExceptionally() = runTest {
-            val link = Link("id1", "title", "google.com", "google.com", "", 100, 100)
+            val link = Link(EntryId("id1"), "title", "google.com", "google.com", "", 100, 100)
 
             val exception = RuntimeException("error during computation")
             val processor = mockk<LinkProcessor>(relaxUnitFun = true)
@@ -206,7 +203,7 @@ class LinkProcessorWorkerTest {
 
             coEvery { processorFactory.createProcessors(link.url) } returns listOf(processor)
             every { linkService.update(link) } returns link
-            every { linkService.mergeProps(eq("id1"), any()) } just Runs
+            every { linkService.mergeProps(eq(EntryId("id1")), any()) } just Runs
             every { resourceManager.deleteTempFiles(link.url) } just Runs
 
             val channel = worker.apply { runner = this@runTest.coroutineContext }.worker()
@@ -217,7 +214,7 @@ class LinkProcessorWorkerTest {
             coVerify(exactly = 1) { processorFactory.createProcessors(link.url) }
             verify(exactly = 1) { processor.close() }
             verify(exactly = 0) { linkService.update(link) }
-            verify(exactly = 1) { linkService.mergeProps(eq("id1"), any()) }
+            verify(exactly = 1) { linkService.mergeProps(eq(EntryId("id1")), any()) }
             coVerify(exactly = 1) { notifyService.create(any()) }
             verify(exactly = 1) { entryAuditService.acceptAuditEvent(link.id, any(), any()) }
             assertThat(link.props.containsAttribute(DEAD_LINK_PROP)).isTrue()

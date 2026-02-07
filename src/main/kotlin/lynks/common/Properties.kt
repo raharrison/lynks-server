@@ -34,14 +34,14 @@ open class BaseProperties {
     }
 
     fun addTask(description: String, task: TaskBuilder): TaskDefinition {
-        val definition = TaskDefinition(RandomUtils.generateUid(), description, task.clazz.qualifiedName!!, task.params)
+        val definition = TaskDefinition(TaskId(RandomUtils.generateUid()), description, task.clazz.qualifiedName!!, task.params)
         addTask(definition)
         return definition
     }
 
     fun clearTasks() = tasks.clear()
 
-    fun getTask(id: String): TaskDefinition? = tasks.find { it.id == id }
+    fun getTask(id: TaskId): TaskDefinition? = tasks.find { it.id == id }
 
     fun merge(newProps: BaseProperties): BaseProperties {
         val mergedAttributes = this.attributes.toMutableMap() + newProps.attributes

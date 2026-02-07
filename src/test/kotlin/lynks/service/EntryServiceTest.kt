@@ -45,30 +45,30 @@ class EntryServiceTest: DatabaseTest() {
 
     @Test
     fun testGetByIdNoExists() {
-        assertThat(entryService.get("nothing")).isNull()
+        assertThat(entryService.get(EntryId("nothing"))).isNull()
     }
 
     @Test
     fun testGetById() {
-        val retrieved1 = entryService.get("id1") as Link
-        assertThat(retrieved1.id).isEqualTo("id1")
+        val retrieved1 = entryService.get(EntryId("id1")) as Link
+        assertThat(retrieved1.id).isEqualTo(EntryId("id1"))
         assertThat(retrieved1.title).isEqualTo("link1")
         assertThat(retrieved1.url).isEqualTo("link content")
         assertThat(retrieved1.type).isEqualTo(EntryType.LINK)
 
-        val retrieved2 = entryService.get("id2") as Note
-        assertThat(retrieved2.id).isEqualTo("id2")
+        val retrieved2 = entryService.get(EntryId("id2")) as Note
+        assertThat(retrieved2.id).isEqualTo(EntryId("id2"))
         assertThat(retrieved2.title).isEqualTo("note1")
         assertThat(retrieved2.plainText).isEqualTo("note content")
         assertThat(retrieved2.type).isEqualTo(EntryType.NOTE)
 
-        val retrieved3 = entryService.get("id4") as Snippet
-        assertThat(retrieved3.id).isEqualTo("id4")
+        val retrieved3 = entryService.get(EntryId("id4")) as Snippet
+        assertThat(retrieved3.id).isEqualTo(EntryId("id4"))
         assertThat(retrieved3.plainText).isEqualTo("snippet text")
         assertThat(retrieved3.type).isEqualTo(EntryType.SNIPPET)
 
-        val retrieved4 = entryService.get("id5") as File
-        assertThat(retrieved4.id).isEqualTo("id5")
+        val retrieved4 = entryService.get(EntryId("id5")) as File
+        assertThat(retrieved4.id).isEqualTo(EntryId("id5"))
         assertThat(retrieved4.title).isEqualTo("file")
         assertThat(retrieved4.type).isEqualTo(EntryType.FILE)
     }
@@ -79,7 +79,8 @@ class EntryServiceTest: DatabaseTest() {
         assertThat(retrieved.content).hasSize(5)
         assertThat(retrieved.page).isEqualTo(1L)
         assertThat(retrieved.total).isEqualTo(5)
-        assertThat(retrieved.content).extracting("id").containsExactlyInAnyOrder("id1", "id2", "id3", "id4", "id5")
+        assertThat(retrieved.content).extracting<EntryId> { it.id }
+            .containsExactlyInAnyOrder(EntryId("id1"), EntryId("id2"), EntryId("id3"), EntryId("id4"), EntryId("id5"))
         assertThat(retrieved.content).hasAtLeastOneElementOfType(SlimNote::class.java)
         assertThat(retrieved.content).hasAtLeastOneElementOfType(SlimLink::class.java)
         assertThat(retrieved.content).hasAtLeastOneElementOfType(SlimSnippet::class.java)
@@ -88,21 +89,23 @@ class EntryServiceTest: DatabaseTest() {
 
     @Test
     fun testGetByIds() {
-        val retrieved = entryService.get(listOf("id2", "id3"))
+        val retrieved = entryService.get(listOf(EntryId("id2"), EntryId("id3")))
         assertThat(retrieved.content).hasSize(2)
         assertThat(retrieved.page).isEqualTo(1L)
         assertThat(retrieved.total).isEqualTo(2)
-        assertThat(retrieved.content).extracting("id").containsExactlyInAnyOrder("id2", "id3")
+        assertThat(retrieved.content).extracting<EntryId> { it.id }
+            .containsExactlyInAnyOrder(EntryId("id2"), EntryId("id3"))
     }
 
     @Test
     fun testGetByIdsAndPaged() {
-        val retrieved = entryService.get(listOf("id1", "id2", "id3"), PageRequest(2, 1))
+        val retrieved = entryService.get(listOf(EntryId("id1"), EntryId("id2"), EntryId("id3")), PageRequest(2, 1))
         assertThat(retrieved.content).hasSize(1)
         assertThat(retrieved.page).isEqualTo(2L)
         assertThat(retrieved.size).isEqualTo(1)
         assertThat(retrieved.total).isEqualTo(3)
-        assertThat(retrieved.content).extracting("id").containsExactlyInAnyOrder("id2")
+        assertThat(retrieved.content).extracting<EntryId> { it.id }
+            .containsExactlyInAnyOrder(EntryId("id2"))
     }
 
     @Test
@@ -112,7 +115,8 @@ class EntryServiceTest: DatabaseTest() {
         assertThat(retrieved.content).hasSize(1)
         assertThat(retrieved.page).isEqualTo(1L)
         assertThat(retrieved.total).isEqualTo(5)
-        assertThat(retrieved.content).extracting("id").containsExactly("id5")
+        assertThat(retrieved.content).extracting<EntryId> { it.id }
+            .containsExactly(EntryId("id5"))
         assertThat(retrieved.content).hasOnlyElementsOfType(SlimFile::class.java)
 
         val retrieved2 = entryService.get(PageRequest(5, 1))
@@ -120,7 +124,8 @@ class EntryServiceTest: DatabaseTest() {
         assertThat(retrieved2.page).isEqualTo(5L)
         assertThat(retrieved2.size).isEqualTo(1)
         assertThat(retrieved2.total).isEqualTo(5)
-        assertThat(retrieved2.content).extracting("id").containsExactly("id1")
+        assertThat(retrieved2.content).extracting<EntryId> { it.id }
+            .containsExactly(EntryId("id1"))
         assertThat(retrieved2.content).hasOnlyElementsOfType(SlimLink::class.java)
     }
 
@@ -135,22 +140,26 @@ class EntryServiceTest: DatabaseTest() {
     @Test
     fun testSearchSortOrdering() {
         val retrieved = entryService.get(PageRequest(0, 10, sort = "dateCreated", direction = SortDirection.ASC))
-        assertThat(retrieved.content).extracting("id").containsExactly("id1", "id2", "id3", "id4", "id5")
+        assertThat(retrieved.content).extracting<EntryId> { it.id }
+            .containsExactly(EntryId("id1"), EntryId("id2"), EntryId("id3"), EntryId("id4"), EntryId("id5"))
 
         val retrieved2 = entryService.get(PageRequest(0, 10, sort = "dateCreated", direction = SortDirection.DESC))
-        assertThat(retrieved2.content).extracting("id").containsExactly("id5", "id4", "id3", "id2", "id1")
+        assertThat(retrieved2.content).extracting<EntryId> { it.id }
+            .containsExactly(EntryId("id5"), EntryId("id4"), EntryId("id3"), EntryId("id2"), EntryId("id1"))
     }
 
     @Test
     fun testSearchTitle() {
         val entries = entryService.search("note").content
         assertThat(entries).hasSize(2)
-        assertThat(entries).extracting("id").containsExactlyInAnyOrder("id2", "id3")
+        assertThat(entries).extracting<EntryId> { it.id }
+            .containsExactlyInAnyOrder(EntryId("id2"), EntryId("id3"))
         assertThat(entries).hasOnlyElementsOfType(SlimNote::class.java)
 
         val entries2 = entryService.search("link").content
         assertThat(entries2).hasSize(1)
-        assertThat(entries2).extracting("id").containsExactly("id1")
+        assertThat(entries2).extracting<EntryId> { it.id }
+            .containsExactly(EntryId("id1"))
         assertThat(entries2).hasOnlyElementsOfType(SlimLink::class.java)
     }
 
@@ -158,7 +167,8 @@ class EntryServiceTest: DatabaseTest() {
     fun testSearchMultipleResults() {
         val entries = entryService.search("content").content
         assertThat(entries).hasSize(3)
-        assertThat(entries).extracting("id").containsExactlyInAnyOrder("id1", "id2", "id3")
+        assertThat(entries).extracting<EntryId> { it.id }
+            .containsExactlyInAnyOrder(EntryId("id1"), EntryId("id2"), EntryId("id3"))
         assertThat(entries).hasAtLeastOneElementOfType(SlimNote::class.java)
         assertThat(entries).hasAtLeastOneElementOfType(SlimLink::class.java)
     }
@@ -172,81 +182,83 @@ class EntryServiceTest: DatabaseTest() {
     @Test
     fun testCannotAdd() {
         assertThrows<NotImplementedError> {
-            entryService.add(NewLink("id", "title", "url", emptyList()))
+            entryService.add(NewLink(EntryId("id"), "title", "url", emptyList()))
         }
     }
 
     @Test
     fun testCannotUpdate() {
         assertThrows<NotImplementedError> {
-            entryService.update(NewLink("id", "title", "url", emptyList()))
+            entryService.update(NewLink(EntryId("id"), "title", "url", emptyList()))
         }
         assertThrows<NotImplementedError> {
-            entryService.update(Link("id", "title", "url", "src", "content", 1L, 1L))
+            entryService.update(Link(EntryId("id"), "title", "url", "src", "content", 1L, 1L))
         }
     }
 
     @Test
     fun testStar() {
-        val original = entryService.get("id1")
+        val original = entryService.get(EntryId("id1"))
         assertThat(original?.starred).isFalse()
         val dateUpdated = original?.dateUpdated
 
-        val star = entryService.star("id1", true)
+        val star = entryService.star(EntryId("id1"), true)
         assertThat(star?.starred).isTrue()
         assertThat(star?.version).isOne()
         // date updated is same
         assertThat(star?.dateUpdated).isEqualTo(dateUpdated)
 
-        val unstar = entryService.star("id1", false)
+        val unstar = entryService.star(EntryId("id1"), false)
         assertThat(unstar?.starred).isFalse()
         assertThat(unstar?.version).isOne()
         assertThat(unstar?.dateUpdated).isEqualTo(dateUpdated)
 
-        assertThat(entryService.get("id1")?.starred).isFalse()
+        assertThat(entryService.get(EntryId("id1"))?.starred).isFalse()
 
-        verify(exactly = 2) { entryAuditService.acceptAuditEvent("id1", any(), any()) }
+        verify(exactly = 2) { entryAuditService.acceptAuditEvent(EntryId("id1"), any(), any()) }
     }
 
     @Test
     fun testSetStarInvalidEntry() {
-        assertThat(entryService.star("invalid", true)).isNull()
-        assertThat(entryService.star("invalid", false)).isNull()
-        verify(exactly = 0) { entryAuditService.acceptAuditEvent("invalid", any(), any()) }
+        assertThat(entryService.star(EntryId("invalid"), true)).isNull()
+        assertThat(entryService.star(EntryId("invalid"), false)).isNull()
+        verify(exactly = 0) { entryAuditService.acceptAuditEvent(EntryId("invalid"), any(), any()) }
     }
 
     @Test
     fun testGetHistory() {
-        val history1 = entryService.getEntryVersions("id1")
+        val history1 = entryService.getEntryVersions(EntryId("id1"))
         assertThat(history1).hasSize(1)
-        assertThat(history1).extracting("id").containsOnly("id1")
+        assertThat(history1).extracting<EntryId> { it.id }
+            .containsOnly(EntryId("id1"))
         assertThat(history1).extracting("version").containsOnly(1)
 
         updateDummyEntry("id1", "updated", 2)
 
-        val history2 = entryService.getEntryVersions("id1")
+        val history2 = entryService.getEntryVersions(EntryId("id1"))
         assertThat(history2).hasSize(2)
-        assertThat(history2).extracting("id").containsOnly("id1")
+        assertThat(history2).extracting<EntryId> { it.id }
+            .containsOnly(EntryId("id1"))
         assertThat(history2).extracting("version").containsExactly(1, 2)
         assertThat(history2).extracting("dateUpdated").doesNotHaveDuplicates()
     }
 
     @Test
     fun getHistoryNotExists() {
-        assertThat(entryService.getEntryVersions("invalid")).isEmpty()
+        assertThat(entryService.getEntryVersions(EntryId("invalid"))).isEmpty()
     }
 
     @Test
     fun testUpdateEntryGroups() {
         createDummyTag("t1", "tag1")
         createDummyCollection("c1", "col1")
-        val original = entryService.get("id2")
+        val original = entryService.get(EntryId("id2"))
         assertThat(original).isNotNull()
         assertThat(original?.tags).isEmpty()
         assertThat(original?.collections).isEmpty()
-        val result = entryService.updateEntryGroups("id2", listOf("t1"), listOf("c1"))
+        val result = entryService.updateEntryGroups(EntryId("id2"), listOf("t1"), listOf("c1"))
         assertThat(result).isTrue()
-        val updated = entryService.get("id2")
+        val updated = entryService.get(EntryId("id2"))
         assertThat(updated).isNotNull()
         assertThat(updated?.tags).extracting("id").containsOnly("t1")
         assertThat(updated?.collections).extracting("id").containsOnly("c1")
@@ -255,10 +267,10 @@ class EntryServiceTest: DatabaseTest() {
     @Test
     fun testUpdateGroupsNotFound() {
         assertThrows<InvalidModelException> {
-            entryService.updateEntryGroups("id1", listOf("t1"), emptyList())
+            entryService.updateEntryGroups(EntryId("id1"), listOf("t1"), emptyList())
         }
         assertThrows<InvalidModelException> {
-            entryService.updateEntryGroups("id1", emptyList(), listOf("c1"))
+            entryService.updateEntryGroups(EntryId("id1"), emptyList(), listOf("c1"))
         }
     }
 
@@ -266,7 +278,7 @@ class EntryServiceTest: DatabaseTest() {
     fun testUpdateGroupsEntryNotFound() {
         createDummyTag("t1", "tag1")
         createDummyCollection("c1", "col1")
-        val result = entryService.updateEntryGroups("invalid", listOf("t1"), listOf("c1"))
+        val result = entryService.updateEntryGroups(EntryId("invalid"), listOf("t1"), listOf("c1"))
         assertThat(result).isFalse()
     }
 

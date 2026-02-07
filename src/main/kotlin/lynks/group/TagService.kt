@@ -3,12 +3,11 @@ package lynks.group
 import org.jetbrains.exposed.v1.core.statements.InsertStatement
 import org.jetbrains.exposed.v1.core.statements.UpdateBuilder
 
-
 class TagService : GroupService<Tag, NewTag>(GroupType.TAG) {
 
-    override fun toInsert(eId: String, entity: NewTag): Groups.(InsertStatement<*>) -> Unit = {
+    override fun toInsert(gid: String, entity: NewTag): Groups.(InsertStatement<*>) -> Unit = {
         val time = System.currentTimeMillis()
-        it[id] = eId
+        it[id] = gid
         it[name] = entity.name
         it[type] = GroupType.TAG
         it[dateCreated] = time

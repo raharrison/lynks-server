@@ -2,8 +2,7 @@ package lynks.task.youtube
 
 import io.mockk.*
 import kotlinx.coroutines.runBlocking
-import lynks.common.Environment
-import lynks.common.Link
+import lynks.common.*
 import lynks.common.exception.ExecutionException
 import lynks.entry.EntryAuditService
 import lynks.entry.LinkService
@@ -32,14 +31,14 @@ class YoutubeSubtitleTaskTest {
     private val resourceRetriever = mockk<WebResourceRetriever>()
     private val entryAuditService = mockk<EntryAuditService>(relaxUnitFun = true)
 
-    private val youtubeSubtitleTask = YoutubeSubtitleTask("tid", "eid").also {
+    private val youtubeSubtitleTask = YoutubeSubtitleTask(TaskId("tid"), EntryId("eid")).also {
         it.linkService = linkService
         it.resourceManager = resourceManager
         it.resourceRetriever = resourceRetriever
         it.entryAuditService = entryAuditService
     }
     private val context = youtubeSubtitleTask.createContext(mapOf("searchable" to "true"))
-    private val link = Link("eid", "title", "youtube.com/watch?v=1234", "src", "", 123L, 123L)
+    private val link = Link(EntryId("eid"), "title", "youtube.com/watch?v=1234", "src", "", 123L, 123L)
 
     @AfterEach
     fun setup() {
@@ -78,7 +77,7 @@ class YoutubeSubtitleTaskTest {
             after line
             """.trimIndent()
 
-        val path = Paths.get(link.id)
+        val path = Paths.get(link.id.value)
         every { resourceManager.constructTempBasePath("eid") } returns path
 
         every {
@@ -89,7 +88,7 @@ class YoutubeSubtitleTaskTest {
                 any()
             )
         } returns
-            Resource("rid", "pid", link.id, 1, subtitleFile.name, subtitleFile.extension, ResourceType.GENERATED, 1, 1)
+            Resource(ResourceId("rid"), "pid", link.id, 1, subtitleFile.name, subtitleFile.extension, ResourceType.GENERATED, 1, 1)
 
         mockkObject(ExecUtils)
 
@@ -121,7 +120,7 @@ class YoutubeSubtitleTaskTest {
                 any()
             )
         }
-        verify(exactly = 1) { resourceManager.constructTempBasePath(link.id) }
+        verify(exactly = 1) { resourceManager.constructTempBasePath(link.id.value) }
         verify(exactly = 1) { entryAuditService.acceptAuditEvent(link.id, any(), any()) }
     }
 
@@ -132,7 +131,7 @@ class YoutubeSubtitleTaskTest {
         FileUtils.writeToFile(binaryPath, byteArrayOf(1, 2, 3))
 
         every { linkService.get(link.id) } returns link
-        every { resourceManager.constructTempBasePath(link.id) } returns Paths.get(link.id)
+        every { resourceManager.constructTempBasePath(link.id.value) } returns Paths.get(link.id.value)
 
         mockkObject(ExecUtils)
 
@@ -145,7 +144,7 @@ class YoutubeSubtitleTaskTest {
         unmockkObject(ExecUtils)
 
         coVerify(exactly = 0) { resourceRetriever.getFileResult(any()) }
-        verify(exactly = 1) { resourceManager.constructTempBasePath(link.id) }
+        verify(exactly = 1) { resourceManager.constructTempBasePath(link.id.value) }
         verify(exactly = 0) { resourceManager.saveGeneratedResource(link.id, any(), ResourceType.GENERATED, any()) }
         verify(exactly = 1) { entryAuditService.acceptAuditEvent(link.id, any(), any()) }
     }
@@ -154,7 +153,7 @@ class YoutubeSubtitleTaskTest {
     fun testProcessNoReturnedFileName() {
         every { linkService.get(link.id) } returns link
         coEvery { resourceRetriever.getFileResult(any()) } returns Result.Success(byteArrayOf(1, 2, 3))
-        every { resourceManager.constructTempBasePath(link.id) } returns Paths.get(link.id)
+        every { resourceManager.constructTempBasePath(link.id.value) } returns Paths.get(link.id.value)
         mockkObject(ExecUtils)
 
         every { ExecUtils.executeCommand(any()) } returns Result.Success("invalid")

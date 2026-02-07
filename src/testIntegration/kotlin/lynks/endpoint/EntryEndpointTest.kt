@@ -7,7 +7,6 @@ import lynks.common.page.Page
 import lynks.entry.ref.EntryRefSet
 import lynks.group.GroupIdSet
 import lynks.notify.NotificationMethod
-import lynks.reminder.Reminder
 import lynks.reminder.ReminderType
 import lynks.util.*
 import org.assertj.core.api.Assertions.assertThat
@@ -45,7 +44,7 @@ class EntryEndpointTest : ServerTest() {
             .then()
             .statusCode(200)
             .extract().to<Note>()
-        assertThat(note.id).isEqualTo("e2")
+        assertThat(note.id).isEqualTo(EntryId("e2"))
         assertThat(note.title).isEqualTo("changeover")
         assertThat(note.plainText).isEqualTo("other content there")
         assertThat(note.tags).isEmpty()
@@ -59,7 +58,7 @@ class EntryEndpointTest : ServerTest() {
             .then()
             .statusCode(200)
             .extract().to<Link>()
-        assertThat(link.id).isEqualTo("e4")
+        assertThat(link.id).isEqualTo(EntryId("e4"))
         assertThat(link.title).isEqualTo("refusal")
         assertThat(link.url).isEqualTo("http://google.co.uk/content")
         assertThat(link.tags).isEmpty()
@@ -72,10 +71,11 @@ class EntryEndpointTest : ServerTest() {
         val entries = get("/entry")
             .then()
             .statusCode(200)
-            .extract().to<Page<Entry>>()
+            .extract().to<Page<*>>()
         assertThat(entries.page).isEqualTo(1)
         assertThat(entries.total).isEqualTo(4)
-        assertThat(entries.content).hasSize(4).extracting("id").containsExactlyInAnyOrder("e1", "e2", "e3", "e4")
+        assertThat(entries.content).hasSize(4).extracting("id")
+            .containsExactlyInAnyOrder("e1", "e2", "e3", "e4")
     }
 
     @Test
@@ -87,7 +87,7 @@ class EntryEndpointTest : ServerTest() {
             .get("/entry")
             .then()
             .statusCode(200)
-            .extract().to<Page<Entry>>()
+            .extract().to<Page<*>>()
         assertThat(entries.page).isEqualTo(2)
         assertThat(entries.size).isEqualTo(1)
         assertThat(entries.total).isEqualTo(4)
@@ -100,11 +100,12 @@ class EntryEndpointTest : ServerTest() {
             .get("/entry")
             .then()
             .statusCode(200)
-            .extract().to<Page<Entry>>()
+            .extract().to<Page<*>>()
         assertThat(entries2.page).isEqualTo(2)
         assertThat(entries2.size).isEqualTo(2)
         assertThat(entries2.total).isEqualTo(4)
-        assertThat(entries2.content).hasSize(2).extracting("id").containsExactlyInAnyOrder("e1", "e2")
+        assertThat(entries2.content).hasSize(2).extracting("id")
+            .containsExactlyInAnyOrder("e1", "e2")
     }
 
     @Test
@@ -115,7 +116,7 @@ class EntryEndpointTest : ServerTest() {
             .get("/entry/search")
             .then()
             .statusCode(200)
-            .extract().to<Page<Entry>>()
+            .extract().to<Page<*>>()
         assertThat(entries.page).isEqualTo(1)
         assertThat(entries.content).isEmpty()
     }
@@ -128,9 +129,10 @@ class EntryEndpointTest : ServerTest() {
             .get("/entry/search")
             .then()
             .statusCode(200)
-            .extract().to<Page<Entry>>()
+            .extract().to<Page<*>>()
         assertThat(entries.page).isEqualTo(1)
-        assertThat(entries.content).hasSize(2).extracting("id").containsExactlyInAnyOrder("e1", "e3")
+        assertThat(entries.content).hasSize(2).extracting("id")
+            .containsExactlyInAnyOrder("e1", "e3")
     }
 
     @Test
@@ -141,9 +143,10 @@ class EntryEndpointTest : ServerTest() {
             .get("/entry/search")
             .then()
             .statusCode(200)
-            .extract().to<Page<Entry>>()
+            .extract().to<Page<*>>()
         assertThat(entries.page).isEqualTo(1)
-        assertThat(entries.content).hasSize(3).extracting("id").containsExactlyInAnyOrder("e1", "e2", "e4")
+        assertThat(entries.content).hasSize(3).extracting("id")
+            .containsExactlyInAnyOrder("e1", "e2", "e4")
     }
 
     @Test
@@ -156,10 +159,11 @@ class EntryEndpointTest : ServerTest() {
             .get("/entry/search")
             .then()
             .statusCode(200)
-            .extract().to<Page<Entry>>()
+            .extract().to<Page<*>>()
         assertThat(entries.page).isEqualTo(2)
         assertThat(entries.size).isEqualTo(1)
-        assertThat(entries.content).hasSize(1).extracting("id").containsExactly("e2")
+        assertThat(entries.content).hasSize(1).extracting("id")
+            .containsExactly("e2")
     }
 
     @Test
@@ -175,7 +179,7 @@ class EntryEndpointTest : ServerTest() {
             .then()
             .statusCode(200)
             .extract()
-            .to<List<Reminder>>()
+            .to<List<*>>()
         assertThat(reminders).hasSize(1)
         assertThat(reminders).extracting("reminderId").containsOnly("r1")
         assertThat(reminders).extracting("entryId").containsOnly("e1")
@@ -238,7 +242,7 @@ class EntryEndpointTest : ServerTest() {
             .statusCode(200)
             .extract().to<List<EntryVersion>>()
         assertThat(entryVersions1).hasSize(1)
-        assertThat(entryVersions1).extracting("id").containsOnly("e1")
+        assertThat(entryVersions1).extracting<EntryId> { it.id }.containsOnly(EntryId("e1"))
         assertThat(entryVersions1).extracting("version").containsOnly(1)
 
         updateDummyEntry("e1", "updated", 2)
@@ -248,7 +252,7 @@ class EntryEndpointTest : ServerTest() {
             .statusCode(200)
             .extract().to<List<EntryVersion>>()
         assertThat(entryVersions2).hasSize(2)
-        assertThat(entryVersions2).extracting("id").containsOnly("e1")
+        assertThat(entryVersions2).extracting<EntryId> { it.id }.containsOnly(EntryId("e1"))
         assertThat(entryVersions2).extracting("version").containsOnly(1, 2)
         assertThat(entryVersions2).extracting("dateUpdated").doesNotHaveDuplicates()
     }
@@ -269,7 +273,7 @@ class EntryEndpointTest : ServerTest() {
             .statusCode(200)
             .extract().to<List<EntryAuditItem>>()
         assertThat(entryAudit2).hasSize(2)
-        assertThat(entryAudit2).extracting("entryId").containsOnly("e1")
+        assertThat(entryAudit2).extracting<EntryId> { it.entryId }.containsOnly(EntryId("e1"))
         assertThat(entryAudit2).extracting("details").doesNotContainNull()
         assertThat(entryAudit2).extracting("timestamp").doesNotHaveDuplicates()
     }
@@ -322,10 +326,12 @@ class EntryEndpointTest : ServerTest() {
             .then()
             .statusCode(200)
             .extract().to<EntryRefSet>()
-        assertThat(refSet.outbound).extracting("entryId").containsOnly("e2", "e3")
+        assertThat(refSet.outbound).extracting<EntryId> { it.entryId }
+            .containsOnly(EntryId("e2"), EntryId("e3"))
         assertThat(refSet.outbound).extracting("title").containsOnly("changeover", "megabyte expedition")
         assertThat(refSet.outbound).extracting("entryType").containsOnly(EntryType.NOTE)
-        assertThat(refSet.inbound).extracting("entryId").containsOnly("e2")
+        assertThat(refSet.inbound).extracting<EntryId> { it.entryId }
+            .containsOnly(EntryId("e2"))
         assertThat(refSet.inbound).extracting("title").containsOnly("changeover")
         assertThat(refSet.inbound).extracting("entryType").containsOnly(EntryType.NOTE)
     }

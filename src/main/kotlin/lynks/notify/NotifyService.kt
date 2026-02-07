@@ -5,6 +5,7 @@ import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.channels.SendChannel
 import lynks.common.Entries
 import lynks.common.Environment
+import lynks.common.NotificationId
 import lynks.common.RowMapper.toNotification
 import lynks.common.page.DefaultPageRequest
 import lynks.common.page.Page
@@ -53,10 +54,10 @@ class NotifyService(private val userService: UserService, private val pushoverCl
         )
     }
 
-    fun getNotification(id: String): Notification? = transaction {
+    fun getNotification(id: NotificationId): Notification? = transaction {
         Notifications.leftJoin(Entries)
             .select(notificationQuerySlice)
-            .where { Notifications.notificationId eq id }
+            .where { Notifications.notificationId eq id.value }
             .mapNotNull { toNotification(it) }.singleOrNull()
     }
 
@@ -66,14 +67,14 @@ class NotifyService(private val userService: UserService, private val pushoverCl
 
     suspend fun create(newNotification: NewNotification, sendWeb: Boolean = true): Notification {
         val notification = transaction {
-            val id = RandomUtils.generateUid()
+            val id = NotificationId(RandomUtils.generateUid())
             val time = System.currentTimeMillis()
             Notifications.insert {
-                it[notificationId] = id
+                it[notificationId] = id.value
                 it[notificationType] = newNotification.type
                 it[message] = newNotification.message
                 it[read] = false
-                it[entryId] = newNotification.entryId
+                it[entryId] = newNotification.entryId?.value
                 it[dateCreated] = time
             }
             getNotification(id)!!
@@ -84,8 +85,8 @@ class NotifyService(private val userService: UserService, private val pushoverCl
         return notification
     }
 
-    fun read(id: String, isRead: Boolean): Int = transaction {
-        Notifications.update({ Notifications.notificationId eq id }) {
+    fun read(id: NotificationId, isRead: Boolean): Int = transaction {
+        Notifications.update({ Notifications.notificationId eq id.value }) {
             it[read] = isRead
         }
     }

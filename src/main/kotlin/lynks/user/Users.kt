@@ -1,5 +1,6 @@
 package lynks.user
 
+import lynks.common.EntryId
 import lynks.common.EntryType
 import org.jetbrains.exposed.v1.core.Table
 
@@ -40,7 +41,7 @@ data class User(
 
 data class ActivityLogItem(
     val id: String,
-    val entryId: String,
+    val entryId: EntryId,
     val src: String?,
     val details: String,
     val entryType: EntryType,

@@ -2,10 +2,7 @@ package lynks.endpoint
 
 import io.restassured.RestAssured.*
 import io.restassured.http.ContentType
-import lynks.common.EntryType
-import lynks.common.NewNote
-import lynks.common.Note
-import lynks.common.ServerTest
+import lynks.common.*
 import lynks.common.page.Page
 import lynks.util.createDummyCollection
 import lynks.util.createDummyEntry
@@ -47,7 +44,7 @@ class NoteEndpointTest: ServerTest() {
         assertThat(created.tags).hasSize(1).extracting("id").containsExactly("t1")
         assertThat(created.collections).hasSize(1).extracting("id").containsExactly("c1")
         assertThat(created.dateCreated).isEqualTo(created.dateUpdated)
-        val retrieved = get("/note/{id}", created.id)
+        val retrieved = get("/note/{id}", created.id.value)
                 .then()
                 .extract().to<Note>()
         assertThat(created).usingRecursiveComparison().ignoringFields("props").isEqualTo(retrieved)
@@ -85,7 +82,7 @@ class NoteEndpointTest: ServerTest() {
                 .then()
                 .statusCode(200)
                 .extract().to<Note>()
-        assertThat(note.id).isEqualTo("e2")
+        assertThat(note.id).isEqualTo(EntryId("e2"))
         assertThat(note.title).isEqualTo("title2")
         assertThat(note.plainText).isEqualTo("content2")
         assertThat(note.dateCreated).isEqualTo(note.dateUpdated)
@@ -117,7 +114,7 @@ class NoteEndpointTest: ServerTest() {
 
     @Test
     fun testUpdateNote() {
-        val updatedNote = NewNote("e2", "title2", "modified", listOf("t1"), listOf("c1"))
+        val updatedNote = NewNote(EntryId("e2"), "title2", "modified", listOf("t1"), listOf("c1"))
         val updated = given()
                 .contentType(ContentType.JSON)
                 .body(updatedNote)
@@ -139,7 +136,7 @@ class NoteEndpointTest: ServerTest() {
     @Test
     fun testCannotUpdateNonNote() {
         // e1 = existing note entry
-        val updatedNote = NewNote("e1", "title2", "modified", emptyList())
+        val updatedNote = NewNote(EntryId("e1"), "title2", "modified", emptyList())
         given()
                 .contentType(ContentType.JSON)
                 .body(updatedNote)
@@ -151,7 +148,7 @@ class NoteEndpointTest: ServerTest() {
 
     @Test
     fun testUpdateNoteReturnsNotFound() {
-        val updatedNote = NewNote("invalid", "title2", "modified", emptyList())
+        val updatedNote = NewNote(EntryId("invalid"), "title2", "modified", emptyList())
         given()
                 .contentType(ContentType.JSON)
                 .body(updatedNote)
@@ -168,10 +165,11 @@ class NoteEndpointTest: ServerTest() {
                 .get("/note")
                 .then()
                 .statusCode(200)
-                .extract().to<Page<Note>>()
+                .extract().to<Page<SlimNote>>()
         assertThat(notes.page).isEqualTo(1)
         assertThat(notes.total).isEqualTo(2)
-        assertThat(notes.content).hasSize(2).extracting("id").doesNotHaveDuplicates()
+        assertThat(notes.content).hasSize(2).extracting<EntryId> { it.id }
+            .doesNotHaveDuplicates()
     }
 
     @Test
@@ -183,12 +181,13 @@ class NoteEndpointTest: ServerTest() {
                 .get("/note")
                 .then()
                 .statusCode(200)
-                .extract().to<Page<Note>>()
+                .extract().to<Page<SlimNote>>()
         // newest note first
         assertThat(notes.page).isEqualTo(2)
         assertThat(notes.size).isEqualTo(1)
         assertThat(notes.total).isEqualTo(2)
-        assertThat(notes.content).hasSize(1).extracting("id").containsExactly("e2")
+        assertThat(notes.content).hasSize(1).extracting<EntryId> { it.id }
+            .containsExactly(EntryId("e2"))
     }
 
     @Test
@@ -200,10 +199,11 @@ class NoteEndpointTest: ServerTest() {
             .get("/note")
             .then()
             .statusCode(200)
-            .extract().to<Page<Note>>()
+            .extract().to<Page<SlimNote>>()
         // newest note first
         assertThat(notes.total).isEqualTo(2)
-        assertThat(notes.content).hasSize(2).extracting("id").containsExactly("e2", "e3")
+        assertThat(notes.content).hasSize(2).extracting<EntryId> { it.id }
+            .containsExactly(EntryId("e2"), EntryId("e3"))
     }
 
     @Test
@@ -224,7 +224,7 @@ class NoteEndpointTest: ServerTest() {
             .get("/note")
             .then()
             .statusCode(200)
-            .extract().to<Page<Note>>()
+            .extract().to<Page<SlimNote>>()
         assertThat(notesTag.total).isZero()
         assertThat(notesTag.content).isEmpty()
 
@@ -236,9 +236,10 @@ class NoteEndpointTest: ServerTest() {
             .get("/note")
             .then()
             .statusCode(200)
-            .extract().to<Page<Note>>()
+            .extract().to<Page<SlimNote>>()
         assertThat(notesCollection.total).isEqualTo(1)
-        assertThat(notesCollection.content).hasSize(1).extracting("id").containsExactly(created.id)
+        assertThat(notesCollection.content).hasSize(1).extracting<EntryId> { it.id }
+            .containsExactly(created.id)
 
         // filter by source
         val notesSource = given()
@@ -248,9 +249,10 @@ class NoteEndpointTest: ServerTest() {
             .get("/note")
             .then()
             .statusCode(200)
-            .extract().to<Page<Note>>()
+            .extract().to<Page<SlimNote>>()
         assertThat(notesSource.total).isEqualTo(1)
-        assertThat(notesSource.content).hasSize(1).extracting("id").containsExactly(created.id)
+        assertThat(notesSource.content).hasSize(1).extracting<EntryId> { it.id }
+            .containsExactly(created.id)
     }
 
     @Test
@@ -294,7 +296,7 @@ class NoteEndpointTest: ServerTest() {
         assertThat(updated.dateCreated).isNotEqualTo(updated.dateUpdated)
 
         // retrieve versions
-        val original = get("/note/{id}/{version}", created.id, 1)
+        val original = get("/note/{id}/{version}", created.id.value, 1)
                 .then()
                 .statusCode(200)
                 .extract().to<Note>()
@@ -303,7 +305,7 @@ class NoteEndpointTest: ServerTest() {
         assertThat(original.plainText).isEqualTo(newNote.plainText)
         assertThat(original.dateCreated).isEqualTo(original.dateUpdated)
 
-        val current = get("/note/{id}", created.id)
+        val current = get("/note/{id}", created.id.value)
                 .then()
                 .statusCode(200)
                 .extract().to<Note>()
@@ -334,9 +336,10 @@ class NoteEndpointTest: ServerTest() {
         val updateNote = NewNote(created.id, "edited", "new content", emptyList())
         val updated = given()
             .contentType(ContentType.JSON)
+            .queryParam("newVersion", false)
             .body(updateNote)
             .When()
-            .put("/note?newVersion=false")
+            .put("/note")
             .then()
             .statusCode(200)
             .extract().to<Note>()
@@ -347,7 +350,7 @@ class NoteEndpointTest: ServerTest() {
         assertThat(updated.dateCreated).isNotEqualTo(updated.dateUpdated)
 
         // retrieve latest version
-        val current = get("/note/{id}", created.id)
+        val current = get("/note/{id}", created.id.value)
             .then()
             .statusCode(200)
             .extract().to<Note>()

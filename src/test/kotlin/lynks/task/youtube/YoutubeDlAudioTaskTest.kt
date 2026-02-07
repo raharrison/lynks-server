@@ -5,7 +5,9 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.runBlocking
+import lynks.common.EntryId
 import lynks.common.Link
+import lynks.common.TaskId
 import lynks.common.exception.InvalidModelException
 import lynks.entry.LinkService
 import org.assertj.core.api.Assertions.assertThat
@@ -17,12 +19,12 @@ class YoutubeDlAudioTaskTest {
     private val linkService = mockk<LinkService>()
     private val youtubeDlRunner = mockk<YoutubeDlRunner>(relaxUnitFun = true)
 
-    private val youtubeDlTask = YoutubeDlAudioTask("tid", "eid").also {
+    private val youtubeDlTask = YoutubeDlAudioTask(TaskId("tid"), EntryId("eid")).also {
         it.linkService = linkService
         it.youtubeDlRunner = youtubeDlRunner
     }
 
-    private val link = Link("eid", "title", "youtube.com/watch?v=1234", "src", "", 123L, 123L)
+    private val link = Link(EntryId("eid"), "title", "youtube.com/watch?v=1234", "src", "", 123L, 123L)
 
     @Test
     fun testContextConstruct() {

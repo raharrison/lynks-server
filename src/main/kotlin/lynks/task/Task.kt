@@ -1,10 +1,12 @@
 package lynks.task
 
-import lynks.common.IdBasedCreatedEntity
+import lynks.common.EntryId
+import lynks.common.TaskId
 import lynks.common.TaskParameter
+import lynks.common.TypedIdEntity
 import kotlin.reflect.KClass
 
-abstract class Task<T : TaskContext>(override val id: String, val entryId: String) : IdBasedCreatedEntity {
+abstract class Task<T : TaskContext>(override val id: TaskId, val entryId: EntryId) : TypedIdEntity<TaskId> {
 
     abstract suspend fun process(context: T)
 

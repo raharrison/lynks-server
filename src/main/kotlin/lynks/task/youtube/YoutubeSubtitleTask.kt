@@ -1,5 +1,7 @@
 package lynks.task.youtube
 
+import lynks.common.EntryId
+import lynks.common.TaskId
 import lynks.common.TaskParameter
 import lynks.common.TaskParameterType
 import lynks.common.inject.Inject
@@ -18,7 +20,7 @@ import java.nio.file.Path
 import javax.xml.parsers.DocumentBuilderFactory
 import kotlin.io.path.absolutePathString
 
-class YoutubeSubtitleTask(id: String, entryId: String) : Task<YoutubeSubtitleTask.YoutubeDlSubtitleTaskContext>(id, entryId) {
+class YoutubeSubtitleTask(id: TaskId, entryId: EntryId) : Task<YoutubeSubtitleTask.YoutubeDlSubtitleTaskContext>(id, entryId) {
 
     private val log = loggerFor<YoutubeSubtitleTask>()
 
@@ -38,7 +40,7 @@ class YoutubeSubtitleTask(id: String, entryId: String) : Task<YoutubeSubtitleTas
         linkService.get(entryId)?.let { link ->
             validateContextUrl(link.url)
             val youtubeDlBinaryPath = YoutubeDlResolver(resourceRetriever).resolveYoutubeDl()
-            val tempPath = resourceManager.constructTempBasePath(entryId).resolve("%(title)s")
+            val tempPath = resourceManager.constructTempBasePath(entryId.value).resolve("%(title)s")
             val outputTemplate = "-o \"${tempPath.absolutePathString()}\""
 
             log.info("Executing YoutubeSubtitleTask task entry={}", entryId)

@@ -7,12 +7,7 @@ import com.vladsch.flexmark.util.sequence.BasedSequence
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
-import lynks.common.Environment
-import lynks.common.IMAGE_UPLOAD_BASE
-import lynks.common.SlimNote
-import lynks.common.TEMP_URL
-import lynks.common.page.DefaultPageRequest
-import lynks.common.page.Page
+import lynks.common.*
 import lynks.entry.EntryService
 import lynks.resource.Resource
 import lynks.resource.ResourceManager
@@ -40,7 +35,7 @@ class MarkdownProcessorTest {
 
     @Test
     fun testEntryLinks() {
-        every { entryService.get(listOf("1234")) } returns Page.of(listOf(SlimNote("1234", "title", 1234L)), DefaultPageRequest, 1)
+        every { entryService.get(EntryId("1234")) } returns Note(EntryId("1234"), "title", "content", "content", 123, 123)
 
         assertConvertEqual(
             "link is @1234",
@@ -51,14 +46,14 @@ class MarkdownProcessorTest {
             "<p>link is <a href=\"/entries/notes/1234\"><strong>@1234</strong></a> and more</p>\n"
         )
 
-        verify(exactly = 2) { entryService.get(listOf("1234")) }
+        verify(exactly = 2) { entryService.get(EntryId("1234")) }
     }
 
     @Test
     fun testEntryLinkEntryNotFound() {
-        every { entryService.get(listOf("1234")) } returns Page.empty()
+        every { entryService.get(EntryId("1234")) } returns null
         assertConvertEqual("something @1234 else", "<p>something @1234 else</p>\n")
-        verify(exactly = 1) { entryService.get(listOf("1234")) }
+        verify(exactly = 1) { entryService.get(EntryId("1234")) }
     }
 
     @Test
@@ -112,7 +107,7 @@ class MarkdownProcessorTest {
     @Nested
     inner class TempImageReplace {
 
-        private val eid = "eid"
+        private val eid = EntryId("eid")
         private val imageInput = "${TEMP_URL}abc/one.png"
         private val fullInput = "![desc]($imageInput)"
 
@@ -129,7 +124,7 @@ class MarkdownProcessorTest {
         @Test
         fun testGroupsReplaced() {
             every { resourceManager.constructTempBasePath(IMAGE_UPLOAD_BASE) } returns Path.of("migrated/")
-            val resources = listOf(Resource("rid", "pid", "eid", 1, "one", "png", ResourceType.UPLOAD, 12, 123L))
+            val resources = listOf(Resource(ResourceId("rid"), "pid", EntryId("eid"), 1, "one", "png", ResourceType.UPLOAD, 12, 123L))
             every { resourceManager.migrateGeneratedResources(eid, any()) } returns resources
             val (replaced, markdown, html) = markdownProcessor.convertAndProcess(fullInput, eid)
             assertThat(replaced).isOne()

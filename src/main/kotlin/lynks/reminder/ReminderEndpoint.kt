@@ -1,10 +1,10 @@
 package lynks.reminder
 
 import io.ktor.http.*
-import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import lynks.common.ReminderId
 
 fun Route.reminder(reminderService: ReminderService) {
 
@@ -16,7 +16,7 @@ fun Route.reminder(reminderService: ReminderService) {
 
         get("/{id}") {
             val id = call.parameters["id"]!!
-            val reminder = reminderService.get(id)
+            val reminder = reminderService.get(ReminderId(id))
             if (reminder == null) call.respond(HttpStatusCode.NotFound)
             else call.respond(reminder)
         }
@@ -35,7 +35,7 @@ fun Route.reminder(reminderService: ReminderService) {
 
         delete("/{id}") {
             val id = call.parameters["id"]!!
-            val removed = reminderService.delete(id)
+            val removed = reminderService.delete(ReminderId(id))
             if (removed) call.respond(HttpStatusCode.OK)
             else call.respond(HttpStatusCode.NotFound)
         }

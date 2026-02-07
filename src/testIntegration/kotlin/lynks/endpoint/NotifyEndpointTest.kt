@@ -2,7 +2,9 @@ package lynks.endpoint
 
 import io.restassured.RestAssured.get
 import io.restassured.RestAssured.given
+import lynks.common.EntryId
 import lynks.common.EntryType
+import lynks.common.NotificationId
 import lynks.common.ServerTest
 import lynks.common.page.Page
 import lynks.notify.Notification
@@ -37,7 +39,8 @@ class NotifyEndpointTest : ServerTest() {
         assertThat(notifications.page).isEqualTo(2)
         assertThat(notifications.size).isEqualTo(1)
         assertThat(notifications.total).isEqualTo(2)
-        assertThat(notifications.content).hasSize(1).extracting("id").containsExactly("n1")
+        assertThat(notifications.content).hasSize(1).extracting<NotificationId> { it.id }
+            .containsExactly(NotificationId("n1"))
     }
 
     @Test
@@ -46,11 +49,11 @@ class NotifyEndpointTest : ServerTest() {
             .then()
             .statusCode(200)
             .extract().to<Notification>()
-        assertThat(notification.id).isEqualTo("n1")
+        assertThat(notification.id).isEqualTo(NotificationId("n1"))
         assertThat(notification.type).isEqualTo(NotificationType.PROCESSED)
         assertThat(notification.message).isEqualTo("processed")
         assertThat(notification.read).isFalse()
-        assertThat(notification.entryId).isEqualTo("e1")
+        assertThat(notification.entryId).isEqualTo(EntryId("e1"))
         assertThat(notification.entryTitle).isEqualTo("title1")
         assertThat(notification.entryType).isEqualTo(EntryType.LINK)
     }
@@ -81,7 +84,7 @@ class NotifyEndpointTest : ServerTest() {
             .then()
             .statusCode(200)
             .extract().to<Notification>()
-        assertThat(notification.id).isEqualTo("n1")
+        assertThat(notification.id).isEqualTo(NotificationId("n1"))
         assertThat(notification.read).isTrue()
     }
 
@@ -110,7 +113,7 @@ class NotifyEndpointTest : ServerTest() {
             .then()
             .statusCode(200)
             .extract().to<Notification>()
-        assertThat(notification.id).isEqualTo("n2")
+        assertThat(notification.id).isEqualTo(NotificationId("n2"))
         assertThat(notification.read).isFalse()
     }
 

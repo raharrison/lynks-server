@@ -1,5 +1,7 @@
 package lynks.task.link
 
+import lynks.common.EntryId
+import lynks.common.TaskId
 import lynks.common.inject.Inject
 import lynks.entry.EntryAuditService
 import lynks.entry.LinkService
@@ -11,7 +13,7 @@ import lynks.task.TaskContext
 import lynks.util.Result
 import lynks.util.loggerFor
 
-class LinkSummarizerTask(id: String, entryId: String) : Task<TaskContext>(id, entryId) {
+class LinkSummarizerTask(id: TaskId, entryId: EntryId) : Task<TaskContext>(id, entryId) {
 
     private val log = loggerFor<LinkSummarizerTask>()
 

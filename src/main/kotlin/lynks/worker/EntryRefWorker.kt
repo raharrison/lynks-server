@@ -4,6 +4,8 @@ import com.vladsch.flexmark.util.ast.NodeVisitor
 import com.vladsch.flexmark.util.ast.VisitHandler
 import com.vladsch.flexmark.util.ast.Visitor
 import lynks.comment.CommentService
+import lynks.common.CommentId
+import lynks.common.EntryId
 import lynks.common.Note
 import lynks.common.Snippet
 import lynks.common.page.PageRequest
@@ -13,8 +15,8 @@ import lynks.util.markdown.EntryLinkNode
 import lynks.util.markdown.MarkdownProcessor
 
 sealed class EntryRefWorkerRequest
-class DefaultEntryRefWorkerRequest(val eid: String) : EntryRefWorkerRequest()
-class CommentRefWorkerRequest(val eid: String, val cid: String, val updateType: CrudType) : EntryRefWorkerRequest()
+class DefaultEntryRefWorkerRequest(val eid: EntryId) : EntryRefWorkerRequest()
+class CommentRefWorkerRequest(val eid: EntryId, val cid: CommentId, val updateType: CrudType) : EntryRefWorkerRequest()
 
 class EntryRefWorker(
     private val markdownProcessor: MarkdownProcessor,
@@ -24,7 +26,7 @@ class EntryRefWorker(
 ) : ChannelBasedWorker<EntryRefWorkerRequest>() {
 
     override suspend fun doWork(input: EntryRefWorkerRequest) {
-        val (entryId, originId, markdown) = when (input) {
+        val (entryId: EntryId, originId: String, markdown: String) = when (input) {
             is DefaultEntryRefWorkerRequest -> {
                 val entry = entryService.get(input.eid) ?: return
                 val markdown = when (entry) {
@@ -32,15 +34,15 @@ class EntryRefWorker(
                     is Snippet -> entry.plainText
                     else -> return
                 }
-                Triple(entry.id, entry.id, markdown)
+                Triple(entry.id, entry.id.value, markdown)
             }
             is CommentRefWorkerRequest -> {
                 val comment = commentService.getComment(input.eid, input.cid) ?: return
                 if (input.updateType == CrudType.DELETE) {
-                    val removed = entryRefService.deleteOrigin(comment.id)
+                    val removed = entryRefService.deleteOrigin(comment.id.value)
                     log.info("{} references removed after origin deletion", removed)
                 }
-                Triple(comment.entryId, comment.id, comment.plainText)
+                Triple(comment.entryId, comment.id.value, comment.plainText)
             }
         }
         val refEntries = findReferencedEntries(markdown)
@@ -54,7 +56,7 @@ class EntryRefWorker(
         markdownProcessor.visit(markdown, NodeVisitor(VisitHandler(EntryLinkNode::class.java, visitor)))
         val refs = visitor.referencedEntries
         return refs.chunked(25).flatMap { chunk ->
-            entryService.get(chunk, PageRequest(1, chunk.size)).content.map { it.id }
+            entryService.get(chunk.map { EntryId(it) }, PageRequest(1, chunk.size)).content.map { it.id.value }
         }
     }
 

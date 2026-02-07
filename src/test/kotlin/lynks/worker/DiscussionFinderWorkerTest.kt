@@ -4,10 +4,7 @@ import io.mockk.*
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
-import lynks.common.BaseProperties
-import lynks.common.DISCUSSIONS_PROP
-import lynks.common.DatabaseTest
-import lynks.common.Link
+import lynks.common.*
 import lynks.entry.EntryAuditService
 import lynks.entry.LinkService
 import lynks.notify.Notification
@@ -23,7 +20,7 @@ import org.junit.jupiter.api.Test
 class DiscussionFinderWorkerTest: DatabaseTest() {
 
     private val testUrl = "https://www.factorio.com/blog/post/fff-246"
-    private val link = Link("id1", "title", testUrl, "factorio.com", "", 100, 100)
+    private val link = Link(EntryId("id1"), "title", testUrl, "factorio.com", "", 100, 100)
 
     private val linkService = mockk<LinkService>()
     private val retriever = mockk<ResourceRetriever>()
@@ -33,11 +30,11 @@ class DiscussionFinderWorkerTest: DatabaseTest() {
 
     @BeforeEach
     fun setup() {
-        every { linkService.get("id1") } returns link
+        every { linkService.get(EntryId("id1")) } returns link
         every { linkService.mergeProps(eq(link.id), capture(propsSlot)) } just Runs
 
         coEvery { notifyService.create(any()) } returns Notification(
-            "n1", NotificationType.DISCUSSIONS, "found", false, dateCreated = System.currentTimeMillis()
+            NotificationId("n1"), NotificationType.DISCUSSIONS, "found", false, dateCreated = System.currentTimeMillis()
         )
     }
 
@@ -95,7 +92,7 @@ class DiscussionFinderWorkerTest: DatabaseTest() {
         coEvery { retriever.getString(match { it.contains("reddit.com") }) } returns getFile("/reddit_crosspost_discussions.json")
 
         val url = "https://old.reddit.com/r/programming/comments/ftkiyp/how_we_reduced_our_google_maps_api_cost_by_94/"
-        val link = Link("id1", "title", url, "reddit.com", "", 100, 100)
+        val link = Link(EntryId("id1"), "title", url, "reddit.com", "", 100, 100)
 
         every { linkService.get(link.id) } returns link
         every { linkService.mergeProps(eq(link.id), capture(propsSlot)) } just Runs

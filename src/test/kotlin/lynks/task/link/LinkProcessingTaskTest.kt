@@ -2,7 +2,9 @@ package lynks.task.link
 
 import io.mockk.*
 import kotlinx.coroutines.runBlocking
+import lynks.common.EntryId
 import lynks.common.Link
+import lynks.common.TaskId
 import lynks.entry.LinkService
 import lynks.resource.ResourceType
 import lynks.worker.PersistLinkProcessingRequest
@@ -15,7 +17,7 @@ class LinkProcessingTaskTest {
     private val workerRegistry = mockk<WorkerRegistry>()
     private val linkService = mockk<LinkService>()
 
-    private val linkProcessingTask = LinkProcessingTask("tid", "eid").also {
+    private val linkProcessingTask = LinkProcessingTask(TaskId("tid"), EntryId("eid")).also {
         it.workerRegistry = workerRegistry
         it.linkService = linkService
     }
@@ -53,16 +55,16 @@ class LinkProcessingTaskTest {
     @Test
     fun testProcessNoType() {
         val context = linkProcessingTask.createContext(emptyMap())
-        val link = Link("eid", "title", "url", "", "", 1, 1)
+        val link = Link(EntryId("eid"), "title", "url", "", "", 1, 1)
 
-        every { linkService.get("eid") } returns link
+        every { linkService.get(EntryId("eid")) } returns link
         every { workerRegistry.acceptLinkWork(any()) } just Runs
 
         runBlocking {
             linkProcessingTask.process(context)
         }
 
-        verify(exactly = 1) { linkService.get("eid") }
+        verify(exactly = 1) { linkService.get(EntryId("eid")) }
         verify(exactly = 1) { workerRegistry.acceptLinkWork(match {
             it is PersistLinkProcessingRequest && it.link == link
         }) }
@@ -71,16 +73,16 @@ class LinkProcessingTaskTest {
     @Test
     fun testProcessWithType() {
         val context = linkProcessingTask.createContext(mapOf("type" to ResourceType.SCREENSHOT.name))
-        val link = Link("eid", "title", "url", "", "", 1, 1)
+        val link = Link(EntryId("eid"), "title", "url", "", "", 1, 1)
 
-        every { linkService.get("eid") } returns link
+        every { linkService.get(EntryId("eid")) } returns link
         every { workerRegistry.acceptLinkWork(any()) } just Runs
 
         runBlocking {
             linkProcessingTask.process(context)
         }
 
-        verify(exactly = 1) { linkService.get("eid") }
+        verify(exactly = 1) { linkService.get(EntryId("eid")) }
         verify(exactly = 1) { workerRegistry.acceptLinkWork(match {
             it is PersistLinkProcessingRequest && it.link == link && it.resourceSet.contains(ResourceType.SCREENSHOT)
         }) }
@@ -90,13 +92,13 @@ class LinkProcessingTaskTest {
     fun testProcessNoResult() {
         val context = linkProcessingTask.createContext(emptyMap())
 
-        every { linkService.get("eid") } returns null
+        every { linkService.get(EntryId("eid")) } returns null
 
         runBlocking {
             linkProcessingTask.process(context)
         }
 
-        verify(exactly = 1) { linkService.get("eid") }
+        verify(exactly = 1) { linkService.get(EntryId("eid")) }
     }
 
 }

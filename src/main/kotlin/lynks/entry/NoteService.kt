@@ -23,7 +23,7 @@ class NoteService(
     private val markdownProcessor: MarkdownProcessor
 ) : EntryRepository<Note, SlimNote, NewNote>(groupSetService, entryAuditService, resourceManager) {
 
-    override fun postprocess(eid: String, entry: NewNote): Note {
+    override fun postprocess(eid: EntryId, entry: NewNote): Note {
         val (replaced, markdown) = markdownProcessor.convertAndProcess(entry.plainText, eid)
         if (replaced > 0) {
             return update(entry.copy(id = eid, plainText = markdown), newVersion = false)!!
@@ -60,9 +60,9 @@ class NoteService(
         }
     }
 
-    override fun toInsert(eId: String, entry: NewNote): BaseEntries.(UpdateBuilder<*>) -> Unit = {
+    override fun toInsert(eId: EntryId, entry: NewNote): BaseEntries.(UpdateBuilder<*>) -> Unit = {
         val time = System.currentTimeMillis()
-        it[id] = eId
+        it[id] = eId.value
         it[title] = entry.title
         it[plainContent] = entry.plainText
         it[content] = markdownProcessor.convertToMarkdown(entry.plainText)

@@ -4,6 +4,7 @@ import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import io.restassured.RestAssured
+import io.restassured.common.mapper.TypeRef
 import io.restassured.config.ObjectMapperConfig.objectMapperConfig
 import io.restassured.config.RestAssuredConfig
 import io.restassured.response.ResponseBodyExtractionOptions
@@ -22,7 +23,7 @@ open class ServerTest {
     }
 
     protected inline fun <reified T> ResponseBodyExtractionOptions.to(): T {
-        return this.`as`(T::class.java)
+        return this.`as`(object : TypeRef<T>() {})
     }
 
     companion object {

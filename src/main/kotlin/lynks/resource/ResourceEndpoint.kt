@@ -9,10 +9,7 @@ import io.ktor.server.routing.*
 import io.ktor.utils.io.*
 import io.ktor.utils.io.jvm.javaio.*
 import kotlinx.io.readByteArray
-import lynks.common.Environment
-import lynks.common.IMAGE_UPLOAD_BASE
-import lynks.common.MAX_IMAGE_UPLOAD_BYTES
-import lynks.common.TEMP_URL
+import lynks.common.*
 import lynks.common.exception.InvalidModelException
 import lynks.util.FileUtils
 import lynks.util.HashUtils
@@ -96,15 +93,15 @@ fun Route.resource(resourceManager: ResourceManager) {
         val cacheExpiresAge = LocalDate.now().plusYears(5).atStartOfDay()
             .with(TemporalAdjusters.firstDayOfYear())
         // used when retrieving resource files to prevent lookups
-        val resourceCache = ConcurrentHashMap<String, Pair<Resource, File>>()
+        val resourceCache = ConcurrentHashMap<ResourceId, Pair<Resource, File>>()
 
         get {
-            val id = call.parameters["entryId"]!!
+            val id = EntryId(call.parameters["entryId"]!!)
             call.respond(resourceManager.getResourcesFor(id))
         }
 
         get("/{id}/info") {
-            val id = call.parameters["id"]!!
+            val id = ResourceId(call.parameters["id"]!!)
             val resource = resourceManager.getResource(id)
             if (resource == null) call.respond(HttpStatusCode.NotFound)
             else {
@@ -114,7 +111,7 @@ fun Route.resource(resourceManager: ResourceManager) {
         }
 
         get("/{id}") {
-            val id = call.parameters["id"]!!
+            val id = ResourceId(call.parameters["id"]!!)
             val res = resourceCache[id] ?: resourceManager.getResourceAsFile(id)?.also {
                 resourceCache[id] = it
             }
@@ -127,7 +124,7 @@ fun Route.resource(resourceManager: ResourceManager) {
         }
 
         post {
-            val entryId = call.parameters["entryId"]!!
+            val entryId = EntryId(call.parameters["entryId"]!!)
             val multipart = call.receiveMultipart()
             var res: Resource? = null
             multipart.forEachPart { part ->
@@ -152,7 +149,7 @@ fun Route.resource(resourceManager: ResourceManager) {
         }
 
         delete("/{id}") {
-            val id = call.parameters["id"]!!
+            val id = ResourceId(call.parameters["id"]!!)
             val removed = resourceManager.delete(id)
             if (removed) {
                 resourceCache.remove(id)

@@ -4,7 +4,7 @@ import lynks.group.Collection
 import lynks.group.Tag
 
 data class Snippet(
-    override val id: String,
+    override val id: EntryId,
     val plainText: String,
     val markdownText: String,
     override val dateCreated: Long,
@@ -20,7 +20,7 @@ data class Snippet(
 
 
 data class NewSnippet(
-    override val id: String? = null,
+    override val id: EntryId? = null,
     val plainText: String,
     override val tags: List<String> = emptyList(),
     override val collections: List<String> = emptyList()
@@ -28,7 +28,7 @@ data class NewSnippet(
 
 
 data class SlimSnippet(
-    override val id: String,
+    override val id: EntryId,
     val markdownText: String,
     override val dateUpdated: Long,
     override val tags: List<Tag> = emptyList(),

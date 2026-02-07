@@ -41,7 +41,7 @@ class FileServiceTest : DatabaseTest() {
 
     @Test
     fun testCreateBasicFile() {
-        val file = fileService.add(newFile("f1", "filename"))
+        val file = fileService.add(newFile(EntryId("f1"), "filename"))
         assertThat(file.type).isEqualTo(EntryType.FILE)
         assertThat(file.title).isEqualTo("filename")
         assertThat(file.dateUpdated).isPositive()
@@ -52,7 +52,7 @@ class FileServiceTest : DatabaseTest() {
 
     @Test
     fun testCreateFileWithTags() {
-        val file = fileService.add(newFile("f1", "filename", listOf("t1", "t2")))
+        val file = fileService.add(newFile(EntryId("f1"), "filename", listOf("t1", "t2")))
         assertThat(file.type).isEqualTo(EntryType.FILE)
         assertThat(file.title).isEqualTo("filename")
         assertThat(file.tags).hasSize(2).extracting("id").containsExactly("t1", "t2")
@@ -62,12 +62,12 @@ class FileServiceTest : DatabaseTest() {
 
     @Test
     fun testCreateFileWithInvalidTag() {
-        assertThrows<InvalidModelException> { fileService.add(newFile("f1", "filename", listOf("t1", "invalid"))) }
+        assertThrows<InvalidModelException> { fileService.add(newFile(EntryId("f1"), "filename", listOf("t1", "invalid"))) }
     }
 
     @Test
     fun testCreateFileWithCollections() {
-        val file = fileService.add(newFile("f1", "filename", cols = listOf("c1", "c2")))
+        val file = fileService.add(newFile(EntryId("f1"), "filename", cols = listOf("c1", "c2")))
         assertThat(file.type).isEqualTo(EntryType.FILE)
         assertThat(file.title).isEqualTo("filename")
         assertThat(file.collections).hasSize(2).extracting("id").containsExactly("c1", "c2")
@@ -80,7 +80,7 @@ class FileServiceTest : DatabaseTest() {
         assertThrows<InvalidModelException> {
             fileService.add(
                 newFile(
-                    "f1",
+                    EntryId("f1"),
                     "filename",
                     cols = listOf("c1", "invalid")
                 )
@@ -90,8 +90,8 @@ class FileServiceTest : DatabaseTest() {
 
     @Test
     fun testGetFileById() {
-        fileService.add(newFile("f1", "filename", listOf("t1", "t2"), listOf("c1")))
-        val file2 = fileService.add(newFile("f2", "filename", listOf("t2"), listOf("c2")))
+        fileService.add(newFile(EntryId("f1"), "filename", listOf("t1", "t2"), listOf("c1")))
+        val file2 = fileService.add(newFile(EntryId("f2"), "filename", listOf("t2"), listOf("c2")))
         val retrieved = fileService.get(file2.id)
         assertThat(retrieved?.id).isEqualTo(file2.id)
         assertThat(retrieved?.tags).isEqualTo(file2.tags)
@@ -102,16 +102,16 @@ class FileServiceTest : DatabaseTest() {
 
     @Test
     fun testGetFileDoesntExist() {
-        assertThat(fileService.get("invalid")).isNull()
+        assertThat(fileService.get(EntryId("invalid"))).isNull()
     }
 
     @Test
     fun testGetFilesPage() {
-        fileService.add(newFile("f1", "filename1", listOf("t1", "t2"), listOf("c1")))
+        fileService.add(newFile(EntryId("f1"), "filename1", listOf("t1", "t2"), listOf("c1")))
         Thread.sleep(10)
-        fileService.add(newFile("f2", "filename2", listOf("t1", "t2"), listOf("c1")))
+        fileService.add(newFile(EntryId("f2"), "filename2", listOf("t1", "t2"), listOf("c1")))
         Thread.sleep(10)
-        fileService.add(newFile("f3", "filename3", listOf("t1", "t2"), listOf("c1")))
+        fileService.add(newFile(EntryId("f3"), "filename3", listOf("t1", "t2"), listOf("c1")))
 
         var files = fileService.get(PageRequest(1, 1))
         assertThat(files.content).hasSize(1)
@@ -143,11 +143,11 @@ class FileServiceTest : DatabaseTest() {
 
     @Test
     fun testGetFilesSortOrdering() {
-        fileService.add(newFile("f1", "filename1", listOf("t1", "t2"), listOf("c1")))
+        fileService.add(newFile(EntryId("f1"), "filename1", listOf("t1", "t2"), listOf("c1")))
         Thread.sleep(10)
-        fileService.add(newFile("f2", "filename2", listOf("t1", "t2"), listOf("c1")))
+        fileService.add(newFile(EntryId("f2"), "filename2", listOf("t1", "t2"), listOf("c1")))
         Thread.sleep(10)
-        fileService.add(newFile("f3", "filename3", listOf("t1", "t2"), listOf("c1")))
+        fileService.add(newFile(EntryId("f3"), "filename3", listOf("t1", "t2"), listOf("c1")))
 
         val files = fileService.get(PageRequest(1, 10, sort = "dateCreated", direction = SortDirection.ASC))
         assertThat(files.content).extracting("title").containsExactly("filename1", "filename2", "filename3")
@@ -158,10 +158,10 @@ class FileServiceTest : DatabaseTest() {
 
     @Test
     fun testGetFilesByGroup() {
-        fileService.add(newFile("f1", "filename1", listOf("t1", "t2"), listOf("c1")))
-        fileService.add(newFile("f2", "filename2", listOf("t1")))
-        fileService.add(newFile("f3", "filename3", emptyList(), listOf("c2")))
-        fileService.add(newFile("f4", "filename3"))
+        fileService.add(newFile(EntryId("f1"), "filename1", listOf("t1", "t2"), listOf("c1")))
+        fileService.add(newFile(EntryId("f2"), "filename2", listOf("t1")))
+        fileService.add(newFile(EntryId("f3"), "filename3", emptyList(), listOf("c2")))
+        fileService.add(newFile(EntryId("f4"), "filename3"))
 
         val onlyTags = fileService.get(PageRequest(tags = listOf("t1")))
         assertThat(onlyTags.content).hasSize(2)
@@ -186,8 +186,8 @@ class FileServiceTest : DatabaseTest() {
 
     @Test
     fun testDeleteTags() {
-        val added1 = fileService.add(newFile("f1", "filename1", listOf("t1")))
-        val added2 = fileService.add(newFile("f2", "filename2", listOf("t1", "t2")))
+        val added1 = fileService.add(newFile(EntryId("f1"), "filename1", listOf("t1")))
+        val added2 = fileService.add(newFile(EntryId("f2"), "filename2", listOf("t1", "t2")))
 
         assertThat(fileService.get(added1.id)?.tags).hasSize(1).extracting("id").containsExactly("t1")
         assertThat(fileService.get(added2.id)?.tags).hasSize(2).extracting("id").containsExactly("t1", "t2")
@@ -205,8 +205,8 @@ class FileServiceTest : DatabaseTest() {
 
     @Test
     fun testDeleteCollections() {
-        val added1 = fileService.add(newFile("f1", "filename1", emptyList(), listOf("c1")))
-        val added2 = fileService.add(newFile("f2", "filename2", emptyList(), listOf("c1", "c2")))
+        val added1 = fileService.add(newFile(EntryId("f1"), "filename1", emptyList(), listOf("c1")))
+        val added2 = fileService.add(newFile(EntryId("f2"), "filename2", emptyList(), listOf("c1", "c2")))
 
         assertThat(fileService.get(added1.id)?.collections).hasSize(1).extracting("id").containsExactly("c1")
         assertThat(fileService.get(added2.id)?.collections).hasSize(2).extracting("id").containsExactly("c1", "c2")
@@ -224,14 +224,14 @@ class FileServiceTest : DatabaseTest() {
 
     @Test
     fun testDeleteFile() {
-        assertThat(fileService.delete("invalid")).isFalse()
+        assertThat(fileService.delete(EntryId("invalid"))).isFalse()
 
-        val added1 = fileService.add(newFile("f1", "filename1"))
-        val added2 = fileService.add(newFile("f2", "filename2"))
+        val added1 = fileService.add(newFile(EntryId("f1"), "filename1"))
+        val added2 = fileService.add(newFile(EntryId("f2"), "filename2"))
 
         every { resourceManager.deleteAll(any()) } returns true
 
-        assertThat(fileService.delete("e1")).isFalse()
+        assertThat(fileService.delete(EntryId("e1"))).isFalse()
         assertThat(fileService.delete(added1.id)).isTrue()
 
         assertThat(fileService.get().content).hasSize(1)
@@ -246,7 +246,7 @@ class FileServiceTest : DatabaseTest() {
 
     @Test
     fun testUpdateExistingFile() {
-        val added1 = fileService.add(newFile("f1", "filename1"))
+        val added1 = fileService.add(newFile(EntryId("f1"), "filename1"))
         assertThat(fileService.get(added1.id)?.tags).isEmpty()
         assertThat(fileService.get(added1.id)?.collections).isEmpty()
 
@@ -268,7 +268,7 @@ class FileServiceTest : DatabaseTest() {
 
     @Test
     fun testUpdateFileTags() {
-        val added1 = fileService.add(newFile("f1", "filename 1", listOf("t1", "t2")))
+        val added1 = fileService.add(newFile(EntryId("f1"), "filename 1", listOf("t1", "t2")))
         assertThat(fileService.get(added1.id)?.title).isEqualTo("filename 1")
         assertThat(fileService.get(added1.id)?.tags).extracting("id").containsExactlyInAnyOrder("t1", "t2")
 
@@ -283,7 +283,7 @@ class FileServiceTest : DatabaseTest() {
 
     @Test
     fun testUpdateFileCollections() {
-        val added1 = fileService.add(newFile("f1", "filename 1", emptyList(), listOf("c1", "c2")))
+        val added1 = fileService.add(newFile(EntryId("f1"), "filename 1", emptyList(), listOf("c1", "c2")))
         assertThat(fileService.get(added1.id)?.title).isEqualTo("filename 1")
         assertThat(fileService.get(added1.id)?.collections).extracting("id").containsExactlyInAnyOrder("c1", "c2")
 
@@ -298,7 +298,7 @@ class FileServiceTest : DatabaseTest() {
 
     @Test
     fun testUpdateFileNoId() {
-        val added1 = fileService.add(newFile("f1", "filename1"))
+        val added1 = fileService.add(newFile(EntryId("f1"), "filename1"))
         assertThat(fileService.get(added1.id)?.title).isEqualTo("filename1")
 
         val updated = fileService.update(newFile(title = "new content"))
@@ -311,7 +311,7 @@ class FileServiceTest : DatabaseTest() {
 
     @Test
     fun testUpdatePropsAttributes() {
-        val added = fileService.add(newFile("f1", "filename1"))
+        val added = fileService.add(newFile(EntryId("f1"), "filename1"))
         added.props.addAttribute("key1", "attribute1")
         added.props.addAttribute("key2", "attribute2")
 
@@ -330,31 +330,31 @@ class FileServiceTest : DatabaseTest() {
 
     @Test
     fun testUpdatePropsTasks() {
-        val added = fileService.add(newFile("f1", "filename1"))
-        val task = TaskDefinition("t1", "description", "className")
+        val added = fileService.add(newFile(EntryId("f1"), "filename1"))
+        val task = TaskDefinition(TaskId("t1"), "description", "className")
         added.props.addTask(task)
 
         fileService.update(added)
 
         val updated = fileService.get(added.id)
-        assertThat(updated?.props?.getTask("t1")).isEqualTo(task)
+        assertThat(updated?.props?.getTask(TaskId("t1"))).isEqualTo(task)
         assertThat(updated?.props?.getAttribute("t3")).isNull()
         assertThat(updated?.dateUpdated).isEqualTo(updated?.dateCreated)
     }
 
     @Test
     fun testMergeProps() {
-        val added = fileService.add(newFile("f1", "filename1"))
+        val added = fileService.add(newFile(EntryId("f1"), "filename1"))
         added.props.addAttribute("key1", "attribute1")
         added.props.addAttribute("key2", "attribute2")
-        val task = TaskDefinition("t1", "description", "className")
+        val task = TaskDefinition(TaskId("t1"), "description", "className")
         added.props.addTask(task)
         fileService.update(added)
 
         val updatedProps = BaseProperties()
         updatedProps.addAttribute("key2", "updated")
         updatedProps.addAttribute("key3", "attribute3")
-        val updatedTask = TaskDefinition("t3", "description", "className")
+        val updatedTask = TaskDefinition(TaskId("t3"), "description", "className")
         updatedProps.addTask(updatedTask)
 
         fileService.mergeProps(added.id, updatedProps)
@@ -366,15 +366,15 @@ class FileServiceTest : DatabaseTest() {
         assertThat(updated?.props?.getAttribute("key3")).isEqualTo("attribute3")
 
         assertThat(updated?.props?.tasks).hasSize(1)
-        assertThat(updated?.props?.getTask("t1")).isNull()
-        assertThat(updated?.props?.getTask("t3")?.description).isEqualTo("description")
-        assertThat(updated?.props?.getTask("t3")?.params).isEmpty()
+        assertThat(updated?.props?.getTask(TaskId("t1"))).isNull()
+        assertThat(updated?.props?.getTask(TaskId("t3"))?.description).isEqualTo("description")
+        assertThat(updated?.props?.getTask(TaskId("t3"))?.params).isEmpty()
     }
 
     @Test
     fun testVersioning() {
-        val added = fileService.add(newFile("f1", "filename"))
-        ResourceManager().saveGeneratedResource("r1", added.id, "resource name", "jpg", ResourceType.SCREENSHOT, 11)
+        val added = fileService.add(newFile(EntryId("f1"), "filename"))
+        ResourceManager().saveGeneratedResource(ResourceId("r1"), added.id, "resource name", "jpg", ResourceType.SCREENSHOT, 11)
         val version1 = fileService.get(added.id, 1)
         assertThat(added.version).isOne()
         assertThat(added).usingRecursiveComparison().ignoringFields("props").isEqualTo(version1)
@@ -412,11 +412,11 @@ class FileServiceTest : DatabaseTest() {
 
     @Test
     fun testGetInvalidVersion() {
-        val added = fileService.add(newFile("f1", "filename"))
+        val added = fileService.add(newFile(EntryId("f1"), "filename"))
         assertThat(fileService.get(added.id, 0)).isNull()
         assertThat(fileService.get(added.id, 2)).isNull()
         assertThat(fileService.get(added.id, -1)).isNull()
-        assertThat(fileService.get("invalid", 0)).isNull()
+        assertThat(fileService.get(EntryId("invalid"), 0)).isNull()
     }
 
     private fun newFile(
@@ -426,7 +426,7 @@ class FileServiceTest : DatabaseTest() {
     ) = NewFile(null, title, tags, cols)
 
     private fun newFile(
-        id: String,
+        id: EntryId,
         title: String,
         tags: List<String> = emptyList(),
         cols: List<String> = emptyList()

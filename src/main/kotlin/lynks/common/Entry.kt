@@ -39,7 +39,7 @@ object EntryVersions : BaseEntries("ENTRY_VERSION") {
     override val primaryKey = PrimaryKey(id, version)
 }
 
-interface Entry : IdBasedCreatedEntity {
+interface Entry : TypedIdEntity<EntryId> {
     val type: EntryType
     val dateCreated: Long
     val dateUpdated: Long
@@ -50,13 +50,13 @@ interface Entry : IdBasedCreatedEntity {
     val collections: List<Collection>
 }
 
-interface NewEntry : IdBasedNewEntity {
+interface NewEntry : NewTypedIdEntity<EntryId> {
     val tags: List<String>
     val collections: List<String>
 }
 
 data class EntryVersion(
-    override val id: String,
+    val id: EntryId,
     val version: Int,
     val dateUpdated: Long
-) : IdBasedCreatedEntity
+)

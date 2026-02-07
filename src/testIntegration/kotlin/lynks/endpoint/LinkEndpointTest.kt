@@ -45,7 +45,7 @@ class LinkEndpointTest: ServerTest() {
         assertThat(created.collections).hasSize(1).extracting("id").containsExactly("c1")
         assertThat(created.content).isNull()
         assertThat(created.dateCreated).isEqualTo(created.dateUpdated)
-        val retrieved = get("/link/{id}", created.id)
+        val retrieved = get("/link/{id}", created.id.value)
                 .then()
                 .extract().to<Link>()
         assertThat(created).usingRecursiveComparison().ignoringFields("props").isEqualTo(retrieved)
@@ -83,7 +83,7 @@ class LinkEndpointTest: ServerTest() {
                 .then()
                 .statusCode(200)
                 .extract().to<Link>()
-        assertThat(link.id).isEqualTo("e3")
+        assertThat(link.id).isEqualTo(EntryId("e3"))
         assertThat(link.title).isEqualTo("title3")
         assertThat(link.url).isEqualTo("content3")
         assertThat(link.dateCreated).isEqualTo(link.dateUpdated)
@@ -115,7 +115,7 @@ class LinkEndpointTest: ServerTest() {
 
     @Test
     fun testUpdateLinkNoProcess() {
-        val updatedLink = NewLink("e3", "title3", "http://gmail.com", listOf("t1"), listOf("c1"), false)
+        val updatedLink = NewLink(EntryId("e3"), "title3", "http://gmail.com", listOf("t1"), listOf("c1"), false)
         val updated = given()
                 .contentType(ContentType.JSON)
                 .body(updatedLink)
@@ -136,7 +136,7 @@ class LinkEndpointTest: ServerTest() {
 
     @Test
     fun testUpdateLinkReturnsNotFound() {
-        val updatedLink = NewLink("invalid", "title2", "gmail.com")
+        val updatedLink = NewLink(EntryId("invalid"), "title2", "gmail.com")
         given()
                 .contentType(ContentType.JSON)
                 .body(updatedLink)
@@ -149,7 +149,7 @@ class LinkEndpointTest: ServerTest() {
     @Test
     fun testCannotUpdateNonLink() {
         // e2 = existing link entry
-        val updatedLink = NewLink("e2", "title2", "google.com")
+        val updatedLink = NewLink(EntryId("e2"), "title2", "google.com")
         given()
                 .contentType(ContentType.JSON)
                 .body(updatedLink)
@@ -166,10 +166,11 @@ class LinkEndpointTest: ServerTest() {
                 .get("/link")
                 .then()
                 .statusCode(200)
-                .extract().to<Page<Link>>()
+                .extract().to<Page<SlimLink>>()
         assertThat(links.page).isEqualTo(1)
         assertThat(links.total).isEqualTo(2)
-        assertThat(links.content).hasSize(2).extracting("id").doesNotHaveDuplicates()
+        assertThat(links.content).hasSize(2).extracting<EntryId> { it.id }
+            .doesNotHaveDuplicates()
     }
 
     @Test
@@ -181,12 +182,13 @@ class LinkEndpointTest: ServerTest() {
                 .get("/link")
                 .then()
                 .statusCode(200)
-                .extract().to<Page<Link>>()
+                .extract().to<Page<SlimLink>>()
         // newest link first
         assertThat(links.page).isEqualTo(2)
         assertThat(links.size).isEqualTo(1)
         assertThat(links.total).isEqualTo(2)
-        assertThat(links.content).hasSize(1).extracting("id").containsExactly("e1")
+        assertThat(links.content).hasSize(1).extracting<EntryId> { it.id }
+            .containsExactly(EntryId("e1"))
     }
 
     @Test
@@ -198,10 +200,11 @@ class LinkEndpointTest: ServerTest() {
             .get("/link")
             .then()
             .statusCode(200)
-            .extract().to<Page<Link>>()
+            .extract().to<Page<SlimLink>>()
         // oldest link first
         assertThat(links.total).isEqualTo(2)
-        assertThat(links.content).hasSize(2).extracting("id").containsExactly("e1", "e3")
+        assertThat(links.content).hasSize(2).extracting<EntryId> { it.id }
+            .containsExactly(EntryId("e1"), EntryId("e3"))
     }
 
     @Test
@@ -222,7 +225,7 @@ class LinkEndpointTest: ServerTest() {
             .get("/link")
             .then()
             .statusCode(200)
-            .extract().to<Page<Link>>()
+            .extract().to<Page<SlimLink>>()
         assertThat(linksTag.total).isZero()
         assertThat(linksTag.content).isEmpty()
 
@@ -234,9 +237,10 @@ class LinkEndpointTest: ServerTest() {
             .get("/link")
             .then()
             .statusCode(200)
-            .extract().to<Page<Link>>()
+            .extract().to<Page<SlimLink>>()
         assertThat(linksCollection.total).isEqualTo(1)
-        assertThat(linksCollection.content).hasSize(1).extracting("id").containsExactly(created.id)
+        assertThat(linksCollection.content).hasSize(1).extracting<EntryId> { it.id }
+            .containsExactly(created.id)
 
         // filter by source
         val linksSource = given()
@@ -246,9 +250,10 @@ class LinkEndpointTest: ServerTest() {
             .get("/link")
             .then()
             .statusCode(200)
-            .extract().to<Page<Link>>()
+            .extract().to<Page<SlimLink>>()
         assertThat(linksSource.total).isEqualTo(1)
-        assertThat(linksSource.content).hasSize(1).extracting("id").containsExactly(created.id)
+        assertThat(linksSource.content).hasSize(1).extracting<EntryId> { it.id }
+            .containsExactly(created.id)
     }
 
     @Test
@@ -292,7 +297,7 @@ class LinkEndpointTest: ServerTest() {
         assertThat(updated.dateCreated).isNotEqualTo(updated.dateUpdated)
 
         // retrieve versions
-        val original = get("/link/{id}/{version}", created.id, 1)
+        val original = get("/link/{id}/{version}", created.id.value, 1)
                 .then()
                 .statusCode(200)
                 .extract().to<Link>()
@@ -301,7 +306,7 @@ class LinkEndpointTest: ServerTest() {
         assertThat(original.url).isEqualTo("https://gmail.com")
         assertThat(original.dateCreated).isEqualTo(original.dateUpdated)
 
-        val current = get("/link/{id}", created.id)
+        val current = get("/link/{id}", created.id.value)
                 .then()
                 .statusCode(200)
                 .extract().to<Link>()
@@ -332,9 +337,10 @@ class LinkEndpointTest: ServerTest() {
         val updateLink = NewLink(created.id, "edited", "amazon.com", process = false)
         val updated = given()
             .contentType(ContentType.JSON)
+            .queryParam("newVersion", false)
             .body(updateLink)
             .When()
-            .put("/link?newVersion=false")
+            .put("/link")
             .then()
             .statusCode(200)
             .extract().to<Link>()
@@ -345,7 +351,7 @@ class LinkEndpointTest: ServerTest() {
         assertThat(updated.dateCreated).isNotEqualTo(updated.dateUpdated)
 
         // retrieve latest version
-        val current = get("/link/{id}", created.id)
+        val current = get("/link/{id}", created.id.value)
             .then()
             .statusCode(200)
             .extract().to<Link>()
@@ -455,7 +461,8 @@ class LinkEndpointTest: ServerTest() {
             .then()
             .statusCode(200)
             .extract().to<List<SlimLink>>()
-        assertThat(existing).hasSize(2).extracting("id").containsExactly(created1.id, created2.id)
+        assertThat(existing).hasSize(2).extracting<EntryId> { it.id }
+            .containsExactly(created1.id, created2.id)
 
         val noExisting = given()
             .body("amazon.com")

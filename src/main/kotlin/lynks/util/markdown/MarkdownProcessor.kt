@@ -9,11 +9,12 @@ import com.vladsch.flexmark.html.HtmlRenderer
 import com.vladsch.flexmark.parser.Parser
 import com.vladsch.flexmark.util.ast.NodeVisitor
 import com.vladsch.flexmark.util.data.MutableDataSet
+import lynks.common.EntryId
 import lynks.entry.EntryService
 import lynks.resource.ResourceManager
 import lynks.resource.TempImageMarkdownVisitor
 
-class MarkdownProcessor(private val resourceManager: ResourceManager, private val entryService: EntryService) {
+class MarkdownProcessor(private val resourceManager: ResourceManager, entryService: EntryService) {
 
     private val parser: Parser
     private val formatter: Formatter
@@ -44,7 +45,7 @@ class MarkdownProcessor(private val resourceManager: ResourceManager, private va
         return renderer.render(parser.parse(text))
     }
 
-    fun convertAndProcess(text: String, entryId: String): Triple<Int, String, String> {
+    fun convertAndProcess(text: String, entryId: EntryId): Triple<Int, String, String> {
         val doc = parser.parse(text)
         val visitor = TempImageMarkdownVisitor(entryId, resourceManager)
         visitor.replaceUrl(doc)

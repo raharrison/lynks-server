@@ -1,10 +1,11 @@
 package lynks.task
 
 import io.ktor.http.*
-import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import lynks.common.EntryId
+import lynks.common.TaskId
 import lynks.common.exception.InvalidModelException
 
 fun Route.task(taskService: TaskService) {
@@ -23,8 +24,8 @@ fun Route.task(taskService: TaskService) {
     }
 
     post("/entry/{entryId}/task/{id}") {
-        val entryId = call.parameters["entryId"]!!
-        val taskId = call.parameters["id"]!!
+        val entryId = EntryId(call.parameters["entryId"]!!)
+        val taskId = TaskId(call.parameters["id"]!!)
         val rawInput = call.receive(Map::class)
         val params = validateInputParams(rawInput)
         if (taskService.runTask(entryId, taskId, params))

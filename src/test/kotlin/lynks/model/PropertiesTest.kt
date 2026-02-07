@@ -1,6 +1,7 @@
 package lynks.model
 
 import lynks.common.BaseProperties
+import lynks.common.TaskId
 import lynks.common.TaskParameter
 import lynks.common.TaskParameterType
 import lynks.task.Task
@@ -25,7 +26,7 @@ class PropertiesTest {
     fun testGetNoTask() {
         val props = BaseProperties()
         props.addTask("desc", TaskBuilder(Task::class))
-        val task = props.getTask("invalid")
+        val task = props.getTask(TaskId("invalid"))
         assertThat(task).isNull()
     }
 

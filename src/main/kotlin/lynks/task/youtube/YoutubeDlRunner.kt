@@ -1,5 +1,6 @@
 package lynks.task.youtube
 
+import lynks.common.EntryId
 import lynks.entry.EntryAuditService
 import lynks.notify.NewNotification
 import lynks.notify.NotifyService
@@ -46,10 +47,10 @@ class YoutubeDlRunner(
         }
     )
 
-    suspend fun run(entryId: String, url: String, format: String, options: String = "") {
+    suspend fun run(entryId: EntryId, url: String, format: String, options: String = "") {
         validateVideoUrl(url)
         val youtubeDlBinaryPath = YoutubeDlResolver(resourceRetriever).resolveYoutubeDl()
-        val tempPath = resourceManager.constructTempBasePath(entryId).resolve("%(title)s.f%(format_id)s.%(ext)s")
+        val tempPath = resourceManager.constructTempBasePath(entryId.value).resolve("%(title)s.f%(format_id)s.%(ext)s")
         val outputTemplate = "-o \"${tempPath.absolutePathString()}\""
 
         val command = "$youtubeDlBinaryPath $options -f \"$format\" $outputTemplate $url"

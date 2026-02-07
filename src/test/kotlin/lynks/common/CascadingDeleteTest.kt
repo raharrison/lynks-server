@@ -38,7 +38,7 @@ class CascadingDeleteTest: DatabaseTest() {
         createDummyComment("c1", "id1", "comment content")
         createDummyReminder("rem1", "id1", ReminderType.ADHOC, listOf(NotificationMethod.EMAIL),"message", System.currentTimeMillis().toString())
 
-        resourceManager.saveGeneratedResource("r1", "id1", "resource name", "jpg", ResourceType.SCREENSHOT, 11)
+        resourceManager.saveGeneratedResource(ResourceId("r1"), EntryId("id1"), "resource name", "jpg", ResourceType.SCREENSHOT, 11)
         updateDummyEntry("id1", "link1", 1, "r1") // add generated thumbnail resource id to entry
 
         linkService = LinkService(GroupSetService(tagService, collectionService), entryAuditService, resourceManager, mockk(relaxUnitFun = true))
@@ -77,8 +77,8 @@ class CascadingDeleteTest: DatabaseTest() {
     fun testDeletingEntryRefDoesntDeleteEntry() {
         val added1 = linkService.add(NewLink(null, "title", "url", process = false))
         val added2 = linkService.add(NewLink(null, "title2", "url2", process =  false))
-        entryRefService.setEntryRefs(added1.id, listOf(added2.id), added1.id)
-        entryRefService.deleteOrigin(added1.id)
+        entryRefService.setEntryRefs(added1.id, listOf(added2.id.value), added1.id.value)
+        entryRefService.deleteOrigin(added1.id.value)
         assertThat(linkService.get(added1.id)).isNotNull()
         assertThat(linkService.get(added2.id)).isNotNull()
     }
@@ -105,50 +105,50 @@ class CascadingDeleteTest: DatabaseTest() {
 
     @Test
     fun testDeletingCommentDoesntDeleteEntry() {
-        assertThat(commentService.getCommentsFor("id1").content).hasSize(1)
-        assertThat(commentService.deleteComment("id1", "c1")).isTrue()
-        assertThat(commentService.getCommentsFor("id1").content).isEmpty()
-        assertThat(linkService.get("id1")).isNotNull
+        assertThat(commentService.getCommentsFor(EntryId("id1")).content).hasSize(1)
+        assertThat(commentService.deleteComment(EntryId("id1"), CommentId("c1"))).isTrue()
+        assertThat(commentService.getCommentsFor(EntryId("id1")).content).isEmpty()
+        assertThat(linkService.get(EntryId("id1"))).isNotNull
     }
 
     @Test
     fun testDeletingEntryDeletesComments() {
-        assertThat(commentService.getCommentsFor("id1").content).hasSize(1)
-        assertThat(linkService.delete("id1")).isTrue()
-        assertThat(commentService.getCommentsFor("id1").content).isEmpty()
-        assertThat(linkService.get("id1")).isNull()
+        assertThat(commentService.getCommentsFor(EntryId("id1")).content).hasSize(1)
+        assertThat(linkService.delete(EntryId("id1"))).isTrue()
+        assertThat(commentService.getCommentsFor(EntryId("id1")).content).isEmpty()
+        assertThat(linkService.get(EntryId("id1"))).isNull()
     }
 
     @Test
     fun testDeletingResourceDoesntDeleteEntry() {
-        assertThat(resourceManager.getResourcesFor("id1")).hasSize(1)
-        assertThat(resourceManager.delete("r1")).isTrue()
-        assertThat(resourceManager.getResourcesFor("id1")).isEmpty()
-        assertThat(linkService.get("id1")).isNotNull
+        assertThat(resourceManager.getResourcesFor(EntryId("id1"))).hasSize(1)
+        assertThat(resourceManager.delete(ResourceId("r1"))).isTrue()
+        assertThat(resourceManager.getResourcesFor(EntryId("id1"))).isEmpty()
+        assertThat(linkService.get(EntryId("id1"))).isNotNull
     }
 
     @Test
     fun testDeletingEntryDeletesResources() {
-        assertThat(resourceManager.getResourcesFor("id1")).hasSize(1)
-        assertThat(linkService.delete("id1")).isTrue()
-        assertThat(resourceManager.getResourcesFor("id1")).isEmpty()
-        assertThat(linkService.get("id1")).isNull()
+        assertThat(resourceManager.getResourcesFor(EntryId("id1"))).hasSize(1)
+        assertThat(linkService.delete(EntryId("id1"))).isTrue()
+        assertThat(resourceManager.getResourcesFor(EntryId("id1"))).isEmpty()
+        assertThat(linkService.get(EntryId("id1"))).isNull()
     }
 
     @Test
     fun testDeletingScheduleDoesntDeleteEntry() {
-        assertThat(reminderService.getRemindersForEntry("id1")).hasSize(1)
-        assertThat(reminderService.delete("rem1")).isTrue()
-        assertThat(reminderService.getRemindersForEntry("id1")).isEmpty()
-        assertThat(linkService.get("id1")).isNotNull
+        assertThat(reminderService.getRemindersForEntry(EntryId("id1"))).hasSize(1)
+        assertThat(reminderService.delete(ReminderId("rem1"))).isTrue()
+        assertThat(reminderService.getRemindersForEntry(EntryId("id1"))).isEmpty()
+        assertThat(linkService.get(EntryId("id1"))).isNotNull
     }
 
     @Test
     fun testDeletingEntryDeletesSchedules() {
-        assertThat(reminderService.getRemindersForEntry("id1")).hasSize(1)
-        assertThat(linkService.delete("id1")).isTrue()
-        assertThat(reminderService.getRemindersForEntry("id1")).isEmpty()
-        assertThat(linkService.get("id1")).isNull()
+        assertThat(reminderService.getRemindersForEntry(EntryId("id1"))).hasSize(1)
+        assertThat(linkService.delete(EntryId("id1"))).isTrue()
+        assertThat(reminderService.getRemindersForEntry(EntryId("id1"))).isEmpty()
+        assertThat(linkService.get(EntryId("id1"))).isNull()
     }
 
     @Test
@@ -164,7 +164,7 @@ class CascadingDeleteTest: DatabaseTest() {
     fun testDeletingEntryDeletesRefs() {
         val added1 = linkService.add(NewLink(null, "title", "url", process = false))
         val added2 = linkService.add(NewLink(null, "title2", "url2", process =  false))
-        entryRefService.setEntryRefs(added1.id, listOf(added2.id), added1.id)
+        entryRefService.setEntryRefs(added1.id, listOf(added2.id.value), added1.id.value)
         assertThat(entryRefService.getRefsForEntry(added1.id).outbound).hasSize(1)
         assertThat(entryRefService.getRefsForEntry(added2.id).inbound).hasSize(1)
         linkService.delete(added1.id)
@@ -174,20 +174,20 @@ class CascadingDeleteTest: DatabaseTest() {
 
     @Test
     fun testDeleteAllDoesntDeleteEntry() {
-        assertThat(commentService.deleteComment("id1", "c1")).isTrue()
+        assertThat(commentService.deleteComment(EntryId("id1"), CommentId("c1"))).isTrue()
         assertThat(tagService.delete("t1")).isTrue()
         assertThat(collectionService.delete("c1")).isTrue()
-        assertThat(reminderService.delete("rem1")).isTrue()
-        assertThat(resourceManager.delete("r1")).isTrue()
+        assertThat(reminderService.delete(ReminderId("rem1"))).isTrue()
+        assertThat(resourceManager.delete(ResourceId("r1"))).isTrue()
 
-        assertThat(linkService.get("id1")).isNotNull
+        assertThat(linkService.get(EntryId("id1"))).isNotNull
     }
 
     @Test
     fun testDeletingResourceSetsThumbnailIdToNull() {
-        assertThat(linkService.get("id1")?.thumbnailId).isEqualTo("r1")
-        assertThat(resourceManager.delete("r1")).isTrue()
-        assertThat(resourceManager.getResourcesFor("id1")).isEmpty()
-        assertThat(linkService.get("id1")?.thumbnailId).isNull()
+        assertThat(linkService.get(EntryId("id1"))?.thumbnailId).isEqualTo(ResourceId("r1"))
+        assertThat(resourceManager.delete(ResourceId("r1"))).isTrue()
+        assertThat(resourceManager.getResourcesFor(EntryId("id1"))).isEmpty()
+        assertThat(linkService.get(EntryId("id1"))?.thumbnailId).isNull()
     }
 }

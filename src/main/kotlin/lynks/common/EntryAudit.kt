@@ -14,7 +14,7 @@ object EntryAudit : Table("ENTRY_AUDIT") {
 
 data class EntryAuditItem(
     val auditId: String,
-    val entryId: String,
+    val entryId: EntryId,
     val src: String?,
     val details: String,
     val timestamp: Long

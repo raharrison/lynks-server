@@ -1,10 +1,10 @@
 package lynks.entry
 
 import io.ktor.http.*
-import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import lynks.common.EntryId
 import lynks.common.NewSnippet
 import lynks.util.pageRequest
 
@@ -17,7 +17,7 @@ fun Route.snippet(snippetService: SnippetService) {
         }
 
         get("/{id}") {
-            val snippet = snippetService.get(call.parameters["id"]!!)
+            val snippet = snippetService.get(EntryId(call.parameters["id"]!!))
             if (snippet == null) call.respond(HttpStatusCode.NotFound)
             else call.respond(snippet)
         }
@@ -25,7 +25,7 @@ fun Route.snippet(snippetService: SnippetService) {
         get("/{id}/{version}") {
             val id = call.parameters["id"]!!
             val version = call.parameters["version"]!!
-            val snippet = snippetService.get(id, version.toInt())
+            val snippet = snippetService.get(EntryId(id), version.toInt())
             if (snippet == null) call.respond(HttpStatusCode.NotFound)
             else call.respond(snippet)
         }
@@ -44,7 +44,7 @@ fun Route.snippet(snippetService: SnippetService) {
         }
 
         delete("/{id}") {
-            val removed = snippetService.delete(call.parameters["id"]!!)
+            val removed = snippetService.delete(EntryId(call.parameters["id"]!!))
             if (removed) call.respond(HttpStatusCode.OK)
             else call.respond(HttpStatusCode.NotFound)
         }

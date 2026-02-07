@@ -141,7 +141,7 @@ abstract class GroupService<T : Grouping<T>, in U : IdBasedNewEntity>(private va
 
     protected abstract fun toCreateModel(name: String): @UnsafeVariance U
 
-    protected abstract fun toInsert(eId: String, entity: U): Groups.(InsertStatement<*>) -> Unit
+    protected abstract fun toInsert(gid: String, entity: U): Groups.(InsertStatement<*>) -> Unit
 
     protected abstract fun toUpdate(entity: U): Groups.(UpdateBuilder<*>) -> Unit
 

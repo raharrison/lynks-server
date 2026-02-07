@@ -4,7 +4,7 @@ import lynks.group.Collection
 import lynks.group.Tag
 
 data class Note(
-    override val id: String,
+    override val id: EntryId,
     val title: String,
     val plainText: String,
     val markdownText: String,
@@ -21,7 +21,7 @@ data class Note(
 
 
 data class NewNote(
-    override val id: String? = null,
+    override val id: EntryId? = null,
     val title: String,
     val plainText: String,
     override val tags: List<String> = emptyList(),
@@ -30,7 +30,7 @@ data class NewNote(
 
 
 data class SlimNote(
-    override val id: String,
+    override val id: EntryId,
     val title: String,
     override val dateUpdated: Long,
     override val tags: List<Tag> = emptyList(),

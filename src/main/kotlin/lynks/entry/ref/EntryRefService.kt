@@ -1,6 +1,7 @@
 package lynks.entry.ref
 
 import lynks.common.Entries
+import lynks.common.EntryId
 import lynks.util.loggerFor
 import org.jetbrains.exposed.v1.core.JoinType
 import org.jetbrains.exposed.v1.core.and
@@ -14,30 +15,30 @@ class EntryRefService {
 
     private val log = loggerFor<EntryRefService>()
 
-    fun getRefsForEntry(eid: String): EntryRefSet = transaction {
+    fun getRefsForEntry(eid: EntryId): EntryRefSet = transaction {
         val inbound =
             EntryRefs.join(Entries, JoinType.INNER, EntryRefs.sourceEntryId, Entries.id)
                 .select(EntryRefs.sourceEntryId, Entries.type, Entries.title)
-                .where { EntryRefs.targetEntryId eq eid }
+                .where { EntryRefs.targetEntryId eq eid.value }
                 .map {
-                    EntryRefItem(it[EntryRefs.sourceEntryId], it[Entries.type], it[Entries.title])
+                    EntryRefItem(EntryId(it[EntryRefs.sourceEntryId]), it[Entries.type], it[Entries.title])
                 }
                 .toList()
         val outbound =
             EntryRefs.join(Entries, JoinType.INNER, EntryRefs.targetEntryId, Entries.id)
                 .select(EntryRefs.targetEntryId, Entries.type, Entries.title)
-                .where { EntryRefs.sourceEntryId eq eid }
+                .where { EntryRefs.sourceEntryId eq eid.value }
                 .map {
-                    EntryRefItem(it[EntryRefs.targetEntryId], it[Entries.type], it[Entries.title])
+                    EntryRefItem(EntryId(it[EntryRefs.targetEntryId]), it[Entries.type], it[Entries.title])
                 }
                 .toList()
         EntryRefSet(inbound, outbound)
     }
 
-    fun setEntryRefs(eid: String, refs: List<String>, origin: String) = transaction {
-        EntryRefs.deleteWhere { (EntryRefs.sourceEntryId eq eid) and (EntryRefs.originId eq origin) }
+    fun setEntryRefs(eid: EntryId, refs: List<String>, origin: String) = transaction {
+        EntryRefs.deleteWhere { (EntryRefs.sourceEntryId eq eid.value) and (EntryRefs.originId eq origin) }
         EntryRefs.batchInsert(refs) {
-            this[EntryRefs.sourceEntryId] = eid
+            this[EntryRefs.sourceEntryId] = eid.value
             this[EntryRefs.targetEntryId] = it
             this[EntryRefs.originId] = origin
         }

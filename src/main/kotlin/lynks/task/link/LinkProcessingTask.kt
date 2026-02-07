@@ -1,5 +1,7 @@
 package lynks.task.link
 
+import lynks.common.EntryId
+import lynks.common.TaskId
 import lynks.common.TaskParameter
 import lynks.common.TaskParameterType
 import lynks.common.inject.Inject
@@ -12,7 +14,7 @@ import lynks.worker.PersistLinkProcessingRequest
 import lynks.worker.WorkerRegistry
 import java.util.*
 
-class LinkProcessingTask(id: String, entryId: String) :
+class LinkProcessingTask(id: TaskId, entryId: EntryId) :
     Task<LinkProcessingTask.LinkProcessingTaskContext>(id, entryId) {
 
     @Inject

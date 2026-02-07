@@ -2,9 +2,7 @@ package lynks.endpoint
 
 import io.restassured.RestAssured.*
 import io.restassured.http.ContentType
-import lynks.common.EntryType
-import lynks.common.Environment
-import lynks.common.ServerTest
+import lynks.common.*
 import lynks.resource.ImageUploadErrorResponse
 import lynks.resource.ImageUploadResponse
 import lynks.resource.Resource
@@ -77,7 +75,7 @@ class ResourceEndpointTest : ServerTest() {
         assertThat(resource.type).isEqualTo(ResourceType.UPLOAD)
         assertThat(resource.size).isEqualTo(content.size.toLong())
         assertThat(resource.extension).isEqualTo("txt")
-        assertThat(resource.entryId).isEqualTo("e1")
+        assertThat(resource.entryId).isEqualTo(EntryId("e1"))
     }
 
     @Test
@@ -102,7 +100,7 @@ class ResourceEndpointTest : ServerTest() {
         val filename = "attachment.txt"
         val content = byteArrayOf(1,2,3,4)
         val generated = uploadResource(filename, content)
-        val resources = get("/entry/{entryId}/resource", generated.entryId)
+        val resources = get("/entry/{entryId}/resource", generated.entryId.value)
                 .then()
                 .statusCode(200)
                 .extract().`as`(Array<Resource>::class.java)
@@ -113,7 +111,7 @@ class ResourceEndpointTest : ServerTest() {
             assertThat(it.type).isEqualTo(ResourceType.UPLOAD)
             assertThat(it.size).isEqualTo(content.size.toLong())
             assertThat(it.extension).isEqualTo("txt")
-            assertThat(it.entryId).isEqualTo("e1")
+            assertThat(it.entryId).isEqualTo(EntryId("e1"))
         }
     }
 
@@ -132,7 +130,7 @@ class ResourceEndpointTest : ServerTest() {
         val content = byteArrayOf(1,2,3,4)
         val generated = uploadResource(filename, content)
 
-        val resource = get("/entry/{entryId}/resource/{id}", generated.entryId, generated.id)
+        val resource = get("/entry/{entryId}/resource/{id}", generated.entryId.value, generated.id.value)
                 .then()
                 .statusCode(200)
                 .header("Content-Disposition", "inline; filename=\"$filename\"")
@@ -153,7 +151,7 @@ class ResourceEndpointTest : ServerTest() {
         val content = byteArrayOf(1,2,3,4)
         val generated = uploadResource(filename, content)
 
-        val resource = get("/entry/{entryId}/resource/{id}/info", generated.entryId, generated.id)
+        val resource = get("/entry/{entryId}/resource/{id}/info", generated.entryId.value, generated.id.value)
             .then()
             .statusCode(200)
             .header("X-Resource-Mime-Type", "text/plain")
@@ -162,7 +160,7 @@ class ResourceEndpointTest : ServerTest() {
         assertThat(resource.type).isEqualTo(ResourceType.UPLOAD)
         assertThat(resource.size).isEqualTo(content.size.toLong())
         assertThat(resource.extension).isEqualTo("txt")
-        assertThat(resource.entryId).isEqualTo("e1")
+        assertThat(resource.entryId).isEqualTo(EntryId("e1"))
     }
 
     @Test
@@ -176,7 +174,7 @@ class ResourceEndpointTest : ServerTest() {
     fun testUpdateResource() {
         val data = byteArrayOf(1, 2, 3, 4, 5)
         val generated = uploadResource("content.txt", data)
-        val originalResource = get("/entry/{entryId}/resource/{id}/info", generated.entryId, generated.id)
+        val originalResource = get("/entry/{entryId}/resource/{id}/info", generated.entryId.value, generated.id.value)
             .then()
             .statusCode(200)
             .extract().`as`(Resource::class.java)
@@ -184,14 +182,14 @@ class ResourceEndpointTest : ServerTest() {
         assertThat(originalResource.type).isEqualTo(ResourceType.UPLOAD)
         assertThat(originalResource.size).isEqualTo(data.size.toLong())
         assertThat(originalResource.extension).isEqualTo("txt")
-        assertThat(originalResource.entryId).isEqualTo("e1")
+        assertThat(originalResource.entryId).isEqualTo(EntryId("e1"))
 
         val updateResourceRequest = originalResource.copy(name="updated.xml")
         val updatedResource = given()
             .contentType(ContentType.JSON)
             .body(updateResourceRequest)
             .When()
-            .put("/entry/{entryId}/resource", generated.entryId)
+            .put("/entry/{entryId}/resource", generated.entryId.value)
             .then()
             .statusCode(200)
             .extract().to<Resource>()
@@ -202,13 +200,13 @@ class ResourceEndpointTest : ServerTest() {
         assertThat(updatedResource.extension).isEqualTo("xml")
         assertThat(updatedResource.entryId).isEqualTo(generated.entryId)
 
-        val updatedResourceRetrieval = get("/entry/{entryId}/resource/{id}/info", generated.entryId, generated.id)
+        val updatedResourceRetrieval = get("/entry/{entryId}/resource/{id}/info", generated.entryId.value, generated.id.value)
             .then()
             .statusCode(200)
             .extract().`as`(Resource::class.java)
         assertThat(updatedResourceRetrieval).isEqualTo(updatedResource)
 
-        val resourceContents = get("/entry/{entryId}/resource/{id}", generated.entryId, generated.id)
+        val resourceContents = get("/entry/{entryId}/resource/{id}", generated.entryId.value, generated.id.value)
             .then()
             .statusCode(200)
             .extract().asByteArray()
@@ -217,13 +215,13 @@ class ResourceEndpointTest : ServerTest() {
 
     @Test
     fun testUpdateInvalidResource() {
-        val invalid = Resource("invalid", "pid", "eid", 1, "file1.txt", "txt", ResourceType.UPLOAD,
+        val invalid = Resource(ResourceId("invalid"), "pid", EntryId("eid"), 1, "file1.txt", "txt", ResourceType.UPLOAD,
             12L, 1234L)
         given()
             .contentType(ContentType.JSON)
             .body(invalid)
             .When()
-            .put("/entry/{entryId}/resource", invalid.entryId)
+            .put("/entry/{entryId}/resource", invalid.entryId.value)
             .then()
             .statusCode(404)
     }
@@ -231,10 +229,10 @@ class ResourceEndpointTest : ServerTest() {
     @Test
     fun testDeleteResource() {
         val generated = uploadResource("attachment.txt", byteArrayOf(1,2,3,4,5))
-        delete("/entry/{entryId}/resource/{id}", generated.entryId, generated.id)
+        delete("/entry/{entryId}/resource/{id}", generated.entryId.value, generated.id.value)
                 .then()
                 .statusCode(200)
-        get("/entry/{entryId}/resource/{id}", generated.entryId, generated.id)
+        get("/entry/{entryId}/resource/{id}", generated.entryId.value, generated.id.value)
                 .then()
                 .statusCode(404)
     }

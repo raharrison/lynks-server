@@ -1,5 +1,7 @@
 package lynks.task
 
+import lynks.common.EntryId
+import lynks.common.TaskId
 import lynks.common.TaskParameter
 import lynks.common.TaskParameterType
 import lynks.common.inject.Inject
@@ -8,7 +10,7 @@ import lynks.resource.ResourceRetriever
 import lynks.util.Result
 import lynks.util.loggerFor
 
-class ResourceRetrievingTask(id: String, entryId: String) :
+class ResourceRetrievingTask(id: TaskId, entryId: EntryId) :
     Task<ResourceRetrievingTask.ResourceTaskContext>(id, entryId) {
 
     private val log = loggerFor<ResourceRetrievingTask>()

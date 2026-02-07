@@ -7,6 +7,7 @@ import com.vladsch.flexmark.util.ast.NodeVisitor
 import com.vladsch.flexmark.util.ast.VisitHandler
 import com.vladsch.flexmark.util.sequence.PrefixedSubSequence
 import com.vladsch.flexmark.util.sequence.SegmentedSequence
+import lynks.common.EntryId
 import lynks.common.Environment
 import lynks.common.IMAGE_UPLOAD_BASE
 import lynks.common.TEMP_URL
@@ -15,7 +16,7 @@ import kotlin.io.path.absolutePathString
 import kotlin.io.path.extension
 
 class TempImageMarkdownVisitor(
-    private val eid: String,
+    private val eid: EntryId,
     private val resourceManager: ResourceManager
 ) {
 

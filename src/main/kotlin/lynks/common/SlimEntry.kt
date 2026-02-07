@@ -3,7 +3,7 @@ package lynks.common
 import lynks.group.Collection
 import lynks.group.Tag
 
-interface SlimEntry : IdBasedCreatedEntity {
+interface SlimEntry : TypedIdEntity<EntryId> {
     val type: EntryType
     val dateUpdated: Long
     val starred: Boolean

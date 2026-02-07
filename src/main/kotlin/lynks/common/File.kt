@@ -4,7 +4,7 @@ import lynks.group.Collection
 import lynks.group.Tag
 
 data class File(
-    override val id: String,
+    override val id: EntryId,
     val title: String,
     override val dateCreated: Long,
     override val dateUpdated: Long,
@@ -19,7 +19,7 @@ data class File(
 
 
 data class NewFile(
-    override val id: String? = null,
+    override val id: EntryId? = null,
     val title: String,
     override val tags: List<String> = emptyList(),
     override val collections: List<String> = emptyList()
@@ -27,7 +27,7 @@ data class NewFile(
 
 
 data class SlimFile(
-    override val id: String,
+    override val id: EntryId,
     val title: String,
     override val dateUpdated: Long,
     override val tags: List<Tag> = emptyList(),

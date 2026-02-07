@@ -6,6 +6,7 @@ import com.vladsch.flexmark.html.renderer.NodeRendererContext
 import com.vladsch.flexmark.html.renderer.NodeRendererFactory
 import com.vladsch.flexmark.html.renderer.NodeRenderingHandler
 import com.vladsch.flexmark.util.data.DataHolder
+import lynks.common.EntryId
 import lynks.entry.EntryService
 
 internal class EntryLinkNodeRenderer(private val entryService: EntryService) : NodeRenderer {
@@ -17,7 +18,7 @@ internal class EntryLinkNodeRenderer(private val entryService: EntryService) : N
     }
 
     private fun render(node: EntryLinkNode, html: HtmlWriter) {
-        val entry = entryService.get(listOf(node.text.toString())).content.singleOrNull()
+        val entry = entryService.get(EntryId((node.text.toString())))
         if (entry == null) {
             html.srcPos(node.chars).text(node.chars)
         } else {
