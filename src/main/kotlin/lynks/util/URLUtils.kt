@@ -25,7 +25,7 @@ object URLUtils {
     fun extractQueryParams(uri: String): Map<String, String?> {
         val query = try {
             URI(uri).query ?: uri
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             uri
         }
         val params = query.split("&")
@@ -50,7 +50,7 @@ object URLUtils {
     fun isValidEmail(email: String): Boolean = try {
         InternetAddress(email).validate()
         true
-    } catch (ex: AddressException) {
+    } catch (_: AddressException) {
         false
     }
 

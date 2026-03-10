@@ -46,46 +46,50 @@ class YoutubeSubtitleTask(id: TaskId, entryId: EntryId) : Task<YoutubeSubtitleTa
             log.info("Executing YoutubeSubtitleTask task entry={}", entryId)
             val command =
                 "$youtubeDlBinaryPath --write-sub --write-auto-sub --skip-download --sub-lang en --sub-format ttml $outputTemplate ${link.url}"
-            when (val result = ExecUtils.executeCommand(command)) {
-                is Result.Success -> {
-                    val prefix = "[info] Writing video subtitles to:"
-                    val filename = result.value.lines().firstOrNull {
-                        it.startsWith(prefix)
-                    }?.removePrefix(prefix)?.trim()
-                    if (filename != null) {
-                        val name = FileUtils.getFileName(filename)
-                        log.info("Youtube subtitle task found destination filename={}", filename)
-                        val subLines = extractSubtitleText(filename)
-                        log.info("Found {} subtitle lines", subLines.size)
-                        if (context.searchable) {
-                            log.info("Updating link content with subtitles entryId={}", link.id)
-                            val content = subLines.joinToString(" ") { it.text.lowercase() }
-                            linkService.updateSearchableContent(link.id, content)
-                            log.info("Link content successfully updated entryId={}", link.id)
+            try {
+                when (val result = ExecUtils.executeCommand(command)) {
+                    is Result.Success -> {
+                        val prefix = "[info] Writing video subtitles to:"
+                        val filename = result.value.lines().firstOrNull {
+                            it.startsWith(prefix)
+                        }?.removePrefix(prefix)?.trim()
+                        if (filename != null) {
+                            val name = FileUtils.getFileName(filename)
+                            log.info("Youtube subtitle task found destination filename={}", filename)
+                            val subLines = extractSubtitleText(filename)
+                            log.info("Found {} subtitle lines", subLines.size)
+                            if (context.searchable) {
+                                log.info("Updating link content with subtitles entryId={}", link.id)
+                                val content = subLines.joinToString(" ") { it.text.lowercase() }
+                                linkService.updateSearchableContent(link.id, content)
+                                log.info("Link content successfully updated entryId={}", link.id)
+                            }
+                            val resourceContent = JsonMapper.defaultMapper.writeValueAsBytes(subLines)
+                            resourceManager.saveGeneratedResource(entryId, name, ResourceType.GENERATED, resourceContent)
+                            entryAuditService.acceptAuditEvent(
+                                entryId, YoutubeSubtitleTask::class.simpleName,
+                                "Youtube subtitle download task execution succeeded, created: $name"
+                            )
+                        } else {
+                            log.error("No filename found in output - command likely failed or subtitles not found")
                         }
-                        val resourceContent = JsonMapper.defaultMapper.writeValueAsBytes(subLines)
-                        resourceManager.saveGeneratedResource(entryId, name, ResourceType.GENERATED, resourceContent)
+                    }
+
+                    is Result.Failure -> {
+                        log.error(
+                            "Error running YoutubeSubtitleTask task: {} return code: {} error: {}",
+                            context.toString(),
+                            result.reason.code,
+                            result.reason.message
+                        )
                         entryAuditService.acceptAuditEvent(
                             entryId, YoutubeSubtitleTask::class.simpleName,
-                            "Youtube subtitle download task execution succeeded, created: $name"
+                            "Youtube download task execution failed"
                         )
-                    } else {
-                        log.error("No filename found in output - command likely failed or subtitles not found")
                     }
                 }
-
-                is Result.Failure -> {
-                    log.error(
-                        "Error running YoutubeSubtitleTask task: {} return code: {} error: {}",
-                        context.toString(),
-                        result.reason.code,
-                        result.reason.message
-                    )
-                    entryAuditService.acceptAuditEvent(
-                        entryId, YoutubeSubtitleTask::class.simpleName,
-                        "Youtube download task execution failed"
-                    )
-                }
+            } finally {
+                resourceManager.deleteTempFiles(entryId.value)
             }
         }
     }

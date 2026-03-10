@@ -9,7 +9,7 @@ import org.jetbrains.exposed.v1.core.Table
 
 object Groups: Table("GROUP") {
     val id = varchar("ID", UID_LENGTH)
-    val type = enumerationByName<GroupType>("TYPE", 16).index()
+    val type = enumeration<GroupType>("TYPE").index()
     val name = varchar("NAME", 255)
     val parentId = (varchar("PARENT_ID", UID_LENGTH) references id).nullable().index()
     val dateCreated = long("DATE_CREATED")

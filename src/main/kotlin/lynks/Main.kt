@@ -1,5 +1,6 @@
 package lynks
 
+import com.fasterxml.jackson.module.kotlin.readValue
 import io.ktor.http.*
 import io.ktor.serialization.jackson.*
 import io.ktor.server.application.*
@@ -51,7 +52,11 @@ import lynks.util.markdown.MarkdownProcessor
 import lynks.worker.WorkerRegistry
 
 fun Application.module() {
-    install(DefaultHeaders)
+    install(DefaultHeaders) {
+        header("X-Content-Type-Options", "nosniff")
+        header("X-Frame-Options", "DENY")
+        header("Referrer-Policy", "strict-origin-when-cross-origin")
+    }
     install(XForwardedHeaders)
     install(ContentNegotiation) {
         register(ContentType.Application.Json, JacksonConverter(defaultMapper))
@@ -70,6 +75,7 @@ fun Application.module() {
             if (cause is InvalidModelException) {
                 call.respond(HttpStatusCode.BadRequest, cause.message ?: "Bad Request Format")
             } else {
+                call.application.log.error("Unhandled exception on ${call.request.local.method.value} ${call.request.local.uri}", cause)
                 call.respond(HttpStatusCode.InternalServerError)
             }
         }
@@ -93,7 +99,7 @@ fun Application.module() {
         register(TwoFactorService())
         register(UserService(get()))
         register(PushoverClient(get()))
-        register(NotifyService(get(), get()))
+        register(NotifyService(get()))
         register(ResourceManager())
         register(TagService())
         register(CollectionService())
@@ -159,13 +165,24 @@ private fun Route.unprotectedRoutes(serviceProvider: ServiceProvider) {
 private fun Application.installAuth() {
     install(Sessions) {
         cookie<UserSession>("lynks_session", SessionStorageMemory()) {
+            serializer = object : SessionSerializer<UserSession> {
+                override fun serialize(session: UserSession): String {
+                    return defaultMapper.writeValueAsString(session)
+                }
+                override fun deserialize(text: String): UserSession {
+                    return defaultMapper.readValue(text)
+                }
+            }
             cookie.path = "/"
             cookie.secure = Environment.mode == ConfigMode.PROD
             if (Environment.auth.signingKey == null) {
                 throw IllegalArgumentException("Must provide a signing key in properties when auth is enabled")
             }
+            if (Environment.auth.encryptionKey == null) {
+                throw IllegalArgumentException("Must provide a separate encryption key in properties when auth is enabled")
+            }
             val secretSignKey = Environment.auth.signingKey
-            val encryptKey = secretSignKey.substring(16)
+            val encryptKey = Environment.auth.encryptionKey
             transform(SessionTransportTransformerEncrypt(encryptKey.toByteArray(), secretSignKey.toByteArray()))
         }
     }

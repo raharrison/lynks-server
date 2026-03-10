@@ -17,6 +17,7 @@ import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.nio.file.StandardCopyOption
 import kotlin.io.path.exists
 
 class ResourceManager {
@@ -64,18 +65,32 @@ class ResourceManager {
     }
 
     fun migrateGeneratedResources(entryId: EntryId, generatedResources: List<GeneratedResource>): List<Resource> {
-        val resources = mutableListOf<Resource>()
         log.info("Migrating {} temporary resources for entry={}", generatedResources.size, entryId)
-        for (generatedResource in generatedResources) {
-            val tempResourcePath = Path.of(generatedResource.targetPath)
-            if (tempResourcePath.exists()) {
+        val missing = generatedResources
+            .map { Path.of(it.targetPath) }
+            .filterNot { it.exists() }
+        if (missing.isNotEmpty()) {
+            missing.forEach { path ->
+                log.warn("Generated resource for entry={} at {} does not exist", entryId, path)
+            }
+            return emptyList()
+        }
+
+        val resources = mutableListOf<Resource>()
+        try {
+            for (generatedResource in generatedResources) {
+                val tempResourcePath = Path.of(generatedResource.targetPath)
                 val savedResource = saveGeneratedResource(entryId, generatedResource.resourceType, tempResourcePath)
                 resources.add(savedResource)
-            } else {
-                log.warn("Generated resource for entry={} at {} does not exist", entryId, generatedResource.targetPath)
             }
+            return resources
+        } catch (e: Exception) {
+            // rollback any migrated resources
+            resources.forEach { res ->
+                runCatching { delete(res.id) }
+            }
+            throw e
         }
-        return resources
     }
 
     fun deleteTempFiles(src: String) {
@@ -140,15 +155,22 @@ class ResourceManager {
 
     fun saveGeneratedResource(entryId: EntryId, name: String, type: ResourceType, file: ByteArray): Resource {
         val extension = FileUtils.getExtension(name)
-        return saveGeneratedResource(
+        val id = newResourceId()
+        val path = constructPath(entryId, id, extension)
+        log.info("Saving generated resource to {} entry={}", path.toString(), entryId)
+        FileUtils.writeToFile(path, file)
+        return try {
+            saveGeneratedResource(
+                id = id,
                 entryId = entryId,
                 name = name,
                 extension = extension,
                 type = type,
-                size = file.size.toLong()).also {
-            val path = constructPath(entryId, it.id, it.extension)
-            log.info("Saving generated resource to {} entry={}", path.toString(), entryId)
-            FileUtils.writeToFile(path, file)
+                size = file.size.toLong()
+            )
+        } catch (e: Exception) {
+            FileUtils.deleteWithParentIfEmpty(path)
+            throw e
         }
     }
 
@@ -159,8 +181,17 @@ class ResourceManager {
         val target = constructPath(entryId, id, extension)
         val size = Files.size(path)
         log.info("Moving {} resource from={} to={} entry={}", type.name.lowercase(), path.toString(), target.toString(), entryId)
-        return saveGeneratedResource(id, entryId, name, extension, type, size).also {
-            FileUtils.moveFile(path, target)
+        FileUtils.moveFile(path, target)
+        return try {
+            saveGeneratedResource(id, entryId, name, extension, type, size)
+        } catch (e: Exception) {
+            // restore original temp file on failure
+            if (Files.exists(target) && !Files.exists(path)) {
+                runCatching { Files.move(target, path, StandardCopyOption.REPLACE_EXISTING) }
+            } else {
+                FileUtils.deleteWithParentIfEmpty(target)
+            }
+            throw e
         }
     }
 
@@ -173,14 +204,24 @@ class ResourceManager {
             parentFile.mkdirs()
             createNewFile()
         }
-        input.use { its -> file.outputStream().buffered().use { its.copyTo(it) } }
-        return saveGeneratedResource(id, entryId, name, ext, ResourceType.UPLOAD, file.length())
+        try {
+            input.use { its -> file.outputStream().buffered().use { its.copyTo(it) } }
+            return saveGeneratedResource(id, entryId, name, ext, ResourceType.UPLOAD, file.length())
+        } catch (e: Exception) {
+            FileUtils.deleteWithParentIfEmpty(path)
+            throw e
+        }
     }
 
     internal fun constructPath(entryId: EntryId, id: ResourceId = newResourceId()): Path {
         val eid = entryId.value
         val firstDir = eid.substring(0, 1); val secondDir = eid.substring(0, 2)
-        return Paths.get(Environment.resource.resourceBasePath, firstDir, secondDir, eid, id.value)
+        val path = Paths.get(Environment.resource.resourceBasePath, firstDir, secondDir, eid, id.value)
+        val basePath = Paths.get(Environment.resource.resourceBasePath).toAbsolutePath().normalize()
+        check(path.toAbsolutePath().normalize().startsWith(basePath)) {
+            "Resolved resource path escapes base directory: $path"
+        }
+        return path
     }
 
     private fun constructPath(entryId: EntryId, id: ResourceId, extension: String): Path {
@@ -209,21 +250,55 @@ class ResourceManager {
         return getResource(id)?.let { originalResource ->
             val resourceName = resource.name
             val format = FileUtils.getExtension(resourceName)
-            transaction {
-                Resources.update({ Resources.id eq originalResource.parentId }) {
-                    it[fileName] = resourceName
-                    it[extension] = format
-                    it[dateUpdated] = System.currentTimeMillis()
+            val versions = getResourceVersions(originalResource.parentId)
+            val moves = versions.map { res ->
+                val oldPath = constructPath(originalResource.entryId, res.id, originalResource.extension)
+                val newPath = constructPath(originalResource.entryId, res.id, format)
+                oldPath to newPath
+            }
+
+            val missingFiles = moves.map { it.first }.filterNot { Files.exists(it) }
+            if (missingFiles.isNotEmpty()) {
+                missingFiles.forEach { path ->
+                    log.warn("Missing resource file during update entry={} path={}", originalResource.entryId, path)
                 }
-                val updatedResource = getResource(id) ?: return@transaction null
-                // move all versions of the resource to update file extensions
-                getResourceVersions(updatedResource.parentId).forEach { res ->
-                    val oldPath = constructPath(updatedResource.entryId, res.id, originalResource.extension)
-                    val newPath = constructPath(updatedResource.entryId, res.id, updatedResource.extension)
-                    log.info("Moving resources after entry update from={} to={} entry={}", oldPath.toString(), newPath.toString(), updatedResource.entryId)
-                    Files.move(oldPath, newPath)
+                throw IllegalStateException("Missing resource files for update")
+            }
+
+            // move files first, rollback on failure
+            try {
+                moves.forEach { (oldPath, newPath) ->
+                    log.info("Moving resources after entry update from={} to={} entry={}", oldPath.toString(), newPath.toString(), originalResource.entryId)
+                    Files.move(oldPath, newPath, StandardCopyOption.REPLACE_EXISTING)
                 }
-                updatedResource
+            } catch (e: Exception) {
+                // attempt rollback for any moves that did succeed
+                moves.forEach { (oldPath, newPath) ->
+                    if (Files.exists(newPath) && !Files.exists(oldPath)) {
+                        runCatching { Files.move(newPath, oldPath, StandardCopyOption.REPLACE_EXISTING) }
+                    }
+                }
+                throw e
+            }
+
+            // update DB after files moved
+            try {
+                return transaction {
+                    Resources.update({ Resources.id eq originalResource.parentId }) {
+                        it[fileName] = resourceName
+                        it[extension] = format
+                        it[dateUpdated] = System.currentTimeMillis()
+                    }
+                    getResource(id) ?: return@transaction null
+                }
+            } catch (e: Exception) {
+                // rollback file moves if DB update fails
+                moves.forEach { (oldPath, newPath) ->
+                    if (Files.exists(newPath) && !Files.exists(oldPath)) {
+                        runCatching { Files.move(newPath, oldPath, StandardCopyOption.REPLACE_EXISTING) }
+                    }
+                }
+                throw e
             }
         }
     }

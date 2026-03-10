@@ -177,6 +177,66 @@ class ResourceManagerTest: DatabaseTest() {
     }
 
     @Test
+    fun testMigrateResourcesMissingFileRollsBack() {
+        val entryId = EntryId("eid")
+        val tempPath = Paths.get(Environment.resource.resourceTempPath, "temp1.txt")
+        Files.createDirectories(tempPath.parent)
+        Files.write(tempPath, byteArrayOf(1, 2, 3))
+        val missingPath = Paths.get(Environment.resource.resourceTempPath, "missing.txt")
+        val generatedResources = listOf(
+            GeneratedResource(ResourceType.DOCUMENT, tempPath.toString(), TEXT),
+            GeneratedResource(ResourceType.DOCUMENT, missingPath.toString(), TEXT)
+        )
+
+        val resources = resourceManager.migrateGeneratedResources(entryId, generatedResources)
+        assertThat(resources).isEmpty()
+        assertThat(Files.exists(tempPath)).isTrue()
+
+        val entryDir = resourceManager.constructPath(entryId, ResourceId("")).toFile()
+        assertThat(entryDir.exists()).isFalse()
+    }
+
+    @Test
+    fun testSaveGeneratedResourceFromTempRollsBackOnDbFailure() {
+        val entryId = EntryId("missing")
+        val tempPath = Paths.get(Environment.resource.resourceTempPath, "temp2.txt")
+        Files.createDirectories(tempPath.parent)
+        Files.write(tempPath, byteArrayOf(4, 5, 6))
+
+        assertThrows<Exception> {
+            resourceManager.saveGeneratedResource(entryId, ResourceType.DOCUMENT, tempPath)
+        }
+
+        assertThat(Files.exists(tempPath)).isTrue()
+        val entryDir = resourceManager.constructPath(entryId, ResourceId("")).toFile()
+        if (entryDir.exists()) {
+            assertThat(entryDir.listFiles().orEmpty()).isEmpty()
+        } else {
+            assertThat(entryDir.exists()).isFalse()
+        }
+    }
+
+    @Test
+    fun testSaveGeneratedResourceFromBytesRollsBackOnDbFailure() {
+        val entryId = EntryId("missing")
+        assertThrows<Exception> {
+            resourceManager.saveGeneratedResource(entryId, "file.txt", ResourceType.DOCUMENT, byteArrayOf(7, 8, 9))
+        }
+        val entryDir = resourceManager.constructPath(entryId, ResourceId("")).toFile()
+        assertThat(entryDir.exists()).isFalse()
+    }
+
+    @Test
+    fun testSaveUploadedResourceRollsBackOnDbFailure() {
+        val entryId = EntryId("missing")
+        assertThrows<Exception> {
+            resourceManager.saveUploadedResource(entryId, "upload.txt", byteArrayOf(1, 2, 3).inputStream())
+        }
+        val entryDir = resourceManager.constructPath(entryId, ResourceId("")).toFile()
+        assertThat(entryDir.exists()).isFalse()
+    }
+
+    @Test
     fun testConstructPath() {
         val eid = EntryId("id1")
         val file = "file.txt"
@@ -426,6 +486,27 @@ class ResourceManagerTest: DatabaseTest() {
         val resource = Resource(ResourceId("invalid"), "pid", EntryId("eid"), 1, "file1.txt", "txt", ResourceType.UPLOAD, 12L, 1234)
         val updated = resourceManager.updateResource(resource)
         assertThat(updated).isNull()
+    }
+
+    @Test
+    fun testUpdateResourceRollbackWhenFileMissing() {
+        val entryId = EntryId("eid")
+        val data = byteArrayOf(1,2,3,4,5)
+        val data2 = byteArrayOf(6,7,8,9,10)
+        val resource = resourceManager.saveUploadedResource(entryId, "content.txt", data.inputStream())
+        val resource2 = resourceManager.saveUploadedResource(entryId, "content.txt", data2.inputStream())
+
+        val missingPath = resourceManager.constructPath(entryId, ResourceId("${resource2.id}.${resource2.extension}"))
+        Files.deleteIfExists(missingPath)
+
+        assertThrows<IllegalStateException> {
+            resourceManager.updateResource(resource.copy(name = "updated.xml"))
+        }
+
+        val originalPath = resourceManager.constructPath(entryId, ResourceId("${resource.id}.${resource.extension}"))
+        val movedPath = resourceManager.constructPath(entryId, ResourceId("${resource.id}.xml"))
+        assertThat(Files.exists(originalPath)).isTrue()
+        assertThat(Files.exists(movedPath)).isFalse()
     }
 
     @Test

@@ -13,7 +13,6 @@ import lynks.common.page.Page
 import lynks.common.page.PageRequest
 import lynks.common.page.SortDirection
 import lynks.notify.pushover.PushoverClient
-import lynks.user.UserService
 import lynks.util.JsonMapper.defaultMapper
 import lynks.util.findColumn
 import lynks.util.loggerFor
@@ -28,7 +27,7 @@ import org.jetbrains.exposed.v1.jdbc.update
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.max
 
-class NotifyService(private val userService: UserService, private val pushoverClient: PushoverClient) {
+class NotifyService(private val pushoverClient: PushoverClient) {
 
     private val log = loggerFor<NotifyService>()
     private val webNotifiers = ConcurrentHashMap.newKeySet<SendChannel<Frame>>()
@@ -108,14 +107,22 @@ class NotifyService(private val userService: UserService, private val pushoverCl
     @OptIn(DelicateCoroutinesApi::class)
     suspend fun sendWebNotification(notification: Notification) {
         log.info("Sending web ${notification.type} notification: ${notification.message}")
-        webNotifiers.forEach {
-            if (it.isClosedForSend) {
-                log.warn("Notifier is closed for sending, removing from pool")
-                webNotifiers.remove(it)
-            } else {
-                val payload = defaultMapper.writeValueAsString(notification)
-                it.send(Frame.Text(payload))
+        val payload = defaultMapper.writeValueAsString(notification)
+        val toRemove = mutableListOf<SendChannel<Frame>>()
+        for (channel in webNotifiers) {
+            if (channel.isClosedForSend) {
+                toRemove += channel
+                continue
             }
+            val result = runCatching { channel.send(Frame.Text(payload)) }
+            if (result.isFailure) {
+                log.warn("Failed to send web notification, removing notifier", result.exceptionOrNull())
+                toRemove += channel
+            }
+        }
+        toRemove.forEach {
+            webNotifiers.remove(it)
+            runCatching { it.close() }
         }
     }
 

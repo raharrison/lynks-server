@@ -6,7 +6,7 @@ import org.jetbrains.exposed.v1.core.Table
 
 object Notifications : Table("NOTIFICATION") {
     val notificationId = varchar("ID", UID_LENGTH)
-    val notificationType = enumerationByName<NotificationType>("TYPE", 16)
+    val notificationType = enumeration<NotificationType>("TYPE")
     val message = varchar("MESSAGE", 255)
     val read = bool("READ")
     val entryId = varchar("ENTRY_ID", UID_LENGTH).references(Entries.id, ReferenceOption.CASCADE).nullable()

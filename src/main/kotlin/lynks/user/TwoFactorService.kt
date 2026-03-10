@@ -8,6 +8,7 @@ import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.jetbrains.exposed.v1.jdbc.update
+import java.util.*
 
 class TwoFactorService {
 
@@ -22,7 +23,10 @@ class TwoFactorService {
         }
         val gen = GoogleAuthenticator(secret.toByteArray())
         log.info("Validating totp code for user={}", username)
-        return if(gen.generate() == code) AuthResult.SUCCESS else AuthResult.INVALID_CREDENTIALS
+        val now = System.currentTimeMillis()
+        val window = 30_000L
+        val valid = gen.generate(Date(now - window)) == code || gen.generate(Date(now)) == code || gen.generate(Date(now + window)) == code
+        return if (valid) AuthResult.SUCCESS else AuthResult.INVALID_CREDENTIALS
     }
 
     fun getTwoFactorSecret(username: String): String? = transaction {

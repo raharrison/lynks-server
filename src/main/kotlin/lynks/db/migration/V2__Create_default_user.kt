@@ -34,6 +34,7 @@ class V2__Create_default_user : BaseJavaMigration() {
                 it[this.password] = password
                 it[this.dateCreated] = currentTime
                 it[this.dateUpdated] = currentTime
+                it[this.activated] = true
             }
         }
         log.info("Default user with name '{}' created", username)

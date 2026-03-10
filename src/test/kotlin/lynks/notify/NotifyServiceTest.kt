@@ -17,7 +17,6 @@ import lynks.notify.NewNotification.Companion.error
 import lynks.notify.NewNotification.Companion.processed
 import lynks.notify.NewNotification.Companion.reminder
 import lynks.notify.pushover.PushoverClient
-import lynks.user.UserService
 import lynks.util.createDummyEntry
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -27,7 +26,7 @@ import org.junit.jupiter.api.Test
 class NotifyServiceTest: DatabaseTest() {
 
     private val pushoverClient = mockk<PushoverClient>()
-    private val notifyService = NotifyService(UserService(mockk()), pushoverClient)
+    private val notifyService = NotifyService(pushoverClient)
 
     @BeforeEach
     fun setup() {

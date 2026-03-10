@@ -11,8 +11,6 @@ import kotlin.io.path.name
 
 object FileUtils {
 
-    private val sha256Digest = MessageDigest.getInstance("SHA-256")
-
     fun writeToFile(path: Path, data: ByteArray) {
         val parentPath = path.parent
         if (!Files.exists(parentPath))
@@ -35,7 +33,7 @@ object FileUtils {
     }
 
     fun createTempFileName(src: String): String {
-        return BigInteger(1, sha256Digest.digest(src.toByteArray()))
+        return BigInteger(1, MessageDigest.getInstance("SHA-256").digest(src.toByteArray()))
             .toString(16).padStart(32, '0')
     }
 

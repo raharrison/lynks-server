@@ -69,6 +69,7 @@ class YoutubeSubtitleTaskTest {
         every { linkService.get(link.id) } returns link
         every { linkService.updateSearchableContent(link.id, any()) } returns "updated content"
         coEvery { resourceRetriever.getFileResult(any()) } returns Result.Success(byteArrayOf(1, 2, 3))
+        every { resourceManager.deleteTempFiles(link.id.value) } just Runs
 
         val subtitleFile = Path.of(this.javaClass.getResource("/subtitles.en.ttml").toURI())
         val commandResult = """
@@ -132,6 +133,7 @@ class YoutubeSubtitleTaskTest {
 
         every { linkService.get(link.id) } returns link
         every { resourceManager.constructTempBasePath(link.id.value) } returns Paths.get(link.id.value)
+        every { resourceManager.deleteTempFiles(link.id.value) } just Runs
 
         mockkObject(ExecUtils)
 
@@ -154,6 +156,7 @@ class YoutubeSubtitleTaskTest {
         every { linkService.get(link.id) } returns link
         coEvery { resourceRetriever.getFileResult(any()) } returns Result.Success(byteArrayOf(1, 2, 3))
         every { resourceManager.constructTempBasePath(link.id.value) } returns Paths.get(link.id.value)
+        every { resourceManager.deleteTempFiles(link.id.value) } just Runs
         mockkObject(ExecUtils)
 
         every { ExecUtils.executeCommand(any()) } returns Result.Success("invalid")

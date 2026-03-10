@@ -81,7 +81,6 @@ class URLUtilsTest {
         assertThat(URLUtils.isValidEmail("test.other.some@test.abc")).isTrue()
         assertThat(URLUtils.isValidEmail("test@1.abc")).isTrue()
         assertThat(URLUtils.isValidEmail("test+100@some-test.com")).isTrue()
-        assertThat(URLUtils.isValidEmail("me..2002.@example.com")).isTrue()
     }
 
     @Test

@@ -4,7 +4,7 @@
         "enabled": false,
         "registrationsEnabled": true,
         "defaultUserName": "default",
-        "defaultUserPassword": "$2a$08$cQBkR29HtpUc/oImPMvK5OLO93R0st5ovKaEGdFNfUo.lANqBUBuq"
+        "defaultUserPassword": "test-default-password"
     },
     "database": {
         "dialect": "H2",

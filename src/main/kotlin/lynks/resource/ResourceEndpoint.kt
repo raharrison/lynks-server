@@ -12,7 +12,6 @@ import kotlinx.io.readByteArray
 import lynks.common.*
 import lynks.common.exception.InvalidModelException
 import lynks.util.FileUtils
-import lynks.util.HashUtils
 import java.io.File
 import java.time.LocalDate
 import java.time.temporal.TemporalAdjusters
@@ -34,15 +33,18 @@ fun Route.resource(resourceManager: ResourceManager) {
         var fileName: String? = null
 
         multipart.forEachPart { part ->
-            when (part) {
-                is PartData.FileItem -> {
-                    fileName = part.originalFileName
-                    fileBytes = part.provider()
-                        .readRemaining()
-                        .readByteArray()
-                    part.dispose()
+            try {
+                when (part) {
+                    is PartData.FileItem -> {
+                        fileName = part.originalFileName
+                        fileBytes = part.provider()
+                            .readRemaining()
+                            .readByteArray()
+                    }
+                    else -> Unit
                 }
-                else -> part.dispose()
+            } finally {
+                part.dispose()
             }
         }
 
@@ -118,7 +120,7 @@ fun Route.resource(resourceManager: ResourceManager) {
             if (res != null) {
                 call.response.header(HttpHeaders.ContentDisposition, "inline; filename=\"${res.first.name}\"")
                 call.response.header(HttpHeaders.Expires, cacheExpiresAge)
-                call.response.header(HttpHeaders.ETag, HashUtils.sha1Hash(res.first.dateCreated.toString()))
+                call.response.header(HttpHeaders.ETag, res.first.dateCreated.toString())
                 call.respondFile(res.second)
             } else call.respond(HttpStatusCode.NotFound)
         }
@@ -128,11 +130,16 @@ fun Route.resource(resourceManager: ResourceManager) {
             val multipart = call.receiveMultipart()
             var res: Resource? = null
             multipart.forEachPart { part ->
-                if (part is PartData.FileItem) {
-                    val name = part.originalFileName ?: throw InvalidModelException("Missing fileName")
-                    res = resourceManager.saveUploadedResource(entryId, name, part.provider().toInputStream())
+                try {
+                    if (part is PartData.FileItem) {
+                        val name = part.originalFileName ?: throw InvalidModelException("Missing fileName")
+                        part.provider().toInputStream().use { input ->
+                            res = resourceManager.saveUploadedResource(entryId, name, input)
+                        }
+                    }
+                } finally {
+                    part.dispose()
                 }
-                part.dispose()
             }
             if (res == null) throw InvalidModelException()
             else call.respond(HttpStatusCode.Created, res)

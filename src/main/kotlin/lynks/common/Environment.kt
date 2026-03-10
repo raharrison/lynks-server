@@ -26,7 +26,8 @@ object Environment {
     private object AuthSpec : ConfigSpec("auth") {
         val enabled by required<Boolean>(description = "protect all endpoints to be accessible only to authorized users")
         val registrationsEnabled by optional(default = false, description = "if new users can be registered (still requiring activation)")
-        val signingKey by optional<String?>(null, description = "key (32 chars) used to sign and encrypt session cookies, should be kept secret")
+        val signingKey by optional<String?>(null, description = "key (32 chars) used to sign session cookies, should be kept secret")
+        val encryptionKey by optional<String?>(null, description = "key (16+ chars) used to encrypt session cookies, should be kept secret and different from signingKey")
         val defaultUserName by optional("user", description = "username for default auto-created user")
         val defaultUserPassword by optional<String?>(null, description = "password raw text or bcrypt hash for auto-created user")
     }
@@ -35,6 +36,7 @@ object Environment {
         val enabled: Boolean = config[AuthSpec.enabled],
         val registrationsEnabled: Boolean = config[AuthSpec.registrationsEnabled],
         val signingKey: String? = config[AuthSpec.signingKey],
+        val encryptionKey: String? = config[AuthSpec.encryptionKey],
         val defaultUserName: String = config[AuthSpec.defaultUserName],
         val defaultUserPassword: String? = config[AuthSpec.defaultUserPassword]
     )

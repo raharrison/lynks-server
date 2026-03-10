@@ -80,10 +80,7 @@ class EntryService(
     private fun runPostgresSearchQuery(conn: Connection, term: String, page: PageRequest): Page<SlimEntry> {
         val columns = slimColumnSet + Entries.type
         val columnSelect = columns.joinToString(", ") { (it as Column<*>).name }
-        val andWhere = if (page.source != null) {
-            val matchOp = if (page.source.contains("%")) "LIKE" else "="
-            " AND ${Entries.src.name} $matchOp ${page.source.lowercase()}"
-        } else ""
+        val andWhere = if (page.source != null) " AND ${Entries.src.name} LIKE ?" else ""
         val baseSql = """
                     FROM ${Entries.tableName}, websearch_to_tsquery('english', ?) query_ts
                     WHERE TS_DOC @@ query_ts $andWhere
@@ -105,6 +102,7 @@ class EntryService(
 
         val entries = conn.prepareStatement(searchSql).use { prep ->
             prep.setString(1, term)
+            if (page.source != null) prep.setString(2, page.source)
             prep.executeQuery().use { set ->
                 val fieldMap = columns.mapIndexed { index, expression -> expression to index }.toMap()
                 val resultRows = mutableListOf<ResultRow>()
@@ -120,6 +118,7 @@ class EntryService(
                 """.trimIndent()
         val count = conn.prepareStatement(countSql).use { prep ->
             prep.setString(1, term)
+            if (page.source != null) prep.setString(2, page.source)
             prep.executeQuery().use { set ->
                 set.next()
                 set.getLong(1)

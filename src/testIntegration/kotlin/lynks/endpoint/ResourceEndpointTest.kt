@@ -11,6 +11,7 @@ import lynks.util.createDummyEntry
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import java.nio.file.Paths
 
 class ResourceEndpointTest : ServerTest() {
 
@@ -93,6 +94,24 @@ class ResourceEndpointTest : ServerTest() {
         post("/entry/{entryId}/resource", "e1")
                 .then()
                 .statusCode(500)
+    }
+
+    @Test
+    fun testCreateResourceInvalidEntryRollsBack() {
+        val filename = "attachment.txt"
+        val content = byteArrayOf(1, 2, 3)
+        given()
+            .multiPart("file", filename, content)
+            .When()
+            .post("/entry/{entryId}/resource", "missing")
+            .then()
+            .statusCode(500)
+
+        val entryId = "missing"
+        val firstDir = entryId.substring(0, 1)
+        val secondDir = entryId.substring(0, 2)
+        val entryDir = Paths.get(Environment.resource.resourceBasePath, firstDir, secondDir, entryId).toFile()
+        assertThat(entryDir.exists()).isFalse()
     }
 
     @Test

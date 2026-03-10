@@ -1,16 +1,16 @@
 val ktorVersion = "3.4.0"
 
 val h2Version = "2.4.240"
-val postgresVersion = "42.7.0"
+val postgresVersion = "42.7.9"
 val exposedVersion = "1.0.0"
 val hikariVersion = "7.0.2"
 val flywayVersion = "11.19.0"
 
 val flexmarkVersion = "0.64.8"
-val handlebarsVersion = "4.3.1"
-val commonsEmailVersion = "1.5"
+val handlebarsVersion = "4.5.0"
+val commonsEmailVersion = "1.6.0"
 val bcryptVersion = "0.10.2"
-val totpVersion = "2.4.0"
+val totpVersion = "2.4.1"
 val logbackVersion = "1.5.25"
 val konfVersion = "0.0.8"
 val commonslangVersion = "3.14.0"
@@ -21,11 +21,11 @@ val restAssuredVersion = "6.0.0"
 val junitVersion = "5.10.1"
 val assertjVersion = "3.27.3"
 val mockkVersion = "1.14.9"
-val wiremockVersion = "3.0.1"
+val wiremockVersion = "3.13.2"
 
 plugins {
     application
-    kotlin("jvm") version "2.3.0"
+    kotlin("jvm") version "2.3.10"
     id("org.jetbrains.kotlinx.kover") version "0.9.4"
 }
 
@@ -138,6 +138,6 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter-api:$junitVersion")
     testImplementation("org.assertj:assertj-core:$assertjVersion")
     testImplementation("io.mockk:mockk:$mockkVersion")
-    testImplementation("com.github.tomakehurst:wiremock-jre8:$wiremockVersion")
+    testImplementation("org.wiremock:wiremock:$wiremockVersion")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:$junitVersion")
 }

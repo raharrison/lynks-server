@@ -11,7 +11,7 @@ object Resources : Table("RESOURCE") {
     val currentVersion = integer("CURRENT_VERSION")
     val fileName = varchar("FILENAME", 255)
     val extension = varchar("EXTENSION", 4)
-    val type = enumerationByName<ResourceType>("TYPE", 16)
+    val type = enumeration<ResourceType>("TYPE")
     val dateCreated = long("DATE_CREATED")
     val dateUpdated = long("DATE_UPDATED")
     override val primaryKey = PrimaryKey(id)
