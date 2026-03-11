@@ -4,10 +4,16 @@ class ServiceProvider {
 
     class ServiceEntry<T : Any>(val clazz: Class<out T>, val value: T)
 
-    val services = mutableListOf<ServiceEntry<*>>()
+    private val services = mutableListOf<ServiceEntry<*>>()
+    private var sealed = false
 
-    inline fun <reified T : Any> register(t: T) {
-        services.add(ServiceEntry(t::class.java, t))
+    fun seal() {
+        sealed = true
+    }
+
+    fun <T : Any> register(t: T) {
+        check(!sealed) { "ServiceProvider is sealed; cannot register ${t.javaClass.name} after startup" }
+        services.add(ServiceEntry(t.javaClass, t))
     }
 
     inline fun <reified T: Any> get() : T {

@@ -2,7 +2,7 @@ val ktorVersion = "3.4.0"
 
 val h2Version = "2.4.240"
 val postgresVersion = "42.7.9"
-val exposedVersion = "1.0.0"
+val exposedVersion = "1.1.1"
 val hikariVersion = "7.0.2"
 val flywayVersion = "11.19.0"
 

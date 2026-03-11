@@ -53,7 +53,6 @@ class DatabaseFactory {
         config.jdbcUrl = Environment.database.url
         config.username = Environment.database.user
         config.password = Environment.database.password
-        config.maximumPoolSize = 3
         config.isAutoCommit = false
         config.transactionIsolation = "TRANSACTION_REPEATABLE_READ"
         config.validate()

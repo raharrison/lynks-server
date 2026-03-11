@@ -6,6 +6,7 @@ import lynks.common.EntryId
 import lynks.common.EntryType
 import lynks.common.ReminderId
 import lynks.common.ServerTest
+import lynks.common.page.Page
 import lynks.notify.NotificationMethod
 import lynks.reminder.*
 import lynks.util.createDummyEntry
@@ -26,10 +27,13 @@ class ReminderEndpointTest : ServerTest() {
 
     @Test
     fun testGetAllReminders() {
-        val reminders = get("/reminder")
+        val page = get("/reminder")
                 .then()
                 .statusCode(200)
-                .extract().to<List<*>>()
+                .extract().to<Page<*>>()
+        assertThat(page.total).isEqualTo(1)
+        assertThat(page.page).isEqualTo(1)
+        val reminders = page.content
         assertThat(reminders).hasSize(1)
         assertThat(reminders).extracting("reminderId").containsOnly("r1")
         assertThat(reminders).extracting("entryId").containsOnly("e1")
@@ -40,6 +44,24 @@ class ReminderEndpointTest : ServerTest() {
         assertThat(reminders).extracting("status").containsOnly(ReminderStatus.ACTIVE.name.lowercase())
         assertThat(reminders).extracting("dateCreated").doesNotContainNull()
         assertThat(reminders).extracting("dateUpdated").doesNotContainNull()
+    }
+
+    @Test
+    fun testGetAllRemindersPaging() {
+        createDummyReminder("r2", "e1", ReminderType.RECURRING, listOf(NotificationMethod.EMAIL),
+            "msg2", "every day 09:00", status = ReminderStatus.DISABLED)
+        val page1 = given()
+                .queryParam("page", 1)
+                .queryParam("size", 1)
+                .When()
+                .get("/reminder")
+                .then()
+                .statusCode(200)
+                .extract().to<Page<*>>()
+        assertThat(page1.total).isEqualTo(2)
+        assertThat(page1.page).isEqualTo(1)
+        assertThat(page1.size).isEqualTo(1)
+        assertThat(page1.content).hasSize(1)
     }
 
     @Test
@@ -96,8 +118,8 @@ class ReminderEndpointTest : ServerTest() {
         val all = get("/reminder")
                 .then()
                 .statusCode(200)
-                .extract().to<List<Any>>()
-        assertThat(all).hasSize(2)
+                .extract().to<Page<*>>()
+        assertThat(all.total).isEqualTo(2)
     }
 
     @Test

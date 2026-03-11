@@ -56,17 +56,17 @@ class EntryService(
         Entries.starred, Entries.thumbnailId, Entries.read
     )
 
-    override fun toInsert(eId: EntryId, entry: NewEntry): BaseEntries.(UpdateBuilder<*>) -> Unit {
-        throw NotImplementedError()
-    }
+    @Deprecated("EntryService does not support insert/update via the generic path", level = DeprecationLevel.ERROR)
+    override fun toInsert(eId: EntryId, entry: NewEntry): BaseEntries.(UpdateBuilder<*>) -> Unit =
+        throw NotImplementedError("EntryService.toInsert is unreachable — use a type-specific service")
 
-    override fun toUpdate(entry: NewEntry): BaseEntries.(UpdateBuilder<*>) -> Unit {
-        throw NotImplementedError()
-    }
+    @Deprecated("EntryService does not support insert/update via the generic path", level = DeprecationLevel.ERROR)
+    override fun toUpdate(entry: NewEntry): BaseEntries.(UpdateBuilder<*>) -> Unit =
+        throw NotImplementedError("EntryService.toUpdate(NewEntry) is unreachable — use a type-specific service")
 
-    override fun toUpdate(entry: Entry): BaseEntries.(UpdateBuilder<*>) -> Unit {
-        throw NotImplementedError()
-    }
+    @Deprecated("EntryService does not support insert/update via the generic path", level = DeprecationLevel.ERROR)
+    override fun toUpdate(entry: Entry): BaseEntries.(UpdateBuilder<*>) -> Unit =
+        throw NotImplementedError("EntryService.toUpdate(Entry) is unreachable — use a type-specific service")
 
     fun search(term: String, page: PageRequest = DefaultPageRequest): Page<SlimEntry> = transaction {
         val conn = (TransactionManager.current().connection as JdbcConnectionImpl).connection

@@ -135,6 +135,24 @@ class LinkEndpointTest: ServerTest() {
     }
 
     @Test
+    fun testUpdateLinkWithInvalidUrl() {
+        val updatedLink = NewLink(EntryId("e3"), "title3", "not-a-valid-url", emptyList(), emptyList(), false)
+        given()
+                .contentType(ContentType.JSON)
+                .body(updatedLink)
+                .When()
+                .put("/link")
+                .then()
+                .statusCode(400)
+        // original link should be unchanged
+        val original = get("/link/{id}", "e3")
+                .then()
+                .statusCode(200)
+                .extract().to<Link>()
+        assertThat(original.url).isEqualTo("content3")
+    }
+
+    @Test
     fun testUpdateLinkReturnsNotFound() {
         val updatedLink = NewLink(EntryId("invalid"), "title2", "gmail.com")
         given()

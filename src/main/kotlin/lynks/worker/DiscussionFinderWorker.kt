@@ -54,6 +54,7 @@ class DiscussionFinderWorker(
     private val redditLink = Regex("reddit\\.com/r/.+/comments/.+/.+")
 
     private suspend fun checkLastRunTime(input: DiscussionFinderWorkerRequest) {
+        if (input.intervalIndex < 0) return
         val lastRun = getLastRunTime(input) ?: return
         val now = System.currentTimeMillis()
         val minsSinceLastRun = (now - lastRun) / 1000 / 60
@@ -67,6 +68,7 @@ class DiscussionFinderWorker(
 
     private suspend fun findDiscussions(linkId: EntryId, initialIntervalIndex: Int) {
         var intervalIndex = initialIntervalIndex
+        var previousDiscussionCount = -1
 
         while (true) {
             val link = linkService.get(linkId) ?: break
@@ -98,8 +100,8 @@ class DiscussionFinderWorker(
 
             intervalIndex++
             if (intervalIndex >= intervals.size) {
-                // would break but more discussions found
-                if (current.size != discussions.size && discussions.isNotEmpty()) {
+                // would break but more discussions found since last iteration
+                if (previousDiscussionCount >= 0 && discussions.size > previousDiscussionCount) {
                     log.info("Discussion finder for entry={} remaining active as more discussions found", link.id)
                     intervalIndex--
                 } else {
@@ -107,6 +109,7 @@ class DiscussionFinderWorker(
                     break
                 }
             }
+            previousDiscussionCount = discussions.size
 
             // update schedule
             updateSchedule(DiscussionFinderWorkerRequest(linkId, intervalIndex))

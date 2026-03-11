@@ -9,7 +9,6 @@
         <appender-ref ref="STDOUT"/>
     </root>
 
-    <logger name="Exposed" level="DEBUG" />
-    <logger name="ktor.application" level="TRACE" />
+<!--    <logger name="Exposed" level="DEBUG" />-->
 
 </configuration>

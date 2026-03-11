@@ -6,13 +6,14 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import lynks.common.ReminderId
 import lynks.common.exception.InvalidModelException
+import lynks.util.pageRequest
 
 fun Route.reminder(reminderService: ReminderService) {
 
     route("/reminder") {
 
         get {
-            call.respond(reminderService.getAllReminders())
+            call.respond(reminderService.getAllReminders(call.pageRequest()))
         }
 
         get("/{id}") {

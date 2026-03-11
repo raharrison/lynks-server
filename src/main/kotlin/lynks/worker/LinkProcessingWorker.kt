@@ -1,5 +1,6 @@
 package lynks.worker
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.coroutineScope
 import lynks.common.DEAD_LINK_PROP
@@ -84,6 +85,8 @@ class LinkProcessorWorker(
                 )
                 notifyService.create(NewNotification.processed(message, updatedLink.id))
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             log.error("Link processing worker failed for entry={}", link.id, e)
             // mark as dead if processing failed
@@ -161,6 +164,8 @@ class LinkProcessorWorker(
                     }
                 }
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             log.error("Link processing worker failed generating suggestion for url={}", url, e)
             deferred.completeExceptionally(e)
@@ -178,6 +183,8 @@ class LinkProcessorWorker(
                     }
                 }
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             log.error("Link processing worker detected dead link for url={}", url, e)
             deferred.complete(false)

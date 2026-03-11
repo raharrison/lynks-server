@@ -26,13 +26,13 @@ class GroupSetService(private val tagService: TagService, private val collection
     }
 
     fun matchWithContent(content: String?): GroupSet {
-        if(content == null) {
-            return GroupSet()
-        }
+        if (content == null) return GroupSet()
         val words = content.lowercase().split(" ").toSet()
+        val tagsByName = tagService.sequence().associateBy { it.name.lowercase() }
+        val collectionsByName = collectionService.sequence().associateBy { it.name.lowercase() }
         return GroupSet(
-            tagService.sequence().filter { words.contains(it.name.lowercase()) }.toList(),
-            collectionService.sequence().filter { words.contains(it.name.lowercase()) }.toList(),
+            words.mapNotNull { tagsByName[it] },
+            words.mapNotNull { collectionsByName[it] }
         )
     }
 

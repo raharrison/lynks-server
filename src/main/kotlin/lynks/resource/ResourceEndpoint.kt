@@ -115,7 +115,7 @@ fun Route.resource(resourceManager: ResourceManager) {
         get("/{id}") {
             val id = ResourceId(call.parameters["id"] ?: throw InvalidModelException("Missing id"))
             val res = resourceCache[id] ?: resourceManager.getResourceAsFile(id)?.also {
-                resourceCache[id] = it
+                resourceCache.putIfAbsent(id, it)
             }
             if (res != null) {
                 call.response.header(HttpHeaders.ContentDisposition, "inline; filename=\"${res.first.name}\"")

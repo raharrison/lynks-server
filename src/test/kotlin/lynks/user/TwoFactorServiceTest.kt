@@ -7,6 +7,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import java.util.*
 
 class TwoFactorServiceTest : DatabaseTest() {
 
@@ -42,6 +43,19 @@ class TwoFactorServiceTest : DatabaseTest() {
     fun testGetTwoFactorSecretNotEnabled() {
         assertThat(twoFactorService.getTwoFactorSecret("invalid")).isNull()
         assertThat(twoFactorService.getTwoFactorSecret("user1")).isNull()
+    }
+
+    @Test
+    fun testValidateTotpAcceptsAdjacentWindows() {
+        twoFactorService.updateTwoFactorEnabled("user1", true)
+        val secret = twoFactorService.getTwoFactorSecret("user1") ?: fail("No secret defined")
+        val gen = GoogleAuthenticator(secret.toByteArray())
+        val window = 30_000L
+        val now = System.currentTimeMillis()
+        val prevCode = gen.generate(Date(now - window))
+        val nextCode = gen.generate(Date(now + window))
+        assertThat(twoFactorService.validateTotp("user1", prevCode)).isEqualTo(AuthResult.SUCCESS)
+        assertThat(twoFactorService.validateTotp("user1", nextCode)).isEqualTo(AuthResult.SUCCESS)
     }
 
     @Test

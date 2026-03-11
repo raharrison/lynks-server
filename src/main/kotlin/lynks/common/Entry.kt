@@ -29,14 +29,15 @@ abstract class BaseEntries(name: String) : Table(name) {
 object Entries : BaseEntries("ENTRY") {
     override val version = integer("VERSION").default(1)
     // as override to avoid cyclic foreign key issues between entries and resources
-    override val thumbnailId = varchar("THUMBNAIL_ID", UID_LENGTH).references(ResourceVersions.id, ReferenceOption.SET_NULL).nullable()
+    override val thumbnailId = varchar("THUMBNAIL_ID", UID_LENGTH).references(ResourceVersions.id, ReferenceOption.SET_NULL).nullable().index()
     override val primaryKey = PrimaryKey(id)
 }
 
 object EntryVersions : BaseEntries("ENTRY_VERSION") {
     override val version = integer("VERSION").default(1)
-    override val thumbnailId = varchar("THUMBNAIL_ID", UID_LENGTH).references(ResourceVersions.id, ReferenceOption.SET_NULL).nullable()
+    override val thumbnailId = varchar("THUMBNAIL_ID", UID_LENGTH).references(ResourceVersions.id, ReferenceOption.SET_NULL).nullable().index()
     override val primaryKey = PrimaryKey(id, version)
+    init { index(false, id) }
 }
 
 interface Entry : TypedIdEntity<EntryId> {

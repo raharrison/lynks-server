@@ -16,6 +16,7 @@ class WorkerRegistry {
             taskWorker = TaskRunnerWorker().worker()
             unreadDigestWorker = UnreadLinkDigestWorker(get(), get(), get()).worker()
             fileCleanupWorker = TempFileCleanupWorker().worker()
+            orphanCleanupWorker = OrphanResourceCleanupWorker().worker()
             reminderWorker = ReminderWorker(get(), get(), get()).worker()
             entryRefWorker = EntryRefWorker(get(), get(), get(), get()).worker()
         }
@@ -26,6 +27,7 @@ class WorkerRegistry {
     private lateinit var taskWorker: SendChannel<TaskRunnerRequest>
     private lateinit var unreadDigestWorker: SendChannel<String>
     private lateinit var fileCleanupWorker: SendChannel<TempFileCleanupWorkerRequest>
+    private lateinit var orphanCleanupWorker: SendChannel<OrphanResourceCleanupRequest>
     private lateinit var reminderWorker: SendChannel<ReminderWorkerRequest>
     private lateinit var entryRefWorker: SendChannel<EntryRefWorkerRequest>
 

@@ -15,13 +15,18 @@ class V2__Create_default_user : BaseJavaMigration() {
 
     override fun migrate(context: Context) {
         if (Environment.auth.defaultUserPassword == null) {
-            log.info("No default user password provided, not creating default user")
+            if (Environment.auth.enabled) {
+                log.warn("Auth is enabled but no defaultUserPassword configured — application will start with no users. Set auth.defaultUserPassword to create the initial user.")
+            } else {
+                log.info("No default user password provided, not creating default user")
+            }
             return
         }
 
         val username = Environment.auth.defaultUserName
         val passwordInput = Environment.auth.defaultUserPassword
-        val password = if (passwordInput.length == 60 && passwordInput.startsWith("\$2a\$08")) {
+        val bcryptPattern = Regex("""^\$2[abxy]\$\d{2}\$""")
+        val password = if (bcryptPattern.containsMatchIn(passwordInput)) {
             passwordInput // property is already a bcrypt hash
         } else {
             HashUtils.bcryptHash(passwordInput)

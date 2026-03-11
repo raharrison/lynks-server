@@ -2,6 +2,7 @@ package lynks.util
 
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import java.util.concurrent.Executors
 
 class FileUtilsTest {
 
@@ -11,6 +12,15 @@ class FileUtilsTest {
         val set = (0 until iterations).map { FileUtils.createTempFileName("src") }.toSet()
         assertThat(set).hasSize(1)
         set.forEach {assertThat(64).isEqualTo(it.length) }
+    }
+
+    @Test
+    fun testCreateTempFileNameConcurrency() {
+        val expected = FileUtils.createTempFileName("concurrent-test")
+        val pool = Executors.newFixedThreadPool(8)
+        val futures = (1..50).map { pool.submit<String> { FileUtils.createTempFileName("concurrent-test") } }
+        pool.shutdown()
+        assertThat(futures.map { it.get() }).allMatch { it == expected }
     }
 
     @Test

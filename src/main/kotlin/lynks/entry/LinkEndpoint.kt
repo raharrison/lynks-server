@@ -42,13 +42,11 @@ fun Route.link(linkService: LinkService) {
 
         put {
             val link = call.receive<NewLink>()
+            if (!checkLink(link)) throw InvalidModelException("Invalid URL")
             val newVersion = call.parameters["newVersion"]?.toBoolean() ?: true
             val updated = linkService.update(link, newVersion)
-            if (!checkLink(link)) throw InvalidModelException("Invalid URL")
-            else {
-                if (updated == null) call.respond(HttpStatusCode.NotFound)
-                else call.respond(HttpStatusCode.OK, updated)
-            }
+            if (updated == null) call.respond(HttpStatusCode.NotFound)
+            else call.respond(HttpStatusCode.OK, updated)
         }
 
         delete("/{id}") {

@@ -54,7 +54,6 @@ import lynks.worker.WorkerRegistry
 fun Application.module() {
     install(DefaultHeaders) {
         header("X-Content-Type-Options", "nosniff")
-        header("X-Frame-Options", "DENY")
         header("Referrer-Policy", "strict-origin-when-cross-origin")
     }
     install(XForwardedHeaders)
@@ -118,6 +117,7 @@ fun Application.module() {
         register(YoutubeDlRunner(get(), get(), get(), get()))
         register(TaskService(get(), this, get()))
         workerRegistry.init(this)
+        seal()
     }
 
     routing {
@@ -210,6 +210,6 @@ fun main() {
             host = "0.0.0.0"
             port = Environment.server.port
         })
-        responseWriteTimeoutSeconds = 30
+        responseWriteTimeoutSeconds = 120
     }, module = Application::module).start(true)
 }

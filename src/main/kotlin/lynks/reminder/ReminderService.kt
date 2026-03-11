@@ -6,6 +6,9 @@ import lynks.common.EntryId
 import lynks.common.ReminderId
 import lynks.common.exception.InvalidModelException
 import lynks.common.newReminderId
+import lynks.common.page.DefaultPageRequest
+import lynks.common.page.Page
+import lynks.common.page.PageRequest
 import lynks.notify.NotificationMethod
 import lynks.util.loggerFor
 import lynks.worker.CrudType
@@ -20,6 +23,7 @@ import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
+import kotlin.math.max
 
 class ReminderService(private val workerRegistry: WorkerRegistry) {
 
@@ -52,10 +56,17 @@ class ReminderService(private val workerRegistry: WorkerRegistry) {
             .map { toModel(it) }
     }
 
-    fun getAllReminders() = transaction {
-        Reminders.selectAll()
-            .orderBy(Reminders.dateUpdated, SortOrder.DESC)
-            .map { toModel(it) }
+    fun getAllReminders(pageRequest: PageRequest = DefaultPageRequest): Page<Reminder> = transaction {
+        val baseQuery = Reminders.selectAll()
+        Page.of(
+            baseQuery.copy()
+                .orderBy(Reminders.dateUpdated, SortOrder.DESC)
+                .limit(pageRequest.size)
+                .offset(max(0, (pageRequest.page - 1) * pageRequest.size))
+                .map { toModel(it) },
+            pageRequest,
+            baseQuery.count()
+        )
     }
 
     fun getAllActiveReminders() = transaction {

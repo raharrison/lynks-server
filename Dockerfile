@@ -1,4 +1,4 @@
-FROM gradle:8-jdk21 AS build
+FROM gradle:9-jdk25 AS build
 
 USER gradle
 WORKDIR /app
@@ -8,7 +8,7 @@ COPY src/ ./src
 
 RUN gradle installDist --no-daemon
 
-FROM eclipse-temurin:21-jre-jammy
+FROM eclipse-temurin:25-jre-noble
 
 RUN apt-get update \
     && apt-get install -y python3 ffmpeg \
