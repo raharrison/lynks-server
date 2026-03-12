@@ -11,6 +11,7 @@ import io.ktor.utils.io.jvm.javaio.*
 import kotlinx.io.readByteArray
 import lynks.common.*
 import lynks.common.exception.InvalidModelException
+import lynks.common.exception.NotFoundException
 import lynks.util.FileUtils
 import java.io.File
 import java.time.LocalDate
@@ -104,12 +105,9 @@ fun Route.resource(resourceManager: ResourceManager) {
 
         get("/{id}/info") {
             val id = ResourceId(call.parameters["id"] ?: throw InvalidModelException("Missing id"))
-            val resource = resourceManager.getResource(id)
-            if (resource == null) call.respond(HttpStatusCode.NotFound)
-            else {
-                call.response.header("X-Resource-Mime-Type", deriveMimeType(resource.name))
-                call.respond(resource)
-            }
+            val resource = resourceManager.getResource(id) ?: throw NotFoundException()
+            call.response.header("X-Resource-Mime-Type", deriveMimeType(resource.name))
+            call.respond(resource)
         }
 
         get("/{id}") {
@@ -117,12 +115,11 @@ fun Route.resource(resourceManager: ResourceManager) {
             val res = resourceCache[id] ?: resourceManager.getResourceAsFile(id)?.also {
                 resourceCache.putIfAbsent(id, it)
             }
-            if (res != null) {
-                call.response.header(HttpHeaders.ContentDisposition, "inline; filename=\"${res.first.name}\"")
-                call.response.header(HttpHeaders.Expires, cacheExpiresAge)
-                call.response.header(HttpHeaders.ETag, res.first.dateCreated.toString())
-                call.respondFile(res.second)
-            } else call.respond(HttpStatusCode.NotFound)
+            if (res == null) throw NotFoundException()
+            call.response.header(HttpHeaders.ContentDisposition, "inline; filename=\"${res.first.name}\"")
+            call.response.header(HttpHeaders.Expires, cacheExpiresAge)
+            call.response.header(HttpHeaders.ETag, res.first.dateCreated.toString())
+            call.respondFile(res.second)
         }
 
         post {
@@ -147,22 +144,16 @@ fun Route.resource(resourceManager: ResourceManager) {
 
         put {
             val resource = call.receive<Resource>()
-            val updated = resourceManager.updateResource(resource)
-            if (updated == null) call.respond(HttpStatusCode.NotFound)
-            else {
-                resourceCache.remove(updated.id)
-                call.respond(HttpStatusCode.OK, updated)
-            }
+            val updated = resourceManager.updateResource(resource) ?: throw NotFoundException()
+            resourceCache.remove(updated.id)
+            call.respond(HttpStatusCode.OK, updated)
         }
 
         delete("/{id}") {
             val id = ResourceId(call.parameters["id"] ?: throw InvalidModelException("Missing id"))
-            val removed = resourceManager.delete(id)
-            if (removed) {
-                resourceCache.remove(id)
-                call.respond(HttpStatusCode.OK)
-            }
-            else call.respond(HttpStatusCode.NotFound)
+            if (!resourceManager.delete(id)) throw NotFoundException()
+            resourceCache.remove(id)
+            call.respond(HttpStatusCode.OK)
         }
 
     }

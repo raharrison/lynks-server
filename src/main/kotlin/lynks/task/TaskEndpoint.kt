@@ -7,6 +7,7 @@ import io.ktor.server.routing.*
 import lynks.common.EntryId
 import lynks.common.TaskId
 import lynks.common.exception.InvalidModelException
+import lynks.common.exception.NotFoundException
 
 fun Route.task(taskService: TaskService) {
 
@@ -28,10 +29,8 @@ fun Route.task(taskService: TaskService) {
         val taskId = TaskId(call.parameters["id"] ?: throw InvalidModelException("Missing id"))
         val rawInput = call.receive(Map::class)
         val params = validateInputParams(rawInput)
-        if (taskService.runTask(entryId, taskId, params))
-            call.respond(HttpStatusCode.OK)
-        else
-            call.respond(HttpStatusCode.NotFound)
+        if (!taskService.runTask(entryId, taskId, params)) throw NotFoundException()
+        call.respond(HttpStatusCode.OK)
     }
 
 }

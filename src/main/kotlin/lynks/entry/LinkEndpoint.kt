@@ -7,6 +7,7 @@ import io.ktor.server.routing.*
 import lynks.common.EntryId
 import lynks.common.NewLink
 import lynks.common.exception.InvalidModelException
+import lynks.common.exception.NotFoundException
 import lynks.util.URLUtils
 import lynks.util.pageRequest
 
@@ -21,17 +22,15 @@ fun Route.link(linkService: LinkService) {
         }
 
         get("/{id}") {
-            val link = linkService.get(EntryId(call.parameters["id"] ?: throw InvalidModelException("Missing id")))
-            if (link == null) call.respond(HttpStatusCode.NotFound)
-            else call.respond(link)
+            val link = linkService.get(EntryId(call.parameters["id"] ?: throw InvalidModelException("Missing id"))) ?: throw NotFoundException()
+            call.respond(link)
         }
 
         get("/{id}/{version}") {
             val id = call.parameters["id"] ?: throw InvalidModelException("Missing id")
             val version = call.parameters["version"] ?: throw InvalidModelException("Missing version")
-            val link = linkService.get(EntryId(id), version.toInt())
-            if (link == null) call.respond(HttpStatusCode.NotFound)
-            else call.respond(link)
+            val link = linkService.get(EntryId(id), version.toInt()) ?: throw NotFoundException()
+            call.respond(link)
         }
 
         post {
@@ -44,44 +43,38 @@ fun Route.link(linkService: LinkService) {
             val link = call.receive<NewLink>()
             if (!checkLink(link)) throw InvalidModelException("Invalid URL")
             val newVersion = call.parameters["newVersion"]?.toBoolean() ?: true
-            val updated = linkService.update(link, newVersion)
-            if (updated == null) call.respond(HttpStatusCode.NotFound)
-            else call.respond(HttpStatusCode.OK, updated)
+            val updated = linkService.update(link, newVersion) ?: throw NotFoundException()
+            call.respond(HttpStatusCode.OK, updated)
         }
 
         delete("/{id}") {
-            val removed = linkService.delete(EntryId(call.parameters["id"] ?: throw InvalidModelException("Missing id")))
-            if (removed) call.respond(HttpStatusCode.OK)
-            else call.respond(HttpStatusCode.NotFound)
+            if (!linkService.delete(EntryId(call.parameters["id"] ?: throw InvalidModelException("Missing id")))) throw NotFoundException()
+            call.respond(HttpStatusCode.OK)
         }
 
         post("/{id}/read") {
             val id = call.parameters["id"] ?: throw InvalidModelException("Missing id")
-            val updated = linkService.read(EntryId(id), true)
-            if (updated == null) call.respond(HttpStatusCode.NotFound)
-            else call.respond(updated)
+            val updated = linkService.read(EntryId(id), true) ?: throw NotFoundException()
+            call.respond(updated)
         }
 
         post("/{id}/unread") {
             val id = call.parameters["id"] ?: throw InvalidModelException("Missing id")
-            val updated = linkService.read(EntryId(id), false)
-            if (updated == null) call.respond(HttpStatusCode.NotFound)
-            else call.respond(updated)
+            val updated = linkService.read(EntryId(id), false) ?: throw NotFoundException()
+            call.respond(updated)
         }
 
         post("/{id}/content") {
             val id = call.parameters["id"] ?: throw InvalidModelException("Missing id")
             val content = call.receive<String>()
-            val updatedContent = linkService.updateSearchableContent(EntryId(id), content)
-            if (updatedContent == null) call.respond(HttpStatusCode.NotFound)
-            else call.respond(mapOf("content" to updatedContent))
+            val updatedContent = linkService.updateSearchableContent(EntryId(id), content) ?: throw NotFoundException()
+            call.respond(mapOf("content" to updatedContent))
         }
 
         get("/{id}/launch") {
             val id = call.parameters["id"] ?: throw InvalidModelException("Missing id")
-            val read = linkService.read(EntryId(id), true)
-            if (read == null) call.respond(HttpStatusCode.NotFound)
-            else call.respondRedirect(read.url)
+            val read = linkService.read(EntryId(id), true) ?: throw NotFoundException()
+            call.respondRedirect(read.url)
         }
 
         post("/checkExisting") {

@@ -5,6 +5,7 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import lynks.common.exception.InvalidModelException
+import lynks.common.exception.NotFoundException
 
 fun Route.collection(collectionService: CollectionService) {
 
@@ -15,9 +16,8 @@ fun Route.collection(collectionService: CollectionService) {
         }
 
         get("/{id}") {
-            val collection = collectionService.get(call.parameters["id"] ?: throw InvalidModelException("Missing id"))
-            if (collection == null) call.respond(HttpStatusCode.NotFound)
-            else call.respond(collection)
+            val collection = collectionService.get(call.parameters["id"] ?: throw InvalidModelException("Missing id")) ?: throw NotFoundException()
+            call.respond(collection)
         }
 
         post {
@@ -27,16 +27,14 @@ fun Route.collection(collectionService: CollectionService) {
 
         put {
             val collection = call.receive<NewCollection>()
-            val updated = collectionService.update(collection)
-            if (updated == null) call.respond(HttpStatusCode.NotFound)
-            else call.respond(HttpStatusCode.OK, updated)
+            val updated = collectionService.update(collection) ?: throw NotFoundException()
+            call.respond(HttpStatusCode.OK, updated)
         }
 
         delete("/{id}") {
             val id = call.parameters["id"] ?: throw InvalidModelException("Missing id")
-            val removed = collectionService.delete(id)
-            if (removed) call.respond(HttpStatusCode.OK)
-            else call.respond(HttpStatusCode.NotFound)
+            if (!collectionService.delete(id)) throw NotFoundException()
+            call.respond(HttpStatusCode.OK)
         }
 
         post("/refresh") {

@@ -7,6 +7,7 @@ import io.ktor.server.routing.*
 import lynks.common.CommentId
 import lynks.common.EntryId
 import lynks.common.exception.InvalidModelException
+import lynks.common.exception.NotFoundException
 import lynks.util.pageRequest
 
 fun Route.comment(commentService: CommentService) {
@@ -22,9 +23,8 @@ fun Route.comment(commentService: CommentService) {
         get("/{id}") {
             val commentId = CommentId(call.parameters["id"] ?: throw InvalidModelException("Missing id"))
             val entryId = EntryId(call.parameters["entryId"] ?: throw InvalidModelException("Missing entryId"))
-            val comment = commentService.getComment(entryId, commentId)
-            if (comment == null) call.respond(HttpStatusCode.NotFound)
-            else call.respond(comment)
+            val comment = commentService.getComment(entryId, commentId) ?: throw NotFoundException()
+            call.respond(comment)
         }
 
         post {
@@ -36,17 +36,15 @@ fun Route.comment(commentService: CommentService) {
         put {
             val comment = call.receive<NewComment>()
             val entryId = EntryId(call.parameters["entryId"] ?: throw InvalidModelException("Missing entryId"))
-            val updated = commentService.updateComment(entryId, comment)
-            if (updated == null) call.respond(HttpStatusCode.NotFound)
-            else call.respond(HttpStatusCode.OK, updated)
+            val updated = commentService.updateComment(entryId, comment) ?: throw NotFoundException()
+            call.respond(HttpStatusCode.OK, updated)
         }
 
         delete("/{id}") {
             val commentId = CommentId(call.parameters["id"] ?: throw InvalidModelException("Missing id"))
             val entryId = EntryId(call.parameters["entryId"] ?: throw InvalidModelException("Missing entryId"))
-            val removed = commentService.deleteComment(entryId, commentId)
-            if (removed) call.respond(HttpStatusCode.OK)
-            else call.respond(HttpStatusCode.NotFound)
+            if (!commentService.deleteComment(entryId, commentId)) throw NotFoundException()
+            call.respond(HttpStatusCode.OK)
         }
 
     }

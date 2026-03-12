@@ -5,6 +5,7 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import lynks.common.exception.InvalidModelException
+import lynks.common.exception.NotFoundException
 
 fun Route.tag(tagService: TagService) {
 
@@ -15,9 +16,8 @@ fun Route.tag(tagService: TagService) {
         }
 
         get("/{id}") {
-            val tag = tagService.get(call.parameters["id"] ?: throw InvalidModelException("Missing id"))
-            if (tag == null) call.respond(HttpStatusCode.NotFound)
-            else call.respond(tag)
+            val tag = tagService.get(call.parameters["id"] ?: throw InvalidModelException("Missing id")) ?: throw NotFoundException()
+            call.respond(tag)
         }
 
         post {
@@ -27,16 +27,14 @@ fun Route.tag(tagService: TagService) {
 
         put {
             val tag = call.receive<NewTag>()
-            val updated = tagService.update(tag)
-            if (updated == null) call.respond(HttpStatusCode.NotFound)
-            else call.respond(HttpStatusCode.OK, updated)
+            val updated = tagService.update(tag) ?: throw NotFoundException()
+            call.respond(HttpStatusCode.OK, updated)
         }
 
         delete("/{id}") {
             val id = call.parameters["id"] ?: throw InvalidModelException("Missing id")
-            val removed = tagService.delete(id)
-            if (removed) call.respond(HttpStatusCode.OK)
-            else call.respond(HttpStatusCode.NotFound)
+            if (!tagService.delete(id)) throw NotFoundException()
+            call.respond(HttpStatusCode.OK)
         }
 
         post("/refresh") {

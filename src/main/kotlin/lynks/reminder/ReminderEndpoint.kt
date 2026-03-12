@@ -6,6 +6,7 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import lynks.common.ReminderId
 import lynks.common.exception.InvalidModelException
+import lynks.common.exception.NotFoundException
 import lynks.util.pageRequest
 
 fun Route.reminder(reminderService: ReminderService) {
@@ -18,9 +19,8 @@ fun Route.reminder(reminderService: ReminderService) {
 
         get("/{id}") {
             val id = call.parameters["id"] ?: throw InvalidModelException("Missing id")
-            val reminder = reminderService.get(ReminderId(id))
-            if (reminder == null) call.respond(HttpStatusCode.NotFound)
-            else call.respond(reminder)
+            val reminder = reminderService.get(ReminderId(id)) ?: throw NotFoundException()
+            call.respond(reminder)
         }
 
         post {
@@ -30,16 +30,14 @@ fun Route.reminder(reminderService: ReminderService) {
 
         put {
             val reminder = call.receive<NewReminder>()
-            val updated = reminderService.updateReminder(reminder)
-            if (updated == null) call.respond(HttpStatusCode.NotFound)
-            else call.respond(HttpStatusCode.OK, updated)
+            val updated = reminderService.updateReminder(reminder) ?: throw NotFoundException()
+            call.respond(HttpStatusCode.OK, updated)
         }
 
         delete("/{id}") {
             val id = call.parameters["id"] ?: throw InvalidModelException("Missing id")
-            val removed = reminderService.delete(ReminderId(id))
-            if (removed) call.respond(HttpStatusCode.OK)
-            else call.respond(HttpStatusCode.NotFound)
+            if (!reminderService.delete(ReminderId(id))) throw NotFoundException()
+            call.respond(HttpStatusCode.OK)
         }
 
         post("/validate") {

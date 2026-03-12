@@ -9,7 +9,6 @@ import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import io.ktor.server.plugins.callid.*
 import io.ktor.server.plugins.calllogging.*
-import io.ktor.server.plugins.compression.*
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.plugins.defaultheaders.*
 import io.ktor.server.plugins.forwardedheaders.*
@@ -21,12 +20,10 @@ import io.ktor.server.sessions.*
 import io.ktor.server.websocket.*
 import lynks.comment.CommentService
 import lynks.comment.comment
-import lynks.common.ConfigMode
-import lynks.common.Environment
-import lynks.common.MDC_REQUEST_ID
-import lynks.common.UserSession
+import lynks.common.*
 import lynks.common.endpoint.health
 import lynks.common.exception.InvalidModelException
+import lynks.common.exception.NotFoundException
 import lynks.common.inject.ServiceProvider
 import lynks.db.DatabaseFactory
 import lynks.entry.*
@@ -57,6 +54,7 @@ fun Application.module() {
         header("Referrer-Policy", "strict-origin-when-cross-origin")
     }
     install(XForwardedHeaders)
+    install(PartialContent)
     install(ContentNegotiation) {
         register(ContentType.Application.Json, JacksonConverter(defaultMapper))
     }
@@ -70,19 +68,16 @@ fun Application.module() {
         callIdMdc(MDC_REQUEST_ID)
     }
     install(StatusPages) {
-        exception<Throwable> { call, cause ->
-            if (cause is InvalidModelException) {
-                call.respond(HttpStatusCode.BadRequest, cause.message ?: "Bad Request Format")
-            } else {
-                call.application.log.error("Unhandled exception on ${call.request.local.method.value} ${call.request.local.uri}", cause)
-                call.respond(HttpStatusCode.InternalServerError)
-            }
+        exception<InvalidModelException> { call, cause ->
+            call.respond(HttpStatusCode.BadRequest, ErrorResponse(cause.message ?: "Bad request"))
         }
-    }
-
-    when (Environment.mode) {
-        ConfigMode.PROD -> installProdFeatures()
-        else -> Unit
+        exception<NotFoundException> { call, cause ->
+            call.respond(HttpStatusCode.NotFound, ErrorResponse(cause.message ?: "Not found"))
+        }
+        exception<Throwable> { call, cause ->
+            call.application.log.error("Unhandled exception on ${call.request.local.method.value} ${call.request.local.uri}", cause)
+            call.respond(HttpStatusCode.InternalServerError, ErrorResponse("Internal server error"))
+        }
     }
 
     if (Environment.auth.enabled) {
@@ -191,17 +186,10 @@ private fun Application.installAuth() {
         session<UserSession>("auth_session") {
             validate { session -> session }
             challenge {
-                call.respond(UnauthorizedResponse())
+                call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Unauthorized"))
             }
         }
     }
-}
-
-private fun Application.installProdFeatures() {
-    install(Compression) {
-        gzip()
-    }
-    install(PartialContent)
 }
 
 fun main() {

@@ -7,6 +7,7 @@ import io.ktor.server.routing.*
 import lynks.common.EntryId
 import lynks.common.NewSnippet
 import lynks.common.exception.InvalidModelException
+import lynks.common.exception.NotFoundException
 import lynks.util.pageRequest
 
 fun Route.snippet(snippetService: SnippetService) {
@@ -18,17 +19,15 @@ fun Route.snippet(snippetService: SnippetService) {
         }
 
         get("/{id}") {
-            val snippet = snippetService.get(EntryId(call.parameters["id"] ?: throw InvalidModelException("Missing id")))
-            if (snippet == null) call.respond(HttpStatusCode.NotFound)
-            else call.respond(snippet)
+            val snippet = snippetService.get(EntryId(call.parameters["id"] ?: throw InvalidModelException("Missing id"))) ?: throw NotFoundException()
+            call.respond(snippet)
         }
 
         get("/{id}/{version}") {
             val id = call.parameters["id"] ?: throw InvalidModelException("Missing id")
             val version = call.parameters["version"] ?: throw InvalidModelException("Missing version")
-            val snippet = snippetService.get(EntryId(id), version.toInt())
-            if (snippet == null) call.respond(HttpStatusCode.NotFound)
-            else call.respond(snippet)
+            val snippet = snippetService.get(EntryId(id), version.toInt()) ?: throw NotFoundException()
+            call.respond(snippet)
         }
 
         post {
@@ -39,15 +38,13 @@ fun Route.snippet(snippetService: SnippetService) {
         put {
             val snippet = call.receive<NewSnippet>()
             val newVersion = call.parameters["newVersion"]?.let { it.toBoolean() } ?: true
-            val updated = snippetService.update(snippet, newVersion)
-            if (updated == null) call.respond(HttpStatusCode.NotFound)
-            else call.respond(HttpStatusCode.OK, updated)
+            val updated = snippetService.update(snippet, newVersion) ?: throw NotFoundException()
+            call.respond(HttpStatusCode.OK, updated)
         }
 
         delete("/{id}") {
-            val removed = snippetService.delete(EntryId(call.parameters["id"] ?: throw InvalidModelException("Missing id")))
-            if (removed) call.respond(HttpStatusCode.OK)
-            else call.respond(HttpStatusCode.NotFound)
+            if (!snippetService.delete(EntryId(call.parameters["id"] ?: throw InvalidModelException("Missing id")))) throw NotFoundException()
+            call.respond(HttpStatusCode.OK)
         }
 
     }

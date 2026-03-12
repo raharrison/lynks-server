@@ -8,8 +8,10 @@ import io.ktor.server.routing.*
 import io.ktor.server.sessions.*
 import lynks.common.ConfigMode
 import lynks.common.Environment
+import lynks.common.ErrorResponse
 import lynks.common.UserSession
 import lynks.common.exception.InvalidModelException
+import lynks.common.exception.NotFoundException
 import lynks.util.URLUtils
 import lynks.util.isCallAuthorizedForUser
 import lynks.util.pageRequest
@@ -24,15 +26,15 @@ fun Route.userProtected(userService: UserService) {
                     Environment.auth.defaultUserName
                 }
                 else {
-                    return@get call.respond(UnauthorizedResponse())
+                    return@get call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Unauthorized"))
                 }
 
             if (call.isCallAuthorizedForUser(username)) {
                 val user = userService.getUser(username)
-                if (user == null) call.respond(UnauthorizedResponse())
+                if (user == null) call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Unauthorized"))
                 else call.respond(HttpStatusCode.OK, user)
             } else {
-                call.respond(UnauthorizedResponse())
+                call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Unauthorized"))
             }
         }
 
@@ -40,10 +42,10 @@ fun Route.userProtected(userService: UserService) {
             val username = call.parameters["id"] ?: throw InvalidModelException("Missing id")
             if (call.isCallAuthorizedForUser(username)) {
                 val user = userService.getUser(username)
-                if (user == null) call.respond(UnauthorizedResponse())
+                if (user == null) call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Unauthorized"))
                 else call.respond(HttpStatusCode.OK, user)
             } else {
-                call.respond(UnauthorizedResponse())
+                call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Unauthorized"))
             }
         }
 
@@ -52,9 +54,9 @@ fun Route.userProtected(userService: UserService) {
             if (call.isCallAuthorizedForUser(changeRequest.username)) {
                 val changed = userService.changePassword(changeRequest)
                 if (changed) call.respond(HttpStatusCode.OK)
-                else call.respond(HttpStatusCode.BadRequest, "Old password is not correct")
+                else call.respond(HttpStatusCode.BadRequest, ErrorResponse("Old password is not correct"))
             } else {
-                call.respond(UnauthorizedResponse())
+                call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Unauthorized"))
             }
         }
 
@@ -66,11 +68,10 @@ fun Route.userProtected(userService: UserService) {
                         throw InvalidModelException("Invalid email address")
                     }
                 }
-                val updated = userService.updateUser(user)
-                if (updated == null) call.respond(HttpStatusCode.NotFound)
-                else call.respond(HttpStatusCode.OK, updated)
+                val updated = userService.updateUser(user) ?: throw NotFoundException()
+                call.respond(HttpStatusCode.OK, updated)
             } else {
-                call.respond(UnauthorizedResponse())
+                call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Unauthorized"))
             }
         }
 
@@ -80,13 +81,13 @@ fun Route.userProtected(userService: UserService) {
                 Environment.auth.defaultUserName
             }
             else {
-                return@get call.respond(UnauthorizedResponse())
+                return@get call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Unauthorized"))
             }
             if (call.isCallAuthorizedForUser(username)) {
                 val page = call.pageRequest()
                 call.respond(userService.getUserActivityLog(page))
             } else {
-                call.respond(UnauthorizedResponse())
+                call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Unauthorized"))
             }
         }
 
@@ -116,7 +117,7 @@ fun Route.userUnprotected(userService: UserService) {
 
     post("/user/register") {
         if (!Environment.auth.registrationsEnabled) {
-            call.respond(HttpStatusCode.Forbidden)
+            call.respond(HttpStatusCode.Forbidden, ErrorResponse("Registrations disabled"))
             return@post
         }
         val registerRequest = call.receive<AuthRequest>()
