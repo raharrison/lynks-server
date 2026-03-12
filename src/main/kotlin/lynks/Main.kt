@@ -34,9 +34,7 @@ import lynks.notify.notify
 import lynks.notify.pushover.PushoverClient
 import lynks.reminder.ReminderService
 import lynks.reminder.reminder
-import lynks.resource.ResourceManager
-import lynks.resource.WebResourceRetriever
-import lynks.resource.resource
+import lynks.resource.*
 import lynks.suggest.SuggestionService
 import lynks.suggest.suggest
 import lynks.task.TaskService
@@ -94,7 +92,9 @@ fun Application.module() {
         register(UserService(get()))
         register(PushoverClient(get()))
         register(NotifyService(get()))
-        register(ResourceManager())
+        register(FileStore())
+        register(ResourceRepository())
+        register(ResourceManager(get(), get()))
         register(TagService())
         register(CollectionService())
         register(GroupSetService(get(), get()))

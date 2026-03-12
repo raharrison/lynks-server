@@ -13,7 +13,7 @@ import java.nio.file.Paths
 
 class ResourceManagerTest: DatabaseTest() {
 
-    private val resourceManager = ResourceManager()
+    private val resourceManager = ResourceManager(FileStore(), ResourceRepository())
 
     @AfterEach
     fun cleanUp() {

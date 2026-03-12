@@ -31,63 +31,58 @@ fun Route.resource(resourceManager: ResourceManager) {
         val multipart = call.receiveMultipart()
 
         var fileBytes: ByteArray? = null
-        var fileName: String? = null
+        var extension: String? = null
 
         multipart.forEachPart { part ->
             try {
-                when (part) {
-                    is PartData.FileItem -> {
-                        fileName = part.originalFileName
+                if (part is PartData.FileItem) {
+                    // Derive extension from content type first, fall back to filename
+                    val ctExt = when (part.contentType?.contentSubtype?.lowercase()) {
+                        "jpeg", "jpg" -> "jpg"
+                        "png"         -> "png"
+                        "gif"         -> "gif"
+                        "webp"        -> "webp"
+                        else          -> null
+                    }
+                    val nameExt = part.originalFileName
+                        ?.let { FileUtils.getExtension(it).lowercase() }
+                        ?.let { if (it == "jpeg") "jpg" else it }
+                    extension = ctExt ?: nameExt
+
+                    if (extension in ALLOWED_IMAGE_EXTENSIONS) {
+                        // Read at most MAX+1 bytes — if result exceeds MAX we reject below
                         fileBytes = part.provider()
-                            .readRemaining()
+                            .readRemaining(MAX_IMAGE_UPLOAD_BYTES.toLong() + 1)
                             .readByteArray()
                     }
-                    else -> Unit
                 }
             } finally {
                 part.dispose()
             }
         }
 
-        if (fileBytes == null || fileName == null) {
-            call.respond(
-                HttpStatusCode.BadRequest,
-                ImageUploadErrorResponse("noFileGiven")
-            )
+        val ext = extension ?: run {
+            call.respond(HttpStatusCode.BadRequest, ImageUploadErrorResponse("noFileGiven"))
+            return@post
+        }
+        val bytes = fileBytes ?: run {
+            call.respond(HttpStatusCode.BadRequest, ImageUploadErrorResponse("noFileGiven"))
             return@post
         }
 
-        val extension = FileUtils.getExtension(fileName ?: throw InvalidModelException("Missing fileName")).lowercase()
-        if (extension !in listOf("jpg", "jpeg", "png")) {
-            call.respond(
-                HttpStatusCode.UnsupportedMediaType,
-                ImageUploadErrorResponse("typeNotAllowed")
-            )
+        if (ext !in ALLOWED_IMAGE_EXTENSIONS) {
+            call.respond(HttpStatusCode.UnsupportedMediaType, ImageUploadErrorResponse("typeNotAllowed"))
             return@post
         }
 
-        if (fileBytes.size > MAX_IMAGE_UPLOAD_BYTES) {
-            call.respond(
-                HttpStatusCode.PayloadTooLarge,
-                ImageUploadErrorResponse("fileTooLarge")
-            )
+        if (bytes.size > MAX_IMAGE_UPLOAD_BYTES) {
+            call.respond(HttpStatusCode.PayloadTooLarge, ImageUploadErrorResponse("fileTooLarge"))
             return@post
         }
 
-        val file = resourceManager.saveTempFile(
-            IMAGE_UPLOAD_BASE,
-            fileBytes,
-            ResourceType.UPLOAD,
-            extension
-        )
-
-        val uploadFilePath =
-            "$TEMP_URL${resourceManager.constructTempUrlFromPath(file)}"
-
-        call.respond(
-            HttpStatusCode.OK,
-            ImageUploadResponse(ImageUploadFilePath(uploadFilePath))
-        )
+        val file = resourceManager.saveTempFile(IMAGE_UPLOAD_BASE, bytes, ResourceType.UPLOAD, ext)
+        val uploadFilePath = "$TEMP_URL${resourceManager.constructTempUrlFromPath(file)}"
+        call.respond(HttpStatusCode.OK, ImageUploadResponse(ImageUploadFilePath(uploadFilePath)))
     }
 
 

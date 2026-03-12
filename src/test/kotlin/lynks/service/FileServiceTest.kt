@@ -12,7 +12,9 @@ import lynks.entry.FileService
 import lynks.group.CollectionService
 import lynks.group.GroupSetService
 import lynks.group.TagService
+import lynks.resource.FileStore
 import lynks.resource.ResourceManager
+import lynks.resource.ResourceRepository
 import lynks.resource.ResourceType
 import lynks.util.createDummyCollection
 import lynks.util.createDummyTag
@@ -374,7 +376,7 @@ class FileServiceTest : DatabaseTest() {
     @Test
     fun testVersioning() {
         val added = fileService.add(newFile(EntryId("f1"), "filename"))
-        ResourceManager().saveGeneratedResource(ResourceId("r1"), added.id, "resource name", "jpg", ResourceType.SCREENSHOT, 11)
+        ResourceManager(FileStore(), ResourceRepository()).saveGeneratedResource(ResourceId("r1"), added.id, "resource name", "jpg", ResourceType.SCREENSHOT, 11)
         val version1 = fileService.get(added.id, 1)
         assertThat(added.version).isOne()
         assertThat(added).usingRecursiveComparison().ignoringFields("props").isEqualTo(version1)

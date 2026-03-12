@@ -12,9 +12,7 @@ import lynks.entry.NoteService
 import lynks.group.CollectionService
 import lynks.group.GroupSetService
 import lynks.group.TagService
-import lynks.resource.Resource
-import lynks.resource.ResourceManager
-import lynks.resource.ResourceType
+import lynks.resource.*
 import lynks.util.createDummyCollection
 import lynks.util.createDummyTag
 import lynks.util.markdown.MarkdownProcessor
@@ -441,7 +439,7 @@ class NoteServiceTest : DatabaseTest() {
     @Test
     fun testVersioning() {
         val added = noteService.add(newNote("n1", "some content"))
-        ResourceManager().saveGeneratedResource(ResourceId("r1"), added.id, "resource name", "jpg", ResourceType.SCREENSHOT, 11)
+        ResourceManager(FileStore(), ResourceRepository()).saveGeneratedResource(ResourceId("r1"), added.id, "resource name", "jpg", ResourceType.SCREENSHOT, 11)
         val version1 = noteService.get(added.id, 1)
         assertThat(added.version).isOne()
         assertThat(added).usingRecursiveComparison().ignoringFields("props").isEqualTo(version1)

@@ -7,10 +7,13 @@ const val UID_LENGTH = 14
 val TEMP_URL = "${Environment.server.rootPath}/temp/"
 
 // maximum size of image uploads
-const val MAX_IMAGE_UPLOAD_BYTES = 1024 * 1024 * 5 // 5MB
+const val MAX_IMAGE_UPLOAD_BYTES = 1024 * 1024 * 10 // 10MB
 
 // resource name for image uploads
 const val IMAGE_UPLOAD_BASE = "imageUpload"
+
+// allowed image upload extensions
+val ALLOWED_IMAGE_EXTENSIONS = setOf("jpg", "png", "gif", "webp")
 
 // property key to designate dead links
 const val DEAD_LINK_PROP = "dead"

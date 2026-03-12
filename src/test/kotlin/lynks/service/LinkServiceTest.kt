@@ -10,7 +10,9 @@ import lynks.entry.LinkService
 import lynks.group.CollectionService
 import lynks.group.GroupSetService
 import lynks.group.TagService
+import lynks.resource.FileStore
 import lynks.resource.ResourceManager
+import lynks.resource.ResourceRepository
 import lynks.resource.ResourceType
 import lynks.util.createDummyCollection
 import lynks.util.createDummyTag
@@ -25,7 +27,7 @@ class LinkServiceTest : DatabaseTest() {
     private val tagService = TagService()
     private val collectionService = CollectionService()
     private val groupSetService = GroupSetService(tagService, collectionService)
-    private val resourceManager = ResourceManager()
+    private val resourceManager = ResourceManager(FileStore(), ResourceRepository())
     private val workerRegistry = mockk<WorkerRegistry>()
     private val entryAuditService = mockk<EntryAuditService>(relaxUnitFun = true)
     private lateinit var linkService: LinkService

@@ -11,7 +11,9 @@ import lynks.group.TagService
 import lynks.notify.NotificationMethod
 import lynks.reminder.ReminderService
 import lynks.reminder.ReminderType
+import lynks.resource.FileStore
 import lynks.resource.ResourceManager
+import lynks.resource.ResourceRepository
 import lynks.resource.ResourceType
 import lynks.util.*
 import org.assertj.core.api.Assertions.assertThat
@@ -22,7 +24,7 @@ class CascadingDeleteTest: DatabaseTest() {
 
     private val tagService = TagService()
     private val collectionService = CollectionService()
-    private val resourceManager = ResourceManager()
+    private val resourceManager = ResourceManager(FileStore(), ResourceRepository())
     private val commentService = CommentService(mockk(relaxUnitFun = true), mockk())
     private val reminderService = ReminderService(mockk(relaxUnitFun = true))
     private val entryAuditService = EntryAuditService()
