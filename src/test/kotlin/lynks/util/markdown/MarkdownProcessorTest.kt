@@ -39,11 +39,11 @@ class MarkdownProcessorTest {
 
         assertConvertEqual(
             "link is @1234",
-            "<p>link is <a href=\"/entries/notes/1234\"><strong>@1234</strong></a></p>\n"
+            "<p>link is <a href=\"/notes/1234\"><strong>@1234</strong></a></p>\n"
         )
         assertConvertEqual(
             "link is @1234 and more",
-            "<p>link is <a href=\"/entries/notes/1234\"><strong>@1234</strong></a> and more</p>\n"
+            "<p>link is <a href=\"/notes/1234\"><strong>@1234</strong></a> and more</p>\n"
         )
 
         verify(exactly = 2) { entryService.get(EntryId("1234")) }

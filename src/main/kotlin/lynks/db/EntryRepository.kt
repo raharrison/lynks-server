@@ -65,26 +65,25 @@ abstract class EntryRepository<T : Entry, S : SlimEntry, U : NewEntry>(
     }
 
     private fun createPagedQuery(pageRequest: PageRequest): Pair<Query, Query> {
-        var table: ColumnSet = Entries
-
-        val tagTable = EntryGroups.alias("tags")
-        val collectionTable = EntryGroups.alias("collections")
-        if (pageRequest.tags.isNotEmpty()) {
-            table = table.innerJoin(tagTable, { Entries.id }, { tagTable[EntryGroups.entryId] })
-        }
-        if (pageRequest.collections.isNotEmpty()) {
-            table = table.innerJoin(collectionTable, { Entries.id }, { collectionTable[EntryGroups.entryId] })
-        }
-
         // slice to only query columns required for slim entry
-        var baseQuery = getBaseQuery(table).adjustSelect { select(slimColumnSet + Entries.type) }
+        var baseQuery = getBaseQuery(Entries).adjustSelect { select(slimColumnSet + Entries.type) }
         val subtrees = groupSetService.subtrees(pageRequest.tags, pageRequest.collections)
 
         if (subtrees.tags.isNotEmpty()) {
-            baseQuery = baseQuery.combine { tagTable[EntryGroups.groupId].inList(subtrees.tags.map { it.id }) }
+            val tagIds = subtrees.tags.map { it.id }
+            baseQuery = baseQuery.combine {
+                exists(EntryGroups.selectAll().where {
+                    (EntryGroups.entryId eq Entries.id) and (EntryGroups.groupId inList tagIds)
+                })
+            }
         }
         if (subtrees.collections.isNotEmpty()) {
-            baseQuery = baseQuery.combine { collectionTable[EntryGroups.groupId].inList(subtrees.collections.map { it.id }) }
+            val collectionIds = subtrees.collections.map { it.id }
+            baseQuery = baseQuery.combine {
+                exists(EntryGroups.selectAll().where {
+                    (EntryGroups.entryId eq Entries.id) and (EntryGroups.groupId inList collectionIds)
+                })
+            }
         }
         if (pageRequest.source != null) {
             // wildcard search to use like operator

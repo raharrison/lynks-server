@@ -22,7 +22,7 @@ internal class EntryLinkNodeRenderer(private val entryService: EntryService) : N
         if (entry == null) {
             html.srcPos(node.chars).text(node.chars)
         } else {
-            val href = "/entries/${entry.type.name.lowercase()}s/${node.text}"
+            val href = "/${entry.type.name.lowercase()}s/${node.text}"
             html.srcPos(node.chars).attr("href", href).withAttr().tag("a")
             html.raw("<strong>")
             html.text(node.chars)
