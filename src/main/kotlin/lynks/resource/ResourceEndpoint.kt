@@ -65,13 +65,14 @@ fun Route.resource(resourceManager: ResourceManager) {
             call.respond(HttpStatusCode.BadRequest, ImageUploadErrorResponse("noFileGiven"))
             return@post
         }
-        val bytes = fileBytes ?: run {
-            call.respond(HttpStatusCode.BadRequest, ImageUploadErrorResponse("noFileGiven"))
-            return@post
-        }
 
         if (ext !in ALLOWED_IMAGE_EXTENSIONS) {
             call.respond(HttpStatusCode.UnsupportedMediaType, ImageUploadErrorResponse("typeNotAllowed"))
+            return@post
+        }
+
+        val bytes = fileBytes ?: run {
+            call.respond(HttpStatusCode.BadRequest, ImageUploadErrorResponse("noFileGiven"))
             return@post
         }
 

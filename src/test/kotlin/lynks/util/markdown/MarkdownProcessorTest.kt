@@ -161,7 +161,7 @@ class MarkdownProcessorTest {
             every { resourceManager.migrateGeneratedResources(eid, any()) } returns resources
             val (replaced, markdown, html) = markdownProcessor.convertAndProcess(fullInput, eid)
             assertThat(replaced).isOne()
-            assertThat(markdown).isEqualTo("![desc](${Environment.server.rootPath}/entry/$eid/resource/rid)\n")
+            assertThat(markdown).isEqualTo("![desc](${Environment.server.rootPath}/entry/$eid/resource/rid)")
             assertThat(html).isEqualTo("<p><img src=\"/api/entry/eid/resource/rid\" alt=\"desc\" /></p>\n")
             verify(exactly = 1) { resourceManager.migrateGeneratedResources(eid, any()) }
         }

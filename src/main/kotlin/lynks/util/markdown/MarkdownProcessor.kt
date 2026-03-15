@@ -49,7 +49,7 @@ class MarkdownProcessor(private val resourceManager: ResourceManager, entryServi
         val doc = parser.parse(text)
         val visitor = TempImageMarkdownVisitor(entryId, resourceManager)
         visitor.replaceUrl(doc)
-        val markdown = formatter.render(doc)
+        val markdown = formatter.render(doc).trim()
         return Triple(visitor.visitedCount, markdown, renderer.render(doc))
     }
 

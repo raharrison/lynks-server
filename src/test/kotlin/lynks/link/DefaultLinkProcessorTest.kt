@@ -48,9 +48,9 @@ class DefaultLinkProcessorTest {
         processor.use {
             processor.init()
             val scrapedResources = processor.scrapeResources(ResourceType.linkBaseline())
-            assertThat(scrapedResources).hasSize(6)
+            assertThat(scrapedResources).hasSize(7)
             assertThat(scrapedResources).extracting("resourceType")
-                .containsOnly(SCREENSHOT, PREVIEW, THUMBNAIL, DOCUMENT, PAGE, READABLE_TEXT)
+                .containsOnly(SCREENSHOT, PREVIEW, THUMBNAIL, DOCUMENT, PAGE, READABLE_TEXT, SINGLE_FILE)
         }
         Unit
     }

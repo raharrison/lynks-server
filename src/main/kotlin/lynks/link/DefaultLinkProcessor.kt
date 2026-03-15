@@ -26,6 +26,7 @@ open class DefaultLinkProcessor(
         props.addTask("Generate Screenshot", LinkProcessingTask.build(ResourceType.SCREENSHOT))
         props.addTask("Generate Document", LinkProcessingTask.build(ResourceType.DOCUMENT))
         props.addTask("Generate Readable Page", LinkProcessingTask.build(ResourceType.READABLE_DOC))
+        props.addTask("Generate Single File", LinkProcessingTask.build(ResourceType.SINGLE_FILE))
         props.addTask("Generate Summary", LinkSummarizerTask.build())
     }
 

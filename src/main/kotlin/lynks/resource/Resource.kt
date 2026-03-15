@@ -47,9 +47,10 @@ enum class ResourceType {
     DOCUMENT, // full page PDF
     READABLE_DOC, // extracted formatted readable content
     READABLE_TEXT, // extracted text content only
-    GENERATED; // task created
+    GENERATED, // task created
+    SINGLE_FILE; // self-contained HTML with all assets inlined as data URIs
 
     companion object {
-        fun linkBaseline(): EnumSet<ResourceType> = EnumSet.of(SCREENSHOT, THUMBNAIL, PREVIEW, PAGE, DOCUMENT, READABLE_DOC, READABLE_TEXT)
+        fun linkBaseline(): EnumSet<ResourceType> = EnumSet.of(SCREENSHOT, THUMBNAIL, PREVIEW, PAGE, DOCUMENT, READABLE_DOC, READABLE_TEXT, SINGLE_FILE)
     }
 }

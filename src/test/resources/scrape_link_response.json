@@ -28,5 +28,10 @@
         "resourceType": "READABLE_TEXT",
         "targetPath": "/media/readable_text_1622149656774.txt",
         "extension": "txt"
+    },
+    {
+        "resourceType": "SINGLE_FILE",
+        "targetPath": "/media/single_file_1622149657000.html",
+        "extension": "html"
     }
 ]
