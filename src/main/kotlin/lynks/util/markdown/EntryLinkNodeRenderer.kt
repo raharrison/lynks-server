@@ -7,6 +7,9 @@ import com.vladsch.flexmark.html.renderer.NodeRendererFactory
 import com.vladsch.flexmark.html.renderer.NodeRenderingHandler
 import com.vladsch.flexmark.util.data.DataHolder
 import lynks.common.EntryId
+import lynks.common.Link
+import lynks.common.Note
+import lynks.common.Snippet
 import lynks.entry.EntryService
 
 internal class EntryLinkNodeRenderer(private val entryService: EntryService) : NodeRenderer {
@@ -18,14 +21,21 @@ internal class EntryLinkNodeRenderer(private val entryService: EntryService) : N
     }
 
     private fun render(node: EntryLinkNode, html: HtmlWriter) {
-        val entry = entryService.get(EntryId((node.text.toString())))
+        val entry = entryService.get(EntryId(node.text.toString()))
         if (entry == null) {
             html.srcPos(node.chars).text(node.chars)
         } else {
             val href = "/${entry.type.name.lowercase()}s/${node.text}"
+            val displayText = when (entry) {
+                is Note -> entry.title
+                is Link -> entry.title
+                is lynks.common.File -> entry.title
+                is Snippet -> "@${node.text}"
+                else -> "@${node.text}"
+            }
             html.srcPos(node.chars).attr("href", href).withAttr().tag("a")
             html.raw("<strong>")
-            html.text(node.chars)
+            html.text(displayText)
             html.raw("</strong>")
             html.tag("/a")
         }

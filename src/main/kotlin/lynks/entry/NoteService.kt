@@ -23,15 +23,6 @@ class NoteService(
     private val markdownProcessor: MarkdownProcessor
 ) : EntryRepository<Note, SlimNote, NewNote>(groupSetService, entryAuditService, resourceManager) {
 
-    override fun postprocess(eid: EntryId, entry: NewNote): Note {
-        val (replaced, markdown) = markdownProcessor.convertAndProcess(entry.plainText, eid)
-        if (replaced > 0) {
-            return update(entry.copy(id = eid, plainText = markdown), newVersion = false)
-                ?: throw IllegalStateException("Note ${eid.value} not found after markdown update")
-        }
-        return super.postprocess(eid, entry)
-    }
-
     override fun toModel(row: ResultRow, groups: GroupSet, table: BaseEntries): Note {
         return RowMapper.toNote(table, row, groups.tags, groups.collections)
     }
@@ -61,23 +52,29 @@ class NoteService(
         }
     }
 
-    override fun toInsert(eId: EntryId, entry: NewNote): BaseEntries.(UpdateBuilder<*>) -> Unit = {
+    override fun toInsert(eId: EntryId, entry: NewNote): BaseEntries.(UpdateBuilder<*>) -> Unit {
+        val (_, processedText, html) = markdownProcessor.convertAndProcess(entry.plainText, eId)
         val time = System.currentTimeMillis()
-        it[id] = eId.value
-        it[title] = entry.title
-        it[plainContent] = entry.plainText
-        it[content] = markdownProcessor.convertToMarkdown(entry.plainText)
-        it[src] = "me"
-        it[type] = EntryType.NOTE
-        it[dateCreated] = time
-        it[dateUpdated] = time
+        return {
+            it[id] = eId.value
+            it[title] = entry.title
+            it[plainContent] = processedText
+            it[content] = html
+            it[src] = "me"
+            it[type] = EntryType.NOTE
+            it[dateCreated] = time
+            it[dateUpdated] = time
+        }
     }
 
-    override fun toUpdate(entry: NewNote): BaseEntries.(UpdateBuilder<*>) -> Unit = {
-        it[title] = entry.title
-        it[plainContent] = entry.plainText
-        it[content] = markdownProcessor.convertToMarkdown(entry.plainText)
-        it[dateUpdated] = System.currentTimeMillis()
+    override fun toUpdate(entry: NewNote): BaseEntries.(UpdateBuilder<*>) -> Unit {
+        val (_, processedText, html) = markdownProcessor.convertAndProcess(entry.plainText, entry.id!!)
+        return {
+            it[title] = entry.title
+            it[plainContent] = processedText
+            it[content] = html
+            it[dateUpdated] = System.currentTimeMillis()
+        }
     }
 
     override fun toUpdate(entry: Note): BaseEntries.(UpdateBuilder<*>) -> Unit = {

@@ -336,4 +336,70 @@ class EntryEndpointTest : ServerTest() {
         assertThat(refSet.inbound).extracting("entryType").containsOnly(EntryType.NOTE)
     }
 
+    @Test
+    fun testResolveEmptyIds() {
+        val result = given()
+            .queryParam("ids", "")
+            .When()
+            .get("/entry/resolve")
+            .then()
+            .statusCode(200)
+            .extract().to<List<*>>()
+        assertThat(result).isEmpty()
+    }
+
+    @Test
+    fun testResolveSingleEntry() {
+        val result = given()
+            .queryParam("ids", "e2")
+            .When()
+            .get("/entry/resolve")
+            .then()
+            .statusCode(200)
+            .extract().to<List<*>>()
+        assertThat(result).hasSize(1)
+        assertThat(result).extracting("id").containsOnly("e2")
+        assertThat(result).extracting("title").containsOnly("changeover")
+        assertThat(result).extracting("type").containsOnly("note")
+    }
+
+    @Test
+    fun testResolveMultipleEntries() {
+        val result = given()
+            .queryParam("ids", "e1,e2,e4")
+            .When()
+            .get("/entry/resolve")
+            .then()
+            .statusCode(200)
+            .extract().to<List<*>>()
+        assertThat(result).hasSize(3)
+        assertThat(result).extracting("id").containsExactlyInAnyOrder("e1", "e2", "e4")
+        assertThat(result).extracting("title").containsExactlyInAnyOrder("expedition", "changeover", "refusal")
+    }
+
+    @Test
+    fun testResolveUnknownId() {
+        val result = given()
+            .queryParam("ids", "unknown")
+            .When()
+            .get("/entry/resolve")
+            .then()
+            .statusCode(200)
+            .extract().to<List<*>>()
+        assertThat(result).isEmpty()
+    }
+
+    @Test
+    fun testResolveMixedKnownAndUnknown() {
+        val result = given()
+            .queryParam("ids", "e1,unknown,e3")
+            .When()
+            .get("/entry/resolve")
+            .then()
+            .statusCode(200)
+            .extract().to<List<*>>()
+        assertThat(result).hasSize(2)
+        assertThat(result).extracting("id").containsExactlyInAnyOrder("e1", "e3")
+    }
+
 }

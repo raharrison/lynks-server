@@ -42,6 +42,15 @@ fun Route.entry(
             call.respond(entryService.search(query, call.pageRequest()))
         }
 
+        get("/resolve") {
+            val ids = call.request.queryParameters["ids"]
+                ?.split(",")
+                ?.filter { it.isNotBlank() }
+                ?.map { EntryId(it) }
+                ?: emptyList()
+            call.respond(if (ids.isEmpty()) emptyList<Any>() else entryService.get(ids).content)
+        }
+
         get("/{id}/reminder") {
             val id = call.parameters["id"] ?: throw InvalidModelException("Missing id")
             call.respond(reminderService.getRemindersForEntry(EntryId(id)))

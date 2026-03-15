@@ -35,18 +35,51 @@ class MarkdownProcessorTest {
 
     @Test
     fun testEntryLinks() {
-        every { entryService.get(EntryId("1234")) } returns Note(EntryId("1234"), "title", "content", "content", 123, 123)
+        every { entryService.get(EntryId("1234")) } returns Note(EntryId("1234"), "My Note Title", "content", "content", 123, 123)
 
         assertConvertEqual(
             "link is @1234",
-            "<p>link is <a href=\"/notes/1234\"><strong>@1234</strong></a></p>\n"
+            "<p>link is <a href=\"/notes/1234\"><strong>My Note Title</strong></a></p>\n"
         )
         assertConvertEqual(
             "link is @1234 and more",
-            "<p>link is <a href=\"/notes/1234\"><strong>@1234</strong></a> and more</p>\n"
+            "<p>link is <a href=\"/notes/1234\"><strong>My Note Title</strong></a> and more</p>\n"
         )
 
         verify(exactly = 2) { entryService.get(EntryId("1234")) }
+    }
+
+    @Test
+    fun testEntryLinkRendersLinkTitle() {
+        every { entryService.get(EntryId("linkid")) } returns
+            lynks.common.Link(EntryId("linkid"), "My Link Title", "http://example.com", "example.com", null, 123, 123)
+
+        assertConvertEqual(
+            "see @linkid here",
+            "<p>see <a href=\"/links/linkid\"><strong>My Link Title</strong></a> here</p>\n"
+        )
+    }
+
+    @Test
+    fun testEntryLinkRendersFileTitle() {
+        every { entryService.get(EntryId("fileid")) } returns
+            lynks.common.File(EntryId("fileid"), "My File Title", 123, 123)
+
+        assertConvertEqual(
+            "see @fileid here",
+            "<p>see <a href=\"/files/fileid\"><strong>My File Title</strong></a> here</p>\n"
+        )
+    }
+
+    @Test
+    fun testEntryLinkSnippetFallsBackToId() {
+        every { entryService.get(EntryId("snipid")) } returns
+            Snippet(EntryId("snipid"), "some code", "<p>code</p>", 123, 123)
+
+        assertConvertEqual(
+            "see @snipid here",
+            "<p>see <a href=\"/snippets/snipid\"><strong>@snipid</strong></a> here</p>\n"
+        )
     }
 
     @Test
