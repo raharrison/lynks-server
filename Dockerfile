@@ -19,8 +19,14 @@ RUN apt-get update \
 
 EXPOSE 8080
 
+RUN groupadd -r lynks && useradd -r -g lynks lynks
+
 WORKDIR /app
 
 COPY --from=build /app/build/install/lynks-server .
+
+RUN chown -R lynks:lynks /app
+
+USER lynks
 
 ENTRYPOINT ["./bin/lynks-server"]

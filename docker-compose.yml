@@ -15,17 +15,22 @@ services:
     volumes:
       - ./media:/app/media
       - ./config:/app/config
-    user: ${CURRENT_UID:-0}:${CURRENT_GUID:-0}
+    user: "${CURRENT_UID:?Set CURRENT_UID before running compose}:${CURRENT_GUID:?Set CURRENT_GUID before running compose}"
+    init: true
     restart: on-failure:5
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
   lynks-scraper:
     image: raharrison/lynks-scraper:1.1.0
     init: true
     restart: on-failure:5
     volumes:
       - ./media:/app/media
-    user: ${CURRENT_UID:-0}:${CURRENT_GUID:-0}
+    user: "${CURRENT_UID:?Set CURRENT_UID before running compose}:${CURRENT_GUID:?Set CURRENT_GUID before running compose}"
+    shm_size: 2gb
+    security_opt:
+      - seccomp=unconfined
   lynks-gateway:
     image: nginx:1.29-alpine
     volumes:
@@ -45,6 +50,12 @@ services:
       - ./config/.env
     ports:
       - '127.0.0.1:5432:5432'
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-lynksuser} -d ${POSTGRES_DB:-lynksdb}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
 volumes:
   lynks-data:

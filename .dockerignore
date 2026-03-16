@@ -1,0 +1,15 @@
+.git
+.gitignore
+.github
+.gradle
+.idea
+build
+*.md
+!README.md
+*docker-compose*
+.dockerignore
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+config

@@ -8,4 +8,4 @@ if [ ! -d "media" ]; then
     mkdir media
 fi
 
-docker-compose --env-file ./config/.env up "$@"
+docker compose --env-file ./config/.env up "$@"
