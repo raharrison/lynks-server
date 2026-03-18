@@ -2,6 +2,7 @@ package lynks.common
 
 import lynks.group.Collection
 import lynks.group.Tag
+import java.time.Instant
 
 data class Link(
     override val id: EntryId,
@@ -9,8 +10,8 @@ data class Link(
     val url: String,
     val source: String,
     val content: String?,
-    override val dateCreated: Long,
-    override val dateUpdated: Long,
+    override val dateCreated: Instant,
+    override val dateUpdated: Instant,
     override val tags: List<Tag> = emptyList(),
     override val collections: List<Collection> = emptyList(),
     override val props: BaseProperties = BaseProperties(),
@@ -37,7 +38,7 @@ data class SlimLink(
     override val id: EntryId,
     val title: String,
     val source: String,
-    override val dateUpdated: Long,
+    override val dateUpdated: Instant,
     override val tags: List<Tag> = emptyList(),
     override val collections: List<Collection> = emptyList(),
     override val starred: Boolean = false,

@@ -5,7 +5,6 @@ import lynks.common.page.DefaultPageRequest
 import lynks.common.page.Page
 import lynks.common.page.PageRequest
 import lynks.common.page.SortDirection
-import lynks.db.DatabaseDialect
 import lynks.db.EntryRepository
 import lynks.group.GroupSet
 import lynks.group.GroupSetService
@@ -68,12 +67,11 @@ class EntryService(
     override fun toUpdate(entry: Entry): BaseEntries.(UpdateBuilder<*>) -> Unit =
         throw NotImplementedError("EntryService.toUpdate(Entry) is unreachable — use a type-specific service")
 
-    fun search(term: String, page: PageRequest = DefaultPageRequest): Page<SlimEntry> = transaction {
-        val conn = (TransactionManager.current().connection as JdbcConnectionImpl).connection
-        if (Environment.database.dialect == DatabaseDialect.POSTGRES) {
+    fun search(term: String, page: PageRequest = DefaultPageRequest): Page<SlimEntry> {
+        if (term.isBlank()) return Page.empty()
+        return transaction {
+            val conn = (TransactionManager.current().connection as JdbcConnectionImpl).connection
             runPostgresSearchQuery(conn, term, page)
-        } else {
-            runH2SearchQuery(conn, term, page)
         }
     }
 
@@ -127,20 +125,6 @@ class EntryService(
         return Page.of(entries, page, count)
     }
 
-    private fun runH2SearchQuery(conn: Connection, term: String, page: PageRequest): Page<SlimEntry> {
-        return conn.prepareStatement("SELECT * FROM FT_SEARCH_DATA(?, 0, 0)").use { prep ->
-            prep.setString(1, term)
-            prep.executeQuery().use { set ->
-                val keys = mutableListOf<String>()
-                while (set.next()) {
-                    val res = set.getArray("KEYS")
-                    (res.array as Array<*>).forEach { keys.add(it.toString()) }
-                }
-                get(keys.map { EntryId(it) }, page)
-            }
-        }
-    }
-
     fun star(id: EntryId, starred: Boolean): Entry? = transaction {
         val updated = Entries.update({ Entries.id eq id.value }) {
             it[Entries.starred] = starred
@@ -162,7 +146,7 @@ class EntryService(
                 EntryVersion(
                     id = EntryId(it[EntryVersions.id]),
                     version = it[EntryVersions.version],
-                    dateUpdated = it[EntryVersions.dateUpdated]
+                    dateUpdated = it[EntryVersions.dateUpdated].toInstant()
                 )
             }
     }

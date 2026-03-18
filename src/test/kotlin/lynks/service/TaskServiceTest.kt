@@ -13,6 +13,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import java.time.Instant
 
 class TaskServiceTest {
     private val workerRegistry = mockk<WorkerRegistry>()
@@ -43,7 +44,7 @@ class TaskServiceTest {
                 )
             )
         )
-        val entry = Link(EntryId("entry1"), "title", "google.com", "src", "", 1234, 1234L, emptyList(), emptyList(), props)
+        val entry = Link(EntryId("entry1"), "title", "google.com", "src", "", Instant.EPOCH, Instant.EPOCH, emptyList(), emptyList(), props)
         every { entryService.get(EntryId("entry1")) } returns entry
         every { workerRegistry.acceptTaskWork(any(), any()) } just Runs
 
@@ -78,7 +79,7 @@ class TaskServiceTest {
                 )
             )
         )
-        val entry = Link(EntryId("entry1"), "title", "google.com", "src", "", 1234, 1234L, emptyList(), emptyList(), props)
+        val entry = Link(EntryId("entry1"), "title", "google.com", "src", "", Instant.EPOCH, Instant.EPOCH, emptyList(), emptyList(), props)
         every { entryService.get(EntryId("entry1")) } returns entry
 
         assertThrows<InvalidModelException> { taskService.runTask(EntryId("entry1"), TaskId("task1"), emptyMap()) }
@@ -95,7 +96,7 @@ class TaskServiceTest {
                 )
             )
         )
-        val entry = Link(EntryId("entry1"), "title", "google.com", "src", "", 1234, 1234L, emptyList(), emptyList(), props)
+        val entry = Link(EntryId("entry1"), "title", "google.com", "src", "", Instant.EPOCH, Instant.EPOCH, emptyList(), emptyList(), props)
         every { entryService.get(EntryId("entry1")) } returns entry
 
         assertThrows<InvalidModelException> { taskService.runTask(EntryId("entry1"), TaskId("task1"), mapOf("p1" to "invalid")) }
@@ -119,7 +120,7 @@ class TaskServiceTest {
                 LinkProcessingTask::class.qualifiedName!!
             )
         )
-        val entry = Link(EntryId("entry1"), "title", "google.com", "src", "", 1234, 1234, emptyList(), emptyList(), props)
+        val entry = Link(EntryId("entry1"), "title", "google.com", "src", "", Instant.EPOCH, Instant.EPOCH, emptyList(), emptyList(), props)
         every { entryService.get(EntryId("entry1")) } returns entry
 
         val res = taskService.runTask(EntryId("entry1"), TaskId("invalid"), emptyMap())
@@ -132,7 +133,7 @@ class TaskServiceTest {
         val props = BaseProperties().apply {
             addTask(TaskDefinition(TaskId("task1"), "description", TaskService::class.qualifiedName!!))
         }
-        val entry = Link(EntryId("entry1"), "title", "google.com", "src", "", 1234, 1234L, emptyList(), emptyList(), props)
+        val entry = Link(EntryId("entry1"), "title", "google.com", "src", "", Instant.EPOCH, Instant.EPOCH, emptyList(), emptyList(), props)
         every { entryService.get(EntryId("entry1")) } returns entry
 
         assertThrows<IllegalArgumentException> {

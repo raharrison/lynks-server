@@ -10,6 +10,7 @@ import lynks.task.TaskContext
 import lynks.worker.WorkerRegistry
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import java.time.Instant
 
 class DiscussionFinderTaskTest {
 
@@ -37,7 +38,7 @@ class DiscussionFinderTaskTest {
     @Test
     fun testProcess() {
         val context = discussionFinderTask.createContext(emptyMap())
-        val link = Link(EntryId("eid"), "title", "url", "", "", 1, 1)
+        val link = Link(EntryId("eid"), "title", "url", "", "", Instant.EPOCH, Instant.EPOCH)
 
         every { linkService.get(EntryId("eid")) } returns link
         every { workerRegistry.acceptDiscussionWork(any()) } just Runs

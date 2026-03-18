@@ -15,6 +15,7 @@ import lynks.task.TaskContext
 import lynks.util.Result
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import java.time.Instant
 
 class LinkSummarizerTaskTest {
 
@@ -45,7 +46,7 @@ class LinkSummarizerTaskTest {
     @Test
     fun testProcessGeneratesSummary() {
         val context = linkSummarizerTask.createContext(emptyMap())
-        val link = Link(EntryId("eid"), "title", "url", "", "", 1, 1)
+        val link = Link(EntryId("eid"), "title", "url", "", "", Instant.EPOCH, Instant.EPOCH)
 
         every { linkService.get(EntryId("eid")) } returns link
         every { linkService.mergeProps(EntryId("eid"), any()) } just Runs
@@ -67,7 +68,7 @@ class LinkSummarizerTaskTest {
     @Test
     fun testSummaryGenerationReturnsError() {
         val context = linkSummarizerTask.createContext(emptyMap())
-        val link = Link(EntryId("eid"), "title", "url", "", "", 1, 1)
+        val link = Link(EntryId("eid"), "title", "url", "", "", Instant.EPOCH, Instant.EPOCH)
 
         every { linkService.get(EntryId("eid")) } returns link
         coEvery { resourceRetriever.getStringResult(any()) } returns Result.Failure(ExecutionException("error"))

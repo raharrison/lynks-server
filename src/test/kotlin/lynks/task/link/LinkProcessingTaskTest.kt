@@ -11,6 +11,7 @@ import lynks.worker.PersistLinkProcessingRequest
 import lynks.worker.WorkerRegistry
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import java.time.Instant
 
 class LinkProcessingTaskTest {
 
@@ -55,7 +56,7 @@ class LinkProcessingTaskTest {
     @Test
     fun testProcessNoType() {
         val context = linkProcessingTask.createContext(emptyMap())
-        val link = Link(EntryId("eid"), "title", "url", "", "", 1, 1)
+        val link = Link(EntryId("eid"), "title", "url", "", "", Instant.EPOCH, Instant.EPOCH)
 
         every { linkService.get(EntryId("eid")) } returns link
         every { workerRegistry.acceptLinkWork(any()) } just Runs
@@ -73,7 +74,7 @@ class LinkProcessingTaskTest {
     @Test
     fun testProcessWithType() {
         val context = linkProcessingTask.createContext(mapOf("type" to ResourceType.SCREENSHOT.name))
-        val link = Link(EntryId("eid"), "title", "url", "", "", 1, 1)
+        val link = Link(EntryId("eid"), "title", "url", "", "", Instant.EPOCH, Instant.EPOCH)
 
         every { linkService.get(EntryId("eid")) } returns link
         every { workerRegistry.acceptLinkWork(any()) } just Runs

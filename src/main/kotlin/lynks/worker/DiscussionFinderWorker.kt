@@ -34,7 +34,7 @@ class DiscussionFinderWorker(
         val url: String,
         val score: Int,
         val comments: Int,
-        val created: Long
+        val created: Instant
     )
 
     private enum class DiscussionSource {
@@ -56,8 +56,8 @@ class DiscussionFinderWorker(
     private suspend fun checkLastRunTime(input: DiscussionFinderWorkerRequest) {
         if (input.intervalIndex < 0) return
         val lastRun = getLastRunTime(input) ?: return
-        val now = System.currentTimeMillis()
-        val minsSinceLastRun = (now - lastRun) / 1000 / 60
+        val now = Instant.now()
+        val minsSinceLastRun = Duration.between(lastRun.toInstant(), now).toMinutes()
         val intervalMins = intervals[input.intervalIndex] * 60
         if(minsSinceLastRun < intervalMins) {
             val diff = intervalMins - minsSinceLastRun
@@ -138,10 +138,7 @@ class DiscussionFinderWorker(
                 val createdStamp = hit.get("created_at").textValue()
                 val instant = Instant.parse(createdStamp)
                 discussions.add(
-                    Discussion(
-                        DiscussionSource.HACKER_NEWS, title, link, score,
-                        comments, instant.toEpochMilli()
-                    )
+                    Discussion(DiscussionSource.HACKER_NEWS, title, link, score, comments, instant)
                 )
             }
         }
@@ -176,7 +173,7 @@ class DiscussionFinderWorker(
                         val link = site.get("permalink").textValue()
                         val score = site.get("score").intValue()
                         val comments = site.get("num_comments").intValue()
-                        val created = site.get("created_utc").longValue() * 1000
+                        val created = Instant.ofEpochSecond(site.get("created_utc").longValue())
                         discussions.add(Discussion(DiscussionSource.REDDIT, sub, link, score, comments, created))
                     }
                 }

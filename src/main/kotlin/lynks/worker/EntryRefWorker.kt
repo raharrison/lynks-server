@@ -30,8 +30,8 @@ class EntryRefWorker(
             is DefaultEntryRefWorkerRequest -> {
                 val entry = entryService.get(input.eid) ?: return
                 val markdown = when (entry) {
-                    is Note -> entry.plainText
-                    is Snippet -> entry.plainText
+                    is Note -> entry.plainContent
+                    is Snippet -> entry.plainContent
                     else -> return
                 }
                 Triple(entry.id, entry.id.value, markdown)
@@ -42,7 +42,7 @@ class EntryRefWorker(
                     val removed = entryRefService.deleteOrigin(comment.id.value)
                     log.info("{} references removed after origin deletion", removed)
                 }
-                Triple(comment.entryId, comment.id.value, comment.plainText)
+                Triple(comment.entryId, comment.id.value, comment.plainContent)
             }
         }
         val refEntries = findReferencedEntries(markdown)

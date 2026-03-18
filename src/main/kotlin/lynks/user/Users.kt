@@ -3,17 +3,19 @@ package lynks.user
 import lynks.common.EntryId
 import lynks.common.EntryType
 import org.jetbrains.exposed.v1.core.Table
+import org.jetbrains.exposed.v1.javatime.timestampWithTimeZone
+import java.time.Instant
 
-object Users : Table("USER_PROFILE") {
-    val username = varchar("USERNAME", 25)
-    val password = varchar("PASSWORD_HASH", 128)
-    val email = varchar("EMAIL", 254).nullable()
-    val displayName = varchar("DISPLAY_NAME", 64).nullable()
-    val digest = bool("DIGEST").default(false)
-    val dateCreated = long("DATE_CREATED")
-    val dateUpdated = long("DATE_UPDATED")
-    val activated = bool("ACTIVATED").default(false)
-    val totp = varchar("TOTP", 32).nullable()
+object Users : Table("user_profiles") {
+    val username = varchar("username", 25)
+    val password = varchar("password_hash", 128)
+    val email = varchar("email", 254).nullable()
+    val displayName = varchar("display_name", 64).nullable()
+    val digest = bool("digest").default(false)
+    val dateCreated = timestampWithTimeZone("date_created")
+    val dateUpdated = timestampWithTimeZone("date_updated")
+    val activated = bool("activated").default(false)
+    val totp = varchar("totp", 32).nullable()
     override val primaryKey: PrimaryKey = PrimaryKey(username)
 }
 
@@ -35,8 +37,8 @@ data class User(
     val email: String? = null,
     val displayName: String? = null,
     val digest: Boolean = false,
-    val dateCreated: Long,
-    val dateUpdated: Long
+    val dateCreated: Instant,
+    val dateUpdated: Instant
 )
 
 data class ActivityLogItem(
@@ -45,6 +47,6 @@ data class ActivityLogItem(
     val src: String?,
     val details: String,
     val entryType: EntryType,
-    val entryTitle: String,
-    val timestamp: Long
+    val entryTitle: String?,
+    val timestamp: Instant
 )

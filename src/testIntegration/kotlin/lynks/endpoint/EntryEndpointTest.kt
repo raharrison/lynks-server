@@ -46,7 +46,7 @@ class EntryEndpointTest : ServerTest() {
             .extract().to<Note>()
         assertThat(note.id).isEqualTo(EntryId("e2"))
         assertThat(note.title).isEqualTo("changeover")
-        assertThat(note.plainText).isEqualTo("other content there")
+        assertThat(note.plainContent).isEqualTo("other content there")
         assertThat(note.tags).isEmpty()
         assertThat(note.collections).isEmpty()
         assertThat(note.type).isEqualTo(EntryType.NOTE)
@@ -152,7 +152,7 @@ class EntryEndpointTest : ServerTest() {
     @Test
     fun testSearchPaging() {
         val entries = given()
-            .queryParam("page", 2)
+            .queryParam("page", 3)
             .queryParam("size", 1)
             .queryParam("q", "content")
             .When()
@@ -160,7 +160,7 @@ class EntryEndpointTest : ServerTest() {
             .then()
             .statusCode(200)
             .extract().to<Page<*>>()
-        assertThat(entries.page).isEqualTo(2)
+        assertThat(entries.page).isEqualTo(3)
         assertThat(entries.size).isEqualTo(1)
         assertThat(entries.content).hasSize(1).extracting("id")
             .containsExactly("e2")
@@ -282,6 +282,7 @@ class EntryEndpointTest : ServerTest() {
     fun testUpdateEntryGroups() {
         createDummyTag("t1", "tag1")
         createDummyCollection("c1", "col1")
+        refreshGroups()
         given()
             .contentType(ContentType.JSON)
             .body(GroupIdSet(listOf("t1"), listOf("c1")))
@@ -301,6 +302,7 @@ class EntryEndpointTest : ServerTest() {
     fun testUpdateEntryGroupsNotFound() {
         createDummyTag("t1", "tag1")
         createDummyCollection("c1", "col1")
+        refreshGroups()
         given()
             .contentType(ContentType.JSON)
             .body(GroupIdSet(listOf("t1"), listOf("c1")))

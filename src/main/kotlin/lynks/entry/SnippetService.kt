@@ -14,6 +14,8 @@ import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.statements.UpdateBuilder
 import org.jetbrains.exposed.v1.jdbc.Query
 import org.jetbrains.exposed.v1.jdbc.selectAll
+import java.time.OffsetDateTime
+import java.time.ZoneOffset
 
 class SnippetService(
     groupSetService: GroupSetService,
@@ -53,14 +55,12 @@ class SnippetService(
     }
 
     override fun toInsert(eId: EntryId, entry: NewSnippet): BaseEntries.(UpdateBuilder<*>) -> Unit {
-        val (_, processedText, html) = markdownProcessor.convertAndProcess(entry.plainText, eId)
-        val time = System.currentTimeMillis()
+        val (_, processedText, html) = markdownProcessor.convertAndProcess(entry.content, eId)
+        val time = OffsetDateTime.now(ZoneOffset.UTC)
         return {
             it[id] = eId.value
-            it[title] = "Snippet"
             it[plainContent] = processedText
             it[content] = html
-            it[src] = "me"
             it[type] = EntryType.SNIPPET
             it[dateCreated] = time
             it[dateUpdated] = time
@@ -68,17 +68,17 @@ class SnippetService(
     }
 
     override fun toUpdate(entry: NewSnippet): BaseEntries.(UpdateBuilder<*>) -> Unit {
-        val (_, processedText, html) = markdownProcessor.convertAndProcess(entry.plainText, entry.id!!)
+        val (_, processedText, html) = markdownProcessor.convertAndProcess(entry.content, entry.id!!)
         return {
             it[plainContent] = processedText
             it[content] = html
-            it[dateUpdated] = System.currentTimeMillis()
+            it[dateUpdated] = OffsetDateTime.now(ZoneOffset.UTC)
         }
     }
 
     override fun toUpdate(entry: Snippet): BaseEntries.(UpdateBuilder<*>) -> Unit = {
-        it[plainContent] = entry.plainText
-        it[content] = markdownProcessor.convertToMarkdown(entry.plainText)
+        it[plainContent] = entry.plainContent
+        it[content] = markdownProcessor.convertToMarkdown(entry.plainContent)
         it[props] = entry.props
     }
 }

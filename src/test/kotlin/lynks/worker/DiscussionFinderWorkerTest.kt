@@ -15,12 +15,15 @@ import lynks.util.createDummyWorkerSchedule
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import java.time.Instant
+import java.time.OffsetDateTime
+import java.time.ZoneOffset
 
 @ExperimentalCoroutinesApi
 class DiscussionFinderWorkerTest: DatabaseTest() {
 
     private val testUrl = "https://www.factorio.com/blog/post/fff-246"
-    private val link = Link(EntryId("id1"), "title", testUrl, "factorio.com", "", 100, 100)
+    private val link = Link(EntryId("id1"), "title", testUrl, "factorio.com", "", Instant.EPOCH, Instant.EPOCH)
 
     private val linkService = mockk<LinkService>()
     private val retriever = mockk<ResourceRetriever>()
@@ -34,7 +37,7 @@ class DiscussionFinderWorkerTest: DatabaseTest() {
         every { linkService.mergeProps(eq(link.id), capture(propsSlot)) } just Runs
 
         coEvery { notifyService.create(any()) } returns Notification(
-            NotificationId("n1"), NotificationType.DISCUSSIONS, "found", false, dateCreated = System.currentTimeMillis()
+            NotificationId("n1"), NotificationType.DISCUSSIONS, "found", false, dateCreated = Instant.now()
         )
     }
 
@@ -92,7 +95,7 @@ class DiscussionFinderWorkerTest: DatabaseTest() {
         coEvery { retriever.getString(match { it.contains("reddit.com") }) } returns getFile("/reddit_crosspost_discussions.json")
 
         val url = "https://old.reddit.com/r/programming/comments/ftkiyp/how_we_reduced_our_google_maps_api_cost_by_94/"
-        val link = Link(EntryId("id1"), "title", url, "reddit.com", "", 100, 100)
+        val link = Link(EntryId("id1"), "title", url, "reddit.com", "", Instant.EPOCH, Instant.EPOCH)
 
         every { linkService.get(link.id) } returns link
         every { linkService.mergeProps(eq(link.id), capture(propsSlot)) } just Runs
@@ -145,7 +148,7 @@ class DiscussionFinderWorkerTest: DatabaseTest() {
         coEvery { retriever.getString(match { it.contains("hn.algolia") }) } returns getFile("/hacker_discussions.json")
         coEvery { retriever.getString(match { it.contains("reddit.com") }) } returns getFile("/reddit_discussions.json")
 
-        val lastRun = System.currentTimeMillis() - (30 * 60 * 1000) // 30 mins ago
+        val lastRun = OffsetDateTime.now(ZoneOffset.UTC).minusMinutes(30) // 30 mins ago
         createDummyWorkerSchedule(DiscussionFinderWorker::class.java.simpleName, "key", DiscussionFinderWorkerRequest(link.id, 1), lastRun)
 
         val worker = DiscussionFinderWorker(linkService, retriever, notifyService, entryAuditService)

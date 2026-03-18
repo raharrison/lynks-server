@@ -3,6 +3,8 @@ package lynks.group
 import lynks.common.exception.InvalidModelException
 import org.jetbrains.exposed.v1.core.statements.InsertStatement
 import org.jetbrains.exposed.v1.core.statements.UpdateBuilder
+import java.time.OffsetDateTime
+import java.time.ZoneOffset
 
 class CollectionService : GroupService<Collection, NewCollection>(GroupType.COLLECTION) {
 
@@ -23,7 +25,7 @@ class CollectionService : GroupService<Collection, NewCollection>(GroupType.COLL
     }
 
     override fun toInsert(gid: String, entity: NewCollection): Groups.(InsertStatement<*>) -> Unit = {
-        val time = System.currentTimeMillis()
+        val time = OffsetDateTime.now(ZoneOffset.UTC)
         it[id] = gid
         it[name] = entity.name
         it[type] = GroupType.COLLECTION
@@ -35,7 +37,7 @@ class CollectionService : GroupService<Collection, NewCollection>(GroupType.COLL
     override fun toUpdate(entity: NewCollection): Groups.(UpdateBuilder<*>) -> Unit = {
         it[name] = entity.name
         it[parentId] = entity.parentId
-        it[dateUpdated] = System.currentTimeMillis()
+        it[dateUpdated] = OffsetDateTime.now(ZoneOffset.UTC)
     }
 
     override fun toModel(row: GroupRow, children: MutableSet<Collection>): Collection {

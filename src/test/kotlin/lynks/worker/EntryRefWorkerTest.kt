@@ -18,6 +18,7 @@ import lynks.entry.EntryService
 import lynks.entry.ref.EntryRefService
 import lynks.util.markdown.MarkdownProcessor
 import org.junit.jupiter.api.Test
+import java.time.Instant
 
 @ExperimentalCoroutinesApi
 class EntryRefWorkerTest {
@@ -27,9 +28,9 @@ class EntryRefWorkerTest {
     private val commentService = mockk<CommentService>()
     private val markdownProcessor = MarkdownProcessor(mockk(), entryService)
 
-    private val note1 = Note(EntryId("id1"), "title1", "one @id2 two @id3 three @id4 end", "content1", 123L, 123L)
-    private val comment = Comment(CommentId("cid1"), EntryId("id1"), "one @id2 two @id3 three @id4 end", "content1", 123L, 123L)
-    private val slimNotes = listOf(SlimNote(EntryId("id2"), "title2", 123L), SlimNote(EntryId("id3"), "title3", 123L))
+    private val note1 = Note(EntryId("id1"), "title1", "one @id2 two @id3 three @id4 end", "content1", Instant.EPOCH, Instant.EPOCH)
+    private val comment = Comment(CommentId("cid1"), EntryId("id1"), "one @id2 two @id3 three @id4 end", "content1", Instant.EPOCH, Instant.EPOCH)
+    private val slimNotes = listOf(SlimNote(EntryId("id2"), "title2", Instant.EPOCH), SlimNote(EntryId("id3"), "title3", Instant.EPOCH))
 
     @Test
     fun testSetEntryRefsFromEntry(): Unit = runTest {

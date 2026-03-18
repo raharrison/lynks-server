@@ -16,6 +16,7 @@ import lynks.resource.ResourceType
 import lynks.util.Result
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import java.time.Instant
 
 class ResourceRetrievingTaskTest {
 
@@ -53,7 +54,7 @@ class ResourceRetrievingTaskTest {
         val bytes = byteArrayOf(1,2,3,4,5,6)
         coEvery { retriever.getFileResult(url) } returns Result.Success(bytes)
         every { resourceManager.saveUploadedResource(EntryId("eid"), name, any()) } returns
-                Resource(ResourceId("rid"), "pid", EntryId("eid"), 1, name, "", ResourceType.UPLOAD, 1, 1)
+                Resource(ResourceId("rid"), "pid", EntryId("eid"), 1, name, "", ResourceType.UPLOAD, 1, Instant.EPOCH)
 
         runBlocking {
             resourceRetrievingTask.process(context)

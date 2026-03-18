@@ -5,20 +5,8 @@ import kotlin.String
 import kotlin.Unit
 import kotlin.also
 import kotlin.collections.Collection
-import kotlin.collections.List
-import kotlin.collections.MutableMap
-import kotlin.collections.MutableSet
-import kotlin.collections.filter
-import kotlin.collections.find
 import kotlin.collections.forEach
-import kotlin.collections.getOrPut
 import kotlin.collections.mapNotNull
-import kotlin.collections.mutableMapOf
-import kotlin.collections.mutableSetOf
-import kotlin.collections.plus
-import kotlin.collections.remove
-import kotlin.collections.set
-import kotlin.collections.setOf
 import kotlin.collections.toList
 import kotlin.let
 import kotlin.plus
@@ -118,7 +106,9 @@ class GroupCollection<T: Grouping<T>> {
             ?: throw IllegalStateException("Group ${group.id} not found during update")
         current.name = group.name
         current.path = generatePath(current)
-        current.children = group.children
+        val childrenSnapshot = group.children.toSet()
+        current.children.clear()
+        current.children.addAll(childrenSnapshot)
         current.dateUpdated = group.dateUpdated
         current.dateCreated = group.dateCreated
         return current

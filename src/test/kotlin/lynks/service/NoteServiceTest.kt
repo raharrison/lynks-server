@@ -22,6 +22,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.nio.file.Path
+import java.time.Instant
 
 class NoteServiceTest : DatabaseTest() {
 
@@ -48,9 +49,9 @@ class NoteServiceTest : DatabaseTest() {
         val note = noteService.add(newNote("n1", "content"))
         assertThat(note.type).isEqualTo(EntryType.NOTE)
         assertThat(note.title).isEqualTo("n1")
-        assertThat(note.plainText).isEqualTo("content")
-        assertThat(note.markdownText).isEqualTo("<p>content</p>\n")
-        assertThat(note.dateUpdated).isPositive()
+        assertThat(note.plainContent).isEqualTo("content")
+        assertThat(note.renderedContent).isEqualTo("<p>content</p>\n")
+        assertThat(note.dateUpdated).isAfter(Instant.EPOCH)
         assertThat(note.dateCreated).isEqualTo(note.dateUpdated)
         verify(exactly = 0) { resourceManager.migrateGeneratedResources(note.id, any()) }
         verify { entryAuditService.acceptAuditEvent(note.id, any(), any()) }
@@ -60,13 +61,13 @@ class NoteServiceTest : DatabaseTest() {
     @Test
     fun testCreateNoteWithTempImage() {
         val plain = "something ![desc](${TEMP_URL}abc/one.png)"
-        val resource = Resource(ResourceId("rid"), "pid", EntryId("eid"), 1, "one", "png", ResourceType.UPLOAD, 12, 123L)
+        val resource = Resource(ResourceId("rid"), "pid", EntryId("eid"), 1, "one", "png", ResourceType.UPLOAD, 12, Instant.EPOCH)
         every { resourceManager.constructTempBasePath(IMAGE_UPLOAD_BASE) } returns Path.of("migrated/")
         every { resourceManager.migrateGeneratedResources(any(), any()) } returns listOf(resource)
         val note = noteService.add(newNote("n1", plain))
         assertThat(note.type).isEqualTo(EntryType.NOTE)
         assertThat(note.title).isEqualTo("n1")
-        assertThat(note.plainText.trim()).isEqualTo("something ![desc](${Environment.server.rootPath}/entry/${note.id}/resource/${resource.id})")
+        assertThat(note.plainContent.trim()).isEqualTo("something ![desc](${Environment.server.rootPath}/entry/${note.id}/resource/${resource.id})")
         verify(exactly = 1) { resourceManager.migrateGeneratedResources(note.id, any()) }
         verify { entryAuditService.acceptAuditEvent(note.id, any(), any()) }
         verify { workerRegistry.acceptEntryRefWork(note.id) }
@@ -77,7 +78,7 @@ class NoteServiceTest : DatabaseTest() {
         val note = noteService.add(newNote("n1", "content", listOf("t1", "t2")))
         assertThat(note.type).isEqualTo(EntryType.NOTE)
         assertThat(note.title).isEqualTo("n1")
-        assertThat(note.plainText).isEqualTo("content")
+        assertThat(note.plainContent).isEqualTo("content")
         assertThat(note.tags).hasSize(2).extracting("id").containsExactly("t1", "t2")
         assertThat(note.dateCreated).isEqualTo(note.dateUpdated)
         verify { entryAuditService.acceptAuditEvent(note.id, any(), any()) }
@@ -94,7 +95,7 @@ class NoteServiceTest : DatabaseTest() {
         val note = noteService.add(newNote("n1", "content", cols = listOf("c1", "c2")))
         assertThat(note.type).isEqualTo(EntryType.NOTE)
         assertThat(note.title).isEqualTo("n1")
-        assertThat(note.plainText).isEqualTo("content")
+        assertThat(note.plainContent).isEqualTo("content")
         assertThat(note.collections).hasSize(2).extracting("id").containsExactly("c1", "c2")
         assertThat(note.dateCreated).isEqualTo(note.dateUpdated)
         verify { entryAuditService.acceptAuditEvent(note.id, any(), any()) }
@@ -122,7 +123,7 @@ class NoteServiceTest : DatabaseTest() {
         assertThat(retrieved?.id).isEqualTo(note2.id)
         assertThat(retrieved?.tags).isEqualTo(note2.tags)
         assertThat(retrieved?.collections).isEqualTo(note2.collections)
-        assertThat(retrieved?.plainText).isEqualTo(note2.plainText)
+        assertThat(retrieved?.plainContent).isEqualTo(note2.plainContent)
         assertThat(retrieved?.dateCreated).isEqualTo(note2.dateUpdated)
     }
 
@@ -214,9 +215,10 @@ class NoteServiceTest : DatabaseTest() {
     fun testGetNotesBySource() {
         noteService.add(newNote("n1", "content1", listOf("t1", "t2"), listOf("c1")))
         noteService.add(newNote("n2", "content2", listOf("t1")))
+        // notes no longer have a hardcoded source
         val notesFromSource = noteService.get(PageRequest(source = "me"))
-        assertThat(notesFromSource.total).isEqualTo(2)
-        assertThat(notesFromSource.content).hasSize(2)
+        assertThat(notesFromSource.total).isZero()
+        assertThat(notesFromSource.content).isEmpty()
         val notesFromMissingSource = noteService.get(PageRequest(source = "invalid"))
         assertThat(notesFromMissingSource.total).isZero()
         assertThat(notesFromMissingSource.content).isEmpty()
@@ -293,7 +295,7 @@ class NoteServiceTest : DatabaseTest() {
         val newNote = noteService.get(updated!!.id)
         assertThat(newNote?.id).isEqualTo(added1.id)
         assertThat(newNote?.title).isEqualTo("updated")
-        assertThat(newNote?.plainText).isEqualTo("new content")
+        assertThat(newNote?.plainContent).isEqualTo("new content")
         assertThat(newNote?.tags).hasSize(1)
         assertThat(newNote?.collections).hasSize(1)
         assertThat(newNote?.dateUpdated).isNotEqualTo(newNote?.dateCreated)
@@ -302,7 +304,7 @@ class NoteServiceTest : DatabaseTest() {
 
         val oldNote = noteService.get(added1.id)
         assertThat(oldNote?.id).isEqualTo(updated.id)
-        assertThat(oldNote?.plainText).isEqualTo("new content")
+        assertThat(oldNote?.plainContent).isEqualTo("new content")
         assertThat(oldNote?.title).isEqualTo("updated")
         assertThat(oldNote?.tags).hasSize(1)
         assertThat(oldNote?.collections).hasSize(1)
@@ -311,11 +313,11 @@ class NoteServiceTest : DatabaseTest() {
     @Test
     fun testUpdateExistingNoteWithTempImage() {
         val added = noteService.add(newNote("n1", "note content 1"))
-        val resource = Resource(ResourceId("rid"), "pid", added.id, 1, "one", "png", ResourceType.UPLOAD, 12, 123L)
+        val resource = Resource(ResourceId("rid"), "pid", added.id, 1, "one", "png", ResourceType.UPLOAD, 12, Instant.ofEpochMilli(123))
         every { resourceManager.constructTempBasePath(IMAGE_UPLOAD_BASE) } returns Path.of("migrated/")
         every { resourceManager.migrateGeneratedResources(added.id, any()) } returns listOf(resource)
         val updated = noteService.update(newNote(added.id, "updated", "something ![desc](${TEMP_URL}abc/one.png)"))
-        assertThat(updated?.plainText?.trim()).isEqualTo("something ![desc](${Environment.server.rootPath}/entry/${added.id}/resource/${resource.id})")
+        assertThat(updated?.plainContent?.trim()).isEqualTo("something ![desc](${Environment.server.rootPath}/entry/${added.id}/resource/${resource.id})")
         verify(exactly = 1) { resourceManager.migrateGeneratedResources(added.id, any()) }
         verify { workerRegistry.acceptEntryRefWork(added.id) }
     }
@@ -324,12 +326,12 @@ class NoteServiceTest : DatabaseTest() {
     fun testUpdateNoteTags() {
         val added1 = noteService.add(newNote("n1", "content 1", listOf("t1", "t2")))
         assertThat(noteService.get(added1.id)?.title).isEqualTo("n1")
-        assertThat(noteService.get(added1.id)?.plainText).isEqualTo("content 1")
+        assertThat(noteService.get(added1.id)?.plainContent).isEqualTo("content 1")
         assertThat(noteService.get(added1.id)?.tags).extracting("id").containsExactlyInAnyOrder("t1", "t2")
 
         noteService.update(newNote(added1.id, "n1", "content 1", listOf("t2")))
         assertThat(noteService.get(added1.id)?.title).isEqualTo("n1")
-        assertThat(noteService.get(added1.id)?.plainText).isEqualTo("content 1")
+        assertThat(noteService.get(added1.id)?.plainContent).isEqualTo("content 1")
         assertThat(noteService.get(added1.id)?.tags).extracting("id").containsExactlyInAnyOrder("t2")
 
         noteService.update(newNote(added1.id, "n1", "content 1", listOf("t2", "t3")))
@@ -342,12 +344,12 @@ class NoteServiceTest : DatabaseTest() {
     fun testUpdateNoteCollections() {
         val added1 = noteService.add(newNote("n1", "content 1", emptyList(), listOf("c1", "c2")))
         assertThat(noteService.get(added1.id)?.title).isEqualTo("n1")
-        assertThat(noteService.get(added1.id)?.plainText).isEqualTo("content 1")
+        assertThat(noteService.get(added1.id)?.plainContent).isEqualTo("content 1")
         assertThat(noteService.get(added1.id)?.collections).extracting("id").containsExactlyInAnyOrder("c1", "c2")
 
         noteService.update(newNote(added1.id, "n1", "content 1", emptyList(), listOf("c2")))
         assertThat(noteService.get(added1.id)?.title).isEqualTo("n1")
-        assertThat(noteService.get(added1.id)?.plainText).isEqualTo("content 1")
+        assertThat(noteService.get(added1.id)?.plainContent).isEqualTo("content 1")
         assertThat(noteService.get(added1.id)?.collections).extracting("id").containsExactlyInAnyOrder("c2")
         verify { entryAuditService.acceptAuditEvent(added1.id, any(), any()) }
         verify { workerRegistry.acceptEntryRefWork(added1.id) }

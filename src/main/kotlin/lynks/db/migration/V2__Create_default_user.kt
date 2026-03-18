@@ -8,6 +8,8 @@ import org.flywaydb.core.api.migration.BaseJavaMigration
 import org.flywaydb.core.api.migration.Context
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import java.time.OffsetDateTime
+import java.time.ZoneOffset
 
 class V2__Create_default_user : BaseJavaMigration() {
 
@@ -32,7 +34,7 @@ class V2__Create_default_user : BaseJavaMigration() {
             HashUtils.bcryptHash(passwordInput)
         }
 
-        val currentTime = System.currentTimeMillis()
+        val currentTime = OffsetDateTime.now(ZoneOffset.UTC)
         transaction {
             Users.insert {
                 it[this.username] = username

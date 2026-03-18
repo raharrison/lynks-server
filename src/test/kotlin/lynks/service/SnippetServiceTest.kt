@@ -22,6 +22,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.nio.file.Path
+import java.time.Instant
 
 class SnippetServiceTest : DatabaseTest() {
 
@@ -47,9 +48,9 @@ class SnippetServiceTest : DatabaseTest() {
     fun testCreateBasicSnippet() {
         val snippet = snippetService.add(newSnippet(EntryId("n1"), "content"))
         assertThat(snippet.type).isEqualTo(EntryType.SNIPPET)
-        assertThat(snippet.plainText).isEqualTo("content")
-        assertThat(snippet.markdownText).isEqualTo("<p>content</p>\n")
-        assertThat(snippet.dateUpdated).isPositive()
+        assertThat(snippet.plainContent).isEqualTo("content")
+        assertThat(snippet.renderedContent).isEqualTo("<p>content</p>\n")
+        assertThat(snippet.dateUpdated).isAfter(Instant.EPOCH)
         assertThat(snippet.dateCreated).isEqualTo(snippet.dateUpdated)
         verify(exactly = 0) { resourceManager.migrateGeneratedResources(snippet.id, any()) }
         verify { entryAuditService.acceptAuditEvent(snippet.id, any(), any()) }
@@ -59,12 +60,12 @@ class SnippetServiceTest : DatabaseTest() {
     @Test
     fun testCreateSnippetWithTempImage() {
         val plain = "something ![desc](${TEMP_URL}abc/one.png)"
-        val resource = Resource(ResourceId("rid"), "pid", EntryId("eid"), 1, "one", "png", ResourceType.UPLOAD, 12, 123L)
+        val resource = Resource(ResourceId("rid"), "pid", EntryId("eid"), 1, "one", "png", ResourceType.UPLOAD, 12, Instant.EPOCH)
         every { resourceManager.constructTempBasePath(IMAGE_UPLOAD_BASE) } returns Path.of("migrated/")
         every { resourceManager.migrateGeneratedResources(any(), any()) } returns listOf(resource)
         val snippet = snippetService.add(newSnippet(EntryId("n1"), plain))
         assertThat(snippet.type).isEqualTo(EntryType.SNIPPET)
-        assertThat(snippet.plainText.trim()).isEqualTo("something ![desc](${Environment.server.rootPath}/entry/${snippet.id}/resource/${resource.id})")
+        assertThat(snippet.plainContent.trim()).isEqualTo("something ![desc](${Environment.server.rootPath}/entry/${snippet.id}/resource/${resource.id})")
         verify(exactly = 1) { resourceManager.migrateGeneratedResources(snippet.id, any()) }
         verify { entryAuditService.acceptAuditEvent(snippet.id, any(), any()) }
         verify { workerRegistry.acceptEntryRefWork(snippet.id) }
@@ -74,7 +75,7 @@ class SnippetServiceTest : DatabaseTest() {
     fun testCreateSnippetWithTags() {
         val snippet = snippetService.add(newSnippet(EntryId("n1"), "content", listOf("t1", "t2")))
         assertThat(snippet.type).isEqualTo(EntryType.SNIPPET)
-        assertThat(snippet.plainText).isEqualTo("content")
+        assertThat(snippet.plainContent).isEqualTo("content")
         assertThat(snippet.tags).hasSize(2).extracting("id").containsExactly("t1", "t2")
         assertThat(snippet.dateCreated).isEqualTo(snippet.dateUpdated)
         verify { entryAuditService.acceptAuditEvent(snippet.id, any(), any()) }
@@ -90,7 +91,7 @@ class SnippetServiceTest : DatabaseTest() {
     fun testCreateSnippetWithCollections() {
         val snippet = snippetService.add(newSnippet(EntryId("n1"), "content", cols = listOf("c1", "c2")))
         assertThat(snippet.type).isEqualTo(EntryType.SNIPPET)
-        assertThat(snippet.plainText).isEqualTo("content")
+        assertThat(snippet.plainContent).isEqualTo("content")
         assertThat(snippet.collections).hasSize(2).extracting("id").containsExactly("c1", "c2")
         assertThat(snippet.dateCreated).isEqualTo(snippet.dateUpdated)
         verify { entryAuditService.acceptAuditEvent(snippet.id, any(), any()) }
@@ -118,7 +119,7 @@ class SnippetServiceTest : DatabaseTest() {
         assertThat(retrieved?.id).isEqualTo(snippet2.id)
         assertThat(retrieved?.tags).isEqualTo(snippet2.tags)
         assertThat(retrieved?.collections).isEqualTo(snippet2.collections)
-        assertThat(retrieved?.plainText).isEqualTo(snippet2.plainText)
+        assertThat(retrieved?.plainContent).isEqualTo(snippet2.plainContent)
         assertThat(retrieved?.dateCreated).isEqualTo(snippet2.dateUpdated)
     }
 
@@ -140,14 +141,14 @@ class SnippetServiceTest : DatabaseTest() {
         assertThat(snippets.page).isEqualTo(1L)
         assertThat(snippets.size).isEqualTo(1)
         assertThat(snippets.total).isEqualTo(3)
-        assertThat(snippets.content).extracting("markdownText").containsOnly("<p>content3</p>\n")
+        assertThat(snippets.content).extracting("renderedContent").containsOnly("<p>content3</p>\n")
 
         snippets = snippetService.get(PageRequest(2, 1))
         assertThat(snippets.content).hasSize(1)
         assertThat(snippets.page).isEqualTo(2L)
         assertThat(snippets.size).isEqualTo(1)
         assertThat(snippets.total).isEqualTo(3)
-        assertThat(snippets.content).extracting("markdownText").containsOnly("<p>content2</p>\n")
+        assertThat(snippets.content).extracting("renderedContent").containsOnly("<p>content2</p>\n")
 
         snippets = snippetService.get(PageRequest(1, 3))
         assertThat(snippets.content).hasSize(3)
@@ -160,7 +161,7 @@ class SnippetServiceTest : DatabaseTest() {
         assertThat(snippets.page).isEqualTo(1L)
         assertThat(snippets.size).isEqualTo(10)
         assertThat(snippets.total).isEqualTo(3)
-        assertThat(snippets.content).extracting("markdownText").doesNotHaveDuplicates()
+        assertThat(snippets.content).extracting("renderedContent").doesNotHaveDuplicates()
     }
 
     @Test
@@ -172,10 +173,10 @@ class SnippetServiceTest : DatabaseTest() {
         snippetService.add(newSnippet(EntryId("n3"), "content3", listOf("t1", "t2"), listOf("c1")))
 
         val snippets = snippetService.get(PageRequest(1, 10, sort = "dateCreated", direction = SortDirection.ASC))
-        assertThat(snippets.content).extracting("markdownText").containsExactly("<p>content1</p>\n", "<p>content2</p>\n", "<p>content3</p>\n")
+        assertThat(snippets.content).extracting("renderedContent").containsExactly("<p>content1</p>\n", "<p>content2</p>\n", "<p>content3</p>\n")
 
         val snippets2 = snippetService.get(PageRequest(1, 10, sort = "dateCreated", direction = SortDirection.DESC))
-        assertThat(snippets2.content).extracting("markdownText").containsExactly("<p>content3</p>\n", "<p>content2</p>\n", "<p>content1</p>\n")
+        assertThat(snippets2.content).extracting("renderedContent").containsExactly("<p>content3</p>\n", "<p>content2</p>\n", "<p>content1</p>\n")
     }
 
     @Test
@@ -187,32 +188,33 @@ class SnippetServiceTest : DatabaseTest() {
 
         val onlyTags = snippetService.get(PageRequest(tags = listOf("t1")))
         assertThat(onlyTags.content).hasSize(2)
-        assertThat(onlyTags.content).extracting("markdownText").containsExactlyInAnyOrder("<p>content1</p>\n", "<p>content2</p>\n")
+        assertThat(onlyTags.content).extracting("renderedContent").containsExactlyInAnyOrder("<p>content1</p>\n", "<p>content2</p>\n")
 
         val onlyTags2 = snippetService.get(PageRequest(tags = listOf("t2")))
         assertThat(onlyTags2.content).hasSize(1)
-        assertThat(onlyTags2.content).extracting("markdownText").containsExactlyInAnyOrder("<p>content1</p>\n")
+        assertThat(onlyTags2.content).extracting("renderedContent").containsExactlyInAnyOrder("<p>content1</p>\n")
 
         val onlyCollections = snippetService.get(PageRequest(collections = listOf("c1")))
         assertThat(onlyCollections.content).hasSize(1)
-        assertThat(onlyCollections.content).extracting("markdownText").containsExactlyInAnyOrder("<p>content1</p>\n")
+        assertThat(onlyCollections.content).extracting("renderedContent").containsExactlyInAnyOrder("<p>content1</p>\n")
 
         val onlyCollections2 = snippetService.get(PageRequest(collections = listOf("c2")))
         assertThat(onlyCollections2.content).hasSize(1)
-        assertThat(onlyCollections2.content).extracting("markdownText").containsExactlyInAnyOrder("<p>content3</p>\n")
+        assertThat(onlyCollections2.content).extracting("renderedContent").containsExactlyInAnyOrder("<p>content3</p>\n")
 
         val both = snippetService.get(PageRequest(tags = listOf("t1"), collections = listOf("c1")))
         assertThat(both.content).hasSize(1)
-        assertThat(both.content).extracting("markdownText").containsExactlyInAnyOrder("<p>content1</p>\n")
+        assertThat(both.content).extracting("renderedContent").containsExactlyInAnyOrder("<p>content1</p>\n")
     }
 
     @Test
     fun testGetSnippetsBySource() {
         snippetService.add(newSnippet(EntryId("n1"), "content1", listOf("t1", "t2"), listOf("c1")))
         snippetService.add(newSnippet(EntryId("n2"), "content2", listOf("t1", "t2"), listOf("c1")))
+        // snippets no longer have a hardcoded source
         val snippetsFromSource = snippetService.get(PageRequest(source = "me"))
-        assertThat(snippetsFromSource.total).isEqualTo(2)
-        assertThat(snippetsFromSource.content).hasSize(2)
+        assertThat(snippetsFromSource.total).isZero()
+        assertThat(snippetsFromSource.content).isEmpty()
         val snippetsFromMissingSource = snippetService.get(PageRequest(source = "invalid"))
         assertThat(snippetsFromMissingSource.total).isZero()
         assertThat(snippetsFromMissingSource.content).isEmpty()
@@ -287,7 +289,7 @@ class SnippetServiceTest : DatabaseTest() {
         val updated = snippetService.update(newSnippet(added1.id, "new content", listOf("t1"), listOf("c1")))
         val newSnippet = snippetService.get(updated!!.id)
         assertThat(newSnippet?.id).isEqualTo(added1.id)
-        assertThat(newSnippet?.plainText).isEqualTo("new content")
+        assertThat(newSnippet?.plainContent).isEqualTo("new content")
         assertThat(newSnippet?.tags).hasSize(1)
         assertThat(newSnippet?.collections).hasSize(1)
         assertThat(newSnippet?.dateUpdated).isNotEqualTo(newSnippet?.dateCreated)
@@ -296,7 +298,7 @@ class SnippetServiceTest : DatabaseTest() {
 
         val oldSnippet = snippetService.get(added1.id)
         assertThat(oldSnippet?.id).isEqualTo(updated.id)
-        assertThat(oldSnippet?.plainText).isEqualTo("new content")
+        assertThat(oldSnippet?.plainContent).isEqualTo("new content")
         assertThat(oldSnippet?.tags).hasSize(1)
         assertThat(oldSnippet?.collections).hasSize(1)
     }
@@ -304,11 +306,11 @@ class SnippetServiceTest : DatabaseTest() {
     @Test
     fun testUpdateExistingSnippetWithTempImage() {
         val added = snippetService.add(newSnippet(EntryId("n1"), "snippet content 1"))
-        val resource = Resource(ResourceId("rid"), "pid", added.id, 1, "one", "png", ResourceType.UPLOAD, 12, 123L)
+        val resource = Resource(ResourceId("rid"), "pid", added.id, 1, "one", "png", ResourceType.UPLOAD, 12, Instant.EPOCH)
         every { resourceManager.constructTempBasePath(IMAGE_UPLOAD_BASE) } returns Path.of("migrated/")
         every { resourceManager.migrateGeneratedResources(added.id, any()) } returns listOf(resource)
         val updated = snippetService.update(newSnippet(added.id, "something ![desc](${TEMP_URL}abc/one.png)"))
-        assertThat(updated?.plainText?.trim()).isEqualTo("something ![desc](${Environment.server.rootPath}/entry/${added.id}/resource/${resource.id})")
+        assertThat(updated?.plainContent?.trim()).isEqualTo("something ![desc](${Environment.server.rootPath}/entry/${added.id}/resource/${resource.id})")
         verify(exactly = 1) { resourceManager.migrateGeneratedResources(added.id, any()) }
         verify { workerRegistry.acceptEntryRefWork(added.id) }
     }
@@ -316,11 +318,11 @@ class SnippetServiceTest : DatabaseTest() {
     @Test
     fun testUpdateSnippetTags() {
         val added1 = snippetService.add(newSnippet(EntryId("n1"), "content 1", listOf("t1", "t2")))
-        assertThat(snippetService.get(added1.id)?.plainText).isEqualTo("content 1")
+        assertThat(snippetService.get(added1.id)?.plainContent).isEqualTo("content 1")
         assertThat(snippetService.get(added1.id)?.tags).extracting("id").containsExactlyInAnyOrder("t1", "t2")
 
         snippetService.update(newSnippet(added1.id, "content 1", listOf("t2")))
-        assertThat(snippetService.get(added1.id)?.plainText).isEqualTo("content 1")
+        assertThat(snippetService.get(added1.id)?.plainContent).isEqualTo("content 1")
         assertThat(snippetService.get(added1.id)?.tags).extracting("id").containsExactlyInAnyOrder("t2")
 
         snippetService.update(newSnippet(added1.id, "content 1", listOf("t2", "t3")))
@@ -332,11 +334,11 @@ class SnippetServiceTest : DatabaseTest() {
     @Test
     fun testUpdateSnippetCollections() {
         val added1 = snippetService.add(newSnippet(EntryId("n1"), "content 1", emptyList(), listOf("c1", "c2")))
-        assertThat(snippetService.get(added1.id)?.plainText).isEqualTo("content 1")
+        assertThat(snippetService.get(added1.id)?.plainContent).isEqualTo("content 1")
         assertThat(snippetService.get(added1.id)?.collections).extracting("id").containsExactlyInAnyOrder("c1", "c2")
 
         snippetService.update(newSnippet(added1.id, "content 1", emptyList(), listOf("c2")))
-        assertThat(snippetService.get(added1.id)?.plainText).isEqualTo("content 1")
+        assertThat(snippetService.get(added1.id)?.plainContent).isEqualTo("content 1")
         assertThat(snippetService.get(added1.id)?.collections).extracting("id").containsExactlyInAnyOrder("c2")
         verify { entryAuditService.acceptAuditEvent(added1.id, any(), any()) }
         verify { workerRegistry.acceptEntryRefWork(added1.id) }
@@ -348,7 +350,7 @@ class SnippetServiceTest : DatabaseTest() {
     @Test
     fun testUpdateSnippetNoId() {
         val added1 = snippetService.add(newSnippet(EntryId("n1"), "snippet content 1"))
-        assertThat(snippetService.get(added1.id)?.plainText).isEqualTo("snippet content 1")
+        assertThat(snippetService.get(added1.id)?.plainContent).isEqualTo("snippet content 1")
 
         val updated = snippetService.update(newSnippet(content = "new content"))
         assertThat(snippetService.get(updated!!.id)?.id).isNotEqualTo(added1.id)
@@ -444,7 +446,7 @@ class SnippetServiceTest : DatabaseTest() {
         assertThat(first?.dateCreated).isEqualTo(first?.dateUpdated)
 
         // update directly
-        snippetService.update(updated!!.copy(plainText = "new title"), true)
+        snippetService.update(updated!!.copy(plainContent = "new title"), true)
         val version3 = snippetService.get(added.id)
         assertThat(version3?.version).isEqualTo(3)
         assertThat(version3?.dateUpdated).isNotEqualTo(updated.dateUpdated)

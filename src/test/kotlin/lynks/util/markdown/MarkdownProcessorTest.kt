@@ -16,6 +16,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import java.nio.file.Path
+import java.time.Instant
 
 class MarkdownProcessorTest {
 
@@ -35,7 +36,7 @@ class MarkdownProcessorTest {
 
     @Test
     fun testEntryLinks() {
-        every { entryService.get(EntryId("1234")) } returns Note(EntryId("1234"), "My Note Title", "content", "content", 123, 123)
+        every { entryService.get(EntryId("1234")) } returns Note(EntryId("1234"), "My Note Title", "content", "content", Instant.EPOCH, Instant.EPOCH)
 
         assertConvertEqual(
             "link is @1234",
@@ -52,7 +53,7 @@ class MarkdownProcessorTest {
     @Test
     fun testEntryLinkRendersLinkTitle() {
         every { entryService.get(EntryId("linkid")) } returns
-            lynks.common.Link(EntryId("linkid"), "My Link Title", "http://example.com", "example.com", null, 123, 123)
+            lynks.common.Link(EntryId("linkid"), "My Link Title", "http://example.com", "example.com", null, Instant.EPOCH, Instant.EPOCH)
 
         assertConvertEqual(
             "see @linkid here",
@@ -63,7 +64,7 @@ class MarkdownProcessorTest {
     @Test
     fun testEntryLinkRendersFileTitle() {
         every { entryService.get(EntryId("fileid")) } returns
-            lynks.common.File(EntryId("fileid"), "My File Title", 123, 123)
+            lynks.common.File(EntryId("fileid"), "My File Title", Instant.EPOCH, Instant.EPOCH)
 
         assertConvertEqual(
             "see @fileid here",
@@ -74,7 +75,7 @@ class MarkdownProcessorTest {
     @Test
     fun testEntryLinkSnippetFallsBackToId() {
         every { entryService.get(EntryId("snipid")) } returns
-            Snippet(EntryId("snipid"), "some code", "<p>code</p>", 123, 123)
+            Snippet(EntryId("snipid"), "some code", "<p>code</p>", Instant.EPOCH, Instant.EPOCH)
 
         assertConvertEqual(
             "see @snipid here",
@@ -157,7 +158,7 @@ class MarkdownProcessorTest {
         @Test
         fun testGroupsReplaced() {
             every { resourceManager.constructTempBasePath(IMAGE_UPLOAD_BASE) } returns Path.of("migrated/")
-            val resources = listOf(Resource(ResourceId("rid"), "pid", EntryId("eid"), 1, "one", "png", ResourceType.UPLOAD, 12, 123L))
+            val resources = listOf(Resource(ResourceId("rid"), "pid", EntryId("eid"), 1, "one", "png", ResourceType.UPLOAD, 12, Instant.EPOCH))
             every { resourceManager.migrateGeneratedResources(eid, any()) } returns resources
             val (replaced, markdown, html) = markdownProcessor.convertAndProcess(fullInput, eid)
             assertThat(replaced).isOne()

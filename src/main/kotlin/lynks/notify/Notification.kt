@@ -3,14 +3,16 @@ package lynks.notify
 import lynks.common.*
 import org.jetbrains.exposed.v1.core.ReferenceOption
 import org.jetbrains.exposed.v1.core.Table
+import org.jetbrains.exposed.v1.javatime.timestampWithTimeZone
+import java.time.Instant
 
-object Notifications : Table("NOTIFICATION") {
-    val notificationId = varchar("ID", UID_LENGTH)
-    val notificationType = enumeration<NotificationType>("TYPE")
-    val message = varchar("MESSAGE", 255)
-    val read = bool("READ")
-    val entryId = varchar("ENTRY_ID", UID_LENGTH).references(Entries.id, ReferenceOption.CASCADE).nullable()
-    val dateCreated = long("DATE_CREATED").index()
+object Notifications : Table("notifications") {
+    val notificationId = varchar("id", UID_LENGTH)
+    val notificationType = enumerationByName<NotificationType>("type", 30)
+    val message = varchar("message", 255)
+    val read = bool("read")
+    val entryId = varchar("entry_id", UID_LENGTH).references(Entries.id, ReferenceOption.CASCADE).nullable()
+    val dateCreated = timestampWithTimeZone("date_created").index()
     override val primaryKey = PrimaryKey(notificationId)
 }
 
@@ -42,6 +44,6 @@ data class Notification(
     val entryId: EntryId? = null,
     val entryType: EntryType? = null,
     val entryTitle: String? = null,
-    val dateCreated: Long
+    val dateCreated: Instant
 ) : TypedIdEntity<NotificationId>
 

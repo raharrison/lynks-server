@@ -22,8 +22,7 @@ class FileEndpointTest : ServerTest() {
         createDummyEntry("e3", "title3", "content3", EntryType.FILE)
         createDummyTag("t1", "tag1")
         createDummyCollection("c1", "col1")
-        post("/tag/refresh")
-        post("/collection/refresh")
+        refreshGroups()
     }
 
     @Test
@@ -235,19 +234,6 @@ class FileEndpointTest : ServerTest() {
             .extract().to<Page<SlimFile>>()
         assertThat(filesCollection.total).isEqualTo(1)
         assertThat(filesCollection.content).hasSize(1).extracting<EntryId> { it.id }
-            .containsExactly(created.id)
-
-        // filter by source
-        val filesSource = given()
-            .queryParam("source", "me")
-            .queryParam("direction", "asc")
-            .When()
-            .get("/file")
-            .then()
-            .statusCode(200)
-            .extract().to<Page<SlimFile>>()
-        assertThat(filesSource.total).isEqualTo(1)
-        assertThat(filesSource.content).hasSize(1).extracting<EntryId> { it.id }
             .containsExactly(created.id)
     }
 

@@ -6,30 +6,33 @@ import lynks.common.IdBasedNewEntity
 import lynks.common.UID_LENGTH
 import org.jetbrains.exposed.v1.core.ReferenceOption
 import org.jetbrains.exposed.v1.core.Table
+import org.jetbrains.exposed.v1.javatime.timestampWithTimeZone
+import java.time.Instant
 
-object Groups: Table("GROUP") {
-    val id = varchar("ID", UID_LENGTH)
-    val type = enumeration<GroupType>("TYPE").index()
-    val name = varchar("NAME", 255)
-    val parentId = (varchar("PARENT_ID", UID_LENGTH) references id).nullable().index()
-    val dateCreated = long("DATE_CREATED")
-    val dateUpdated = long("DATE_UPDATED")
+object Groups: Table("groups") {
+    val id = varchar("id", UID_LENGTH)
+    val type = enumerationByName<GroupType>("type", 20).index()
+    val name = varchar("name", 255)
+    val parentId = (varchar("parent_id", UID_LENGTH) references id).nullable().index()
+    val dateCreated = timestampWithTimeZone("date_created")
+    val dateUpdated = timestampWithTimeZone("date_updated")
     override val primaryKey = PrimaryKey(id)
 }
 
-object EntryGroups: Table("ENTRY_GROUP") {
-    val groupId = (varchar("GROUP_ID", UID_LENGTH).references(Groups.id, ReferenceOption.CASCADE))
-    val entryId = (varchar("ENTRY_ID", UID_LENGTH).references(Entries.id, ReferenceOption.CASCADE))
+object EntryGroups: Table("entry_groups") {
+    val groupId = (varchar("group_id", UID_LENGTH).references(Groups.id, ReferenceOption.CASCADE))
+    val entryId = (varchar("entry_id", UID_LENGTH).references(Entries.id, ReferenceOption.CASCADE))
     override val primaryKey = PrimaryKey(groupId, entryId)
+    init { index(false, entryId) }
 }
 
 
 interface Grouping<T>: IdBasedCreatedEntity {
     var name: String
     var path: String?
-    var children: MutableSet<T>
-    var dateCreated: Long
-    var dateUpdated: Long
+    val children: MutableSet<T>
+    var dateCreated: Instant
+    var dateUpdated: Instant
 
     fun copy(): T
 }
@@ -41,8 +44,8 @@ data class Tag(
     override val id: String,
     override var name: String,
     override var path: String?,
-    override var dateCreated: Long,
-    override var dateUpdated: Long
+    override var dateCreated: Instant,
+    override var dateUpdated: Instant
 ): Grouping<Tag> {
 
     override var children: MutableSet<Tag> = mutableSetOf()
@@ -65,8 +68,8 @@ data class Collection(
     override var name: String,
     override var path: String?,
     override var children: MutableSet<Collection>,
-    override var dateCreated: Long,
-    override var dateUpdated: Long
+    override var dateCreated: Instant,
+    override var dateUpdated: Instant
 ): Grouping<Collection> {
     override fun hashCode(): Int = id.hashCode()
     override fun equals(other: Any?): Boolean = if (other is Collection) id == other.id else false
@@ -79,4 +82,3 @@ data class NewCollection(
         val name: String,
         val parentId: String? = null
 ): IdBasedNewEntity
-

@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.time.Instant
 import kotlin.io.path.absolutePathString
 import kotlin.io.path.extension
 import kotlin.io.path.name
@@ -38,7 +39,7 @@ class YoutubeSubtitleTaskTest {
         it.entryAuditService = entryAuditService
     }
     private val context = youtubeSubtitleTask.createContext(mapOf("searchable" to "true"))
-    private val link = Link(EntryId("eid"), "title", "youtube.com/watch?v=1234", "src", "", 123L, 123L)
+    private val link = Link(EntryId("eid"), "title", "youtube.com/watch?v=1234", "src", "", Instant.EPOCH, Instant.EPOCH)
 
     @AfterEach
     fun setup() {
@@ -89,7 +90,7 @@ class YoutubeSubtitleTaskTest {
                 any()
             )
         } returns
-            Resource(ResourceId("rid"), "pid", link.id, 1, subtitleFile.name, subtitleFile.extension, ResourceType.GENERATED, 1, 1)
+            Resource(ResourceId("rid"), "pid", link.id, 1, subtitleFile.name, subtitleFile.extension, ResourceType.GENERATED, 1, Instant.EPOCH)
 
         mockkObject(ExecUtils)
 

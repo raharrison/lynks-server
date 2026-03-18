@@ -12,6 +12,8 @@ import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.statements.UpdateBuilder
 import org.jetbrains.exposed.v1.jdbc.Query
 import org.jetbrains.exposed.v1.jdbc.selectAll
+import java.time.OffsetDateTime
+import java.time.ZoneOffset
 
 class FileService(
     groupSetService: GroupSetService, entryAuditService: EntryAuditService, resourceManager: ResourceManager
@@ -33,7 +35,7 @@ class FileService(
         listOf(Entries.id, Entries.title, Entries.dateUpdated, Entries.starred)
 
     override fun toInsert(eId: EntryId, entry: NewFile): BaseEntries.(UpdateBuilder<*>) -> Unit = {
-        val time = System.currentTimeMillis()
+        val time = OffsetDateTime.now(ZoneOffset.UTC)
         it[id] = eId.value
         it[title] = entry.title
         it[src] = "me"
@@ -44,7 +46,7 @@ class FileService(
 
     override fun toUpdate(entry: NewFile): BaseEntries.(UpdateBuilder<*>) -> Unit = {
         it[title] = entry.title
-        it[dateUpdated] = System.currentTimeMillis()
+        it[dateUpdated] = OffsetDateTime.now(ZoneOffset.UTC)
     }
 
     override fun toUpdate(entry: File): BaseEntries.(UpdateBuilder<*>) -> Unit = {

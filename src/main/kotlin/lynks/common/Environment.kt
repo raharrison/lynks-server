@@ -2,7 +2,6 @@ package lynks.common
 
 import com.voltstorage.konf.Config
 import com.voltstorage.konf.ConfigSpec
-import lynks.db.DatabaseDialect
 import lynks.util.loggerFor
 
 enum class ConfigMode {
@@ -42,14 +41,12 @@ object Environment {
     )
 
     private object DatabaseSpec: ConfigSpec("database") {
-        val dialect by required<DatabaseDialect>(description = "type of database: either H2 or POSTGRES")
         val url by required<String>(description = "url of the database to connect to")
         val user by optional("", description = "database user")
         val password by optional("", description = "database password")
     }
 
     data class Database(
-        val dialect: DatabaseDialect = config[DatabaseSpec.dialect],
         val url: String = config[DatabaseSpec.url],
         val user: String = config[DatabaseSpec.user],
         val password: String = config[DatabaseSpec.password],

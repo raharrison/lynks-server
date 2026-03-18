@@ -6,6 +6,9 @@ import org.junit.jupiter.api.BeforeEach
 abstract class DatabaseTest {
 
     companion object {
+        init {
+            TestPostgresContainer.configure()
+        }
         val databaseFactory = DatabaseFactory()
     }
 

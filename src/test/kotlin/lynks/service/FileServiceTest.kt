@@ -22,6 +22,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import java.time.Instant
 
 class FileServiceTest : DatabaseTest() {
 
@@ -46,7 +47,7 @@ class FileServiceTest : DatabaseTest() {
         val file = fileService.add(newFile(EntryId("f1"), "filename"))
         assertThat(file.type).isEqualTo(EntryType.FILE)
         assertThat(file.title).isEqualTo("filename")
-        assertThat(file.dateUpdated).isPositive()
+        assertThat(file.dateUpdated).isAfter(Instant.EPOCH)
         assertThat(file.dateCreated).isEqualTo(file.dateUpdated)
         verify(exactly = 0) { resourceManager.migrateGeneratedResources(file.id, any()) }
         verify { entryAuditService.acceptAuditEvent(file.id, any(), any()) }

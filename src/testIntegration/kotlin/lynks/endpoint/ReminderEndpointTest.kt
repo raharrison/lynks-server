@@ -14,6 +14,7 @@ import lynks.util.createDummyReminder
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import java.time.Instant
 import java.time.ZoneId
 
 class ReminderEndpointTest : ServerTest() {
@@ -76,7 +77,7 @@ class ReminderEndpointTest : ServerTest() {
         assertThat(reminder.notifyMethods).containsExactly(NotificationMethod.WEB, NotificationMethod.EMAIL)
         assertThat(reminder.message).isEqualTo("message")
         assertThat(reminder.status).isEqualTo(ReminderStatus.ACTIVE)
-        assertThat(reminder.dateCreated).isPositive().isEqualTo(reminder.dateUpdated)
+        assertThat(reminder.dateCreated).isAfter(Instant.EPOCH).isEqualTo(reminder.dateUpdated)
     }
 
     @Test

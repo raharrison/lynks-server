@@ -3,26 +3,28 @@ package lynks.resource
 import lynks.common.*
 import org.jetbrains.exposed.v1.core.ReferenceOption
 import org.jetbrains.exposed.v1.core.Table
+import org.jetbrains.exposed.v1.javatime.timestampWithTimeZone
+import java.time.Instant
 import java.util.*
 
-object Resources : Table("RESOURCE") {
-    val id = varchar("ID", UID_LENGTH)
-    val entryId = (varchar("ENTRY_ID", UID_LENGTH).references(Entries.id, ReferenceOption.CASCADE)).index()
-    val currentVersion = integer("CURRENT_VERSION")
-    val fileName = varchar("FILENAME", 255)
-    val extension = varchar("EXTENSION", 24)
-    val type = enumeration<ResourceType>("TYPE")
-    val dateCreated = long("DATE_CREATED")
-    val dateUpdated = long("DATE_UPDATED")
+object Resources : Table("resources") {
+    val id = varchar("id", UID_LENGTH)
+    val entryId = (varchar("entry_id", UID_LENGTH).references(Entries.id, ReferenceOption.CASCADE)).index()
+    val currentVersion = integer("current_version")
+    val fileName = varchar("filename", 255)
+    val extension = varchar("extension", 24)
+    val type = enumerationByName<ResourceType>("type", 30)
+    val dateCreated = timestampWithTimeZone("date_created")
+    val dateUpdated = timestampWithTimeZone("date_updated")
     override val primaryKey = PrimaryKey(id)
 }
 
-object ResourceVersions : Table("RESOURCE_VERSIONS") {
-    val id = varchar("ID", UID_LENGTH)
-    val resourceId = varchar("RESOURCE_ID", UID_LENGTH).references(Resources.id, ReferenceOption.CASCADE).index()
-    val version = integer("RESOURCE_VERSION")
-    val size = long("SIZE")
-    val dateCreated = long("DATE_CREATED")
+object ResourceVersions : Table("resource_versions") {
+    val id = varchar("id", UID_LENGTH)
+    val resourceId = varchar("resource_id", UID_LENGTH).references(Resources.id, ReferenceOption.CASCADE).index()
+    val version = integer("resource_version")
+    val size = long("size")
+    val dateCreated = timestampWithTimeZone("date_created")
     override val primaryKey = PrimaryKey(id)
 }
 
@@ -35,7 +37,7 @@ data class Resource(
     val extension: String,
     val type: ResourceType,
     val size: Long,
-    val dateCreated: Long
+    val dateCreated: Instant
 ) : TypedIdEntity<ResourceId>
 
 enum class ResourceType {

@@ -13,6 +13,7 @@ import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.jetbrains.exposed.v1.jdbc.update
 import org.slf4j.LoggerFactory
+import java.time.Instant
 
 abstract class GroupService<T : Grouping<T>, in U : IdBasedNewEntity>(private val groupType: GroupType) {
 
@@ -27,8 +28,8 @@ abstract class GroupService<T : Grouping<T>, in U : IdBasedNewEntity>(private va
         val id: String,
         val name: String,
         val parentId: String?,
-        val dateCreated: Long,
-        val dateUpdated: Long
+        val dateCreated: Instant,
+        val dateUpdated: Instant
     )
 
     protected fun getOrCreateFromPath(pathElements: List<String>): T {
@@ -85,8 +86,8 @@ abstract class GroupService<T : Grouping<T>, in U : IdBasedNewEntity>(private va
         id = row[Groups.id],
         name = row[Groups.name],
         parentId = row[Groups.parentId],
-        dateCreated = row[Groups.dateCreated],
-        dateUpdated = row[Groups.dateUpdated]
+        dateCreated = row[Groups.dateCreated].toInstant(),
+        dateUpdated = row[Groups.dateUpdated].toInstant()
     )
 
     fun rebuild() {

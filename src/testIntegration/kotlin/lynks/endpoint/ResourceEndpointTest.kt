@@ -12,6 +12,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.nio.file.Paths
+import java.time.Instant
 
 class ResourceEndpointTest : ServerTest() {
 
@@ -235,7 +236,7 @@ class ResourceEndpointTest : ServerTest() {
     @Test
     fun testUpdateInvalidResource() {
         val invalid = Resource(ResourceId("invalid"), "pid", EntryId("eid"), 1, "file1.txt", "txt", ResourceType.UPLOAD,
-            12L, 1234L)
+            12L, Instant.EPOCH)
         given()
             .contentType(ContentType.JSON)
             .body(invalid)

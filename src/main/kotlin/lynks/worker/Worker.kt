@@ -10,6 +10,8 @@ import org.jetbrains.exposed.v1.jdbc.*
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.time.OffsetDateTime
+import java.time.ZoneOffset
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.coroutines.CoroutineContext
 
@@ -132,7 +134,7 @@ abstract class PersistedVariableChannelBasedWorker<T : PersistVariableWorkerRequ
         deleteSchedule(request)
     }
 
-    private fun addSchedule(request: T, lastRun: Long?) = transaction {
+    private fun addSchedule(request: T, lastRun: OffsetDateTime?) = transaction {
         WorkerSchedules.insert {
             it[worker] = workerName
             it[key] = request.key
@@ -145,7 +147,7 @@ abstract class PersistedVariableChannelBasedWorker<T : PersistVariableWorkerRequ
         WorkerSchedules.update({ (WorkerSchedules.worker eq workerName) and (WorkerSchedules.key eq request.key) }) {
             it[key] = request.key
             it[WorkerSchedules.request] = defaultMapper.writeValueAsString(request)
-            it[lastRun] = System.currentTimeMillis()
+            it[lastRun] = OffsetDateTime.now(ZoneOffset.UTC)
         }
     }
 

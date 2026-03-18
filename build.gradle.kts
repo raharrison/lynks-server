@@ -1,6 +1,5 @@
 val ktorVersion = "3.4.0"
 
-val h2Version = "2.4.240"
 val postgresVersion = "42.7.9"
 val exposedVersion = "1.1.1"
 val hikariVersion = "7.0.2"
@@ -16,6 +15,7 @@ val konfVersion = "0.0.8"
 val commonslangVersion = "3.14.0"
 val skeduleVersion = "0.4.0"
 
+val testcontainersVersion = "1.21.4"
 val kotlinxCoroutinesTestVersion = "1.10.2"
 val restAssuredVersion = "6.0.0"
 val junitVersion = "5.10.1"
@@ -53,6 +53,13 @@ configurations {
 tasks.register<Test>("testIntegration") {
     testClassesDirs = sourceSets["testIntegration"].output.classesDirs
     classpath = sourceSets["testIntegration"].runtimeClasspath
+    useJUnitPlatform()
+    systemProperty("CONFIG_MODE", "TEST")
+    jvmArgs("-XX:+EnableDynamicAgentLoading")
+    testLogging {
+        events("failed")
+        exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+    }
 }
 
 tasks.withType<Copy> {
@@ -107,14 +114,15 @@ dependencies {
     implementation("io.ktor:ktor-server-auth:$ktorVersion")
     implementation("io.ktor:ktor-server-sessions:$ktorVersion")
     implementation("io.ktor:ktor-serialization-jackson:$ktorVersion")
+    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
 
-    implementation("com.h2database:h2:$h2Version")
     implementation("org.postgresql:postgresql:$postgresVersion")
     implementation("org.jetbrains.exposed:exposed-core:$exposedVersion")
     implementation("org.jetbrains.exposed:exposed-jdbc:$exposedVersion")
     implementation("org.jetbrains.exposed:exposed-json:$exposedVersion")
+    implementation("org.jetbrains.exposed:exposed-java-time:$exposedVersion")
     implementation("com.zaxxer:HikariCP:$hikariVersion")
-    implementation("org.flywaydb:flyway-core:$flywayVersion")
+    implementation("org.flywaydb:flyway-database-postgresql:$flywayVersion")
 
     implementation("com.vladsch.flexmark:flexmark:$flexmarkVersion")
     implementation("com.vladsch.flexmark:flexmark-ext-gfm-strikethrough:$flexmarkVersion")
@@ -139,4 +147,7 @@ dependencies {
     testImplementation("io.mockk:mockk:$mockkVersion")
     testImplementation("org.wiremock:wiremock:$wiremockVersion")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:$junitVersion")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    testImplementation("org.testcontainers:postgresql:$testcontainersVersion")
+    testImplementation("org.testcontainers:junit-jupiter:$testcontainersVersion")
 }

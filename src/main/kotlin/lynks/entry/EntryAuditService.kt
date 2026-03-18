@@ -8,6 +8,8 @@ import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import java.time.OffsetDateTime
+import java.time.ZoneOffset
 
 class EntryAuditService {
 
@@ -20,14 +22,14 @@ class EntryAuditService {
                     EntryId(it[EntryAudit.entryId]),
                     it[EntryAudit.src],
                     it[EntryAudit.details],
-                    it[EntryAudit.timestamp]
+                    it[EntryAudit.timestamp].toInstant()
                 )
             }
     }
 
     fun acceptAuditEvent(entryId: EntryId, src: String?, details: String): Unit = transaction {
         val id = RandomUtils.generateUid()
-        val time = System.currentTimeMillis()
+        val time = OffsetDateTime.now(ZoneOffset.UTC)
         EntryAudit.insert {
             it[auditId] = id
             it[EntryAudit.entryId] = entryId.value

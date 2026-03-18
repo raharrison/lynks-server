@@ -22,8 +22,7 @@ class LinkEndpointTest: ServerTest() {
         createDummyEntry("e3", "title3", "content3", EntryType.LINK)
         createDummyTag("t1", "tag1")
         createDummyCollection("c1", "col1")
-        post("/tag/refresh")
-        post("/collection/refresh")
+        refreshGroups()
     }
 
     @Test

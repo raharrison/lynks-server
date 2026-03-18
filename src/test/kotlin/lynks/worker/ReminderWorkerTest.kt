@@ -37,7 +37,7 @@ class ReminderWorkerTest {
         every { reminderService.updateReminderStatus(any(), any()) } returns 1
         every { entryService.get(EntryId("e1")) } returns null
         coEvery { notifyService.create(any(), false) } returns Notification(
-            NotificationId("n1"), NotificationType.DISCUSSIONS, "found", false, dateCreated = System.currentTimeMillis()
+            NotificationId("n1"), NotificationType.DISCUSSIONS, "found", false, dateCreated = Instant.now()
         )
         coEvery { notifyService.sendWebNotification(any()) } just Runs
         coEvery { notifyService.sendEmail(any(), any(), any()) } just Runs
@@ -58,10 +58,10 @@ class ReminderWorkerTest {
         val fire2 = Instant.now().plus(45, ChronoUnit.MINUTES).toEpochMilli()
         val reminder = AdhocReminder(ReminderId("sc1"), EntryId("e1"),
             listOf(NotificationMethod.WEB), "message1", fire, tz.id, ReminderStatus.ACTIVE,
-            1234, 1234)
+            Instant.EPOCH, Instant.EPOCH)
         val reminder2 = AdhocReminder(ReminderId("sc2"), EntryId("e1"),
             listOf(NotificationMethod.WEB, NotificationMethod.EMAIL), "message2", fire2,
-            tz.id, ReminderStatus.ACTIVE, 1234, 1234)
+            tz.id, ReminderStatus.ACTIVE, Instant.EPOCH, Instant.EPOCH)
 
         val worker = createWorker(coroutineContext)
         val send = worker.worker()
@@ -99,10 +99,10 @@ class ReminderWorkerTest {
         val fire2 = Instant.now().plus(2, ChronoUnit.HOURS).plus(30, ChronoUnit.MINUTES).toEpochMilli()
         val reminder = AdhocReminder(ReminderId("sc1"), EntryId("e1"),
             listOf(NotificationMethod.WEB, NotificationMethod.PUSHOVER), "message1", fire, tz.id,
-            ReminderStatus.ACTIVE, 1234, 1234)
+            ReminderStatus.ACTIVE, Instant.EPOCH, Instant.EPOCH)
         val reminder2 = AdhocReminder(ReminderId("sc2"), EntryId("e1"),
             listOf(NotificationMethod.WEB), "message2", fire2,
-            tz.id, ReminderStatus.ACTIVE, 1234, 1234)
+            tz.id, ReminderStatus.ACTIVE, Instant.EPOCH, Instant.EPOCH)
 
         val worker = createWorker(coroutineContext)
         val send = worker.worker()
@@ -138,7 +138,7 @@ class ReminderWorkerTest {
         val tz = ZoneId.systemDefault()
         val reminder = RecurringReminder(ReminderId("sc2"), EntryId("e1"),
             listOf(NotificationMethod.WEB, NotificationMethod.PUSHOVER), "message", "every 30 minutes",
-            tz.id, ReminderStatus.ACTIVE, 1234, 1234)
+            tz.id, ReminderStatus.ACTIVE, Instant.EPOCH, Instant.EPOCH)
 
         val worker = createWorker(coroutineContext)
         val send = worker.worker()
@@ -173,7 +173,7 @@ class ReminderWorkerTest {
         val tz = ZoneId.of("Asia/Singapore")
         val reminder = RecurringReminder(ReminderId("sc1"), EntryId("e1"),
             listOf(NotificationMethod.WEB), "message", "every day 06:00",
-            tz.id, ReminderStatus.ACTIVE, 1234, 1234)
+            tz.id, ReminderStatus.ACTIVE, Instant.EPOCH, Instant.EPOCH)
 
         val worker = createWorker(coroutineContext)
         val send = worker.worker()
@@ -205,7 +205,7 @@ class ReminderWorkerTest {
         val fire = Instant.now().plus(15, ChronoUnit.MINUTES).toEpochMilli()
         val reminder = AdhocReminder(ReminderId("sc1"), EntryId("e1"),
             listOf(NotificationMethod.WEB, NotificationMethod.PUSHOVER), "message", fire,
-            ZoneId.systemDefault().id, ReminderStatus.ACTIVE, 1234, 1234)
+            ZoneId.systemDefault().id, ReminderStatus.ACTIVE, Instant.EPOCH, Instant.EPOCH)
 
         every { reminderService.isActive(reminder.reminderId) } returns false
         val worker = createWorker(coroutineContext)
@@ -226,7 +226,7 @@ class ReminderWorkerTest {
     fun testRecurringNotExecutedIfNotActive() = runTest {
         val reminder = RecurringReminder(ReminderId("sc1"), EntryId("e1"),
             listOf(NotificationMethod.WEB, NotificationMethod.PUSHOVER), "message", "every 3 hours",
-            ZoneId.systemDefault().id, ReminderStatus.ACTIVE, 1234, 1234)
+            ZoneId.systemDefault().id, ReminderStatus.ACTIVE, Instant.EPOCH, Instant.EPOCH)
 
         every { reminderService.isActive(reminder.reminderId) } returns false
         val worker = createWorker(coroutineContext)
@@ -248,10 +248,10 @@ class ReminderWorkerTest {
         val fire = Instant.now().plus(15, ChronoUnit.MINUTES).toEpochMilli()
         val reminder = AdhocReminder(ReminderId("sc1"), EntryId("e1"),
             listOf(NotificationMethod.WEB), "message1", fire,
-            tz.id, ReminderStatus.ACTIVE, 1234, 1234)
+            tz.id, ReminderStatus.ACTIVE, Instant.EPOCH, Instant.EPOCH)
         val recurring = RecurringReminder(ReminderId("sc1"), EntryId("e1"),
             listOf(NotificationMethod.WEB, NotificationMethod.PUSHOVER), "message2", "every 3 hours",
-            tz.id, ReminderStatus.ACTIVE, 1234, 1234)
+            tz.id, ReminderStatus.ACTIVE, Instant.EPOCH, Instant.EPOCH)
 
         every { reminderService.getAllActiveReminders() } returns listOf(reminder, recurring)
 
@@ -275,13 +275,13 @@ class ReminderWorkerTest {
         val fire = Instant.now().plus(15, ChronoUnit.MINUTES).toEpochMilli()
         val active = AdhocReminder(ReminderId("sc1"), EntryId("e1"),
             listOf(NotificationMethod.WEB), "message1", fire,
-            tz.id, ReminderStatus.ACTIVE, 1234, 1234)
+            tz.id, ReminderStatus.ACTIVE, Instant.EPOCH, Instant.EPOCH)
         val disabled = AdhocReminder(ReminderId("sc2"), EntryId("e1"),
             listOf(NotificationMethod.WEB), "message2", fire,
-            tz.id, ReminderStatus.DISABLED, 1234, 1234)
+            tz.id, ReminderStatus.DISABLED, Instant.EPOCH, Instant.EPOCH)
         val completed = AdhocReminder(ReminderId("sc3"), EntryId("e1"),
             listOf(NotificationMethod.WEB), "message3", fire,
-            tz.id, ReminderStatus.COMPLETED, 1234, 1234)
+            tz.id, ReminderStatus.COMPLETED, Instant.EPOCH, Instant.EPOCH)
 
         val worker = createWorker(coroutineContext)
         val send = worker.worker()
@@ -304,7 +304,7 @@ class ReminderWorkerTest {
         val tz = ZoneId.systemDefault()
         val fire = Instant.now().plus(2, ChronoUnit.HOURS).toEpochMilli()
         val reminder = AdhocReminder(ReminderId("sc1"), EntryId("e1"),
-            listOf(NotificationMethod.WEB), "message", fire, tz.id,ReminderStatus.ACTIVE, 1234, 1234)
+            listOf(NotificationMethod.WEB), "message", fire, tz.id,ReminderStatus.ACTIVE, Instant.EPOCH, Instant.EPOCH)
 
         val worker = createWorker(coroutineContext)
         val send = worker.worker()
@@ -330,7 +330,7 @@ class ReminderWorkerTest {
         val tz = ZoneId.systemDefault()
         val fire = Instant.now().plus(2, ChronoUnit.HOURS).toEpochMilli()
         val reminder = AdhocReminder(ReminderId("sc1"), EntryId("e1"),
-            listOf(NotificationMethod.WEB), "message", fire, tz.id,ReminderStatus.ACTIVE, 1234, 1234)
+            listOf(NotificationMethod.WEB), "message", fire, tz.id,ReminderStatus.ACTIVE, Instant.EPOCH, Instant.EPOCH)
 
         val worker = createWorker(coroutineContext)
         val send = worker.worker()
@@ -354,7 +354,7 @@ class ReminderWorkerTest {
         val tz = ZoneId.systemDefault()
         val fire = Instant.now().plus(2, ChronoUnit.HOURS).toEpochMilli()
         val reminder = AdhocReminder(ReminderId("sc1"), EntryId("e1"),
-            listOf(NotificationMethod.WEB), "message", fire, tz.id, ReminderStatus.ACTIVE, 1234, 1234)
+            listOf(NotificationMethod.WEB), "message", fire, tz.id, ReminderStatus.ACTIVE, Instant.EPOCH, Instant.EPOCH)
 
         val worker = createWorker(coroutineContext)
         val send = worker.worker()

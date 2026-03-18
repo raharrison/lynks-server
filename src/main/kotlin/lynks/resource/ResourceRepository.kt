@@ -8,6 +8,8 @@ import lynks.util.loggerFor
 import org.jetbrains.exposed.v1.core.*
 import org.jetbrains.exposed.v1.jdbc.*
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import java.time.OffsetDateTime
+import java.time.ZoneOffset
 
 class ResourceRepository {
 
@@ -49,7 +51,7 @@ class ResourceRepository {
     ): Resource {
         val currentVersion = currentVersion(entryId, name)
         val nextVersion = currentVersion.second + 1
-        val time = System.currentTimeMillis()
+        val time = OffsetDateTime.now(ZoneOffset.UTC)
         return transaction {
             if (nextVersion == 1) {
                 Resources.insert {
@@ -84,7 +86,7 @@ class ResourceRepository {
             Resources.update({ Resources.id eq parentId }) {
                 it[fileName] = name
                 it[Resources.extension] = extension
-                it[dateUpdated] = System.currentTimeMillis()
+                it[dateUpdated] = OffsetDateTime.now(ZoneOffset.UTC)
             }
         }
     }
@@ -101,7 +103,7 @@ class ResourceRepository {
             } else {
                 Resources.update({ Resources.id eq res.parentId }) {
                     it[currentVersion] = maxVersion
-                    it[dateUpdated] = System.currentTimeMillis()
+                    it[dateUpdated] = OffsetDateTime.now(ZoneOffset.UTC)
                 }
             }
             res

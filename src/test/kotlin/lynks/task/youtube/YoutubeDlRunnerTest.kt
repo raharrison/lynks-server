@@ -18,6 +18,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.nio.file.Paths
+import java.time.Instant
 
 class YoutubeDlTaskTest {
 
@@ -28,12 +29,12 @@ class YoutubeDlTaskTest {
 
     private val youtubeDlRunner = YoutubeDlRunner(resourceRetriever, resourceManager, entryAuditService, notifyService)
 
-    private val link = Link(EntryId("eid"), "title", "youtube.com/watch?v=1234", "src", "", 123L, 123L)
+    private val link = Link(EntryId("eid"), "title", "youtube.com/watch?v=1234", "src", "", Instant.EPOCH, Instant.EPOCH)
 
     @BeforeEach
     fun setup() {
         coEvery { notifyService.create(any()) } returns Notification(
-            NotificationId("n1"), NotificationType.PROCESSED, "completed", false, dateCreated = System.currentTimeMillis()
+            NotificationId("n1"), NotificationType.PROCESSED, "completed", false, dateCreated = Instant.now()
         )
     }
 
@@ -63,7 +64,7 @@ class YoutubeDlTaskTest {
                 path = path
             )
         } returns
-            Resource(ResourceId("rid"), "pid", EntryId("eid"), 1, name, "", ResourceType.UPLOAD, 1, 1)
+            Resource(ResourceId("rid"), "pid", EntryId("eid"), 1, name, "", ResourceType.UPLOAD, 1, Instant.EPOCH)
 
         every { resourceManager.migrateGeneratedResources(EntryId("eid"), any()) } returns emptyList()
         mockkObject(ExecUtils)

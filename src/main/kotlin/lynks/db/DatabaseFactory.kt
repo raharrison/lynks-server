@@ -20,7 +20,6 @@ import lynks.worker.WorkerSchedules
 import org.flywaydb.core.Flyway
 import org.jetbrains.exposed.v1.jdbc.Database
 import org.jetbrains.exposed.v1.jdbc.SchemaUtils.create
-import org.jetbrains.exposed.v1.jdbc.deleteAll
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import javax.sql.DataSource
 
@@ -38,7 +37,7 @@ class DatabaseFactory {
     )
 
     fun connectAndMigrate() {
-        log.info("Initialising database with dialect: {}", Environment.database.dialect)
+        log.info("Initialising database")
 
         val pool = hikari()
         Database.connect(pool)
@@ -49,12 +48,10 @@ class DatabaseFactory {
 
     private fun hikari(): HikariDataSource {
         val config = HikariConfig()
-        config.driverClassName = Environment.database.dialect.driver
+        config.driverClassName = "org.postgresql.Driver"
         config.jdbcUrl = Environment.database.url
         config.username = Environment.database.user
         config.password = Environment.database.password
-        config.isAutoCommit = false
-        config.transactionIsolation = "TRANSACTION_REPEATABLE_READ"
         config.validate()
         return HikariDataSource(config)
     }
@@ -79,8 +76,7 @@ class DatabaseFactory {
     }
 
     fun resetAll(): Unit = transaction {
-        tables.forEach {
-            it.deleteAll()
-        }
+        val tableNames = tables.joinToString(", ") { "\"${it.tableName}\"" }
+        exec("TRUNCATE TABLE $tableNames RESTART IDENTITY CASCADE")
     }
 }

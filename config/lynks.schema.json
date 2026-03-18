@@ -19,8 +19,7 @@
                 "defaultUserPassword": "abcdef123"
             },
             "database": {
-                "dialect": "H2",
-                "url": "jdbc:h2:./lynksdb;AUTO_SERVER=TRUE",
+                "url": "jdbc:postgresql://localhost:5432/lynksdb",
                 "user": "lynksuser",
                 "password": ""
             },
@@ -117,7 +116,15 @@
                 "signingKey": {
                     "$id": "#/properties/auth/properties/signingKey",
                     "type": "string",
-                    "description": "Key (32 chars) used to sign and encrypt session cookies, should be kept secret",
+                    "description": "Key (32 chars) used to sign session cookies, should be kept secret",
+                    "examples": [
+                        "abcdef123"
+                    ]
+                },
+                "encryptionKey": {
+                    "$id": "#/properties/auth/properties/encryptionKey",
+                    "type": "string",
+                    "description": "Key (16+ chars) used to encrypt session cookies, should be kept secret and different from signingKey",
                     "examples": [
                         "abcdef123"
                     ]
@@ -147,28 +154,18 @@
             "description": "Database configuration",
             "examples": [
                 {
-                    "dialect": "H2",
-                    "url": "jdbc:h2:./lynksdb;AUTO_SERVER=TRUE",
+                    "url": "jdbc:postgresql://localhost:5432/lynksdb",
                     "user": "lynksuser",
                     "password": ""
                 }
             ],
             "properties": {
-                "dialect": {
-                    "$id": "#/properties/database/properties/dialect",
-                    "type": "string",
-                    "description": "Type of database: either H2 or POSTGRES",
-                    "examples": [
-                        "H2",
-                        "POSTGRES"
-                    ]
-                },
                 "url": {
                     "$id": "#/properties/database/properties/url",
                     "type": "string",
-                    "description": "JDBC url for the main Lynks database instance",
+                    "description": "JDBC url for the PostgreSQL database instance",
                     "examples": [
-                        "jdbc:h2:./lynksdb;AUTO_SERVER=TRUE"
+                        "jdbc:postgresql://localhost:5432/lynksdb"
                     ]
                 },
                 "user": {

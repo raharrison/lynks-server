@@ -8,6 +8,8 @@ import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.jetbrains.exposed.v1.jdbc.update
+import java.time.OffsetDateTime
+import java.time.ZoneOffset
 import java.util.*
 
 class TwoFactorService {
@@ -41,7 +43,7 @@ class TwoFactorService {
         log.info("Updating two factor settings for user={} to {}", username, enabled)
         val updated = Users.update({ Users.username eq username and Users.activated }) {
             it[Users.totp] = totp
-            it[dateUpdated] = System.currentTimeMillis()
+            it[dateUpdated] = OffsetDateTime.now(ZoneOffset.UTC)
         }
         updated > 0
     }

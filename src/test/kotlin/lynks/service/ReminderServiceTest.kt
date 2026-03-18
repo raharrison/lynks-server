@@ -17,6 +17,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.sql.SQLException
+import java.time.Instant
 import java.time.ZoneId
 
 class ReminderServiceTest : DatabaseTest() {
@@ -251,7 +252,7 @@ class ReminderServiceTest : DatabaseTest() {
         assertThat(updated?.notifyMethods).containsExactly(NotificationMethod.EMAIL, NotificationMethod.PUSHOVER)
         assertThat(updated?.message).isEqualTo("message2")
         assertThat(updated?.spec).isEqualTo("500")
-        assertThat(updated?.dateCreated).isLessThanOrEqualTo(updated?.dateUpdated)
+        assertThat(updated?.dateCreated).isBeforeOrEqualTo(updated?.dateUpdated)
         assertThat(updated?.status).isEqualTo(ReminderStatus.COMPLETED)
         assertThat(reminderService.get(res1.reminderId)).isEqualTo(updated)
 
@@ -324,7 +325,7 @@ class ReminderServiceTest : DatabaseTest() {
 
     private fun reminder(sid: ReminderId, eId: EntryId, type: ReminderType, notifyMethods: List<NotificationMethod> = listOf(NotificationMethod.EMAIL),
                          message: String? = null, interval: Long = 0, status: ReminderStatus): Reminder {
-        val time = System.currentTimeMillis()
+        val time = Instant.now()
         return when (type) {
             ReminderType.ADHOC -> AdhocReminder(sid, entryId = eId, message = message, notifyMethods = notifyMethods,
                 interval = interval, tz = this.tz, status = status, dateCreated = time, dateUpdated = time)

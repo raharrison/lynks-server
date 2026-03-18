@@ -23,14 +23,7 @@ class EnvironmentTest {
 
     @Test
     fun testEnvironmentDatabaseProperties() {
-        val file = this.javaClass.getResource("/test.json")?.readText()
-        val node = JsonMapper.defaultMapper.readTree(file).get("database")
-
-        val dialect = node.get("dialect").textValue()
-        val url = node.get("url").textValue()
-
-        assertThat(dialect).isEqualTo(Environment.database.dialect.toString())
-        assertThat(url).isEqualTo(Environment.database.url)
+        assertThat(Environment.database.url).startsWith("jdbc:postgresql://")
     }
 
     @Test

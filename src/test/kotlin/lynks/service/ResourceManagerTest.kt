@@ -10,6 +10,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.*
 import java.nio.file.Files
 import java.nio.file.Paths
+import java.time.Instant
 
 class ResourceManagerTest: DatabaseTest() {
 
@@ -483,7 +484,7 @@ class ResourceManagerTest: DatabaseTest() {
 
     @Test
     fun testUpdateResourceDoesntExist() {
-        val resource = Resource(ResourceId("invalid"), "pid", EntryId("eid"), 1, "file1.txt", "txt", ResourceType.UPLOAD, 12L, 1234)
+        val resource = Resource(ResourceId("invalid"), "pid", EntryId("eid"), 1, "file1.txt", "txt", ResourceType.UPLOAD, 12L, Instant.EPOCH)
         val updated = resourceManager.updateResource(resource)
         assertThat(updated).isNull()
     }

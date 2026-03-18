@@ -17,6 +17,7 @@ import lynks.user.UserService
 import lynks.util.createDummyUser
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import java.time.Instant
 import java.util.concurrent.TimeUnit
 
 @ExperimentalCoroutinesApi
@@ -28,7 +29,7 @@ class UnreadLinkDigestWorkerTest: DatabaseTest() {
 
     @BeforeEach
     fun setup() {
-        every { linkService.getUnread() } returns listOf(Link(EntryId("id"), "title", "url", "src", "", 0, 0))
+        every { linkService.getUnread() } returns listOf(Link(EntryId("id"), "title", "url", "src", "", Instant.EPOCH, Instant.EPOCH))
     }
 
     @Test

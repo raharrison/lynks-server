@@ -3,6 +3,7 @@ package lynks.worker
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.coroutineScope
+import lynks.common.BaseProperties
 import lynks.common.DEAD_LINK_PROP
 import lynks.common.Link
 import lynks.common.ResourceId
@@ -22,6 +23,8 @@ import lynks.suggest.Suggestion
 import lynks.util.Normalize
 import java.nio.file.Files
 import java.nio.file.Path
+import java.time.OffsetDateTime
+import java.time.ZoneOffset
 import java.util.*
 
 sealed class LinkProcessingRequest
@@ -52,25 +55,24 @@ class LinkProcessorWorker(
 
     private suspend fun processLinkPersist(link: Link, resourceSet: EnumSet<ResourceType>, process: Boolean) {
         try {
-            val originalLink = link
             resourceManager.deleteTempFiles(link.url)
-            link.props.clearTasks()
+            val enrichedProps = BaseProperties()
             val resources = processorFactory.createProcessors(link.url).flatMap {
                 it.use { proc ->
                     coroutineScope {
-                        proc.enrich(link.props)
+                        proc.enrich(enrichedProps)
                         if (process) {
                             return@coroutineScope runPersistProcessor(link, resourceSet, proc)
                         }
-                        return@coroutineScope emptyList<Resource>()
+                        return@coroutineScope emptyList()
                     }
                 }
             }
             val updatedLink = link.copy(thumbnailId = findThumbnail(resources) ?: link.thumbnailId)
-            link.props.addAttribute(DEAD_LINK_PROP, false)
-            linkService.mergeProps(updatedLink.id, updatedLink.props)
+            enrichedProps.addAttribute(DEAD_LINK_PROP, false)
+            linkService.mergeProps(updatedLink.id, enrichedProps)
 
-            if (updatedLink != originalLink) {
+            if (updatedLink != link) {
                 linkService.update(updatedLink)
             } else {
                 log.info("No changes found after link processing, not updating entity")
@@ -90,8 +92,9 @@ class LinkProcessorWorker(
         } catch (e: Exception) {
             log.error("Link processing worker failed for entry={}", link.id, e)
             // mark as dead if processing failed
-            link.props.addAttribute(DEAD_LINK_PROP, System.currentTimeMillis())
-            linkService.mergeProps(link.id, link.props)
+            val deadProps = BaseProperties()
+            deadProps.addAttribute(DEAD_LINK_PROP, OffsetDateTime.now(ZoneOffset.UTC))
+            linkService.mergeProps(link.id, deadProps)
             log.info("Link processing worker marked link as dead after failure, sending notification entry={}", link.id)
             entryAuditService.acceptAuditEvent(link.id, LinkProcessorWorker::class.simpleName, "Link processing failed")
             notifyService.create(NewNotification.error("An error occurred whilst processing the link", link.id))

@@ -7,18 +7,20 @@ import lynks.common.UID_LENGTH
 import lynks.notify.NotificationMethod
 import org.jetbrains.exposed.v1.core.ReferenceOption
 import org.jetbrains.exposed.v1.core.Table
+import org.jetbrains.exposed.v1.javatime.timestampWithTimeZone
+import java.time.Instant
 
-object Reminders : Table("REMINDER") {
-    val reminderId = varchar("REMINDER_ID", UID_LENGTH)
-    val entryId = (varchar("ENTRY_ID", UID_LENGTH).references(Entries.id, ReferenceOption.CASCADE)).index()
-    val type = enumeration<ReminderType>("REMINDER_TYPE")
-    val notifyMethods = varchar("NOTIFY_METHODS", 64)
-    val message = varchar("MESSAGE", 255).nullable()
-    val spec = varchar("SPEC", 255)
-    val tz = varchar("TZ", 32)
-    val status = enumeration<ReminderStatus>("STATUS")
-    val dateCreated = long("DATE_CREATED")
-    val dateUpdated = long("DATE_UPDATED")
+object Reminders : Table("reminders") {
+    val reminderId = varchar("reminder_id", UID_LENGTH)
+    val entryId = (varchar("entry_id", UID_LENGTH).references(Entries.id, ReferenceOption.CASCADE)).index()
+    val type = enumerationByName<ReminderType>("reminder_type", 20)
+    val notifyMethods = varchar("notify_methods", 64)
+    val message = varchar("message", 255).nullable()
+    val spec = varchar("spec", 255)
+    val tz = varchar("tz", 64)
+    val status = enumerationByName<ReminderStatus>("status", 20)
+    val dateCreated = timestampWithTimeZone("date_created")
+    val dateUpdated = timestampWithTimeZone("date_updated")
     override val primaryKey = PrimaryKey(reminderId)
 }
 
@@ -42,8 +44,8 @@ interface Reminder {
     val spec: String
     val tz: String
     val status: ReminderStatus
-    val dateCreated: Long
-    val dateUpdated: Long
+    val dateCreated: Instant
+    val dateUpdated: Instant
 }
 
 data class AdhocReminder(override val reminderId: ReminderId,
@@ -53,8 +55,8 @@ data class AdhocReminder(override val reminderId: ReminderId,
                          val interval: Long,
                          override val tz: String,
                          override val status: ReminderStatus,
-                         override val dateCreated: Long,
-                         override val dateUpdated: Long) : Reminder {
+                         override val dateCreated: Instant,
+                         override val dateUpdated: Instant) : Reminder {
     override val type: ReminderType = ReminderType.ADHOC
     override val spec: String = interval.toString()
 }
@@ -66,8 +68,8 @@ data class RecurringReminder(override val reminderId: ReminderId,
                              val fire: String,
                              override val tz: String,
                              override val status: ReminderStatus,
-                             override val dateCreated: Long,
-                             override val dateUpdated: Long) : Reminder {
+                             override val dateCreated: Instant,
+                             override val dateUpdated: Instant) : Reminder {
     override val type: ReminderType = ReminderType.RECURRING
     override val spec: String = fire
 }

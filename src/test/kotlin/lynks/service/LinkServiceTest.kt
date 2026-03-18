@@ -21,6 +21,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import java.time.Instant
 
 class LinkServiceTest : DatabaseTest() {
 
@@ -53,7 +54,7 @@ class LinkServiceTest : DatabaseTest() {
         assertThat(link.title).isEqualTo("n1")
         assertThat(link.url).isEqualTo("https://google.com/page")
         assertThat(link.source).isEqualTo("google.com")
-        assertThat(link.dateUpdated).isPositive()
+        assertThat(link.dateUpdated).isAfter(Instant.EPOCH)
         assertThat(link.dateCreated).isEqualTo(link.dateUpdated)
         assertThat(link.thumbnailId).isNull()
         verify(exactly = 1) { workerRegistry.acceptLinkWork(any()) }

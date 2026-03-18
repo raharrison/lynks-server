@@ -14,6 +14,7 @@ import lynks.util.createDummyEntry
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import java.time.Instant
 
 class CommentEndpointTest: ServerTest() {
 
@@ -41,8 +42,8 @@ class CommentEndpointTest: ServerTest() {
                 .statusCode(201)
                 .extract().to<Comment>()
         assertThat(created.entryId).isEqualTo(EntryId("e1"))
-        assertThat(created.plainText).isEqualTo(newComment.plainText)
-        assertThat(created.markdownText).isEqualTo("<p>some markdown text</p>\n")
+        assertThat(created.plainContent).isEqualTo(newComment.plainContent)
+        assertThat(created.renderedContent).isEqualTo("<p>some markdown text</p>\n")
         assertThat(created.entryId).isEqualTo(EntryId("e1"))
         assertThat(created.dateCreated).isEqualTo(created.dateUpdated)
         val retrieved = get("/entry/{entryId}/comments/{id}", created.entryId.value, created.id.value)
@@ -66,9 +67,9 @@ class CommentEndpointTest: ServerTest() {
                 .extract().to<Comment>()
         assertThat(comment.id).isEqualTo(CommentId("c2"))
         assertThat(comment.entryId).isEqualTo(EntryId("e2"))
-        assertThat(comment.plainText).isEqualTo("comment content2")
-        assertThat(comment.dateCreated).isNotZero()
-        assertThat(comment.dateUpdated).isNotZero()
+        assertThat(comment.plainContent).isEqualTo("comment content2")
+        assertThat(comment.dateCreated).isAfter(Instant.EPOCH)
+        assertThat(comment.dateUpdated).isAfter(Instant.EPOCH)
     }
 
     @Test
@@ -106,8 +107,8 @@ class CommentEndpointTest: ServerTest() {
                 .then()
                 .statusCode(200)
                 .extract().to<Comment>()
-        assertThat(updated.plainText).isEqualTo("modified")
-        assertThat(updated.markdownText).isEqualTo("<p>modified</p>\n")
+        assertThat(updated.plainContent).isEqualTo("modified")
+        assertThat(updated.renderedContent).isEqualTo("<p>modified</p>\n")
         assertThat(updated.dateUpdated).isNotEqualTo(updated.dateCreated)
         val retrieved = get("/entry/{entryId}/comments/{id}", "e2", "c2")
                 .then().extract().to<Comment>()

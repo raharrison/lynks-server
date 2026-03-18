@@ -2,6 +2,8 @@ services:
   postgres:
     image: postgres
     restart: unless-stopped
+    volumes:
+      - lynks-data:/var/lib/postgresql/data
     env_file:
       - ./config/.env
     environment:
@@ -9,3 +11,5 @@ services:
       - POSTGRES_USER=lynksuser
     ports:
       - '5432:5432'
+volumes:
+  lynks-data:

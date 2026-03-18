@@ -19,10 +19,12 @@ import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.jetbrains.exposed.v1.jdbc.update
+import java.time.OffsetDateTime
 import java.time.ZoneId
+import java.time.ZoneOffset
 
 fun createDummyEntry(id: String, title: String, content: String, type: EntryType, prop: BaseProperties? = null) = transaction {
-    val time = System.currentTimeMillis()
+    val time = OffsetDateTime.now(ZoneOffset.UTC)
     Entries.insert {
         it[Entries.id] = id
         it[Entries.title] = title
@@ -40,13 +42,13 @@ fun updateDummyEntry(id: String, title: String, version: Int, thumbnailId: Strin
     Entries.update({ Entries.id eq id}) {
         it[Entries.title] = title
         it[Entries.version] = version
-        it[Entries.dateUpdated] = System.currentTimeMillis()
+        it[Entries.dateUpdated] = OffsetDateTime.now(ZoneOffset.UTC)
         it[Entries.thumbnailId] = thumbnailId
     }
 }
 
 fun createDummyTag(id: String, name: String) = transaction{
-    val time = System.currentTimeMillis()
+    val time = OffsetDateTime.now(ZoneOffset.UTC)
     Groups.insert {
         it[Groups.id] = id
         it[Groups.name] = name
@@ -57,7 +59,7 @@ fun createDummyTag(id: String, name: String) = transaction{
 }
 
 fun createDummyCollection(id: String, name: String, parentId: String?=null) = transaction {
-    val time = System.currentTimeMillis()
+    val time = OffsetDateTime.now(ZoneOffset.UTC)
     Groups.insert {
         it[Groups.id] = id
         it[Groups.name] = name
@@ -69,12 +71,12 @@ fun createDummyCollection(id: String, name: String, parentId: String?=null) = tr
 }
 
 fun createDummyComment(id: String, entryId: String, content: String) = transaction {
-    val time = System.currentTimeMillis()
+    val time = OffsetDateTime.now(ZoneOffset.UTC)
     Comments.insert {
         it[Comments.id] = id
         it[Comments.entryId] = entryId
-        it[plainText] = content
-        it[markdownText] = content
+        it[plainContent] = content
+        it[renderedContent] = content
         it[dateCreated] = time
         it[dateUpdated] = time
     }
@@ -83,7 +85,7 @@ fun createDummyComment(id: String, entryId: String, content: String) = transacti
 fun createDummyReminder(id: String, entryId: String, type: ReminderType, notifyMethods: List<NotificationMethod>,
                         message: String? = null, spec: String, tz: String = ZoneId.systemDefault().id,
                         status: ReminderStatus = ReminderStatus.ACTIVE) = transaction {
-    val time = System.currentTimeMillis()
+    val time = OffsetDateTime.now(ZoneOffset.UTC)
     Reminders.insert {
         it[Reminders.reminderId] = id
         it[Reminders.entryId] = entryId
@@ -98,7 +100,7 @@ fun createDummyReminder(id: String, entryId: String, type: ReminderType, notifyM
     }
 }
 
-fun createDummyWorkerSchedule(worker: String, key: String, request: Any, lastRun: Long? = null) = transaction {
+fun createDummyWorkerSchedule(worker: String, key: String, request: Any, lastRun: OffsetDateTime? = null) = transaction {
     WorkerSchedules.insert {
         it[WorkerSchedules.worker] = worker
         it[WorkerSchedules.key] = key
@@ -114,12 +116,12 @@ fun createDummyNotification(id: String, type: NotificationType, msg: String, eid
         it[message] = msg
         it[read] = false
         it[entryId] = eid
-        it[dateCreated] = System.currentTimeMillis()
+        it[dateCreated] = OffsetDateTime.now(ZoneOffset.UTC)
     }
 }
 
 fun createDummyUser(username: String, email: String? = null, displayName: String? = null, digest: Boolean = false) = transaction {
-    val time = System.currentTimeMillis()
+    val time = OffsetDateTime.now(ZoneOffset.UTC)
     Users.insert {
         it[this.username] = username
         it[password] = "\$2a\$08\$/QeU1nEQ5FgD7nM.mjDadOBfyvL5LDlGYoOvc/EMEUzsfkc6/84Hy"

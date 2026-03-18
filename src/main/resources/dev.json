@@ -1,8 +1,8 @@
 {
     "$schema": "https://raw.githubusercontent.com/raharrison/lynks-server/master/config/lynks.schema.json",
     "database": {
-        "dialect": "H2",
-        "url": "jdbc:h2:./lynksdb;AUTO_SERVER=TRUE",
-        "user": "lynksuser"
+        "url": "jdbc:postgresql://localhost:5432/lynksdb",
+        "user": "lynksuser",
+        "password": ""
     }
 }

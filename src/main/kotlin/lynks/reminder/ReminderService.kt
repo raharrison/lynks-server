@@ -20,7 +20,9 @@ import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.*
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import java.time.OffsetDateTime
 import java.time.ZoneId
+import java.time.ZoneOffset
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import kotlin.math.max
@@ -35,12 +37,12 @@ class ReminderService(private val workerRegistry: WorkerRegistry) {
             ReminderType.ADHOC -> AdhocReminder(
                 ReminderId(row[Reminders.reminderId]), EntryId(row[Reminders.entryId]), toNotifyMethods(row[Reminders.notifyMethods]),
                     row[Reminders.message], row[Reminders.spec].toLong(), row[Reminders.tz], row[Reminders.status],
-                    row[Reminders.dateCreated], row[Reminders.dateUpdated]
+                    row[Reminders.dateCreated].toInstant(), row[Reminders.dateUpdated].toInstant()
             )
             ReminderType.RECURRING -> RecurringReminder(
                     ReminderId(row[Reminders.reminderId]), EntryId(row[Reminders.entryId]), toNotifyMethods(row[Reminders.notifyMethods]),
                     row[Reminders.message], row[Reminders.spec], row[Reminders.tz], row[Reminders.status],
-                    row[Reminders.dateCreated], row[Reminders.dateUpdated]
+                    row[Reminders.dateCreated].toInstant(), row[Reminders.dateUpdated].toInstant()
             )
         }
     }
@@ -88,7 +90,7 @@ class ReminderService(private val workerRegistry: WorkerRegistry) {
     }
 
     fun add(reminder: Reminder): Reminder = transaction {
-        val time = System.currentTimeMillis()
+        val time = OffsetDateTime.now(ZoneOffset.UTC)
         Reminders.insert {
             it[reminderId] = reminder.reminderId.value
             it[entryId] = reminder.entryId.value
@@ -110,7 +112,7 @@ class ReminderService(private val workerRegistry: WorkerRegistry) {
 
     fun addReminder(reminder: NewReminder): Reminder = transaction {
         val id = newReminderId()
-        val time = System.currentTimeMillis()
+        val time = OffsetDateTime.now(ZoneOffset.UTC)
         Reminders.insert {
             it[reminderId] = id.value
             it[entryId] = reminder.entryId.value
@@ -142,7 +144,7 @@ class ReminderService(private val workerRegistry: WorkerRegistry) {
                 it[spec] = reminder.spec
                 it[tz] = checkValidTimeZone(reminder.tz)
                 it[status] = reminder.status
-                it[dateUpdated] = System.currentTimeMillis()
+                it[dateUpdated] = OffsetDateTime.now(ZoneOffset.UTC)
             }
             if (updatedCount > 0) {
                 get(reminder.reminderId)?.also {

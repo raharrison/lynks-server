@@ -5,13 +5,14 @@ import lynks.group.GroupCollection
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import java.time.Instant
 
 class GroupCollectionTest {
 
     private lateinit var collection: GroupCollection<Collection>
 
     private fun createCollection(id: String, vararg children: Collection): Collection =
-            Collection("g$id", id, null, children.toMutableSet(), 123456, 67891)
+            Collection("g$id", id, null, children.toMutableSet(), Instant.EPOCH, Instant.EPOCH)
 
     @BeforeEach
     fun setup() {

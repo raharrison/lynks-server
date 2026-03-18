@@ -19,6 +19,17 @@ import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.jetbrains.exposed.v1.jdbc.update
+import java.time.OffsetDateTime
+import java.time.ZoneOffset
+
+private val deadLinkJsonbOp: Op<Boolean> = object : Op<Boolean>() {
+    override fun toQueryBuilder(queryBuilder: QueryBuilder) {
+        queryBuilder.append(
+            "jsonb_exists(${Entries.props.name} -> 'attributes', '$DEAD_LINK_PROP')" +
+            " AND NOT (${Entries.props.name} -> 'attributes' @> '{\"$DEAD_LINK_PROP\": false}'::jsonb)"
+        )
+    }
+}
 
 class LinkService(
     groupSetService: GroupSetService, entryAuditService: EntryAuditService,
@@ -30,12 +41,12 @@ class LinkService(
     }
 
     override val slimColumnSet: List<Column<*>> = listOf(
-        Entries.id, Entries.title, Entries.src, Entries.dateUpdated,
+        Entries.id, Entries.title, Entries.src, Entries.plainContent, Entries.dateUpdated,
         Entries.starred, Entries.thumbnailId, Entries.read
     )
 
     override fun toInsert(eId: EntryId, entry: NewLink): BaseEntries.(InsertStatement<*>) -> Unit = {
-        val time = System.currentTimeMillis()
+        val time = OffsetDateTime.now(ZoneOffset.UTC)
         it[id] = eId.value
         it[title] = entry.title
         it[plainContent] = entry.url
@@ -50,7 +61,7 @@ class LinkService(
         it[title] = entry.title
         it[plainContent] = entry.url
         it[src] = URLUtils.extractSource(entry.url)
-        it[dateUpdated] = System.currentTimeMillis()
+        it[dateUpdated] = OffsetDateTime.now(ZoneOffset.UTC)
     }
 
     override fun toModel(row: ResultRow, groups: GroupSet, table: BaseEntries): Link {
@@ -103,7 +114,7 @@ class LinkService(
     }
 
     fun getDead(): List<Link> = transaction {
-        getBaseQuery().combine { Entries.props.castTo(TextColumnType()).like("%\"$DEAD_LINK_PROP\":true%") }.map { toModel(it) }
+        getBaseQuery().combine { Entries.props.isNotNull() and deadLinkJsonbOp }.map { toModel(it) }
     }
 
     fun checkExistingWithUrl(url: String): List<SlimLink> = transaction {

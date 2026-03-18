@@ -2,12 +2,13 @@ package lynks.common
 
 import lynks.group.Collection
 import lynks.group.Tag
+import java.time.Instant
 
 data class File(
     override val id: EntryId,
     val title: String,
-    override val dateCreated: Long,
-    override val dateUpdated: Long,
+    override val dateCreated: Instant,
+    override val dateUpdated: Instant,
     override val tags: List<Tag> = emptyList(),
     override val collections: List<Collection> = emptyList(),
     override val props: BaseProperties = BaseProperties(),
@@ -29,7 +30,7 @@ data class NewFile(
 data class SlimFile(
     override val id: EntryId,
     val title: String,
-    override val dateUpdated: Long,
+    override val dateUpdated: Instant,
     override val tags: List<Tag> = emptyList(),
     override val collections: List<Collection> = emptyList(),
     override val starred: Boolean = false

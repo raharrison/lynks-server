@@ -13,6 +13,7 @@ import lynks.entry.LinkService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import java.time.Instant
 
 class YoutubeDlAudioTaskTest {
 
@@ -24,7 +25,7 @@ class YoutubeDlAudioTaskTest {
         it.youtubeDlRunner = youtubeDlRunner
     }
 
-    private val link = Link(EntryId("eid"), "title", "youtube.com/watch?v=1234", "src", "", 123L, 123L)
+    private val link = Link(EntryId("eid"), "title", "youtube.com/watch?v=1234", "src", "", Instant.EPOCH, Instant.EPOCH)
 
     @Test
     fun testContextConstruct() {

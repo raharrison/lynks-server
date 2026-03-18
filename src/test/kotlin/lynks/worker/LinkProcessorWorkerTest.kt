@@ -29,6 +29,7 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import java.nio.file.Files
 import java.nio.file.Paths
+import java.time.Instant
 import java.util.*
 
 @ExperimentalCoroutinesApi
@@ -48,7 +49,7 @@ class LinkProcessorWorkerTest {
     @BeforeEach
     fun setup() {
         coEvery { notifyService.create(any()) } returns Notification(
-            NotificationId("n1"), NotificationType.DISCUSSIONS, "found", false, dateCreated = System.currentTimeMillis()
+            NotificationId("n1"), NotificationType.DISCUSSIONS, "found", false, dateCreated = Instant.now()
         )
     }
 
@@ -63,7 +64,7 @@ class LinkProcessorWorkerTest {
     inner class Persist {
         @Test
         fun testDefaultPersistAllTypes() = runTest {
-            val link = Link(EntryId("id1"), "title", "google.com", "google.com", "", 100, 100)
+            val link = Link(EntryId("id1"), "title", "google.com", "google.com", "", Instant.EPOCH, Instant.EPOCH)
             val resourceSet = ResourceType.linkBaseline()
             val generatedResources =listOf(
                 GeneratedResource(ResourceType.SCREENSHOT, "screenshotPath", PNG),
@@ -78,9 +79,9 @@ class LinkProcessorWorkerTest {
 
             coEvery { processor.scrapeResources(resourceSet) } returns generatedResources
             every { resourceManager.migrateGeneratedResources(link.id, any()) } returns listOf(
-                Resource(ResourceId("rid1"), "pid1", link.id, 1, "screenshot", PNG, ResourceType.SCREENSHOT, 1189, 100),
-                Resource(ResourceId("rid2"), "pid2", link.id, 1, "thumbnail", JPG, ResourceType.THUMBNAIL, 456, 100),
-                Resource(ResourceId("rid3"), "pid3", link.id, 1, "preview", JPG, ResourceType.PREVIEW, 743, 100)
+                Resource(ResourceId("rid1"), "pid1", link.id, 1, "screenshot", PNG, ResourceType.SCREENSHOT, 1189, Instant.EPOCH),
+                Resource(ResourceId("rid2"), "pid2", link.id, 1, "thumbnail", JPG, ResourceType.THUMBNAIL, 456, Instant.EPOCH),
+                Resource(ResourceId("rid3"), "pid3", link.id, 1, "preview", JPG, ResourceType.PREVIEW, 743, Instant.EPOCH)
             )
             coEvery { processor.enrich(link.props) } just Runs
             every { processor.close() } just Runs
@@ -108,7 +109,7 @@ class LinkProcessorWorkerTest {
 
         @Test
         fun testDefaultPersistSingleType() = runTest {
-            val link = Link(EntryId("id1"), "title", "google.com", "google.com", "", 100, 100)
+            val link = Link(EntryId("id1"), "title", "google.com", "google.com", "", Instant.EPOCH, Instant.EPOCH)
             val resourceSet = EnumSet.of(ResourceType.SCREENSHOT)
 
             val generatedResources =listOf(
@@ -142,7 +143,7 @@ class LinkProcessorWorkerTest {
 
         @Test
         fun testDefaultPersistNoProcessFlag() = runTest {
-            val link = Link(EntryId("id1"), "title", "google.com", "google.com", "", 100, 100)
+            val link = Link(EntryId("id1"), "title", "google.com", "google.com", "", Instant.EPOCH, Instant.EPOCH)
 
             val processor = mockk<LinkProcessor>(relaxUnitFun = true)
             coEvery { processor.enrich(link.props) } just Runs
@@ -169,7 +170,7 @@ class LinkProcessorWorkerTest {
 
         @Test
         fun testDefaultPersistNoResourceTypes() = runTest {
-            val link = Link(EntryId("id1"), "title", "google.com", "google.com", "", 100, 100)
+            val link = Link(EntryId("id1"), "title", "google.com", "google.com", "", Instant.EPOCH, Instant.EPOCH)
 
             val processor = mockk<LinkProcessor>(relaxUnitFun = true)
 
@@ -194,7 +195,7 @@ class LinkProcessorWorkerTest {
 
         @Test
         fun testDefaultPersistCompletedExceptionally() = runTest {
-            val link = Link(EntryId("id1"), "title", "google.com", "google.com", "", 100, 100)
+            val link = Link(EntryId("id1"), "title", "google.com", "google.com", "", Instant.EPOCH, Instant.EPOCH)
 
             val exception = RuntimeException("error during computation")
             val processor = mockk<LinkProcessor>(relaxUnitFun = true)
@@ -211,13 +212,14 @@ class LinkProcessorWorkerTest {
             advanceUntilIdle()
             channel.close()
 
+            val propsSlot = slot<BaseProperties>()
             coVerify(exactly = 1) { processorFactory.createProcessors(link.url) }
             verify(exactly = 1) { processor.close() }
             verify(exactly = 0) { linkService.update(link) }
-            verify(exactly = 1) { linkService.mergeProps(eq(EntryId("id1")), any()) }
+            verify(exactly = 1) { linkService.mergeProps(eq(EntryId("id1")), capture(propsSlot)) }
             coVerify(exactly = 1) { notifyService.create(any()) }
             verify(exactly = 1) { entryAuditService.acceptAuditEvent(link.id, any(), any()) }
-            assertThat(link.props.containsAttribute(DEAD_LINK_PROP)).isTrue()
+            assertThat(propsSlot.captured.containsAttribute(DEAD_LINK_PROP)).isTrue()
 
             Unit
         }
@@ -235,12 +237,12 @@ class LinkProcessorWorkerTest {
             val title = "title"
             val keywords = setOf("search", "other", "important")
             val tags = listOf(
-                Tag("t1", "tag1", null, 124L, 1234L),
-                Tag("t2", "tag2", null, 124L, 1234L)
+                Tag("t1", "tag1", null, Instant.EPOCH, Instant.EPOCH),
+                Tag("t2", "tag2", null, Instant.EPOCH, Instant.EPOCH)
             )
             val collections = listOf(
-                Collection("c1", "col1", null, mutableSetOf(), 124L, 1234L),
-                Collection("c2", "col2", null, mutableSetOf(), 124L, 1234L)
+                Collection("c1", "col1", null, mutableSetOf(), Instant.EPOCH, Instant.EPOCH),
+                Collection("c2", "col2", null, mutableSetOf(), Instant.EPOCH, Instant.EPOCH)
             )
             FileUtils.writeToFile(readableTextContentPath, content.toByteArray())
             val linkDetails = LinkDetails(url, title, keywords, "description")

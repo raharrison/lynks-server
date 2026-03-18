@@ -24,6 +24,8 @@ import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.jetbrains.exposed.v1.jdbc.update
+import java.time.OffsetDateTime
+import java.time.ZoneOffset
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.max
 
@@ -67,7 +69,7 @@ class NotifyService(private val pushoverClient: PushoverClient) {
     suspend fun create(newNotification: NewNotification, sendWeb: Boolean = true): Notification {
         val notification = transaction {
             val id = newNotificationId()
-            val time = System.currentTimeMillis()
+            val time = OffsetDateTime.now(ZoneOffset.UTC)
             Notifications.insert {
                 it[notificationId] = id.value
                 it[notificationType] = newNotification.type

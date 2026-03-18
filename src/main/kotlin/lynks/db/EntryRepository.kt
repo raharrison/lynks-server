@@ -18,6 +18,8 @@ import org.jetbrains.exposed.v1.core.statements.InsertStatement
 import org.jetbrains.exposed.v1.core.statements.UpdateBuilder
 import org.jetbrains.exposed.v1.jdbc.*
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import java.time.OffsetDateTime
+import java.time.ZoneOffset
 import kotlin.math.max
 
 abstract class EntryRepository<T : Entry, S : SlimEntry, U : NewEntry>(
@@ -168,7 +170,7 @@ abstract class EntryRepository<T : Entry, S : SlimEntry, U : NewEntry>(
             val updated = Entries.update({ where }, body = {
                 toUpdate(entry)(it)
                 if (newVersion) {
-                    it[dateUpdated] = System.currentTimeMillis()
+                    it[dateUpdated] = OffsetDateTime.now(ZoneOffset.UTC)
                     it.update(version, version + 1)
                 }
             })

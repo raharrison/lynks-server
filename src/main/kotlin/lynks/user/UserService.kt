@@ -18,6 +18,8 @@ import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.jetbrains.exposed.v1.jdbc.update
+import java.time.OffsetDateTime
+import java.time.ZoneOffset
 import kotlin.math.max
 
 class UserService(private val twoFactorService: TwoFactorService) {
@@ -33,8 +35,8 @@ class UserService(private val twoFactorService: TwoFactorService) {
                 it[Users.email],
                 it[Users.displayName],
                 it[Users.digest],
-                it[Users.dateCreated],
-                it[Users.dateUpdated]
+                it[Users.dateCreated].toInstant(),
+                it[Users.dateUpdated].toInstant()
             )
         }.singleOrNull()
     }
@@ -43,7 +45,7 @@ class UserService(private val twoFactorService: TwoFactorService) {
         if (Users.selectAll().where { Users.username eq request.username }.count() > 0) {
             throw InvalidModelException("User with that name already exists")
         }
-        val currentTime = System.currentTimeMillis()
+        val currentTime = OffsetDateTime.now(ZoneOffset.UTC)
         Users.insert {
             it[username] = request.username
             it[password] = HashUtils.bcryptHash(request.password)
@@ -58,7 +60,7 @@ class UserService(private val twoFactorService: TwoFactorService) {
     fun activateUser(username: String): Int = transaction {
         Users.update({ Users.username eq username }) {
             it[activated] = true
-            it[dateUpdated] = System.currentTimeMillis()
+            it[dateUpdated] = OffsetDateTime.now(ZoneOffset.UTC)
         }
     }
 
@@ -67,7 +69,7 @@ class UserService(private val twoFactorService: TwoFactorService) {
             it[email] = userUpdate.email
             it[displayName] = userUpdate.displayName
             it[digest] = userUpdate.digest
-            it[dateUpdated] = System.currentTimeMillis()
+            it[dateUpdated] = OffsetDateTime.now(ZoneOffset.UTC)
         }
         if (updated > 0) getUser(userUpdate.username) else null
     }
@@ -76,7 +78,7 @@ class UserService(private val twoFactorService: TwoFactorService) {
         if (checkAuth(AuthRequest(request.username, request.oldPassword), false) == AuthResult.SUCCESS) {
             return@transaction Users.update({ Users.username eq request.username and Users.activated }) {
                 it[password] = HashUtils.bcryptHash(request.newPassword)
-                it[dateUpdated] = System.currentTimeMillis()
+                it[dateUpdated] = OffsetDateTime.now(ZoneOffset.UTC)
             } > 0
         }
         log.info("Auth check failed during password change for user {}", request.username)

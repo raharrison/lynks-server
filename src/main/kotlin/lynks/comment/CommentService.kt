@@ -21,6 +21,8 @@ import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.jetbrains.exposed.v1.jdbc.update
+import java.time.OffsetDateTime
+import java.time.ZoneOffset
 import kotlin.math.max
 
 private val log = loggerFor<CommentService>()
@@ -48,13 +50,13 @@ class CommentService(private val workerRegistry: WorkerRegistry, private val mar
 
     fun addComment(eId: EntryId, comment: NewComment): Comment = transaction {
         val newId = newCommentId()
-        val time = System.currentTimeMillis()
-        val (_, processedText, html) = markdownProcessor.convertAndProcess(comment.plainText, eId)
+        val time = OffsetDateTime.now(ZoneOffset.UTC)
+        val (_, processedText, html) = markdownProcessor.convertAndProcess(comment.plainContent, eId)
         Comments.insert {
             it[id] = newId.value
             it[entryId] = eId.value
-            it[plainText] = processedText
-            it[markdownText] = html
+            it[plainContent] = processedText
+            it[renderedContent] = html
             it[dateCreated] = time
             it[dateUpdated] = time
         }
@@ -70,11 +72,11 @@ class CommentService(private val workerRegistry: WorkerRegistry, private val mar
             addComment(entryId, comment)
         } else {
             transaction {
-                val (_, processedText, html) = markdownProcessor.convertAndProcess(comment.plainText, entryId)
+                val (_, processedText, html) = markdownProcessor.convertAndProcess(comment.plainContent, entryId)
                 val updated = Comments.update({ Comments.id eq id.value and (Comments.entryId eq entryId.value) }) {
-                    it[plainText] = processedText
-                    it[markdownText] = html
-                    it[dateUpdated] = System.currentTimeMillis()
+                    it[plainContent] = processedText
+                    it[renderedContent] = html
+                    it[dateUpdated] = OffsetDateTime.now(ZoneOffset.UTC)
                 }
                 if (updated > 0) {
                     workerRegistry.acceptCommentRefWork(entryId, id, CrudType.UPDATE)

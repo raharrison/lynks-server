@@ -22,8 +22,7 @@ class NoteEndpointTest: ServerTest() {
         createDummyEntry("e3", "title3", "content3", EntryType.NOTE)
         createDummyTag("t1", "tag1")
         createDummyCollection("c1", "col1")
-        post("/tag/refresh")
-        post("/collection/refresh")
+        refreshGroups()
     }
 
     @Test
@@ -38,8 +37,8 @@ class NoteEndpointTest: ServerTest() {
                 .statusCode(201)
                 .extract().to<Note>()
         assertThat(created.title).isEqualTo(newNote.title)
-        assertThat(created.plainText).isEqualTo(newNote.plainText)
-        assertThat(created.markdownText).isEqualTo("<p>content4</p>\n")
+        assertThat(created.plainContent).isEqualTo(newNote.content)
+        assertThat(created.renderedContent).isEqualTo("<p>content4</p>\n")
         assertThat(created.type).isEqualTo(EntryType.NOTE)
         assertThat(created.tags).hasSize(1).extracting("id").containsExactly("t1")
         assertThat(created.collections).hasSize(1).extracting("id").containsExactly("c1")
@@ -84,7 +83,7 @@ class NoteEndpointTest: ServerTest() {
                 .extract().to<Note>()
         assertThat(note.id).isEqualTo(EntryId("e2"))
         assertThat(note.title).isEqualTo("title2")
-        assertThat(note.plainText).isEqualTo("content2")
+        assertThat(note.plainContent).isEqualTo("content2")
         assertThat(note.dateCreated).isEqualTo(note.dateUpdated)
     }
 
@@ -123,8 +122,8 @@ class NoteEndpointTest: ServerTest() {
                 .then()
                 .statusCode(200)
                 .extract().to<Note>()
-        assertThat(updated.plainText).isEqualTo("modified")
-        assertThat(updated.markdownText).isEqualTo("<p>modified</p>\n")
+        assertThat(updated.plainContent).isEqualTo("modified")
+        assertThat(updated.renderedContent).isEqualTo("<p>modified</p>\n")
         assertThat(updated.tags).hasSize(1).extracting("id").containsExactly("t1")
         assertThat(updated.collections).hasSize(1).extracting("id").containsExactly("c1")
         assertThat(updated.dateCreated).isNotEqualTo(updated.dateUpdated)
@@ -241,7 +240,7 @@ class NoteEndpointTest: ServerTest() {
         assertThat(notesCollection.content).hasSize(1).extracting<EntryId> { it.id }
             .containsExactly(created.id)
 
-        // filter by source
+        // filter by source - notes no longer have a hardcoded source
         val notesSource = given()
             .queryParam("source", "me")
             .queryParam("direction", "asc")
@@ -250,9 +249,8 @@ class NoteEndpointTest: ServerTest() {
             .then()
             .statusCode(200)
             .extract().to<Page<SlimNote>>()
-        assertThat(notesSource.total).isEqualTo(1)
-        assertThat(notesSource.content).hasSize(1).extracting<EntryId> { it.id }
-            .containsExactly(created.id)
+        assertThat(notesSource.total).isZero()
+        assertThat(notesSource.content).isEmpty()
     }
 
     @Test
@@ -276,7 +274,7 @@ class NoteEndpointTest: ServerTest() {
 
         assertThat(created.version).isOne()
         assertThat(created.title).isEqualTo(newNote.title)
-        assertThat(created.plainText).isEqualTo(newNote.plainText)
+        assertThat(created.plainContent).isEqualTo(newNote.content)
         assertThat(created.dateCreated).isEqualTo(created.dateUpdated)
 
         // update
@@ -291,7 +289,7 @@ class NoteEndpointTest: ServerTest() {
                 .extract().to<Note>()
 
         assertThat(updated.title).isEqualTo(updateNote.title)
-        assertThat(updated.plainText).isEqualTo(updateNote.plainText)
+        assertThat(updated.plainContent).isEqualTo(updateNote.content)
         assertThat(updated.version).isEqualTo(2)
         assertThat(updated.dateCreated).isNotEqualTo(updated.dateUpdated)
 
@@ -302,7 +300,7 @@ class NoteEndpointTest: ServerTest() {
                 .extract().to<Note>()
         assertThat(original.version).isOne()
         assertThat(original.title).isEqualTo(newNote.title)
-        assertThat(original.plainText).isEqualTo(newNote.plainText)
+        assertThat(original.plainContent).isEqualTo(newNote.content)
         assertThat(original.dateCreated).isEqualTo(original.dateUpdated)
 
         val current = get("/note/{id}", created.id.value)
@@ -311,7 +309,7 @@ class NoteEndpointTest: ServerTest() {
                 .extract().to<Note>()
         assertThat(current.version).isEqualTo(2)
         assertThat(current.title).isEqualTo(updateNote.title)
-        assertThat(current.plainText).isEqualTo(updateNote.plainText)
+        assertThat(current.plainContent).isEqualTo(updateNote.content)
         assertThat(current.dateCreated).isNotEqualTo(current.dateUpdated)
     }
 
@@ -329,7 +327,7 @@ class NoteEndpointTest: ServerTest() {
 
         assertThat(created.version).isOne()
         assertThat(created.title).isEqualTo(newNote.title)
-        assertThat(created.plainText).isEqualTo(newNote.plainText)
+        assertThat(created.plainContent).isEqualTo(newNote.content)
         assertThat(created.dateCreated).isEqualTo(created.dateUpdated)
 
         // update no new version
@@ -345,7 +343,7 @@ class NoteEndpointTest: ServerTest() {
             .extract().to<Note>()
 
         assertThat(updated.title).isEqualTo(updateNote.title)
-        assertThat(updated.plainText).isEqualTo(updateNote.plainText)
+        assertThat(updated.plainContent).isEqualTo(updateNote.content)
         assertThat(updated.version).isEqualTo(1)
         assertThat(updated.dateCreated).isNotEqualTo(updated.dateUpdated)
 
@@ -356,7 +354,7 @@ class NoteEndpointTest: ServerTest() {
             .extract().to<Note>()
         assertThat(current.version).isEqualTo(1)
         assertThat(current.title).isEqualTo(updateNote.title)
-        assertThat(current.plainText).isEqualTo(updateNote.plainText)
+        assertThat(current.plainContent).isEqualTo(updateNote.content)
         assertThat(current.dateCreated).isNotEqualTo(current.dateUpdated)
     }
 

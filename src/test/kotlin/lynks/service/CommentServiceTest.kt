@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.nio.file.Path
 import java.sql.SQLException
+import java.time.Instant
 
 class CommentServiceTest : DatabaseTest() {
 
@@ -39,10 +40,10 @@ class CommentServiceTest : DatabaseTest() {
     fun testCreateBasicComment() {
         val added = commentService.addComment(EntryId("e1"), newComment(content = "comment content"))
         assertThat(added.entryId).isEqualTo(EntryId("e1"))
-        assertThat(added.plainText).isEqualTo("comment content")
-        assertThat(added.markdownText).isEqualTo("<p>comment content</p>\n")
-        assertThat(added.dateCreated).isNotZero()
-        assertThat(added.dateUpdated).isNotZero()
+        assertThat(added.plainContent).isEqualTo("comment content")
+        assertThat(added.renderedContent).isEqualTo("<p>comment content</p>\n")
+        assertThat(added.dateCreated).isAfter(Instant.EPOCH)
+        assertThat(added.dateUpdated).isAfter(Instant.EPOCH)
     }
 
     @Test
@@ -51,8 +52,8 @@ class CommentServiceTest : DatabaseTest() {
         val markdown = "<h1>header</h1>\n<p>a paragraph</p>\n"
         val added = commentService.addComment(EntryId("e1"), newComment(content = plain))
         assertThat(added.entryId).isEqualTo(EntryId("e1"))
-        assertThat(added.plainText).isEqualTo(plain)
-        assertThat(added.markdownText).isEqualTo(markdown)
+        assertThat(added.plainContent).isEqualTo(plain)
+        assertThat(added.renderedContent).isEqualTo(markdown)
         verify(exactly = 0) { resourceManager.migrateGeneratedResources(EntryId("e1"), any()) }
         verify { workerRegistry.acceptCommentRefWork(added.entryId, added.id, CrudType.CREATE) }
     }
@@ -60,12 +61,12 @@ class CommentServiceTest : DatabaseTest() {
     @Test
     fun testCreateCommentWithTempImage() {
         val plain = "something ![desc](${TEMP_URL}abc/one.png)"
-        val resource = Resource(ResourceId("rid"), "pid", EntryId("eid"), 1, "one", "png", ResourceType.UPLOAD, 12, 123L)
+        val resource = Resource(ResourceId("rid"), "pid", EntryId("eid"), 1, "one", "png", ResourceType.UPLOAD, 12, Instant.EPOCH)
         every { resourceManager.constructTempBasePath(IMAGE_UPLOAD_BASE) } returns Path.of("migrated/")
         every { resourceManager.migrateGeneratedResources(EntryId("e1"), any()) } returns listOf(resource)
         val added = commentService.addComment(EntryId("e1"), newComment(content = plain))
         assertThat(added.entryId).isEqualTo(EntryId("e1"))
-        assertThat(added.plainText.trim()).isEqualTo("something ![desc](${Environment.server.rootPath}/entry/e1/resource/${resource.id})")
+        assertThat(added.plainContent.trim()).isEqualTo("something ![desc](${Environment.server.rootPath}/entry/e1/resource/${resource.id})")
         verify(exactly = 1) { resourceManager.migrateGeneratedResources(EntryId("e1"), any()) }
         verify { workerRegistry.acceptCommentRefWork(added.entryId, added.id, CrudType.CREATE) }
     }
@@ -81,11 +82,11 @@ class CommentServiceTest : DatabaseTest() {
         val retrieved = commentService.getComment(added.entryId, added.id)
         assertThat(retrieved).isNotNull
         assertThat(retrieved?.entryId).isEqualTo(EntryId("e1"))
-        assertThat(retrieved?.plainText).isEqualTo(added.plainText)
+        assertThat(retrieved?.plainContent).isEqualTo(added.plainContent)
         assertThat(retrieved?.dateCreated).isEqualTo(added.dateCreated)
         assertThat(retrieved?.dateUpdated).isEqualTo(added.dateUpdated)
         assertThat(retrieved?.id).isEqualTo(added.id)
-        assertThat(retrieved?.markdownText).isEqualTo(added.markdownText)
+        assertThat(retrieved?.renderedContent).isEqualTo(added.renderedContent)
     }
 
     @Test
@@ -105,7 +106,7 @@ class CommentServiceTest : DatabaseTest() {
         assertThat(comments).extracting<CommentId> { it.id }
             .doesNotHaveDuplicates()
         assertThat(comments).extracting<EntryId> { it.entryId}.containsOnly(EntryId("e1"))
-        assertThat(comments).extracting("plainText").contains("comment content 1")
+        assertThat(comments).extracting("plainContent").contains("comment content 1")
 
         assertThat(commentService.getCommentsFor(EntryId("e2")).content).isEmpty()
     }
@@ -123,14 +124,14 @@ class CommentServiceTest : DatabaseTest() {
         assertThat(comments.page).isEqualTo(1L)
         assertThat(comments.size).isEqualTo(1)
         assertThat(comments.total).isEqualTo(3)
-        assertThat(comments.content).extracting("plainText").containsOnly("comment content 1")
+        assertThat(comments.content).extracting("plainContent").containsOnly("comment content 1")
 
         comments = commentService.getCommentsFor(EntryId("e1"), PageRequest(2, 1))
         assertThat(comments.content).hasSize(1)
         assertThat(comments.page).isEqualTo(2L)
         assertThat(comments.size).isEqualTo(1)
         assertThat(comments.total).isEqualTo(3)
-        assertThat(comments.content).extracting("plainText").containsOnly("comment content 2")
+        assertThat(comments.content).extracting("plainContent").containsOnly("comment content 2")
 
         comments = commentService.getCommentsFor(EntryId("e1"), PageRequest(1, 3))
         assertThat(comments.content).hasSize(3)
@@ -201,13 +202,13 @@ class CommentServiceTest : DatabaseTest() {
         val newComm = commentService.getComment(updated!!.entryId, updated.id)
         assertThat(updated).isEqualTo(newComm)
         assertThat(newComm?.entryId).isEqualTo(EntryId("e1"))
-        assertThat(newComm?.plainText).isEqualTo("changed")
+        assertThat(newComm?.plainContent).isEqualTo("changed")
         assertThat(newComm?.dateCreated).isEqualTo(added1.dateCreated)
         assertThat(newComm?.dateUpdated).isNotEqualTo(added1.dateCreated)
 
         val oldComm = commentService.getComment(added1.entryId, added1.id)
         assertThat(oldComm?.entryId).isEqualTo(EntryId("e1"))
-        assertThat(oldComm?.plainText).isEqualTo("changed")
+        assertThat(oldComm?.plainContent).isEqualTo("changed")
         assertThat(oldComm?.dateUpdated).isNotEqualTo(oldComm?.dateCreated)
         verify { workerRegistry.acceptCommentRefWork(added1.entryId, added1.id, CrudType.UPDATE) }
     }
@@ -215,12 +216,12 @@ class CommentServiceTest : DatabaseTest() {
     @Test
     fun testUpdateExistingCommentWithTempImage() {
         val added = commentService.addComment(EntryId("e1"), newComment(content = "comment content 1"))
-        val resource = Resource(ResourceId("rid"), "pid", EntryId("e1"), 1, "one", "png", ResourceType.UPLOAD, 12, 123L)
+        val resource = Resource(ResourceId("rid"), "pid", EntryId("e1"), 1, "one", "png", ResourceType.UPLOAD, 12, Instant.ofEpochMilli(123))
         every { resourceManager.constructTempBasePath(IMAGE_UPLOAD_BASE) } returns Path.of("migrated/")
         every { resourceManager.migrateGeneratedResources(EntryId("e1"), any()) } returns listOf(resource)
         val updated = commentService.updateComment(EntryId("e1"), newComment(added.id, "changed ![desc](${TEMP_URL}abc/one.png)"))
         assertThat(updated?.entryId).isEqualTo(EntryId("e1"))
-        assertThat(updated?.plainText?.trim()).isEqualTo("changed ![desc](${Environment.server.rootPath}/entry/e1/resource/${resource.id})")
+        assertThat(updated?.plainContent?.trim()).isEqualTo("changed ![desc](${Environment.server.rootPath}/entry/e1/resource/${resource.id})")
         verify(exactly = 1) { resourceManager.migrateGeneratedResources(EntryId("e1"), any()) }
         verify { workerRegistry.acceptCommentRefWork(added.entryId, added.id, CrudType.UPDATE) }
     }

@@ -20,6 +20,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import java.time.Instant
 
 class EntryServiceTest: DatabaseTest() {
 
@@ -59,12 +60,12 @@ class EntryServiceTest: DatabaseTest() {
         val retrieved2 = entryService.get(EntryId("id2")) as Note
         assertThat(retrieved2.id).isEqualTo(EntryId("id2"))
         assertThat(retrieved2.title).isEqualTo("note1")
-        assertThat(retrieved2.plainText).isEqualTo("note content")
+        assertThat(retrieved2.plainContent).isEqualTo("note content")
         assertThat(retrieved2.type).isEqualTo(EntryType.NOTE)
 
         val retrieved3 = entryService.get(EntryId("id4")) as Snippet
         assertThat(retrieved3.id).isEqualTo(EntryId("id4"))
-        assertThat(retrieved3.plainText).isEqualTo("snippet text")
+        assertThat(retrieved3.plainContent).isEqualTo("snippet text")
         assertThat(retrieved3.type).isEqualTo(EntryType.SNIPPET)
 
         val retrieved4 = entryService.get(EntryId("id5")) as File
@@ -192,7 +193,7 @@ class EntryServiceTest: DatabaseTest() {
             entryService.update(NewLink(EntryId("id"), "title", "url", emptyList()))
         }
         assertThrows<NotImplementedError> {
-            entryService.update(Link(EntryId("id"), "title", "url", "src", "content", 1L, 1L))
+            entryService.update(Link(EntryId("id"), "title", "url", "src", "content", Instant.EPOCH, Instant.EPOCH))
         }
     }
 

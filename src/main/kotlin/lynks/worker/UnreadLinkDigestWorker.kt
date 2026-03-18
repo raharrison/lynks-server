@@ -5,7 +5,10 @@ import lynks.entry.LinkService
 import lynks.notify.NotifyService
 import lynks.user.UserService
 import lynks.util.ResourceTemplater
-import java.time.*
+import java.time.DayOfWeek
+import java.time.Duration
+import java.time.LocalDateTime
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.time.temporal.ChronoUnit
@@ -72,7 +75,7 @@ class UnreadLinkDigestWorker(
                 "title" to it.title,
                 "url" to it.url,
                 "source" to it.source,
-                "date" to formatter.format(Instant.ofEpochMilli(it.dateUpdated))
+                "date" to formatter.format(it.dateUpdated)
             )
         }
 
