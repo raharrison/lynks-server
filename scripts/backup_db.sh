@@ -26,4 +26,4 @@ echo "Database dump saved to ${DUMP_FILEPATH}"
 # Restore
 
 #docker cp db.dump $POSTGRES_CONTAINER:/tmp/db_restore.dump
-#docker exec -t $POSTGRES_CONTAINER pg_restore -c -U $POSTGRES_USER -l $POSTGRES_DB /tmp/db_restore.dump
+#docker exec -t $POSTGRES_CONTAINER bash -c 'gunzip -c /tmp/db_restore.dump | psql -U $POSTGRES_USER -d $POSTGRES_DB'
