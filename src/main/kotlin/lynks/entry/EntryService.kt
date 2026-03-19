@@ -9,6 +9,7 @@ import lynks.db.EntryRepository
 import lynks.group.GroupSet
 import lynks.group.GroupSetService
 import lynks.resource.ResourceManager
+import lynks.util.combine
 import lynks.util.findColumn
 import org.jetbrains.exposed.v1.core.*
 import org.jetbrains.exposed.v1.core.statements.UpdateBuilder
@@ -66,6 +67,23 @@ class EntryService(
     @Deprecated("EntryService does not support insert/update via the generic path", level = DeprecationLevel.ERROR)
     override fun toUpdate(entry: Entry): BaseEntries.(UpdateBuilder<*>) -> Unit =
         throw NotImplementedError("EntryService.toUpdate(Entry) is unreachable — use a type-specific service")
+
+    fun suggest(term: String, page: PageRequest = DefaultPageRequest): Page<SlimEntry> {
+        if (term.isBlank()) return Page.empty()
+        return transaction {
+            val pattern = "${term.lowercase()}%"
+            val baseQuery = getBaseQuery(Entries)
+                .adjustSelect { select(slimColumnSet + Entries.type) }
+                .combine { Entries.title.lowerCase() like pattern }
+                .orderBy(Entries.dateUpdated, SortOrder.DESC)
+            val entries = baseQuery.copy().apply {
+                limit(page.size)
+                offset(max(0, (page.page - 1) * page.size))
+            }.toList().let { resolveEntryRows(it) }
+            val count = baseQuery.count()
+            Page.of(entries, page, count)
+        }
+    }
 
     fun search(term: String, page: PageRequest = DefaultPageRequest): Page<SlimEntry> {
         if (term.isBlank()) return Page.empty()

@@ -150,6 +150,46 @@ class EntryServiceTest: DatabaseTest() {
     }
 
     @Test
+    fun testSuggestMatchesTitle() {
+        val entries = entryService.suggest("note").content
+        assertThat(entries).hasSize(2)
+        assertThat(entries).extracting<EntryId> { it.id }
+            .containsExactlyInAnyOrder(EntryId("id2"), EntryId("id3"))
+    }
+
+    @Test
+    fun testSuggestPartialMatch() {
+        val entries = entryService.suggest("snipp").content
+        assertThat(entries).hasSize(1)
+        assertThat(entries).extracting<EntryId> { it.id }.containsOnly(EntryId("id4"))
+    }
+
+    @Test
+    fun testSuggestCaseInsensitive() {
+        val entries = entryService.suggest("LINK").content
+        assertThat(entries).hasSize(1)
+        assertThat(entries).extracting<EntryId> { it.id }.containsOnly(EntryId("id1"))
+    }
+
+    @Test
+    fun testSuggestDoesNotMatchContentOnly() {
+        // "content" appears in entry content fields but not in any title
+        val entries = entryService.suggest("content")
+        assertThat(entries.content).isEmpty()
+    }
+
+    @Test
+    fun testSuggestNoResults() {
+        assertThat(entryService.suggest("zzznomatch").content).isEmpty()
+    }
+
+    @Test
+    fun testSuggestBlankReturnsEmpty() {
+        assertThat(entryService.suggest("").content).isEmpty()
+        assertThat(entryService.suggest("  ").content).isEmpty()
+    }
+
+    @Test
     fun testSearchTitle() {
         val entries = entryService.search("note").content
         assertThat(entries).hasSize(2)

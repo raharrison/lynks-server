@@ -42,6 +42,11 @@ fun Route.entry(
             call.respond(entryService.search(query, call.pageRequest()))
         }
 
+        get("/suggest") {
+            val query = call.request.queryParameters["q"] ?: throw InvalidModelException("Missing query")
+            call.respond(entryService.suggest(query, call.pageRequest()))
+        }
+
         get("/resolve") {
             val ids = call.request.queryParameters["ids"]
                 ?.split(",")

@@ -33,6 +33,7 @@ class V1__Init_default : BaseJavaMigration() {
                  STORED;
             """.trimIndent())
             it.execute("CREATE INDEX ts_doc_idx ON ${Entries.tableName} USING GIN (TS_DOC);")
+            it.execute("CREATE INDEX entries_title_lower_idx ON ${Entries.tableName} (lower(${Entries.title.name}));")
         }
     }
 

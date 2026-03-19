@@ -109,6 +109,52 @@ class EntryEndpointTest : ServerTest() {
     }
 
     @Test
+    fun testSuggestByTitle() {
+        val entries = given()
+            .queryParam("q", "expedition")
+            .When()
+            .get("/entry/suggest")
+            .then()
+            .statusCode(200)
+            .extract().to<Page<*>>()
+        assertThat(entries.page).isEqualTo(1)
+        assertThat(entries.content).hasSize(1).extracting("id")
+            .containsExactly("e1")
+    }
+
+    @Test
+    fun testSuggestDoesNotMatchContentOnly() {
+        // "content" appears in entry content but in no title
+        val entries = given()
+            .queryParam("q", "content")
+            .When()
+            .get("/entry/suggest")
+            .then()
+            .statusCode(200)
+            .extract().to<Page<*>>()
+        assertThat(entries.content).isEmpty()
+    }
+
+    @Test
+    fun testSuggestNoMatch() {
+        val entries = given()
+            .queryParam("q", "zzznomatch")
+            .When()
+            .get("/entry/suggest")
+            .then()
+            .statusCode(200)
+            .extract().to<Page<*>>()
+        assertThat(entries.content).isEmpty()
+    }
+
+    @Test
+    fun testSuggestMissingParam() {
+        get("/entry/suggest")
+            .then()
+            .statusCode(400)
+    }
+
+    @Test
     fun testSearchNonMatch() {
         val entries = given()
             .queryParam("q", "aggdegerg")
