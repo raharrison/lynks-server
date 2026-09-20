@@ -50,7 +50,7 @@ fun Route.resource(resourceManager: ResourceManager) {
                     extension = ctExt ?: nameExt
 
                     if (extension in ALLOWED_IMAGE_EXTENSIONS) {
-                        // Read at most MAX+1 bytes — if result exceeds MAX we reject below
+                        // Read at most MAX+1 bytes - if result exceeds MAX we reject below
                         fileBytes = part.provider()
                             .readRemaining(MAX_IMAGE_UPLOAD_BYTES.toLong() + 1)
                             .readByteArray()

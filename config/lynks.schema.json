@@ -37,6 +37,8 @@
             },
             "external": {
                 "smmryApiKey": "abcdef123",
+                "youtubeApiKey": "abcdef123",
+                "youtubeApiBaseUrl": "https://www.googleapis.com",
                 "youtubeDlHost": "https://github.com/yt-dlp/yt-dlp/releases/latest/download",
                 "scraperHost": "http://localhost:3000/api",
                 "pushoverToken": "abcdef123",
@@ -303,6 +305,22 @@
                     "description": "API key to smmry.com, used to generate summarizations of text content",
                     "examples": [
                         "abcdef123"
+                    ]
+                },
+                "youtubeApiKey": {
+                    "$id": "#/properties/external/properties/youtubeApiKey",
+                    "type": "string",
+                    "description": "API key for the YouTube Data API v3, used to enrich YouTube link metadata",
+                    "examples": [
+                        "abcdef123"
+                    ]
+                },
+                "youtubeApiBaseUrl": {
+                    "$id": "#/properties/external/properties/youtubeApiBaseUrl",
+                    "type": "string",
+                    "description": "Base URL of the YouTube Data API v3",
+                    "examples": [
+                        "https://www.googleapis.com"
                     ]
                 },
                 "youtubeDlHost": {

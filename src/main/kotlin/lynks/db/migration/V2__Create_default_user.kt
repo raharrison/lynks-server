@@ -18,7 +18,7 @@ class V2__Create_default_user : BaseJavaMigration() {
     override fun migrate(context: Context) {
         if (Environment.auth.defaultUserPassword == null) {
             if (Environment.auth.enabled) {
-                log.warn("Auth is enabled but no defaultUserPassword configured — application will start with no users. Set auth.defaultUserPassword to create the initial user.")
+                log.warn("Auth is enabled but no defaultUserPassword configured - application will start with no users. Set auth.defaultUserPassword to create the initial user.")
             } else {
                 log.info("No default user password provided, not creating default user")
             }

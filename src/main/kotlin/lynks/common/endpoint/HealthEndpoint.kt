@@ -1,20 +1,13 @@
 package lynks.common.endpoint
 
-import io.ktor.server.application.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import lynks.common.BuildInfo
 
 fun Route.health() {
 
-    val ok = mapOf("status" to "ok")
-
     get("/health") {
-        call.respond(ok)
-    }
-
-    get("/info") {
-        val version = this.javaClass.getResource("/version.txt")?.readText()
-        call.respond(mapOf("version" to version))
+        call.respond(mapOf("status" to "up", "application" to "lynks", "version" to BuildInfo.version))
     }
 
 }

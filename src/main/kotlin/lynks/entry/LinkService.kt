@@ -93,10 +93,10 @@ class LinkService(
     override fun toUpdate(entry: Link): BaseEntries.(UpdateBuilder<*>) -> Unit = {
         it[Entries.title] = entry.title
         it[Entries.plainContent] = entry.url
-        it[Entries.content] = entry.content
         it[Entries.src] = URLUtils.extractSource(entry.url)
         it[Entries.thumbnailId] = entry.thumbnailId?.value
         // explicitly not updating props to prevent overriding
+        // content (searchable text) is managed exclusively via updateSearchableContent
     }
 
     fun read(id: EntryId, read: Boolean): Link? = transaction {

@@ -82,7 +82,9 @@ object Environment {
 
     private object ExternalSpec : ConfigSpec("external") {
         val smmryApiKey by optional<String?>(null, description = "api key to smmry.com")
-        val youtubeDlHost by required<String>(description = "url of latest youtube-dl binary")
+        val youtubeApiKey by optional<String?>(null, description = "api key to YouTube Data API v3")
+        val youtubeApiBaseUrl by optional("https://www.googleapis.com", description = "base url of the YouTube Data API v3")
+        val youtubeDlHost by required<String>(description = "url of latest yt-dlp binary")
         val scraperHost by optional<String?>(null, description = "url to the scraper component")
         val pushoverToken by optional<String?>(null, description = "Pushover application token")
         val pushoverUser by optional<String?>(null, description = "Pushover user/group key")
@@ -90,6 +92,8 @@ object Environment {
 
     data class External(
         val smmryApiKey: String? = config[ExternalSpec.smmryApiKey],
+        val youtubeApiKey: String? = config[ExternalSpec.youtubeApiKey],
+        val youtubeApiBaseUrl: String = config[ExternalSpec.youtubeApiBaseUrl],
         val youtubeDlHost: String = config[ExternalSpec.youtubeDlHost],
         val scraperHost: String? = config[ExternalSpec.scraperHost],
         val pushoverToken: String? = config[ExternalSpec.pushoverToken],

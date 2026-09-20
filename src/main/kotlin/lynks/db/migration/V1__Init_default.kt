@@ -25,7 +25,8 @@ class V1__Init_default : BaseJavaMigration() {
                         case
                             when ${Entries.type.name} = '${EntryType.LINK.name}' then
                                                 (setweight(to_tsvector('english', coalesce(${Entries.title.name}, '')), 'A') ||
-                                                setweight(to_tsvector('english', coalesce(regexp_replace(${Entries.plainContent.name}, '[/:._-]', ' ', 'g'), '')), 'A'))
+                                                setweight(to_tsvector('english', coalesce(regexp_replace(${Entries.plainContent.name}, '[/:._-]', ' ', 'g'), '')), 'A') ||
+                                                setweight(to_tsvector('english', coalesce(${Entries.content.name}, '')), 'B'))
                             else (setweight(to_tsvector('english', coalesce(${Entries.title.name}, '')), 'A') ||
                                   setweight(to_tsvector('english', coalesce(${Entries.plainContent.name}, '')), 'B'))
                         end

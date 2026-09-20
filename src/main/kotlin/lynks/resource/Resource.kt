@@ -53,6 +53,7 @@ enum class ResourceType {
     SINGLE_FILE; // self-contained HTML with all assets inlined as data URIs
 
     companion object {
-        fun linkBaseline(): EnumSet<ResourceType> = EnumSet.of(SCREENSHOT, THUMBNAIL, PREVIEW, PAGE, DOCUMENT, READABLE_DOC, READABLE_TEXT, SINGLE_FILE)
+        fun linkBaseline(): EnumSet<ResourceType> =
+            EnumSet.of(SCREENSHOT, THUMBNAIL, PREVIEW, DOCUMENT, READABLE_DOC, READABLE_TEXT, SINGLE_FILE)
     }
 }

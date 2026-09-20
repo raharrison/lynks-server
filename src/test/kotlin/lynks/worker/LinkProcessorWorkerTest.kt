@@ -71,7 +71,6 @@ class LinkProcessorWorkerTest {
                 GeneratedResource(ResourceType.THUMBNAIL, "thumbPath", JPG),
                 GeneratedResource(ResourceType.PREVIEW, "previewPath", JPG),
                 GeneratedResource(ResourceType.DOCUMENT, "docPath", PDF),
-                GeneratedResource(ResourceType.PAGE, "screenshotPath", HTML),
                 GeneratedResource(ResourceType.READABLE_TEXT, readableTextContentPath.toString(), TEXT),
             )
             FileUtils.writeToFile(readableTextContentPath, "article content".toByteArray())

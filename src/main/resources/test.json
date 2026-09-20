@@ -17,6 +17,8 @@
     "external": {
         "scraperHost": "http://localhost:3893/api",
         "smmryApiKey": "smmryApiKey",
+        "youtubeApiKey": "test-api-key",
+        "youtubeApiBaseUrl": "http://localhost:3893",
         "pushoverToken": "pushoverToken",
         "pushoverUser": "pushoverUser"
     }

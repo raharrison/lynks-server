@@ -24,6 +24,7 @@ import lynks.common.*
 import lynks.common.endpoint.health
 import lynks.common.exception.InvalidModelException
 import lynks.common.exception.NotFoundException
+import lynks.common.exception.SuggestionUnavailableException
 import lynks.common.inject.ServiceProvider
 import lynks.db.DatabaseFactory
 import lynks.entry.*
@@ -71,6 +72,9 @@ fun Application.module() {
         }
         exception<NotFoundException> { call, cause ->
             call.respond(HttpStatusCode.NotFound, ErrorResponse(cause.message ?: "Not found"))
+        }
+        exception<SuggestionUnavailableException> { call, cause ->
+            call.respond(HttpStatusCode.UnprocessableEntity, ErrorResponse(cause.message ?: "Suggestion unavailable"))
         }
         exception<Throwable> { call, cause ->
             call.application.log.error("Unhandled exception on ${call.request.local.method.value} ${call.request.local.uri}", cause)

@@ -1,0 +1,58 @@
+{
+    "items": [
+        {
+            "snippet": {
+                "title": "When Your Phone is at 1%",
+                "description": "It ends badly.\n\n1% battery is the worst thing that could ever happen.",
+                "tags": [
+                    "beluga",
+                    "low battery",
+                    "when your battery is at 1 percent",
+                    "battery meme",
+                    "discord",
+                    "discord beluga",
+                    "when your battery is at 1",
+                    "when your battery is low",
+                    "low battery meme",
+                    "memes",
+                    "iphone battery low",
+                    "iphone memes",
+                    "low battery sound",
+                    "when your phone is at 1 percent",
+                    "when your phone is at",
+                    "when your phone is at 1 percent meme",
+                    "phone battery low"
+                ],
+                "channelTitle": "Beluga",
+                "publishedAt": "2021-10-01T12:00:00Z",
+                "thumbnails": {
+                    "default": {
+                        "url": "https://i.ytimg.com/vi/DAiEUeM8Uv0/default.jpg",
+                        "width": 120,
+                        "height": 90
+                    },
+                    "medium": {
+                        "url": "https://i.ytimg.com/vi/DAiEUeM8Uv0/mqdefault.jpg",
+                        "width": 320,
+                        "height": 180
+                    },
+                    "high": {
+                        "url": "https://i.ytimg.com/vi/DAiEUeM8Uv0/hqdefault.jpg",
+                        "width": 480,
+                        "height": 360
+                    },
+                    "standard": {
+                        "url": "https://i.ytimg.com/vi/DAiEUeM8Uv0/sddefault.jpg",
+                        "width": 640,
+                        "height": 480
+                    },
+                    "maxres": {
+                        "url": "https://i.ytimg.com/vi/DAiEUeM8Uv0/maxresdefault.jpg",
+                        "width": 1280,
+                        "height": 720
+                    }
+                }
+            }
+        }
+    ]
+}

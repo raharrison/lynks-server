@@ -339,21 +339,6 @@ class LinkServiceTest : DatabaseTest() {
     }
 
     @Test
-    fun testUpdateLinkInternal() {
-        // keeping same Link instance - update content
-        val added = linkService.add(newLink("n1", "google.com"))
-        assertThat(added.content).isNull()
-        val modified = added.copy(content = "modified")
-        val updated = linkService.update(modified)
-        assertThat(modified.content).isEqualTo(updated!!.content)
-        assertThat(updated.content).isEqualTo("modified")
-        assertThat(updated.dateCreated).isEqualTo(updated.dateUpdated)
-        val retrieved = linkService.get(added.id)
-        assertThat(retrieved?.content).isEqualTo(updated.content)
-        verify(exactly = 1) { entryAuditService.acceptAuditEvent(added.id, any(), any()) }
-    }
-
-    @Test
     fun testUpdateLinkTags() {
         val added1 = linkService.add(newLink("n1", "google.com", listOf("t1", "t2")))
         assertThat(linkService.get(added1.id)?.title).isEqualTo("n1")

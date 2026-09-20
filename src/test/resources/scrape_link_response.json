@@ -20,11 +20,6 @@
         "extension": "pdf"
     },
     {
-        "resourceType": "PAGE",
-        "targetPath": "/media/page_1622149656186.html",
-        "extension": "html"
-    },
-    {
         "resourceType": "READABLE_TEXT",
         "targetPath": "/media/readable_text_1622149656774.txt",
         "extension": "txt"

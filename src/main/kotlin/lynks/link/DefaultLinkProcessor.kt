@@ -3,6 +3,7 @@ package lynks.link
 import com.fasterxml.jackson.module.kotlin.readValue
 import lynks.common.BaseProperties
 import lynks.common.Environment
+import lynks.common.exception.SuggestionUnavailableException
 import lynks.resource.GeneratedResource
 import lynks.resource.ResourceManager
 import lynks.resource.ResourceType
@@ -46,13 +47,19 @@ open class DefaultLinkProcessor(
     }
 
     override suspend fun suggest(resourceSet: EnumSet<ResourceType>): SuggestResponse {
+        val scraperHost = Environment.external.scraperHost
+            ?: throw SuggestionUnavailableException("Scraper not configured")
         val targetPath = resourceManager.constructTempBasePath(url)
-        val suggestUrl = Environment.external.scraperHost + "/suggest"
+        val suggestUrl = "$scraperHost/suggest"
         val suggestRequest = ScrapeRequest(url, resourceSet.toList(), targetPath.absolutePathString())
 
-        when (val result = webResourceRetriever.postStringResult(suggestUrl, suggestRequest)) {
-            is Result.Failure -> throw result.reason
-            is Result.Success -> return JsonMapper.defaultMapper.readValue(result.value)
+        return when (val result = webResourceRetriever.postStringResult(suggestUrl, suggestRequest)) {
+            is Result.Failure -> throw SuggestionUnavailableException(
+                "Scraper request failed: ${result.reason.message}",
+                result.reason
+            )
+
+            is Result.Success -> JsonMapper.defaultMapper.readValue(result.value)
         }
     }
 

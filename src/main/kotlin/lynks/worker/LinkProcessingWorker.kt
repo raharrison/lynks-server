@@ -7,6 +7,7 @@ import lynks.common.BaseProperties
 import lynks.common.DEAD_LINK_PROP
 import lynks.common.Link
 import lynks.common.ResourceId
+import lynks.common.exception.SuggestionUnavailableException
 import lynks.entry.EntryAuditService
 import lynks.entry.LinkService
 import lynks.group.GroupSetService
@@ -169,6 +170,9 @@ class LinkProcessorWorker(
             }
         } catch (e: CancellationException) {
             throw e
+        } catch (e: SuggestionUnavailableException) {
+            log.warn("Link processing worker suggestion unavailable for url={}: {}", url, e.message, e.cause)
+            deferred.completeExceptionally(e)
         } catch (e: Exception) {
             log.error("Link processing worker failed generating suggestion for url={}", url, e)
             deferred.completeExceptionally(e)

@@ -14,7 +14,6 @@ import lynks.util.FileUtils
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import java.nio.file.Paths
 import kotlin.io.path.absolutePathString
@@ -25,10 +24,7 @@ class SuggestionEndpointTest: ServerTest() {
 
     @BeforeEach
     fun beforeEach() {
-        wireMockServer = WireMockServer(
-            WireMockConfiguration.options()
-                .port(3893)
-        )
+        wireMockServer = WireMockServer(WireMockConfiguration.options().port(3893))
         wireMockServer.start()
     }
 
@@ -55,7 +51,7 @@ class SuggestionEndpointTest: ServerTest() {
                 .body("http://invalidname.fo/")
                 .post("/suggest")
                 .then()
-                .statusCode(500)
+            .statusCode(422)
     }
 
     @Test
@@ -115,25 +111,73 @@ class SuggestionEndpointTest: ServerTest() {
             .body("https://deepu.tech/memory-management-in-jvm/")
             .post("/suggest")
             .then()
-            .statusCode(500)
+            .statusCode(422)
     }
 
     @Test
-    @Disabled
     fun testYoutubeSuggestion() {
-        val suggestion = given()
-                .body("https://www.youtube.com/watch?v=JGvk4M0Rfxo")
-                .post("/suggest")
-                .then()
-                .extract().`as`(Suggestion::class.java)
+        val videoId = "JGvk4M0Rfxo"
+        val thumbnailBytes = byteArrayOf(1, 2, 3)
+        val previewBytes = byteArrayOf(4, 5, 6)
+        val apiResponse = """
+            {
+              "items": [{
+                "snippet": {
+                  "title": "Welcome to the Kotlin YouTube Channel!",
+                  "description": "Official Kotlin channel.",
+                  "tags": ["kotlin", "jvm"],
+                  "channelTitle": "Kotlin by JetBrains",
+                  "publishedAt": "2020-05-01T10:00:00Z",
+                  "thumbnails": {
+                    "medium":  { "url": "http://localhost:3893/vi/$videoId/mqdefault.jpg" },
+                    "maxres":  { "url": "http://localhost:3893/vi/$videoId/maxresdefault.jpg" }
+                  }
+                }
+              }]
+            }
+        """.trimIndent()
+        wireMockServer.stubFor(
+            WireMock.get(WireMock.urlPathEqualTo("/youtube/v3/videos"))
+                .willReturn(ok(apiResponse).withHeader("Content-Type", "application/json"))
+        )
+        wireMockServer.stubFor(
+            WireMock.get("/vi/$videoId/mqdefault.jpg")
+                .willReturn(ok().withBody(thumbnailBytes))
+        )
+        wireMockServer.stubFor(
+            WireMock.get("/vi/$videoId/maxresdefault.jpg")
+                .willReturn(ok().withBody(previewBytes))
+        )
 
-        assertThat(suggestion.url).isEqualTo("https://www.youtube.com/watch?v=JGvk4M0Rfxo")
+        val suggestion = given()
+            .body("https://www.youtube.com/watch?v=$videoId")
+            .post("/suggest")
+            .then()
+            .statusCode(200)
+            .extract().`as`(Suggestion::class.java)
+
+        assertThat(suggestion.url).isEqualTo("https://www.youtube.com/watch?v=$videoId")
         assertThat(suggestion.title).isEqualTo("Welcome to the Kotlin YouTube Channel!")
+        assertThat(suggestion.keywords).containsExactlyInAnyOrder("kotlin", "jvm")
         assertThat(suggestion.preview).isNotNull()
         assertThat(suggestion.thumbnail).isNotNull()
-        assertThat(suggestion.keywords).isNotEmpty()
 
         retrieveTempResource(suggestion.thumbnail)
+        retrieveTempResource(suggestion.preview)
+    }
+
+    @Test
+    fun testYoutubeSuggestionApiFailure() {
+        val videoId = "JGvk4M0Rfxo"
+        wireMockServer.stubFor(
+            WireMock.get(WireMock.urlPathEqualTo("/youtube/v3/videos"))
+                .willReturn(status(500))
+        )
+        given()
+            .body("https://www.youtube.com/watch?v=$videoId")
+            .post("/suggest")
+            .then()
+            .statusCode(422)
     }
 
     private fun retrieveTempResource(path: String?) {

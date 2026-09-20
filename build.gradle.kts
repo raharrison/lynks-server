@@ -1,35 +1,34 @@
-val ktorVersion = "3.4.0"
+val ktorVersion = "3.6.0"
 
-val postgresVersion = "42.7.9"
-val exposedVersion = "1.1.1"
-val hikariVersion = "7.0.2"
-val flywayVersion = "11.19.0"
+val postgresVersion = "42.7.13"
+val exposedVersion = "1.5.0"
+val hikariVersion = "7.1.0"
+val flywayVersion = "13.7.0"
 
 val flexmarkVersion = "0.64.8"
-val handlebarsVersion = "4.5.0"
+val handlebarsVersion = "4.5.5"
 val commonsEmailVersion = "1.6.0"
 val bcryptVersion = "0.10.2"
 val totpVersion = "2.4.1"
-val logbackVersion = "1.5.25"
+val logbackVersion = "1.6.3"
 val konfVersion = "0.0.8"
 val commonslangVersion = "3.14.0"
 val skeduleVersion = "0.4.0"
 
 val testcontainersVersion = "1.21.4"
-val kotlinxCoroutinesTestVersion = "1.10.2"
-val restAssuredVersion = "6.0.0"
-val junitVersion = "5.10.1"
-val assertjVersion = "3.27.3"
-val mockkVersion = "1.14.9"
+val kotlinxCoroutinesTestVersion = "1.11.0"
+val restAssuredVersion = "6.0.1"
+val junitVersion = "6.1.3"
+val assertjVersion = "3.27.7"
+val mockkVersion = "1.14.11"
 val wiremockVersion = "3.13.2"
 
 plugins {
     application
-    kotlin("jvm") version "2.3.10"
-    id("org.jetbrains.kotlinx.kover") version "0.9.4"
+    kotlin("jvm") version "2.4.20"
 }
 
-version = "2.0.0"
+version = "2.1.0"
 
 sourceSets {
     create("testIntegration") {
@@ -66,16 +65,11 @@ tasks.withType<Copy> {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
 
-val createProperties = tasks.register("createProperties") {
-    doLast {
-        val file = File("${layout.buildDirectory.get()}/resources/main/version.txt")
-        file.parentFile.mkdirs()
-        file.writeText(project.version.toString())
+tasks.processResources {
+    val appVersion = version.toString()
+    filesMatching("version.properties") {
+        expand("version" to appVersion)
     }
-}
-
-tasks.named("classes") {
-    dependsOn(createProperties)
 }
 
 repositories {

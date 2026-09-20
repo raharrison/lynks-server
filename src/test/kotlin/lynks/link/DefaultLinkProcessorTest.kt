@@ -6,6 +6,7 @@ import io.mockk.mockk
 import kotlinx.coroutines.runBlocking
 import lynks.common.BaseProperties
 import lynks.common.exception.ExecutionException
+import lynks.common.exception.SuggestionUnavailableException
 import lynks.resource.ResourceManager
 import lynks.resource.ResourceType
 import lynks.resource.ResourceType.*
@@ -48,9 +49,9 @@ class DefaultLinkProcessorTest {
         processor.use {
             processor.init()
             val scrapedResources = processor.scrapeResources(ResourceType.linkBaseline())
-            assertThat(scrapedResources).hasSize(7)
+            assertThat(scrapedResources).hasSize(6)
             assertThat(scrapedResources).extracting("resourceType")
-                .containsOnly(SCREENSHOT, PREVIEW, THUMBNAIL, DOCUMENT, PAGE, READABLE_TEXT, SINGLE_FILE)
+                .containsOnly(SCREENSHOT, PREVIEW, THUMBNAIL, DOCUMENT, READABLE_TEXT, SINGLE_FILE)
         }
         Unit
     }
@@ -97,7 +98,7 @@ class DefaultLinkProcessorTest {
         val processor = DefaultLinkProcessor(url, resourceRetriever, resourceManager)
         processor.use {
             processor.init()
-            assertThrows<ExecutionException> {
+            assertThrows<SuggestionUnavailableException> {
                 processor.suggest(ResourceType.linkBaseline())
             }
         }
