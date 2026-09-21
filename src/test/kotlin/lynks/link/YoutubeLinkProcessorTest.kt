@@ -9,8 +9,6 @@ import lynks.resource.JPG
 import lynks.resource.ResourceManager
 import lynks.resource.ResourceType
 import lynks.resource.WebResourceRetriever
-import lynks.task.youtube.YoutubeDlAudioTask
-import lynks.task.youtube.YoutubeDlVideoTask
 import lynks.util.Result
 import org.assertj.core.api.Assertions.*
 import org.junit.jupiter.api.Test
@@ -203,12 +201,7 @@ class YoutubeLinkProcessorTest {
         val props = BaseProperties()
         processor.enrich(props)
         assertThat(props.tasks).extracting("description")
-            .contains("Download Audio", "Download Video")
-        assertThat(props.tasks).extracting("className")
-            .contains(
-                YoutubeDlAudioTask::class.qualifiedName,
-                YoutubeDlVideoTask::class.qualifiedName
-            )
+            .containsExactlyInAnyOrder("Process Link", "Find Discussions")
         Unit
     }
 }

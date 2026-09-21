@@ -117,6 +117,15 @@ class LinkService(
         getBaseQuery().combine { Entries.props.isNotNull() and deadLinkJsonbOp }.map { toModel(it) }
     }
 
+    fun getSlim(ids: List<EntryId>): List<SlimLink> = transaction {
+        if (ids.isEmpty()) return@transaction emptyList()
+        val values = ids.map { it.value }
+        getBaseQuery().adjustSelect { select(slimColumnSet) }
+            .combine { Entries.id inList values }
+            .map { toSlimModel(it) }
+            .sortedBy { values.indexOf(it.id.value) }
+    }
+
     fun checkExistingWithUrl(url: String): List<SlimLink> = transaction {
         val fullUrl = URLUtils.ensureUrlProtocol(url)
         getBaseQuery().adjustSelect { select(slimColumnSet) }.combine { Entries.plainContent eq fullUrl }.map { toSlimModel(it) }

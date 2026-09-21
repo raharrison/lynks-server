@@ -75,23 +75,6 @@ class URLUtilsTest {
     }
 
     @Test
-    fun testValidEmail() {
-        assertThat(URLUtils.isValidEmail("test@example.com")).isTrue()
-        assertThat(URLUtils.isValidEmail("test@test.abc")).isTrue()
-        assertThat(URLUtils.isValidEmail("test.other.some@test.abc")).isTrue()
-        assertThat(URLUtils.isValidEmail("test@1.abc")).isTrue()
-        assertThat(URLUtils.isValidEmail("test+100@some-test.com")).isTrue()
-    }
-
-    @Test
-    fun testInvalidEmail() {
-        assertThat(URLUtils.isValidEmail("me@.com.my")).isFalse()
-        assertThat(URLUtils.isValidEmail("me123@.com")).isFalse()
-        assertThat(URLUtils.isValidEmail("me@me@example.com")).isFalse()
-        assertThat(URLUtils.isValidEmail("me*@%*-example.other.1com")).isFalse()
-    }
-
-    @Test
     fun testEncode() {
         assertThat(URLUtils.encode("abc123")).isEqualTo("abc123")
         assertThat(URLUtils.encode("a:b*c(d)&e!f")).isEqualTo("a%3Ab*c%28d%29%26e%21f")

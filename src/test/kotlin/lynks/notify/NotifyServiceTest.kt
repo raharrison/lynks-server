@@ -16,7 +16,7 @@ import lynks.notify.NewNotification.Companion.discussions
 import lynks.notify.NewNotification.Companion.error
 import lynks.notify.NewNotification.Companion.processed
 import lynks.notify.NewNotification.Companion.reminder
-import lynks.notify.pushover.PushoverClient
+import lynks.notify.jolt.JoltClient
 import lynks.util.createDummyEntry
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -25,8 +25,8 @@ import org.junit.jupiter.api.Test
 @DelicateCoroutinesApi
 class NotifyServiceTest: DatabaseTest() {
 
-    private val pushoverClient = mockk<PushoverClient>()
-    private val notifyService = NotifyService(pushoverClient)
+    private val joltClient = mockk<JoltClient>()
+    private val notifyService = NotifyService(joltClient)
 
     @BeforeEach
     fun setup() {
@@ -270,11 +270,11 @@ class NotifyServiceTest: DatabaseTest() {
     }
 
     @Test
-    fun testSendPushoverNotification() = runBlocking {
+    fun testSendJoltNotification() = runBlocking {
         val notification = notifyService.create(processed("success"), false)
-        coEvery { pushoverClient.sendNotification(any(), notification.message) } just Runs
-        notifyService.sendPushoverNotification(notification, "title")
-        coVerify(exactly = 1) { pushoverClient.sendNotification("title", notification.message) }
+        coEvery { joltClient.sendNotification(any(), notification.message, any()) } just Runs
+        notifyService.sendJoltNotification(notification, "title")
+        coVerify(exactly = 1) { joltClient.sendNotification("title", notification.message, any()) }
     }
 
 }

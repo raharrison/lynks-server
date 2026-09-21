@@ -12,7 +12,6 @@ import lynks.util.loggerFor
 import lynks.util.orderBy
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
-import org.jetbrains.exposed.v1.core.isNotNull
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.selectAll
@@ -32,7 +31,6 @@ class UserService(private val twoFactorService: TwoFactorService) {
         Users.select(userColumns).where { Users.username eq username and Users.activated }.map {
             User(
                 it[Users.username],
-                it[Users.email],
                 it[Users.displayName],
                 it[Users.digest],
                 it[Users.dateCreated].toInstant(),
@@ -66,7 +64,6 @@ class UserService(private val twoFactorService: TwoFactorService) {
 
     fun updateUser(userUpdate: UserUpdateRequest): User? = transaction {
         val updated = Users.update({ Users.username eq userUpdate.username and Users.activated }) {
-            it[email] = userUpdate.email
             it[displayName] = userUpdate.displayName
             it[digest] = userUpdate.digest
             it[dateUpdated] = OffsetDateTime.now(ZoneOffset.UTC)
@@ -102,10 +99,8 @@ class UserService(private val twoFactorService: TwoFactorService) {
         }
     }
 
-    fun getDigestEnabledEmails(): Set<String> = transaction {
-        Users.select(Users.email)
-            .where { Users.digest and Users.email.isNotNull() and Users.activated }
-            .mapNotNull { it[Users.email] }.toSet()
+    fun isDigestEnabled(): Boolean = transaction {
+        Users.selectAll().where { Users.digest and Users.activated }.empty().not()
     }
 
     fun getUserActivityLog(pageRequest: PageRequest = PageRequest()): Page<ActivityLogItem> = transaction {

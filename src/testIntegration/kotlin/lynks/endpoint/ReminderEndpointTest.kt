@@ -22,7 +22,8 @@ class ReminderEndpointTest : ServerTest() {
     @BeforeEach
     fun createEntries() {
         createDummyEntry("e1", "title1", "content1", EntryType.LINK)
-        createDummyReminder("r1", "e1", ReminderType.ADHOC, listOf(NotificationMethod.WEB, NotificationMethod.EMAIL),
+        createDummyReminder(
+            "r1", "e1", ReminderType.ADHOC, listOf(NotificationMethod.PUSH, NotificationMethod.JOLT),
             "message", (System.currentTimeMillis() + 1.2e+6).toLong().toString(), status = ReminderStatus.ACTIVE)
     }
 
@@ -40,7 +41,7 @@ class ReminderEndpointTest : ServerTest() {
         assertThat(reminders).extracting("entryId").containsOnly("e1")
         assertThat(reminders).extracting("type").containsOnly(ReminderType.ADHOC.name.lowercase())
         assertThat(reminders).extracting("notifyMethods")
-            .containsOnly(listOf(NotificationMethod.WEB.name.lowercase(), NotificationMethod.EMAIL.name.lowercase()))
+            .containsOnly(listOf(NotificationMethod.PUSH.name.lowercase(), NotificationMethod.JOLT.name.lowercase()))
         assertThat(reminders).extracting("message").containsOnly("message")
         assertThat(reminders).extracting("status").containsOnly(ReminderStatus.ACTIVE.name.lowercase())
         assertThat(reminders).extracting("dateCreated").doesNotContainNull()
@@ -49,7 +50,8 @@ class ReminderEndpointTest : ServerTest() {
 
     @Test
     fun testGetAllRemindersPaging() {
-        createDummyReminder("r2", "e1", ReminderType.RECURRING, listOf(NotificationMethod.EMAIL),
+        createDummyReminder(
+            "r2", "e1", ReminderType.RECURRING, listOf(NotificationMethod.JOLT),
             "msg2", "every day 09:00", status = ReminderStatus.DISABLED)
         val page1 = given()
                 .queryParam("page", 1)
@@ -74,7 +76,7 @@ class ReminderEndpointTest : ServerTest() {
         assertThat(reminder.reminderId).isEqualTo(ReminderId("r1"))
         assertThat(reminder.entryId).isEqualTo(EntryId("e1"))
         assertThat(reminder.type).isEqualTo(ReminderType.ADHOC)
-        assertThat(reminder.notifyMethods).containsExactly(NotificationMethod.WEB, NotificationMethod.EMAIL)
+        assertThat(reminder.notifyMethods).containsExactly(NotificationMethod.PUSH, NotificationMethod.JOLT)
         assertThat(reminder.message).isEqualTo("message")
         assertThat(reminder.status).isEqualTo(ReminderStatus.ACTIVE)
         assertThat(reminder.dateCreated).isAfter(Instant.EPOCH).isEqualTo(reminder.dateUpdated)
@@ -89,7 +91,8 @@ class ReminderEndpointTest : ServerTest() {
 
     @Test
     fun testCreateReminder() {
-        val reminder = NewReminder(null, EntryId("e1"), ReminderType.RECURRING, listOf(NotificationMethod.WEB, NotificationMethod.EMAIL),
+        val reminder = NewReminder(
+            null, EntryId("e1"), ReminderType.RECURRING, listOf(NotificationMethod.PUSH, NotificationMethod.JOLT),
                 "message", "every 30 minutes", ZoneId.systemDefault().id, status = ReminderStatus.DISABLED)
         val created = given()
                 .contentType(ContentType.JSON)
@@ -103,7 +106,7 @@ class ReminderEndpointTest : ServerTest() {
         assertThat(created.reminderId).isNotNull()
         assertThat(created.entryId).isEqualTo(reminder.entryId)
         assertThat(created.type).isEqualTo(reminder.type)
-        assertThat(created.notifyMethods).containsExactly(NotificationMethod.WEB, NotificationMethod.EMAIL)
+        assertThat(created.notifyMethods).containsExactly(NotificationMethod.PUSH, NotificationMethod.JOLT)
         assertThat(created.message).isEqualTo("message")
         assertThat(created.spec).isEqualTo(reminder.spec)
         assertThat(created.tz).isEqualTo(reminder.tz)
@@ -127,7 +130,7 @@ class ReminderEndpointTest : ServerTest() {
     fun testUpdateReminder() {
         val reminder = NewReminder(
             ReminderId("r1"), EntryId("e1"), ReminderType.RECURRING,
-            listOf(NotificationMethod.EMAIL), "updated", "every 30 minutes", "Asia/Singapore",
+            listOf(NotificationMethod.JOLT), "updated", "every 30 minutes", "Asia/Singapore",
             ReminderStatus.DISABLED
         )
         val updated = given()
@@ -141,7 +144,7 @@ class ReminderEndpointTest : ServerTest() {
         assertThat(updated.reminderId).isEqualTo(reminder.reminderId)
         assertThat(updated.entryId).isEqualTo(reminder.entryId)
         assertThat(updated.type).isEqualTo(reminder.type)
-        assertThat(updated.notifyMethods).containsExactly(NotificationMethod.EMAIL)
+        assertThat(updated.notifyMethods).containsExactly(NotificationMethod.JOLT)
         assertThat(updated.message).isEqualTo("updated")
         assertThat(updated.spec).isEqualTo(reminder.spec)
         assertThat(updated.tz).isEqualTo(reminder.tz)
@@ -159,7 +162,7 @@ class ReminderEndpointTest : ServerTest() {
     fun testUpdateReminderReturnsNotFound() {
         val reminder = NewReminder(
             ReminderId("invalid"), EntryId("e1"), ReminderType.RECURRING,
-            listOf(NotificationMethod.WEB), "", "every 30 minutes", ZoneId.systemDefault().id,
+            listOf(NotificationMethod.PUSH), "", "every 30 minutes", ZoneId.systemDefault().id,
             status = ReminderStatus.ACTIVE
         )
         given()

@@ -27,12 +27,14 @@ import lynks.common.exception.NotFoundException
 import lynks.common.exception.SuggestionUnavailableException
 import lynks.common.inject.ServiceProvider
 import lynks.db.DatabaseFactory
+import lynks.digest.DigestService
+import lynks.digest.digest
 import lynks.entry.*
 import lynks.entry.ref.EntryRefService
 import lynks.group.*
 import lynks.notify.NotifyService
+import lynks.notify.jolt.JoltClient
 import lynks.notify.notify
-import lynks.notify.pushover.PushoverClient
 import lynks.reminder.ReminderService
 import lynks.reminder.reminder
 import lynks.resource.*
@@ -40,7 +42,6 @@ import lynks.suggest.SuggestionService
 import lynks.suggest.suggest
 import lynks.task.TaskService
 import lynks.task.task
-import lynks.task.youtube.YoutubeDlRunner
 import lynks.user.*
 import lynks.util.JsonMapper.defaultMapper
 import lynks.util.RandomUtils
@@ -65,6 +66,7 @@ fun Application.module() {
     }
     install(CallLogging) {
         callIdMdc(MDC_REQUEST_ID)
+        disableDefaultColors()
     }
     install(StatusPages) {
         exception<InvalidModelException> { call, cause ->
@@ -94,7 +96,7 @@ fun Application.module() {
         register(WebResourceRetriever())
         register(TwoFactorService())
         register(UserService(get()))
-        register(PushoverClient(get()))
+        register(JoltClient(get()))
         register(NotifyService(get()))
         register(FileStore())
         register(ResourceRepository())
@@ -112,8 +114,8 @@ fun Application.module() {
         register(FileService(get(), get(), get()))
         register(CommentService(get(), get()))
         register(ReminderService(get()))
+        register(DigestService(get()))
         register(SuggestionService(get()))
-        register(YoutubeDlRunner(get(), get(), get(), get()))
         register(TaskService(get(), this, get()))
         workerRegistry.init(this)
         seal()
@@ -137,6 +139,7 @@ fun Application.module() {
 private fun Route.protectedRoutes(serviceProvider: ServiceProvider) {
     with(serviceProvider) {
         comment(get())
+        digest(get())
         link(get())
         note(get())
         snippet(get())

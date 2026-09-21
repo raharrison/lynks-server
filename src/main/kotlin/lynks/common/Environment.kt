@@ -55,7 +55,6 @@ object Environment {
     private object ResourceSpec: ConfigSpec("resource") {
         val resourceBasePath by required<String>(description = "location where all main entry resources will be saved")
         val resourceTempPath by required<String>(description = "location where all temporary files will be saved")
-        val binaryBasePath by required<String>(description = "location where all binary utilities will be saved")
         val tempFileCleanInterval by optional(6, description = "frequency in hours to delete temp resources")
         val maxTempResourceAge by optional(14, description = "maximum age of temp files in days before qualifying for cleanup")
     }
@@ -63,41 +62,24 @@ object Environment {
     data class Resource(
         val resourceBasePath: String = config[ResourceSpec.resourceBasePath],
         val resourceTempPath: String = config[ResourceSpec.resourceTempPath],
-        val binaryBasePath: String = config[ResourceSpec.binaryBasePath],
         val tempFileCleanInterval: Int = config[ResourceSpec.tempFileCleanInterval],
         val maxTempResourceAge: Int = config[ResourceSpec.maxTempResourceAge]
     )
 
-    private object MailSpec : ConfigSpec("mail") {
-        val enabled by required<Boolean>(description = "enable sending emails")
-        val server by required<String>(description = "host of mail server to use")
-        val port by required<Int>(description = "port of mail server to use")
-    }
-
-    data class Mail(
-        val enabled: Boolean = config[MailSpec.enabled],
-        val server: String = config[MailSpec.server],
-        val port: Int = config[MailSpec.port]
-    )
-
     private object ExternalSpec : ConfigSpec("external") {
-        val smmryApiKey by optional<String?>(null, description = "api key to smmry.com")
         val youtubeApiKey by optional<String?>(null, description = "api key to YouTube Data API v3")
         val youtubeApiBaseUrl by optional("https://www.googleapis.com", description = "base url of the YouTube Data API v3")
-        val youtubeDlHost by required<String>(description = "url of latest yt-dlp binary")
         val scraperHost by optional<String?>(null, description = "url to the scraper component")
-        val pushoverToken by optional<String?>(null, description = "Pushover application token")
-        val pushoverUser by optional<String?>(null, description = "Pushover user/group key")
+        val joltHost by optional<String?>(null, description = "base url of the jolt api, e.g. https://jolt.example.com/api/v1")
+        val joltToken by optional<String?>(null, description = "jolt inbound channel token")
     }
 
     data class External(
-        val smmryApiKey: String? = config[ExternalSpec.smmryApiKey],
         val youtubeApiKey: String? = config[ExternalSpec.youtubeApiKey],
         val youtubeApiBaseUrl: String = config[ExternalSpec.youtubeApiBaseUrl],
-        val youtubeDlHost: String = config[ExternalSpec.youtubeDlHost],
         val scraperHost: String? = config[ExternalSpec.scraperHost],
-        val pushoverToken: String? = config[ExternalSpec.pushoverToken],
-        val pushoverUser: String? = config[ExternalSpec.pushoverUser]
+        val joltHost: String? = config[ExternalSpec.joltHost],
+        val joltToken: String? = config[ExternalSpec.joltToken]
     )
 
     val mode: ConfigMode = ConfigMode.valueOf(System.getProperty("CONFIG_MODE")?.uppercase() ?: "DEV")
@@ -111,7 +93,6 @@ object Environment {
         addSpec(AuthSpec)
         addSpec(DatabaseSpec)
         addSpec(ResourceSpec)
-        addSpec(MailSpec)
         addSpec(ExternalSpec)
     }
         .from.json.resource("default.json")
@@ -125,6 +106,5 @@ object Environment {
     val auth = Auth()
     val database = Database()
     val resource = Resource()
-    val mail = Mail()
     val external = External()
 }

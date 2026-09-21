@@ -17,7 +17,7 @@ class WorkerRegistry {
             unreadDigestWorker = UnreadLinkDigestWorker(get(), get(), get()).worker()
             fileCleanupWorker = TempFileCleanupWorker().worker()
             orphanCleanupWorker = OrphanResourceCleanupWorker().worker()
-            reminderWorker = ReminderWorker(get(), get(), get()).worker()
+            reminderWorker = ReminderWorker(get(), get()).worker()
             entryRefWorker = EntryRefWorker(get(), get(), get(), get()).worker()
         }
     }

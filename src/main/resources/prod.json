@@ -5,7 +5,7 @@
         "registrationsEnabled": false
     },
     "database": {
-        "url": "jdbc:postgresql://postgres:5432/lynksdb",
+        "url": "jdbc:postgresql://localhost:5432/lynksdb",
         "user": "lynksuser"
     }
 }

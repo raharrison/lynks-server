@@ -39,4 +39,5 @@ out/
 ### Lynks ###
 media/
 .env
+.env-dev
 lynks.config.json

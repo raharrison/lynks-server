@@ -9,7 +9,6 @@ import lynks.resource.ResourceManager
 import lynks.resource.ResourceType
 import lynks.resource.WebResourceRetriever
 import lynks.task.link.LinkProcessingTask
-import lynks.task.link.LinkSummarizerTask
 import lynks.util.JsonMapper
 import lynks.util.Result
 import java.util.*
@@ -28,7 +27,6 @@ open class DefaultLinkProcessor(
         props.addTask("Generate Document", LinkProcessingTask.build(ResourceType.DOCUMENT))
         props.addTask("Generate Readable Page", LinkProcessingTask.build(ResourceType.READABLE_DOC))
         props.addTask("Generate Single File", LinkProcessingTask.build(ResourceType.SINGLE_FILE))
-        props.addTask("Generate Summary", LinkSummarizerTask.build())
     }
 
     override fun matches(): Boolean = true

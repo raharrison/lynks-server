@@ -26,23 +26,15 @@
             "resource": {
                 "resourceBasePath": "media",
                 "resourceTempPath": "media/temp",
-                "binaryBasePath": "bin",
                 "tempFileCleanInterval": 6,
                 "maxTempResourceAge": 14
             },
-            "mail": {
-                "enabled": false,
-                "server": "localhost",
-                "port": 1025
-            },
             "external": {
-                "smmryApiKey": "abcdef123",
                 "youtubeApiKey": "abcdef123",
                 "youtubeApiBaseUrl": "https://www.googleapis.com",
-                "youtubeDlHost": "https://github.com/yt-dlp/yt-dlp/releases/latest/download",
                 "scraperHost": "http://localhost:3000/api",
-                "pushoverToken": "abcdef123",
-                "pushoverUser": "abcdef123"
+                "joltHost": "https://jolt.example.com/api/v1",
+                "joltToken": "jlt_live_xxx"
             }
         }
     ],
@@ -197,7 +189,6 @@
                 {
                     "resourceBasePath": "media",
                     "resourceTempPath": "media/temp",
-                    "binaryBasePath": "bin",
                     "tempFileCleanInterval": 6,
                     "maxTempResourceAge": 14
                 }
@@ -219,14 +210,6 @@
                         "media/temp"
                     ]
                 },
-                "binaryBasePath": {
-                    "$id": "#/properties/resource/properties/binaryBasePath",
-                    "type": "string",
-                    "description": "Location where all binary utilities will be saved",
-                    "examples": [
-                        "bin"
-                    ]
-                },
                 "tempFileCleanInterval": {
                     "$id": "#/properties/resource/properties/tempFileCleanInterval",
                     "type": "integer",
@@ -246,67 +229,18 @@
             },
             "additionalProperties": false
         },
-        "mail": {
-            "$id": "#/properties/mail",
-            "type": "object",
-            "description": "An explanation about the purpose of this instance.",
-            "examples": [
-                {
-                    "enabled": false,
-                    "server": "localhost",
-                    "port": 1025
-                }
-            ],
-            "properties": {
-                "enabled": {
-                    "$id": "#/properties/mail/properties/enabled",
-                    "type": "boolean",
-                    "description": "Enable the sending of emails by the server for notifications",
-                    "examples": [
-                        false
-                    ]
-                },
-                "server": {
-                    "$id": "#/properties/mail/properties/server",
-                    "type": "string",
-                    "description": "Host of the mail server used to send emails (if enabled)",
-                    "examples": [
-                        "localhost"
-                    ]
-                },
-                "port": {
-                    "$id": "#/properties/mail/properties/port",
-                    "type": "integer",
-                    "description": "Port of the mail server used to send emails (if enabled)",
-                    "examples": [
-                        1025
-                    ]
-                }
-            },
-            "additionalProperties": false
-        },
         "external": {
             "$id": "#/properties/external",
             "type": "object",
             "description": "An explanation about the purpose of this instance.",
             "examples": [
                 {
-                    "smmryApiKey": "abcdef123",
-                    "youtubeDlHost": "https://github.com/yt-dlp/yt-dlp/releases/latest/download",
                     "scraperHost": "http://localhost:3000/api",
-                    "pushoverToken": "abcdef123",
-                    "pushoverUser": "abcdef123"
+                    "joltHost": "https://jolt.example.com/api/v1",
+                    "joltToken": "jlt_live_xxx"
                 }
             ],
             "properties": {
-                "smmryApiKey": {
-                    "$id": "#/properties/external/properties/smmryApiKey",
-                    "type": "string",
-                    "description": "API key to smmry.com, used to generate summarizations of text content",
-                    "examples": [
-                        "abcdef123"
-                    ]
-                },
                 "youtubeApiKey": {
                     "$id": "#/properties/external/properties/youtubeApiKey",
                     "type": "string",
@@ -323,14 +257,6 @@
                         "https://www.googleapis.com"
                     ]
                 },
-                "youtubeDlHost": {
-                    "$id": "#/properties/external/properties/youtubeDlHost",
-                    "type": "string",
-                    "description": "URL of latest youtube-dl/yt-dlp binary",
-                    "examples": [
-                        "https://github.com/yt-dlp/yt-dlp/releases/latest/download"
-                    ]
-                },
                 "scraperHost": {
                     "$id": "#/properties/external/properties/scraperHost",
                     "type": "string",
@@ -339,20 +265,20 @@
                         "http://localhost:3000/api"
                     ]
                 },
-                "pushoverToken": {
-                    "$id": "#/properties/external/properties/pushoverToken",
+                "joltHost": {
+                    "$id": "#/properties/external/properties/joltHost",
                     "type": "string",
-                    "description": "Pushover application token for sending notifications",
+                    "description": "Base URL of the jolt API used for outbound notifications",
                     "examples": [
-                        "abcdef123"
+                        "https://jolt.example.com/api/v1"
                     ]
                 },
-                "pushoverUser": {
-                    "$id": "#/properties/external/properties/pushoverUser",
+                "joltToken": {
+                    "$id": "#/properties/external/properties/joltToken",
                     "type": "string",
-                    "description": "Pushover user/group token for sending notifications",
+                    "description": "Jolt inbound channel token",
                     "examples": [
-                        "abcdef123"
+                        "jlt_live_xxx"
                     ]
                 }
             },

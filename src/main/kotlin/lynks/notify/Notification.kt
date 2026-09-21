@@ -16,9 +16,10 @@ object Notifications : Table("notifications") {
     override val primaryKey = PrimaryKey(notificationId)
 }
 
-enum class NotificationType { PROCESSED, ERROR, REMINDER, DISCUSSIONS }
+enum class NotificationType { PROCESSED, ERROR, REMINDER, DISCUSSIONS, DIGEST }
 
-enum class NotificationMethod { EMAIL, WEB, PUSHOVER }
+// PUSH is currently delivered over the websocket; JOLT hands off to jolt's inbound channel
+enum class NotificationMethod { PUSH, JOLT }
 
 // entry point from services to save into main table
 class NewNotification private constructor(val type: NotificationType, val message: String, val entryId: EntryId?) {
@@ -31,6 +32,8 @@ class NewNotification private constructor(val type: NotificationType, val messag
         fun error(message: String = "An Error Occurred", entryId: EntryId? = null) = NewNotification(NotificationType.ERROR, message, entryId)
 
         fun discussions(message: String = "Discussions Found", entryId: EntryId? = null) = NewNotification(NotificationType.DISCUSSIONS, message, entryId)
+
+        fun digest(message: String = "Digest Regenerated") = NewNotification(NotificationType.DIGEST, message, null)
 
     }
 }

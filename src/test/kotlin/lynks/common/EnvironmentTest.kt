@@ -44,14 +44,16 @@ class EnvironmentTest {
         val node = JsonMapper.defaultMapper.readTree(file).get("external")
 
         val scraperHost = node.get("scraperHost").textValue()
-        val smmryApiKey = node.get("smmryApiKey").textValue()
-        val pushoverToken = node.get("pushoverToken").textValue()
-        val pushoverUser = node.get("pushoverUser").textValue()
+        val youtubeApiKey = node.get("youtubeApiKey").textValue()
+        val youtubeApiBaseUrl = node.get("youtubeApiBaseUrl").textValue()
+        val joltHost = node.get("joltHost").textValue()
+        val joltToken = node.get("joltToken").textValue()
 
         assertThat(scraperHost).isEqualTo(Environment.external.scraperHost)
-        assertThat(smmryApiKey).isEqualTo(Environment.external.smmryApiKey)
-        assertThat(pushoverToken).isEqualTo(Environment.external.pushoverToken)
-        assertThat(pushoverUser).isEqualTo(Environment.external.pushoverUser)
+        assertThat(youtubeApiKey).isEqualTo(Environment.external.youtubeApiKey)
+        assertThat(youtubeApiBaseUrl).isEqualTo(Environment.external.youtubeApiBaseUrl)
+        assertThat(joltHost).isEqualTo(Environment.external.joltHost)
+        assertThat(joltToken).isEqualTo(Environment.external.joltToken)
     }
 
 }

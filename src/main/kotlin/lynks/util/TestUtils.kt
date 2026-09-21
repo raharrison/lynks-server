@@ -120,12 +120,11 @@ fun createDummyNotification(id: String, type: NotificationType, msg: String, eid
     }
 }
 
-fun createDummyUser(username: String, email: String? = null, displayName: String? = null, digest: Boolean = false) = transaction {
+fun createDummyUser(username: String, displayName: String? = null, digest: Boolean = false) = transaction {
     val time = OffsetDateTime.now(ZoneOffset.UTC)
     Users.insert {
         it[this.username] = username
         it[password] = "\$2a\$08\$/QeU1nEQ5FgD7nM.mjDadOBfyvL5LDlGYoOvc/EMEUzsfkc6/84Hy"
-        it[this.email] = email
         it[this.displayName] = displayName
         it[this.digest] = digest
         it[this.dateCreated] = time

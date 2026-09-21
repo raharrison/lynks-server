@@ -371,12 +371,12 @@ class ResourceManagerTest: DatabaseTest() {
         assertFileCount(resourceManager.constructPath(entryId, ResourceId("")).toString(), 1)
         assertFileContents(path.toString(), data)
 
-        val resource = resourceManager.saveGeneratedResource(EntryId("eid"), ResourceType.GENERATED, path)
+        val resource = resourceManager.saveGeneratedResource(EntryId("eid"), ResourceType.UPLOAD, path)
         assertThat(resource.entryId).isEqualTo(entryId)
         assertThat(resource.version).isOne()
         assertThat(resource.extension).isEqualTo(JPG)
         assertThat(resource.size).isEqualTo(data.size.toLong())
-        assertThat(resource.type).isEqualTo(ResourceType.GENERATED)
+        assertThat(resource.type).isEqualTo(ResourceType.UPLOAD)
         assertThat(resource.name).isEqualTo("res1.jpg")
 
         assertThat(path.toFile().exists()).isFalse()

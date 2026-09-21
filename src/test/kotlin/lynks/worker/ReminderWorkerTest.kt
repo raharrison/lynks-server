@@ -40,8 +40,7 @@ class ReminderWorkerTest {
             NotificationId("n1"), NotificationType.DISCUSSIONS, "found", false, dateCreated = Instant.now()
         )
         coEvery { notifyService.sendWebNotification(any()) } just Runs
-        coEvery { notifyService.sendEmail(any(), any(), any()) } just Runs
-        coEvery { notifyService.sendPushoverNotification(any(), any()) } just Runs
+        coEvery { notifyService.sendJoltNotification(any(), any()) } just Runs
         every { reminderService.isActive(any()) } returns true
     }
 
@@ -57,10 +56,10 @@ class ReminderWorkerTest {
         val fire = Instant.now().plus(15, ChronoUnit.MINUTES).toEpochMilli()
         val fire2 = Instant.now().plus(45, ChronoUnit.MINUTES).toEpochMilli()
         val reminder = AdhocReminder(ReminderId("sc1"), EntryId("e1"),
-            listOf(NotificationMethod.WEB), "message1", fire, tz.id, ReminderStatus.ACTIVE,
+            listOf(NotificationMethod.PUSH), "message1", fire, tz.id, ReminderStatus.ACTIVE,
             Instant.EPOCH, Instant.EPOCH)
         val reminder2 = AdhocReminder(ReminderId("sc2"), EntryId("e1"),
-            listOf(NotificationMethod.WEB, NotificationMethod.EMAIL), "message2", fire2,
+            listOf(NotificationMethod.PUSH, NotificationMethod.JOLT), "message2", fire2,
             tz.id, ReminderStatus.ACTIVE, Instant.EPOCH, Instant.EPOCH)
 
         val worker = createWorker(coroutineContext)
@@ -71,14 +70,12 @@ class ReminderWorkerTest {
         advanceTimeBy(TimeUnit.MINUTES.toMillis(14))
         coVerify(exactly = 0) { notifyService.create(coMatch { it.message == reminder.message }, false) }
         coVerify(exactly = 0) { notifyService.create(coMatch { it.message == reminder2.message }, false) }
-        coVerify(exactly = 0) { notifyService.sendEmail(any(), any(), any()) }
-        coVerify(exactly = 0) { notifyService.sendPushoverNotification(any(), any()) }
+        coVerify(exactly = 0) { notifyService.sendJoltNotification(any(), any()) }
 
         advanceTimeBy(TimeUnit.MINUTES.toMillis(1))
         coVerify(exactly = 1) { notifyService.create(coMatch { it.message == reminder.message }, false) }
         coVerify(exactly = 0) { notifyService.create(coMatch { it.message == reminder2.message }, false) }
-        coVerify(exactly = 0) { notifyService.sendEmail(any(), any(), any()) }
-        coVerify(exactly = 0) { notifyService.sendPushoverNotification(any(), any()) }
+        coVerify(exactly = 0) { notifyService.sendJoltNotification(any(), any()) }
 
         advanceTimeBy(TimeUnit.MINUTES.toMillis(35))
         send.close()
@@ -86,8 +83,7 @@ class ReminderWorkerTest {
 
         coVerify(exactly = 1) { notifyService.create(coMatch { it.message == reminder.message }, false) }
         coVerify(exactly = 1) { notifyService.create(coMatch { it.message == reminder2.message }, false) }
-        coVerify(exactly = 1) { notifyService.sendEmail(any(), any(), any()) }
-        coVerify(exactly = 0) { notifyService.sendPushoverNotification(any(), any()) }
+        coVerify(exactly = 1) { notifyService.sendJoltNotification(any(), any()) }
         coVerify(exactly = 1) { reminderService.updateReminderStatus(reminder.reminderId, ReminderStatus.COMPLETED) }
         coVerify(exactly = 1) { reminderService.updateReminderStatus(reminder2.reminderId, ReminderStatus.COMPLETED) }
     }
@@ -98,10 +94,10 @@ class ReminderWorkerTest {
         val fire = Instant.now().plus(2, ChronoUnit.HOURS).toEpochMilli()
         val fire2 = Instant.now().plus(2, ChronoUnit.HOURS).plus(30, ChronoUnit.MINUTES).toEpochMilli()
         val reminder = AdhocReminder(ReminderId("sc1"), EntryId("e1"),
-            listOf(NotificationMethod.WEB, NotificationMethod.PUSHOVER), "message1", fire, tz.id,
+            listOf(NotificationMethod.PUSH, NotificationMethod.JOLT), "message1", fire, tz.id,
             ReminderStatus.ACTIVE, Instant.EPOCH, Instant.EPOCH)
         val reminder2 = AdhocReminder(ReminderId("sc2"), EntryId("e1"),
-            listOf(NotificationMethod.WEB), "message2", fire2,
+            listOf(NotificationMethod.PUSH), "message2", fire2,
             tz.id, ReminderStatus.ACTIVE, Instant.EPOCH, Instant.EPOCH)
 
         val worker = createWorker(coroutineContext)
@@ -112,32 +108,29 @@ class ReminderWorkerTest {
         advanceTimeBy(TimeUnit.MINUTES.toMillis(118))
         coVerify(exactly = 0) { notifyService.create(coMatch { it.message == reminder.message }, false) }
         coVerify(exactly = 0) { notifyService.create(coMatch { it.message == reminder2.message }, false) }
-        coVerify(exactly = 0) { notifyService.sendEmail(any(), any(), any()) }
-        coVerify(exactly = 0) { notifyService.sendPushoverNotification(any(), any()) }
+        coVerify(exactly = 0) { notifyService.sendJoltNotification(any(), any()) }
 
         advanceTimeBy(TimeUnit.MINUTES.toMillis(2))
         coVerify(exactly = 1) { notifyService.create(coMatch { it.message == reminder.message }, false) }
-        coVerify(exactly = 1) { notifyService.sendPushoverNotification(any(), any()) }
+        coVerify(exactly = 1) { notifyService.sendJoltNotification(any(), any()) }
         coVerify(exactly = 0) { notifyService.create(coMatch { it.message == reminder2.message }, false) }
-        coVerify(exactly = 0) { notifyService.sendEmail(any(), any(), any()) }
 
         advanceTimeBy(TimeUnit.MINUTES.toMillis(35))
         send.close()
         worker.cancelAll()
 
         coVerify(exactly = 1) { notifyService.create(coMatch { it.message == reminder.message }, false) }
-        coVerify(exactly = 1) { notifyService.sendPushoverNotification(any(), any()) }
+        coVerify(exactly = 1) { notifyService.sendJoltNotification(any(), any()) }
         coVerify(exactly = 1) { reminderService.updateReminderStatus(reminder.reminderId, ReminderStatus.COMPLETED) }
         coVerify(exactly = 1) { notifyService.create(coMatch { it.message == reminder2.message }, false) }
         coVerify(exactly = 1) { reminderService.updateReminderStatus(reminder2.reminderId, ReminderStatus.COMPLETED) }
-        coVerify(exactly = 0) { notifyService.sendEmail(any(), any(), any()) }
     }
 
     @Test
     fun testRecurringReminderSameTimezone() = runTest {
         val tz = ZoneId.systemDefault()
         val reminder = RecurringReminder(ReminderId("sc2"), EntryId("e1"),
-            listOf(NotificationMethod.WEB, NotificationMethod.PUSHOVER), "message", "every 30 minutes",
+            listOf(NotificationMethod.PUSH, NotificationMethod.JOLT), "message", "every 30 minutes",
             tz.id, ReminderStatus.ACTIVE, Instant.EPOCH, Instant.EPOCH)
 
         val worker = createWorker(coroutineContext)
@@ -146,33 +139,33 @@ class ReminderWorkerTest {
 
         advanceTimeBy(TimeUnit.MINUTES.toMillis(25))
         coVerify(exactly = 0) { notifyService.create(coMatch { it.message == reminder.message }, false) }
-        coVerify(exactly = 0) { notifyService.sendPushoverNotification(any(), any()) }
+        coVerify(exactly = 0) { notifyService.sendJoltNotification(any(), any()) }
 
         advanceTimeBy(TimeUnit.MINUTES.toMillis(160))
         coVerify(exactly = 6) { notifyService.create(coMatch { it.message == reminder.message }, false) }
-        coVerify(exactly = 6) { notifyService.sendPushoverNotification(any(), any()) }
+        coVerify(exactly = 6) { notifyService.sendJoltNotification(any(), any()) }
 
         advanceTimeBy(TimeUnit.MINUTES.toMillis(65))
         coVerify(exactly = 8) { notifyService.create(coMatch { it.message == reminder.message }, false) }
-        coVerify(exactly = 8) { notifyService.sendPushoverNotification(any(), any()) }
+        coVerify(exactly = 8) { notifyService.sendJoltNotification(any(), any()) }
 
         advanceTimeBy(TimeUnit.MINUTES.toMillis(125))
         coVerify(exactly = 12) { notifyService.create(coMatch { it.message == reminder.message }, false) }
-        coVerify(exactly = 12) { notifyService.sendPushoverNotification(any(), any()) }
+        coVerify(exactly = 12) { notifyService.sendJoltNotification(any(), any()) }
 
         advanceTimeBy(TimeUnit.MINUTES.toMillis(185))
         send.close()
         worker.cancelAll()
 
         coVerify(exactly = 18) { notifyService.create(coMatch { it.message == reminder.message }, false) }
-        coVerify(exactly = 18) { notifyService.sendPushoverNotification(any(), any()) }
+        coVerify(exactly = 18) { notifyService.sendJoltNotification(any(), any()) }
     }
 
     @Test
     fun testRecurringReminderDifferentTimezone() = runTest {
         val tz = ZoneId.of("Asia/Singapore")
         val reminder = RecurringReminder(ReminderId("sc1"), EntryId("e1"),
-            listOf(NotificationMethod.WEB), "message", "every day 06:00",
+            listOf(NotificationMethod.PUSH), "message", "every day 06:00",
             tz.id, ReminderStatus.ACTIVE, Instant.EPOCH, Instant.EPOCH)
 
         val worker = createWorker(coroutineContext)
@@ -196,15 +189,14 @@ class ReminderWorkerTest {
         worker.cancelAll()
 
         coVerify(exactly = 1) { notifyService.create(coMatch { it.message == reminder.message }, false) }
-        coVerify(exactly = 0) { notifyService.sendEmail(any(), any(), any()) }
-        coVerify(exactly = 0) { notifyService.sendPushoverNotification(any(), any()) }
+        coVerify(exactly = 0) { notifyService.sendJoltNotification(any(), any()) }
     }
 
     @Test
     fun testReminderNotExecutedIfNotActive() = runTest {
         val fire = Instant.now().plus(15, ChronoUnit.MINUTES).toEpochMilli()
         val reminder = AdhocReminder(ReminderId("sc1"), EntryId("e1"),
-            listOf(NotificationMethod.WEB, NotificationMethod.PUSHOVER), "message", fire,
+            listOf(NotificationMethod.PUSH, NotificationMethod.JOLT), "message", fire,
             ZoneId.systemDefault().id, ReminderStatus.ACTIVE, Instant.EPOCH, Instant.EPOCH)
 
         every { reminderService.isActive(reminder.reminderId) } returns false
@@ -217,7 +209,7 @@ class ReminderWorkerTest {
         worker.cancelAll()
 
         coVerify(exactly = 0) { notifyService.create(coMatch { it.message == reminder.message }, false) }
-        coVerify(exactly = 0) { notifyService.sendPushoverNotification(any(), any()) }
+        coVerify(exactly = 0) { notifyService.sendJoltNotification(any(), any()) }
         verify(exactly = 1) { reminderService.isActive(reminder.reminderId) }
         verify(exactly = 0) { reminderService.updateReminderStatus(reminder.reminderId, ReminderStatus.COMPLETED) }
     }
@@ -225,7 +217,7 @@ class ReminderWorkerTest {
     @Test
     fun testRecurringNotExecutedIfNotActive() = runTest {
         val reminder = RecurringReminder(ReminderId("sc1"), EntryId("e1"),
-            listOf(NotificationMethod.WEB, NotificationMethod.PUSHOVER), "message", "every 3 hours",
+            listOf(NotificationMethod.PUSH, NotificationMethod.JOLT), "message", "every 3 hours",
             ZoneId.systemDefault().id, ReminderStatus.ACTIVE, Instant.EPOCH, Instant.EPOCH)
 
         every { reminderService.isActive(reminder.reminderId) } returns false
@@ -238,7 +230,7 @@ class ReminderWorkerTest {
         worker.cancelAll()
 
         coVerify(exactly = 0) { notifyService.create(coMatch { it.message == reminder.message }, false) }
-        coVerify(exactly = 0) { notifyService.sendPushoverNotification(any(), any()) }
+        coVerify(exactly = 0) { notifyService.sendJoltNotification(any(), any()) }
         verify(exactly = 1) { reminderService.isActive(reminder.reminderId) }
     }
 
@@ -247,10 +239,10 @@ class ReminderWorkerTest {
         val tz = ZoneId.systemDefault()
         val fire = Instant.now().plus(15, ChronoUnit.MINUTES).toEpochMilli()
         val reminder = AdhocReminder(ReminderId("sc1"), EntryId("e1"),
-            listOf(NotificationMethod.WEB), "message1", fire,
+            listOf(NotificationMethod.PUSH), "message1", fire,
             tz.id, ReminderStatus.ACTIVE, Instant.EPOCH, Instant.EPOCH)
         val recurring = RecurringReminder(ReminderId("sc1"), EntryId("e1"),
-            listOf(NotificationMethod.WEB, NotificationMethod.PUSHOVER), "message2", "every 3 hours",
+            listOf(NotificationMethod.PUSH, NotificationMethod.JOLT), "message2", "every 3 hours",
             tz.id, ReminderStatus.ACTIVE, Instant.EPOCH, Instant.EPOCH)
 
         every { reminderService.getAllActiveReminders() } returns listOf(reminder, recurring)
@@ -264,7 +256,7 @@ class ReminderWorkerTest {
 
         coVerify(exactly = 1) { notifyService.create(coMatch { it.message == reminder.message }, false) }
         coVerify(exactly = 1) { notifyService.create(coMatch { it.message == recurring.message }, false) }
-        coVerify(exactly = 1) { notifyService.sendPushoverNotification(any(), any()) }
+        coVerify(exactly = 1) { notifyService.sendJoltNotification(any(), any()) }
         verify(exactly = 2) { reminderService.isActive(reminder.reminderId) }
         verify(exactly = 1) { reminderService.updateReminderStatus(reminder.reminderId, ReminderStatus.COMPLETED) }
     }
@@ -274,13 +266,13 @@ class ReminderWorkerTest {
         val tz = ZoneId.systemDefault()
         val fire = Instant.now().plus(15, ChronoUnit.MINUTES).toEpochMilli()
         val active = AdhocReminder(ReminderId("sc1"), EntryId("e1"),
-            listOf(NotificationMethod.WEB), "message1", fire,
+            listOf(NotificationMethod.PUSH), "message1", fire,
             tz.id, ReminderStatus.ACTIVE, Instant.EPOCH, Instant.EPOCH)
         val disabled = AdhocReminder(ReminderId("sc2"), EntryId("e1"),
-            listOf(NotificationMethod.WEB), "message2", fire,
+            listOf(NotificationMethod.PUSH), "message2", fire,
             tz.id, ReminderStatus.DISABLED, Instant.EPOCH, Instant.EPOCH)
         val completed = AdhocReminder(ReminderId("sc3"), EntryId("e1"),
-            listOf(NotificationMethod.WEB), "message3", fire,
+            listOf(NotificationMethod.PUSH), "message3", fire,
             tz.id, ReminderStatus.COMPLETED, Instant.EPOCH, Instant.EPOCH)
 
         val worker = createWorker(coroutineContext)
@@ -304,7 +296,8 @@ class ReminderWorkerTest {
         val tz = ZoneId.systemDefault()
         val fire = Instant.now().plus(2, ChronoUnit.HOURS).toEpochMilli()
         val reminder = AdhocReminder(ReminderId("sc1"), EntryId("e1"),
-            listOf(NotificationMethod.WEB), "message", fire, tz.id,ReminderStatus.ACTIVE, Instant.EPOCH, Instant.EPOCH)
+            listOf(NotificationMethod.PUSH), "message", fire, tz.id, ReminderStatus.ACTIVE, Instant.EPOCH, Instant.EPOCH
+        )
 
         val worker = createWorker(coroutineContext)
         val send = worker.worker()
@@ -330,7 +323,8 @@ class ReminderWorkerTest {
         val tz = ZoneId.systemDefault()
         val fire = Instant.now().plus(2, ChronoUnit.HOURS).toEpochMilli()
         val reminder = AdhocReminder(ReminderId("sc1"), EntryId("e1"),
-            listOf(NotificationMethod.WEB), "message", fire, tz.id,ReminderStatus.ACTIVE, Instant.EPOCH, Instant.EPOCH)
+            listOf(NotificationMethod.PUSH), "message", fire, tz.id, ReminderStatus.ACTIVE, Instant.EPOCH, Instant.EPOCH
+        )
 
         val worker = createWorker(coroutineContext)
         val send = worker.worker()
@@ -354,7 +348,8 @@ class ReminderWorkerTest {
         val tz = ZoneId.systemDefault()
         val fire = Instant.now().plus(2, ChronoUnit.HOURS).toEpochMilli()
         val reminder = AdhocReminder(ReminderId("sc1"), EntryId("e1"),
-            listOf(NotificationMethod.WEB), "message", fire, tz.id, ReminderStatus.ACTIVE, Instant.EPOCH, Instant.EPOCH)
+            listOf(NotificationMethod.PUSH), "message", fire, tz.id, ReminderStatus.ACTIVE, Instant.EPOCH, Instant.EPOCH
+        )
 
         val worker = createWorker(coroutineContext)
         val send = worker.worker()
@@ -367,10 +362,9 @@ class ReminderWorkerTest {
         worker.cancelAll()
 
         coVerify(exactly = 0) { notifyService.create(coMatch { it.message == reminder.message }, false) }
-        coVerify(exactly = 0) { notifyService.sendEmail(any(), any(), any()) }
-        coVerify(exactly = 0) { notifyService.sendPushoverNotification(any(), any()) }
+        coVerify(exactly = 0) { notifyService.sendJoltNotification(any(), any()) }
     }
 
-    private fun createWorker(context: CoroutineContext) = ReminderWorker(reminderService, entryService, notifyService)
+    private fun createWorker(context: CoroutineContext) = ReminderWorker(reminderService, notifyService)
         .apply { runner = context }
 }

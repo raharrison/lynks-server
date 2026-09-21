@@ -53,7 +53,6 @@ class TaskService(private val entryService: EntryService,
                 it.parameterCount == 1 && it.name.startsWith("set") && types.contains(it.parameterTypes[0])
             }
             .forEach {
-                // perform type injection
                 val service = serviceProvider.get(it.parameterTypes[0])
                     ?: throw IllegalStateException(
                         "No service registered for @Inject field of type ${it.parameterTypes[0].name} in ${task::class.simpleName}"

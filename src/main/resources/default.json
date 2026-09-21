@@ -10,16 +10,9 @@
     },
     "resource": {
         "resourceBasePath": "media",
-        "resourceTempPath": "media/temp",
-        "binaryBasePath": "bin"
-    },
-    "mail": {
-        "enabled": false,
-        "server": "localhost",
-        "port": 1025
+        "resourceTempPath": "media/temp"
     },
     "external": {
-        "youtubeDlHost": "https://github.com/yt-dlp/yt-dlp/releases/latest/download",
         "scraperHost": "http://localhost:3000/api"
     }
 }

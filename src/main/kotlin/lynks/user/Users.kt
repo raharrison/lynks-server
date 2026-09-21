@@ -9,7 +9,6 @@ import java.time.Instant
 object Users : Table("user_profiles") {
     val username = varchar("username", 25)
     val password = varchar("password_hash", 128)
-    val email = varchar("email", 254).nullable()
     val displayName = varchar("display_name", 64).nullable()
     val digest = bool("digest").default(false)
     val dateCreated = timestampWithTimeZone("date_created")
@@ -24,7 +23,6 @@ enum class AuthResult { SUCCESS, TOTP_REQUIRED, INVALID_CREDENTIALS }
 data class ChangePasswordRequest(val username: String, val oldPassword: String, val newPassword: String)
 data class UserUpdateRequest(
     val username: String,
-    val email: String? = null,
     val displayName: String? = null,
     val digest: Boolean = false
 )
@@ -34,7 +32,6 @@ data class TwoFactorValidateRequest(val code: String)
 
 data class User(
     val username: String,
-    val email: String? = null,
     val displayName: String? = null,
     val digest: Boolean = false,
     val dateCreated: Instant,

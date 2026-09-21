@@ -19,7 +19,7 @@ class UserEndpointTest : ServerTest() {
 
     @BeforeEach
     fun setup() {
-        createDummyUser("user1", "user1@mail.com", "Bob Smith")
+        createDummyUser("user1", "Bob Smith")
     }
 
     @Test
@@ -32,13 +32,12 @@ class UserEndpointTest : ServerTest() {
     @Test
     fun testGetUser() {
         // created user
-        createDummyUser("user2", "user2@mail.com", "Bert Smith")
+        createDummyUser("user2", "Bert Smith")
         val user = get("/user/{id}", "user2")
             .then()
             .statusCode(200)
             .extract().to<User>()
         assertThat(user.username).isEqualTo("user2")
-        assertThat(user.email).isEqualTo("user2@mail.com")
         assertThat(user.displayName).isEqualTo("Bert Smith")
         assertThat(user.dateCreated).isEqualTo(user.dateUpdated)
     }
@@ -70,7 +69,6 @@ class UserEndpointTest : ServerTest() {
             .statusCode(200)
             .extract().to<User>()
         assertThat(user.username).isEqualTo("user2")
-        assertThat(user.email).isNull()
         assertThat(user.displayName).isNull()
     }
 
@@ -156,19 +154,18 @@ class UserEndpointTest : ServerTest() {
 
     @Test
     fun testUpdateUser() {
-        createDummyUser("user2", "user2@mail.com", "Bert Smith")
+        createDummyUser("user2", "Bert Smith")
         val original = get("/user/{id}", "user2")
             .then()
             .statusCode(200)
             .extract().to<User>()
         assertThat(original.username).isEqualTo("user2")
-        assertThat(original.email).isEqualTo("user2@mail.com")
         assertThat(original.displayName).isEqualTo("Bert Smith")
         assertThat(original.digest).isFalse()
         assertThat(original.dateCreated).isEqualTo(original.dateUpdated)
         val updated = given()
             .contentType(ContentType.JSON)
-            .body(UserUpdateRequest(original.username, "updated@mail.com", "Bart Smith", true))
+            .body(UserUpdateRequest(original.username, "Bart Smith", true))
             .When()
             .put("/user")
             .then()
@@ -176,7 +173,6 @@ class UserEndpointTest : ServerTest() {
             .extract().to<User>()
         assertThat(updated).isNotNull()
         assertThat(updated.username).isEqualTo(original.username)
-        assertThat(updated.email).isEqualTo("updated@mail.com")
         assertThat(updated.displayName).isEqualTo("Bart Smith")
         assertThat(updated.digest).isTrue()
         assertThat(updated.dateCreated).isNotEqualTo(updated.dateUpdated)
@@ -191,22 +187,11 @@ class UserEndpointTest : ServerTest() {
     fun testUpdateUserNotFound() {
         given()
             .contentType(ContentType.JSON)
-            .body(UserUpdateRequest("invalid", "updated@mail.com", "Bill Smith"))
+            .body(UserUpdateRequest("invalid", "Bill Smith"))
             .When()
             .put("/user")
             .then()
             .statusCode(404)
-    }
-
-    @Test
-    fun testUpdateUserInvalidEmail() {
-        given()
-            .contentType(ContentType.JSON)
-            .body(UserUpdateRequest("user1", "invalid"))
-            .When()
-            .put("/user")
-            .then()
-            .statusCode(400)
     }
 
     @Test

@@ -24,7 +24,7 @@ class UserServiceTest : DatabaseTest() {
 
     @BeforeEach
     fun setup() {
-        createDummyUser("user1", "user1@mail.com", "Bob Smith")
+        createDummyUser("user1", "Bob Smith")
     }
 
     @Test
@@ -32,7 +32,6 @@ class UserServiceTest : DatabaseTest() {
         val user = userService.getUser("user1")
         assertThat(user).isNotNull()
         assertThat(user?.username).isEqualTo("user1")
-        assertThat(user?.email).isEqualTo("user1@mail.com")
         assertThat(user?.displayName).isEqualTo("Bob Smith")
         assertThat(user?.digest).isFalse()
         assertThat(user?.dateCreated).isEqualTo(user?.dateUpdated)
@@ -51,7 +50,6 @@ class UserServiceTest : DatabaseTest() {
         val registered = userService.getUser(registeredUsername)
         assertThat(registered).isNotNull()
         assertThat(registered?.username).isEqualTo("user2")
-        assertThat(registered?.email).isNull()
         assertThat(registered?.displayName).isNull()
         assertThat(registered?.digest).isFalse()
         // different after activation
@@ -68,12 +66,10 @@ class UserServiceTest : DatabaseTest() {
     @Test
     fun testUpdateUser() {
         val before = userService.getUser("user1")
-        assertThat(before?.email).isEqualTo("user1@mail.com")
         assertThat(before?.displayName).isEqualTo("Bob Smith")
         Thread.sleep(10)
-        val updated = userService.updateUser(UserUpdateRequest("user1", "updated@mail.com", "Bill Smith"))
+        val updated = userService.updateUser(UserUpdateRequest("user1", "Bill Smith"))
         assertThat(updated).isNotNull()
-        assertThat(updated?.email).isEqualTo("updated@mail.com")
         assertThat(updated?.displayName).isEqualTo("Bill Smith")
         assertThat(updated?.dateCreated).isEqualTo(before?.dateCreated)
         assertThat(updated?.dateUpdated).isNotEqualTo(before?.dateUpdated)
@@ -82,7 +78,7 @@ class UserServiceTest : DatabaseTest() {
 
     @Test
     fun testUpdateUserNotFound() {
-        val updated = userService.updateUser(UserUpdateRequest("notfound", "updated@mail.com"))
+        val updated = userService.updateUser(UserUpdateRequest("notfound", "Bill Smith"))
         assertThat(updated).isNull()
     }
 
@@ -163,11 +159,10 @@ class UserServiceTest : DatabaseTest() {
     }
 
     @Test
-    fun testGetDigestEnabledEmails() {
-        createDummyUser("user2", "user2@mail.com", "Bill Smith", digest = true)
-        createDummyUser("user3", "user3@mail.com", "Bert Smith", digest = true)
-        val enabledEmails = userService.getDigestEnabledEmails()
-        assertThat(enabledEmails).containsExactlyInAnyOrder("user2@mail.com", "user3@mail.com")
+    fun testIsDigestEnabled() {
+        assertThat(userService.isDigestEnabled()).isFalse()
+        createDummyUser("user2", "Bill Smith", digest = true)
+        assertThat(userService.isDigestEnabled()).isTrue()
     }
 
     @Test

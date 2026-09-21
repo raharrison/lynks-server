@@ -4,9 +4,6 @@ import lynks.common.BaseProperties
 import lynks.common.Environment
 import lynks.common.exception.SuggestionUnavailableException
 import lynks.resource.*
-import lynks.task.youtube.YoutubeDlAudioTask
-import lynks.task.youtube.YoutubeDlVideoTask
-import lynks.task.youtube.YoutubeSubtitleTask
 import lynks.util.JsonMapper
 import lynks.util.Result
 import lynks.util.URLUtils
@@ -167,13 +164,6 @@ class YoutubeLinkProcessor(
     override suspend fun enrich(props: BaseProperties) {
         super.enrich(props)
         videoId?.let { props.addAttribute("embedUrl", embedUrl()) }
-        addYoutubeDlTasks(props)
-    }
-
-    private fun addYoutubeDlTasks(props: BaseProperties) {
-        props.addTask("Download Video", YoutubeDlVideoTask.build())
-        props.addTask("Download Audio", YoutubeDlAudioTask.build())
-        props.addTask("Download Subtitles", YoutubeSubtitleTask.build())
     }
 
     override fun close() {}

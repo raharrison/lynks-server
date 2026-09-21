@@ -15,7 +15,7 @@ class TwoFactorServiceTest : DatabaseTest() {
 
     @BeforeEach
     fun setup() {
-        createDummyUser("user1", "user1@mail.com", "Bob Smith")
+        createDummyUser("user1", "Bob Smith")
     }
 
     @Test

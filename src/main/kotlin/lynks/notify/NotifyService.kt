@@ -4,7 +4,6 @@ import io.ktor.websocket.*
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.channels.SendChannel
 import lynks.common.Entries
-import lynks.common.Environment
 import lynks.common.NotificationId
 import lynks.common.RowMapper.toNotification
 import lynks.common.newNotificationId
@@ -12,12 +11,11 @@ import lynks.common.page.DefaultPageRequest
 import lynks.common.page.Page
 import lynks.common.page.PageRequest
 import lynks.common.page.SortDirection
-import lynks.notify.pushover.PushoverClient
+import lynks.notify.jolt.JoltClient
 import lynks.util.JsonMapper.defaultMapper
 import lynks.util.findColumn
 import lynks.util.loggerFor
 import lynks.util.orderBy
-import org.apache.commons.mail.HtmlEmail
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.select
@@ -29,7 +27,7 @@ import java.time.ZoneOffset
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.max
 
-class NotifyService(private val pushoverClient: PushoverClient) {
+class NotifyService(private val joltClient: JoltClient) {
 
     private val log = loggerFor<NotifyService>()
     private val webNotifiers = ConcurrentHashMap.newKeySet<SendChannel<Frame>>()
@@ -128,21 +126,8 @@ class NotifyService(private val pushoverClient: PushoverClient) {
         }
     }
 
-    fun sendEmail(address: String, subject: String, body: String) {
-        if (!Environment.mail.enabled) return
-        log.info("Sending email with address={} subject={}", address, subject)
-        val email = HtmlEmail()
-        email.hostName = Environment.mail.server
-        email.setSmtpPort(Environment.mail.port)
-        email.setFrom("noreply@lynks.com")
-        email.addTo(address)
-        email.subject = subject
-        email.setHtmlMsg(body)
-        email.send()
-    }
-
-    suspend fun sendPushoverNotification(notification: Notification, title: String?) {
-        pushoverClient.sendNotification(title, notification.message)
+    suspend fun sendJoltNotification(notification: Notification, title: String?) {
+        joltClient.sendNotification(title, notification.message)
     }
 
 }

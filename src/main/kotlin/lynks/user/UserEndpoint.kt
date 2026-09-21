@@ -12,7 +12,6 @@ import lynks.common.ErrorResponse
 import lynks.common.UserSession
 import lynks.common.exception.InvalidModelException
 import lynks.common.exception.NotFoundException
-import lynks.util.URLUtils
 import lynks.util.isCallAuthorizedForUser
 import lynks.util.pageRequest
 
@@ -63,11 +62,6 @@ fun Route.userProtected(userService: UserService) {
         put {
             val user = call.receive<UserUpdateRequest>()
             if (call.isCallAuthorizedForUser(user.username)) {
-                user.email?.let { email ->
-                    if (!URLUtils.isValidEmail(email)) {
-                        throw InvalidModelException("Invalid email address")
-                    }
-                }
                 val updated = userService.updateUser(user) ?: throw NotFoundException()
                 call.respond(HttpStatusCode.OK, updated)
             } else {

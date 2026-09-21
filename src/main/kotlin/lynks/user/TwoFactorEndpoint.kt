@@ -38,7 +38,6 @@ fun Route.twoFactor(twoFactorService: TwoFactorService) {
             }
             if (call.isCallAuthorizedForUser(username)) {
                 val secret = twoFactorService.getTwoFactorSecret(username) ?: ""
-                // convert to QR code
                 call.respond(HttpStatusCode.OK, mapOf("secret" to secret))
             } else {
                 call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Unauthorized"))

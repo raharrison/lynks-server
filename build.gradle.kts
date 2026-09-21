@@ -6,8 +6,6 @@ val hikariVersion = "7.1.0"
 val flywayVersion = "13.7.0"
 
 val flexmarkVersion = "0.64.8"
-val handlebarsVersion = "4.5.5"
-val commonsEmailVersion = "1.6.0"
 val bcryptVersion = "0.10.2"
 val totpVersion = "2.4.1"
 val logbackVersion = "1.6.3"
@@ -26,6 +24,7 @@ val wiremockVersion = "3.13.2"
 plugins {
     application
     kotlin("jvm") version "2.4.20"
+    id("com.gradleup.shadow") version "9.3.1"
 }
 
 version = "2.1.0"
@@ -90,6 +89,11 @@ application {
     mainClass.set("lynks.MainKt")
 }
 
+tasks.withType<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar> {
+    mergeServiceFiles()
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+}
+
 kotlin {
     jvmToolchain(25)
 }
@@ -125,8 +129,6 @@ dependencies {
     implementation("com.vladsch.flexmark:flexmark-ext-autolink:$flexmarkVersion")
 
     implementation("com.github.shyiko.skedule:skedule:$skeduleVersion")
-    implementation("com.github.jknack:handlebars:$handlebarsVersion")
-    implementation("org.apache.commons:commons-email:$commonsEmailVersion")
     implementation("at.favre.lib:bcrypt:$bcryptVersion")
     implementation("dev.turingcomplete:kotlin-onetimepassword:$totpVersion")
 

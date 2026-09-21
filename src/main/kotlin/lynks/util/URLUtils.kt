@@ -4,8 +4,6 @@ import java.net.URI
 import java.net.URLDecoder
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
-import javax.mail.internet.AddressException
-import javax.mail.internet.InternetAddress
 
 object URLUtils {
 
@@ -44,13 +42,6 @@ object URLUtils {
     fun isValidUrl(url: String): Boolean = try {
         url.contains('.') && extractSource(url).isNotEmpty()
     } catch (e: Exception) {
-        false
-    }
-
-    fun isValidEmail(email: String): Boolean = try {
-        InternetAddress(email).validate()
-        true
-    } catch (_: AddressException) {
         false
     }
 

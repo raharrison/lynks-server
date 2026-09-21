@@ -45,11 +45,9 @@ enum class ResourceType {
     SCREENSHOT, // full page image screenshot
     THUMBNAIL, // primary image from page or small screenshot
     PREVIEW, // small partial page screenshot
-    PAGE, // full HTML page
     DOCUMENT, // full page PDF
     READABLE_DOC, // extracted formatted readable content
     READABLE_TEXT, // extracted text content only
-    GENERATED, // task created
     SINGLE_FILE; // self-contained HTML with all assets inlined as data URIs
 
     companion object {

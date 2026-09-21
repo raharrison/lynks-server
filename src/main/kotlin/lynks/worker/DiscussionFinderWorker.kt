@@ -111,7 +111,6 @@ class DiscussionFinderWorker(
             }
             previousDiscussionCount = discussions.size
 
-            // update schedule
             updateSchedule(DiscussionFinderWorkerRequest(linkId, intervalIndex))
             val interval = intervals[intervalIndex]
             log.info("Discussion finder worker sleeping for {} hours entry={}", interval, link.id)

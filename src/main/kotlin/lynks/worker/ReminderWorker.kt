@@ -1,15 +1,11 @@
 package lynks.worker
 
 import kotlinx.coroutines.delay
-import lynks.common.Link
-import lynks.common.Note
-import lynks.entry.EntryService
 import lynks.notify.NewNotification
 import lynks.notify.Notification
 import lynks.notify.NotificationMethod
 import lynks.notify.NotifyService
 import lynks.reminder.*
-import lynks.util.ResourceTemplater
 import java.time.Instant
 import java.time.ZoneId
 import java.time.ZonedDateTime
@@ -25,7 +21,7 @@ class ReminderWorkerRequest(val reminder: Reminder, crudType: CrudType) : Variab
 }
 
 class ReminderWorker(
-    private val reminderService: ReminderService, private val entryService: EntryService,
+    private val reminderService: ReminderService,
     private val notifyService: NotifyService
 ) : VariableChannelBasedWorker<ReminderWorkerRequest>() {
 
@@ -101,57 +97,28 @@ class ReminderWorker(
         val notification = notifyService.create(NewNotification.reminder(message, reminder.entryId), false)
 
         for (notifyMethod in EnumSet.copyOf(reminder.notifyMethods)) {
-            if (notifyMethod == NotificationMethod.WEB) {
+            if (notifyMethod == NotificationMethod.PUSH) {
                 try {
                     notifyService.sendWebNotification(notification)
                 } catch (e: Exception) {
-                    log.error("Reminder web notification failed", e)
+                    log.error("Reminder push notification failed", e)
                 }
             }
 
-            if (notifyMethod == NotificationMethod.EMAIL) {
+            if (notifyMethod == NotificationMethod.JOLT) {
                 try {
-                    sendEmailNotification(reminder)
+                    sendJoltNotification(reminder, notification)
                 } catch (e: Exception) {
-                    log.error("Reminder email notification failed", e)
-                }
-            }
-
-            if (notifyMethod == NotificationMethod.PUSHOVER) {
-                try {
-                    sendPushoverNotification(reminder, notification)
-                } catch (e: Exception) {
-                    log.error("Reminder pushover notification failed", e)
+                    log.error("Reminder jolt notification failed", e)
                 }
             }
 
         }
     }
 
-    private fun sendEmailNotification(reminder: Reminder) {
-        val title = when (val entry = entryService.get(reminder.entryId)) {
-            is Link -> entry.title
-            is Note -> entry.title
-            else -> entry?.javaClass?.simpleName
-        }
-        val content = mapOf(
-            "title" to title,
-            "spec" to reminder.spec,
-            "message" to reminder.message
-        )
-
-        val template = ResourceTemplater("reminder.html")
-        val email = template.apply(content)
-
-        notifyService.sendEmail("default", "Lynks - Reminder Elapsed", email)
-    }
-
-    private suspend fun sendPushoverNotification(reminder: Reminder, notification: Notification) {
-        if (reminder.message == null) {
-            notifyService.sendPushoverNotification(notification, null)
-        } else {
-            notifyService.sendPushoverNotification(notification, "Reminder Elapsed")
-        }
+    private suspend fun sendJoltNotification(reminder: Reminder, notification: Notification) {
+        val title = if (reminder.message == null) null else "Reminder Elapsed"
+        notifyService.sendJoltNotification(notification, title)
     }
 
     private fun calcDelay(date: ZonedDateTime): Long {

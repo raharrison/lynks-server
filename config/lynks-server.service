@@ -1,0 +1,44 @@
+# Install to /etc/systemd/system/lynks-server.service, then:
+#   systemctl daemon-reload && systemctl enable --now lynks-server
+#
+# Expects the fat jar at /opt/lynks/lynks-server.jar and config/lynks.config.json
+# alongside it, since the application resolves its config and media paths relative
+# to WorkingDirectory.
+
+[Unit]
+Description=Lynks API server
+Documentation=https://github.com/raharrison/lynks-server
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=lynks
+Group=lynks
+WorkingDirectory=/opt/lynks
+
+# CONFIG_MODE is read with System.getProperty, so it has to be a -D flag rather
+# than an Environment= entry.
+ExecStart=/usr/bin/java -DCONFIG_MODE=prod -XX:MaxRAMPercentage=70 -jar /opt/lynks/lynks-server.jar
+
+Restart=on-failure
+RestartSec=5s
+SuccessExitStatus=143
+TimeoutStopSec=30
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/lynks/media
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=lynks-server
+
+[Install]
+WantedBy=multi-user.target

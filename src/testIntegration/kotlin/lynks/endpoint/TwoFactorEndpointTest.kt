@@ -17,7 +17,7 @@ class TwoFactorEndpointTest : ServerTest() {
 
     @BeforeEach
     fun setup() {
-        createDummyUser(Environment.auth.defaultUserName, "user1@mail.com", "Bob Smith")
+        createDummyUser(Environment.auth.defaultUserName, "Bob Smith")
     }
 
     @Test
