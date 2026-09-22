@@ -51,7 +51,7 @@ class CommentService(private val workerRegistry: WorkerRegistry, private val mar
     fun addComment(eId: EntryId, comment: NewComment): Comment = transaction {
         val newId = newCommentId()
         val time = OffsetDateTime.now(ZoneOffset.UTC)
-        val (_, processedText, html) = markdownProcessor.convertAndProcess(comment.plainContent, eId)
+        val (processedText, html) = markdownProcessor.convertAndProcess(comment.plainContent, eId)
         Comments.insert {
             it[id] = newId.value
             it[entryId] = eId.value
@@ -72,7 +72,7 @@ class CommentService(private val workerRegistry: WorkerRegistry, private val mar
             addComment(entryId, comment)
         } else {
             transaction {
-                val (_, processedText, html) = markdownProcessor.convertAndProcess(comment.plainContent, entryId)
+                val (processedText, html) = markdownProcessor.convertAndProcess(comment.plainContent, entryId)
                 val updated = Comments.update({ Comments.id eq id.value and (Comments.entryId eq entryId.value) }) {
                     it[plainContent] = processedText
                     it[renderedContent] = html

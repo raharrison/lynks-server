@@ -1,9 +1,6 @@
 package lynks.resource
 
-import lynks.common.EntryId
-import lynks.common.Environment
-import lynks.common.ResourceId
-import lynks.common.newResourceId
+import lynks.common.*
 import lynks.util.FileUtils
 import lynks.util.RandomUtils
 import lynks.util.loggerFor
@@ -56,6 +53,23 @@ class FileStore {
         FileUtils.writeToFile(path, data)
         log.info("Temporary resource saved at {} src={} type={}", path.toString(), src, type)
         return path.toAbsolutePath().toUrlString()
+    }
+
+    private fun tempUploadDir(): Path =
+        Paths.get(Environment.resource.resourceTempPath, TEMP_UPLOAD_DIR).toAbsolutePath().normalize()
+
+    fun saveTempUpload(data: ByteArray, extension: String): Path {
+        val path = tempUploadDir().resolve("${RandomUtils.generateUid()}.$extension")
+        FileUtils.writeToFile(path, data)
+        log.info("Temporary upload saved at {}", path)
+        return path
+    }
+
+    // The name comes from user markdown, so it must not resolve outside the upload directory
+    fun findTempUpload(name: String): Path? {
+        val dir = tempUploadDir()
+        val path = runCatching { dir.resolve(name).normalize() }.getOrNull() ?: return null
+        return path.takeIf { it.parent == dir && Files.isRegularFile(it) }
     }
 
     fun createTempFile(src: String, extension: String): TempFile {

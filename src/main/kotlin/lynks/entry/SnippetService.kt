@@ -55,7 +55,7 @@ class SnippetService(
     }
 
     override fun toInsert(eId: EntryId, entry: NewSnippet): BaseEntries.(UpdateBuilder<*>) -> Unit {
-        val (_, processedText, html) = markdownProcessor.convertAndProcess(entry.content, eId)
+        val (processedText, html) = markdownProcessor.convertAndProcess(entry.content, eId)
         val time = OffsetDateTime.now(ZoneOffset.UTC)
         return {
             it[id] = eId.value
@@ -68,7 +68,7 @@ class SnippetService(
     }
 
     override fun toUpdate(entry: NewSnippet): BaseEntries.(UpdateBuilder<*>) -> Unit {
-        val (_, processedText, html) = markdownProcessor.convertAndProcess(entry.content, entry.id!!)
+        val (processedText, html) = markdownProcessor.convertAndProcess(entry.content, entry.id!!)
         return {
             it[plainContent] = processedText
             it[content] = html

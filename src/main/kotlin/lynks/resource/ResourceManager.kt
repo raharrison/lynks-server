@@ -3,13 +3,15 @@ package lynks.resource
 import lynks.common.EntryId
 import lynks.common.ResourceId
 import lynks.common.newResourceId
+import lynks.db.afterCommit
+import lynks.db.onRollback
 import lynks.util.FileUtils
 import lynks.util.loggerFor
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import java.io.File
 import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.Path
-import java.nio.file.StandardCopyOption
 import kotlin.io.path.exists
 
 class ResourceManager(
@@ -31,6 +33,10 @@ class ResourceManager(
     fun saveTempFile(src: String, data: ByteArray, type: ResourceType, extension: String): String =
         fileStore.saveTempFile(src, data, type, extension)
 
+    fun saveTempUpload(data: ByteArray, extension: String): Path = fileStore.saveTempUpload(data, extension)
+
+    fun findTempUpload(name: String): Path? = fileStore.findTempUpload(name)
+
     fun createTempFile(src: String, extension: String): TempFile =
         fileStore.createTempFile(src, extension)
 
@@ -40,32 +46,30 @@ class ResourceManager(
 
     fun constructTempUrlFromPath(path: String): String = fileStore.constructTempUrlFromPath(path)
 
-    fun migrateGeneratedResources(entryId: EntryId, generatedResources: List<GeneratedResource>): List<Resource> {
-        log.info("Migrating {} temporary resources for entry={}", generatedResources.size, entryId)
-        val missing = generatedResources
-            .map { Path.of(it.targetPath) }
-            .filterNot { it.exists() }
-        if (missing.isNotEmpty()) {
-            missing.forEach { path ->
-                log.warn("Generated resource for entry={} at {} does not exist", entryId, path)
-            }
-            return emptyList()
+    // Moves each temp file under the entry, putting it back if the transaction rolls back
+    fun attach(entryId: EntryId, pending: List<PendingResource>): List<Resource> = transaction {
+        pending.map { res ->
+            val name = res.tempPath.fileName.toString()
+            val extension = FileUtils.getExtension(name)
+            val (target, size) = fileStore.moveFile(res.tempPath, entryId, res.id, extension)
+            onRollback { FileUtils.moveFile(target, res.tempPath) }
+            log.info(
+                "Attached {} resource from={} to={} entry={}",
+                res.resourceType.name.lowercase(),
+                res.tempPath,
+                target,
+                entryId
+            )
+            repository.createOrUpdateRecord(res.id, entryId, name, extension, res.resourceType, size)
         }
+    }
 
-        val resources = mutableListOf<Resource>()
-        try {
-            for (generatedResource in generatedResources) {
-                val tempResourcePath = Path.of(generatedResource.targetPath)
-                val savedResource = saveGeneratedResource(entryId, generatedResource.resourceType, tempResourcePath)
-                resources.add(savedResource)
-            }
-            return resources
-        } catch (e: Exception) {
-            resources.forEach { res ->
-                runCatching { delete(res.id) }
-            }
-            throw e
-        }
+    fun migrateGeneratedResources(entryId: EntryId, generatedResources: List<GeneratedResource>): List<Resource> {
+        val (present, missing) = generatedResources
+            .map { PendingResource(newResourceId(), it.resourceType, Path.of(it.targetPath)) }
+            .partition { it.tempPath.exists() }
+        missing.forEach { log.warn("Generated resource for entry={} at {} does not exist", entryId, it.tempPath) }
+        return attach(entryId, present)
     }
 
     fun saveGeneratedResource(
@@ -77,61 +81,26 @@ class ResourceManager(
         size: Long
     ): Resource = repository.createOrUpdateRecord(id, entryId, name, extension, type, size)
 
-    fun saveGeneratedResource(entryId: EntryId, name: String, type: ResourceType, file: ByteArray): Resource {
+    fun saveGeneratedResource(entryId: EntryId, name: String, type: ResourceType, file: ByteArray): Resource = transaction {
         val extension = FileUtils.getExtension(name)
         val id = newResourceId()
-        val path = fileStore.constructPath(entryId, id, extension)
-        log.info("Saving generated resource to {} entry={}", path.toString(), entryId)
         fileStore.writeFile(entryId, id, extension, file)
-        return try {
-            repository.createOrUpdateRecord(
-                id = id,
-                entryId = entryId,
-                name = name,
-                extension = extension,
-                type = type,
-                size = file.size.toLong()
-            )
-        } catch (e: Exception) {
-            fileStore.deleteFileWithCleanup(entryId, id, extension)
-            throw e
-        }
+        onRollback { fileStore.deleteFileWithCleanup(entryId, id, extension) }
+        repository.createOrUpdateRecord(id, entryId, name, extension, type, file.size.toLong())
     }
 
-    fun saveGeneratedResource(entryId: EntryId, type: ResourceType, path: Path): Resource {
+    fun saveUploadedResource(entryId: EntryId, name: String, input: InputStream): Resource = transaction {
         val id = newResourceId()
-        val name = path.fileName.toString()
         val extension = FileUtils.getExtension(name)
-        val (target, size) = fileStore.moveFile(path, entryId, id, extension)
-        log.info("Moving {} resource from={} to={} entry={}", type.name.lowercase(), path.toString(), target.toString(), entryId)
-        return try {
-            repository.createOrUpdateRecord(id, entryId, name, extension, type, size)
-        } catch (e: Exception) {
-            if (Files.exists(target) && !Files.exists(path)) {
-                runCatching { Files.move(target, path, StandardCopyOption.REPLACE_EXISTING) }
-            } else {
-                fileStore.deleteFileWithCleanup(target)
-            }
-            throw e
-        }
-    }
-
-    fun saveUploadedResource(entryId: EntryId, name: String, input: InputStream): Resource {
-        val id = newResourceId()
-        val ext = FileUtils.getExtension(name)
         log.info("Saving uploaded resource entry={}", entryId)
-        val (file, size) = fileStore.writeFile(entryId, id, ext, input)
-        return try {
-            repository.createOrUpdateRecord(id, entryId, name, ext, ResourceType.UPLOAD, size)
-        } catch (e: Exception) {
-            fileStore.deleteFileWithCleanup(entryId, id, ext)
-            throw e
-        }
+        val (_, size) = fileStore.writeFile(entryId, id, extension, input)
+        onRollback { fileStore.deleteFileWithCleanup(entryId, id, extension) }
+        repository.createOrUpdateRecord(id, entryId, name, extension, ResourceType.UPLOAD, size)
     }
 
-    fun updateResource(resource: Resource): Resource? {
+    fun updateResource(resource: Resource): Resource? = transaction {
         val id = resource.id
-        return repository.getResource(id)?.let { originalResource ->
+        repository.getResource(id)?.let { originalResource ->
             val resourceName = resource.name
             val format = FileUtils.getExtension(resourceName)
             val versions = repository.getResourceVersions(originalResource.parentId)
@@ -153,28 +122,29 @@ class ResourceManager(
                 log.info("Moving resources after entry update from={} to={} entry={}", oldPath.toString(), newPath.toString(), originalResource.entryId)
             }
             fileStore.renameFiles(moves)
+            onRollback { fileStore.renameFiles(moves.map { (from, to) -> to to from }) }
 
-            try {
-                repository.updateRecord(originalResource.parentId, resourceName, format)
-                repository.getResource(id)
-            } catch (e: Exception) {
-                runCatching { fileStore.renameFiles(moves.map { (from, to) -> to to from }) }
-                throw e
-            }
+            repository.updateRecord(originalResource.parentId, resourceName, format)
+            repository.getResource(id)
         }
     }
 
-    fun delete(id: ResourceId): Boolean {
-        val res = repository.deleteRecord(id) ?: return false
-        log.info("Deleting entry resource at {} entry={}", fileStore.constructPath(res.entryId, res.id, res.extension), res.entryId)
-        return fileStore.deleteFile(res.entryId, res.id, res.extension)
+    fun delete(id: ResourceId): Boolean = transaction {
+        val res = repository.deleteRecord(id) ?: return@transaction false
+        afterCommit {
+            log.info("Deleting entry resource id={} entry={}", res.id, res.entryId)
+            fileStore.deleteFile(res.entryId, res.id, res.extension)
+        }
+        true
     }
 
-    fun deleteAll(entryId: EntryId): Boolean {
+    fun deleteAll(entryId: EntryId): Boolean = transaction {
         repository.deleteAllRecords(entryId)
-        val path = fileStore.constructPath(entryId, ResourceId(""), "")
-        log.info("Recursively deleting all entry resources at {} entry={}", path.toString(), entryId)
-        return fileStore.deleteAllFiles(entryId)
+        afterCommit {
+            log.info("Recursively deleting all entry resources entry={}", entryId)
+            fileStore.deleteAllFiles(entryId)
+        }
+        true
     }
 
     internal fun constructPath(entryId: EntryId, id: ResourceId = newResourceId()): Path =

@@ -2,6 +2,7 @@ package lynks.service
 
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.verify
 import lynks.common.*
 import lynks.common.exception.InvalidModelException
@@ -53,22 +54,23 @@ class NoteServiceTest : DatabaseTest() {
         assertThat(note.renderedContent).isEqualTo("<p>content</p>\n")
         assertThat(note.dateUpdated).isAfter(Instant.EPOCH)
         assertThat(note.dateCreated).isEqualTo(note.dateUpdated)
-        verify(exactly = 0) { resourceManager.migrateGeneratedResources(note.id, any()) }
+        verify(exactly = 0) { resourceManager.attach(note.id, any()) }
         verify { entryAuditService.acceptAuditEvent(note.id, any(), any()) }
         verify { workerRegistry.acceptEntryRefWork(note.id) }
     }
 
     @Test
     fun testCreateNoteWithTempImage() {
-        val plain = "something ![desc](${TEMP_URL}abc/one.png)"
-        val resource = Resource(ResourceId("rid"), "pid", EntryId("eid"), 1, "one", "png", ResourceType.UPLOAD, 12, Instant.EPOCH)
-        every { resourceManager.constructTempBasePath(IMAGE_UPLOAD_BASE) } returns Path.of("migrated/")
-        every { resourceManager.migrateGeneratedResources(any(), any()) } returns listOf(resource)
+        val plain = "something ![desc](${TEMP_UPLOAD_URL}one.png)"
+        every { resourceManager.findTempUpload("one.png") } returns Path.of("one.png")
+        val committed = slot<List<PendingResource>>()
+        every { resourceManager.attach(any(), capture(committed)) } returns emptyList()
         val note = noteService.add(newNote("n1", plain))
+        val reserved = committed.captured.single()
         assertThat(note.type).isEqualTo(EntryType.NOTE)
         assertThat(note.title).isEqualTo("n1")
-        assertThat(note.plainContent.trim()).isEqualTo("something ![desc](${Environment.server.rootPath}/entry/${note.id}/resource/${resource.id})")
-        verify(exactly = 1) { resourceManager.migrateGeneratedResources(note.id, any()) }
+        assertThat(note.plainContent.trim()).isEqualTo("something ![desc](${Environment.server.rootPath}/entry/${note.id}/resource/${reserved.id})")
+        verify(exactly = 1) { resourceManager.attach(note.id, any()) }
         verify { entryAuditService.acceptAuditEvent(note.id, any(), any()) }
         verify { workerRegistry.acceptEntryRefWork(note.id) }
     }
@@ -313,12 +315,13 @@ class NoteServiceTest : DatabaseTest() {
     @Test
     fun testUpdateExistingNoteWithTempImage() {
         val added = noteService.add(newNote("n1", "note content 1"))
-        val resource = Resource(ResourceId("rid"), "pid", added.id, 1, "one", "png", ResourceType.UPLOAD, 12, Instant.ofEpochMilli(123))
-        every { resourceManager.constructTempBasePath(IMAGE_UPLOAD_BASE) } returns Path.of("migrated/")
-        every { resourceManager.migrateGeneratedResources(added.id, any()) } returns listOf(resource)
-        val updated = noteService.update(newNote(added.id, "updated", "something ![desc](${TEMP_URL}abc/one.png)"))
-        assertThat(updated?.plainContent?.trim()).isEqualTo("something ![desc](${Environment.server.rootPath}/entry/${added.id}/resource/${resource.id})")
-        verify(exactly = 1) { resourceManager.migrateGeneratedResources(added.id, any()) }
+        every { resourceManager.findTempUpload("one.png") } returns Path.of("one.png")
+        val committed = slot<List<PendingResource>>()
+        every { resourceManager.attach(added.id, capture(committed)) } returns emptyList()
+        val updated = noteService.update(newNote(added.id, "updated", "something ![desc](${TEMP_UPLOAD_URL}one.png)"))
+        val reserved = committed.captured.single()
+        assertThat(updated?.plainContent?.trim()).isEqualTo("something ![desc](${Environment.server.rootPath}/entry/${added.id}/resource/${reserved.id})")
+        verify(exactly = 1) { resourceManager.attach(added.id, any()) }
         verify { workerRegistry.acceptEntryRefWork(added.id) }
     }
 

@@ -1,26 +1,26 @@
 package lynks.resource
 
 import com.vladsch.flexmark.ast.Image
-import com.vladsch.flexmark.ast.LinkNodeBase
 import com.vladsch.flexmark.util.ast.Node
 import com.vladsch.flexmark.util.ast.NodeVisitor
 import com.vladsch.flexmark.util.ast.VisitHandler
 import com.vladsch.flexmark.util.sequence.PrefixedSubSequence
 import com.vladsch.flexmark.util.sequence.SegmentedSequence
-import lynks.common.EntryId
-import lynks.common.Environment
-import lynks.common.IMAGE_UPLOAD_BASE
-import lynks.common.TEMP_URL
+import lynks.common.*
+import lynks.util.loggerFor
 import java.nio.file.Path
-import kotlin.io.path.absolutePathString
-import kotlin.io.path.extension
 
 class TempImageMarkdownVisitor(
     private val eid: EntryId,
     private val resourceManager: ResourceManager
 ) {
 
-    var visitedCount = 0
+    private val log = loggerFor<TempImageMarkdownVisitor>()
+
+    val pending = mutableListOf<PendingResource>()
+
+    // The same image can be referenced more than once, and it can only be moved once
+    private val reserved = mutableMapOf<Path, ResourceId>()
 
     private val visitor: NodeVisitor = NodeVisitor(
         VisitHandler(Image::class.java, this::visit)
@@ -31,21 +31,21 @@ class TempImageMarkdownVisitor(
     }
 
     private fun visit(node: Image) {
-        visit(node as LinkNodeBase)
-    }
+        val ref = node.pageRef.toString()
+        if (!ref.startsWith(TEMP_UPLOAD_URL)) return
 
-    private fun visit(node: LinkNodeBase) {
-        if (node.pageRef.startsWith(TEMP_URL)) {
-            val file = resourceManager.constructTempBasePath(IMAGE_UPLOAD_BASE).resolve(Path.of(node.pageRef.toString()).fileName)
-            val generatedResource = GeneratedResource(ResourceType.UPLOAD, file.absolutePathString(), file.extension)
-            val migrated = resourceManager.migrateGeneratedResources(eid, listOf(generatedResource))
-            migrated.firstOrNull()?.let {
-                val newUrl = "${Environment.server.rootPath}/entry/$eid/resource/${it.id}"
-                node.setUrlChars(PrefixedSubSequence.prefixOf(newUrl, node.pageRef.emptyPrefix))
-                node.chars = SegmentedSequence.create(node.chars, node.segmentsForChars.toList())
-                visitedCount++
-            }
+        val file = resourceManager.findTempUpload(ref.removePrefix(TEMP_UPLOAD_URL)) ?: run {
+            log.warn("Temporary image for entry={} at {} does not exist", eid, ref)
+            return
         }
+
+        val id = reserved.getOrPut(file) {
+            newResourceId().also { pending.add(PendingResource(it, ResourceType.UPLOAD, file)) }
+        }
+
+        val newUrl = "${Environment.server.rootPath}/entry/$eid/resource/$id"
+        node.setUrlChars(PrefixedSubSequence.prefixOf(newUrl, node.pageRef.emptyPrefix))
+        node.chars = SegmentedSequence.create(node.chars, node.segmentsForChars.toList())
     }
 
 }

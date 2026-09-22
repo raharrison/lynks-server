@@ -8,8 +8,10 @@ import java.time.Instant
 import java.util.*
 
 object Resources : Table("resources") {
+    const val ENTRY_FK = "fk_resources_entry_id"
     val id = varchar("id", UID_LENGTH)
-    val entryId = (varchar("entry_id", UID_LENGTH).references(Entries.id, ReferenceOption.CASCADE)).index()
+    val entryId = varchar("entry_id", UID_LENGTH)
+        .references(Entries.id, ReferenceOption.CASCADE, fkName = ENTRY_FK).index()
     val currentVersion = integer("current_version")
     val fileName = varchar("filename", 255)
     val extension = varchar("extension", 24)

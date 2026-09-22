@@ -126,7 +126,12 @@ class WebResourceRetriever : ResourceRetriever {
 
     companion object {
         private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36 Edg/119.0.0.0"
-        private val client = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build()
+
+        // The default h2c upgrade on plain http loses POST bodies on some servers, such as the Jetty in WireMock
+        private val client = HttpClient.newBuilder()
+            .version(HttpClient.Version.HTTP_1_1)
+            .followRedirects(HttpClient.Redirect.NORMAL)
+            .build()
         private val log = loggerFor<WebResourceRetriever>()
     }
 

@@ -32,16 +32,14 @@ class TempFileCleanupWorker : ChannelBasedWorker<TempFileCleanupWorkerRequest>()
             try {
                 val tempPath = Paths.get(Environment.resource.resourceTempPath)
                 if (tempPath.exists()) {
-                    val dirs = FileUtils.directoriesOlderThan(tempPath, maxFileAge)
-                    if (dirs.isNotEmpty()) {
-                        log.info("Temp file cleanup worker removing {} dirs: {}", dirs.size, dirs)
-                        FileUtils.deleteDirectories(dirs)
-                    }
+                    val deleted = FileUtils.deleteOlderThan(tempPath, maxFileAge)
+                    log.info("Temp file cleanup worker removed {} files", deleted)
                 }
-            } finally {
-                log.info("Temp file cleanup worker sleeping for {} hours", sleepHours)
-                delay(sleepDuration)
+            } catch (e: Exception) {
+                log.error("Temp file cleanup worker failed", e)
             }
+            log.info("Temp file cleanup worker sleeping for {} hours", sleepHours)
+            delay(sleepDuration)
         }
     }
 

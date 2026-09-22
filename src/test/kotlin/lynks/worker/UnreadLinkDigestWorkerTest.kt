@@ -25,7 +25,7 @@ class UnreadLinkDigestWorkerTest: DatabaseTest() {
 
     private val userService = UserService(mockk())
     private val digestService = mockk<DigestService>()
-    private val notifyService = mockk<NotifyService>(relaxUnitFun = true)
+    private val notifyService = mockk<NotifyService>(relaxed = true)
 
     @BeforeEach
     fun setup() {

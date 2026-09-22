@@ -14,6 +14,8 @@ import lynks.entry.EntryService
 import lynks.resource.ResourceManager
 import lynks.resource.TempImageMarkdownVisitor
 
+data class ProcessedMarkdown(val markdown: String, val html: String)
+
 class MarkdownProcessor(private val resourceManager: ResourceManager, entryService: EntryService) {
 
     private val parser: Parser
@@ -45,12 +47,15 @@ class MarkdownProcessor(private val resourceManager: ResourceManager, entryServi
         return renderer.render(parser.parse(text))
     }
 
-    fun convertAndProcess(text: String, entryId: EntryId): Triple<Int, String, String> {
+    // Pasted temp images are attached to the entry and their links rewritten to the resource
+    fun convertAndProcess(text: String, entryId: EntryId): ProcessedMarkdown {
         val doc = parser.parse(text)
         val visitor = TempImageMarkdownVisitor(entryId, resourceManager)
         visitor.replaceUrl(doc)
-        val markdown = formatter.render(doc).trim()
-        return Triple(visitor.visitedCount, markdown, renderer.render(doc))
+        if (visitor.pending.isNotEmpty()) {
+            resourceManager.attach(entryId, visitor.pending)
+        }
+        return ProcessedMarkdown(formatter.render(doc).trim(), renderer.render(doc))
     }
 
     fun visit(text: String, visitor: NodeVisitor) {

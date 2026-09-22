@@ -55,7 +55,7 @@ class NoteService(
     }
 
     override fun toInsert(eId: EntryId, entry: NewNote): BaseEntries.(UpdateBuilder<*>) -> Unit {
-        val (_, processedText, html) = markdownProcessor.convertAndProcess(entry.content, eId)
+        val (processedText, html) = markdownProcessor.convertAndProcess(entry.content, eId)
         val time = OffsetDateTime.now(ZoneOffset.UTC)
         return {
             it[id] = eId.value
@@ -69,7 +69,7 @@ class NoteService(
     }
 
     override fun toUpdate(entry: NewNote): BaseEntries.(UpdateBuilder<*>) -> Unit {
-        val (_, processedText, html) = markdownProcessor.convertAndProcess(entry.content, entry.id!!)
+        val (processedText, html) = markdownProcessor.convertAndProcess(entry.content, entry.id!!)
         return {
             it[title] = entry.title
             it[plainContent] = processedText

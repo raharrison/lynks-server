@@ -2,6 +2,7 @@ package lynks.service
 
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.verify
 import lynks.common.*
 import lynks.common.exception.InvalidModelException
@@ -52,21 +53,22 @@ class SnippetServiceTest : DatabaseTest() {
         assertThat(snippet.renderedContent).isEqualTo("<p>content</p>\n")
         assertThat(snippet.dateUpdated).isAfter(Instant.EPOCH)
         assertThat(snippet.dateCreated).isEqualTo(snippet.dateUpdated)
-        verify(exactly = 0) { resourceManager.migrateGeneratedResources(snippet.id, any()) }
+        verify(exactly = 0) { resourceManager.attach(snippet.id, any()) }
         verify { entryAuditService.acceptAuditEvent(snippet.id, any(), any()) }
         verify { workerRegistry.acceptEntryRefWork(snippet.id) }
     }
 
     @Test
     fun testCreateSnippetWithTempImage() {
-        val plain = "something ![desc](${TEMP_URL}abc/one.png)"
-        val resource = Resource(ResourceId("rid"), "pid", EntryId("eid"), 1, "one", "png", ResourceType.UPLOAD, 12, Instant.EPOCH)
-        every { resourceManager.constructTempBasePath(IMAGE_UPLOAD_BASE) } returns Path.of("migrated/")
-        every { resourceManager.migrateGeneratedResources(any(), any()) } returns listOf(resource)
+        val plain = "something ![desc](${TEMP_UPLOAD_URL}one.png)"
+        every { resourceManager.findTempUpload("one.png") } returns Path.of("one.png")
+        val committed = slot<List<PendingResource>>()
+        every { resourceManager.attach(any(), capture(committed)) } returns emptyList()
         val snippet = snippetService.add(newSnippet(EntryId("n1"), plain))
+        val reserved = committed.captured.single()
         assertThat(snippet.type).isEqualTo(EntryType.SNIPPET)
-        assertThat(snippet.plainContent.trim()).isEqualTo("something ![desc](${Environment.server.rootPath}/entry/${snippet.id}/resource/${resource.id})")
-        verify(exactly = 1) { resourceManager.migrateGeneratedResources(snippet.id, any()) }
+        assertThat(snippet.plainContent.trim()).isEqualTo("something ![desc](${Environment.server.rootPath}/entry/${snippet.id}/resource/${reserved.id})")
+        verify(exactly = 1) { resourceManager.attach(snippet.id, any()) }
         verify { entryAuditService.acceptAuditEvent(snippet.id, any(), any()) }
         verify { workerRegistry.acceptEntryRefWork(snippet.id) }
     }
@@ -306,12 +308,13 @@ class SnippetServiceTest : DatabaseTest() {
     @Test
     fun testUpdateExistingSnippetWithTempImage() {
         val added = snippetService.add(newSnippet(EntryId("n1"), "snippet content 1"))
-        val resource = Resource(ResourceId("rid"), "pid", added.id, 1, "one", "png", ResourceType.UPLOAD, 12, Instant.EPOCH)
-        every { resourceManager.constructTempBasePath(IMAGE_UPLOAD_BASE) } returns Path.of("migrated/")
-        every { resourceManager.migrateGeneratedResources(added.id, any()) } returns listOf(resource)
-        val updated = snippetService.update(newSnippet(added.id, "something ![desc](${TEMP_URL}abc/one.png)"))
-        assertThat(updated?.plainContent?.trim()).isEqualTo("something ![desc](${Environment.server.rootPath}/entry/${added.id}/resource/${resource.id})")
-        verify(exactly = 1) { resourceManager.migrateGeneratedResources(added.id, any()) }
+        every { resourceManager.findTempUpload("one.png") } returns Path.of("one.png")
+        val committed = slot<List<PendingResource>>()
+        every { resourceManager.attach(added.id, capture(committed)) } returns emptyList()
+        val updated = snippetService.update(newSnippet(added.id, "something ![desc](${TEMP_UPLOAD_URL}one.png)"))
+        val reserved = committed.captured.single()
+        assertThat(updated?.plainContent?.trim()).isEqualTo("something ![desc](${Environment.server.rootPath}/entry/${added.id}/resource/${reserved.id})")
+        verify(exactly = 1) { resourceManager.attach(added.id, any()) }
         verify { workerRegistry.acceptEntryRefWork(added.id) }
     }
 

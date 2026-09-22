@@ -51,6 +51,7 @@ configurations {
 tasks.register<Test>("testIntegration") {
     testClassesDirs = sourceSets["testIntegration"].output.classesDirs
     classpath = sourceSets["testIntegration"].runtimeClasspath
+    mustRunAfter(tasks.test)
     useJUnitPlatform()
     systemProperty("CONFIG_MODE", "TEST")
     jvmArgs("-XX:+EnableDynamicAgentLoading")

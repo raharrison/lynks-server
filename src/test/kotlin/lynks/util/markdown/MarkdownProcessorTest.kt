@@ -6,10 +6,11 @@ import com.vladsch.flexmark.util.ast.VisitHandler
 import com.vladsch.flexmark.util.sequence.BasedSequence
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.verify
 import lynks.common.*
 import lynks.entry.EntryService
-import lynks.resource.Resource
+import lynks.resource.PendingResource
 import lynks.resource.ResourceManager
 import lynks.resource.ResourceType
 import org.assertj.core.api.Assertions.assertThat
@@ -142,39 +143,53 @@ class MarkdownProcessorTest {
     inner class TempImageReplace {
 
         private val eid = EntryId("eid")
-        private val imageInput = "${TEMP_URL}abc/one.png"
-        private val fullInput = "![desc]($imageInput)"
 
         @Test
-        fun testNoGroupFound() {
+        fun testNoImagesAttachesNothing() {
             val raw = "some text"
-            val (replaced, markdown, html) = markdownProcessor.convertAndProcess(raw, eid)
-            assertThat(replaced).isZero()
+            val (markdown, html) = markdownProcessor.convertAndProcess(raw, eid)
             assertThat(markdown.trim()).isEqualTo(raw)
             assertThat(html).isEqualTo("<p>some text</p>\n")
-            verify(exactly = 0) { resourceManager.migrateGeneratedResources(eid, any()) }
+            verify(exactly = 0) { resourceManager.attach(eid, any()) }
         }
 
         @Test
-        fun testGroupsReplaced() {
-            every { resourceManager.constructTempBasePath(IMAGE_UPLOAD_BASE) } returns Path.of("migrated/")
-            val resources = listOf(Resource(ResourceId("rid"), "pid", EntryId("eid"), 1, "one", "png", ResourceType.UPLOAD, 12, Instant.EPOCH))
-            every { resourceManager.migrateGeneratedResources(eid, any()) } returns resources
-            val (replaced, markdown, html) = markdownProcessor.convertAndProcess(fullInput, eid)
-            assertThat(replaced).isOne()
-            assertThat(markdown).isEqualTo("![desc](${Environment.server.rootPath}/entry/$eid/resource/rid)")
-            assertThat(html).isEqualTo("<p><img src=\"/api/entry/eid/resource/rid\" alt=\"desc\" /></p>\n")
-            verify(exactly = 1) { resourceManager.migrateGeneratedResources(eid, any()) }
+        fun testTempImageIsAttachedAndRewritten() {
+            val file = Path.of("uploads", "one.png")
+            every { resourceManager.findTempUpload("one.png") } returns file
+            val attached = slot<List<PendingResource>>()
+            every { resourceManager.attach(eid, capture(attached)) } returns emptyList()
+
+            val (markdown, html) = markdownProcessor.convertAndProcess("![desc](${TEMP_UPLOAD_URL}one.png)", eid)
+
+            val reserved = attached.captured.single()
+            assertThat(reserved.resourceType).isEqualTo(ResourceType.UPLOAD)
+            assertThat(reserved.tempPath).isEqualTo(file)
+            assertThat(markdown)
+                .isEqualTo("![desc](${Environment.server.rootPath}/entry/$eid/resource/${reserved.id})")
+            assertThat(html)
+                .isEqualTo("<p><img src=\"/api/entry/eid/resource/${reserved.id}\" alt=\"desc\" /></p>\n")
         }
 
         @Test
-        fun testNoResourcesMigrated() {
-            every { resourceManager.constructTempBasePath(IMAGE_UPLOAD_BASE) } returns Path.of("migrated/")
-            every { resourceManager.migrateGeneratedResources(eid, any()) } returns emptyList()
-            val (replaced, markdown) = markdownProcessor.convertAndProcess(fullInput, eid)
-            assertThat(replaced).isZero()
-            assertThat(markdown.trim()).isEqualTo(fullInput)
-            verify(exactly = 1) { resourceManager.migrateGeneratedResources(eid, any()) }
+        fun testMissingTempImageIsLeftAlone() {
+            val input = "![desc](${TEMP_UPLOAD_URL}one.png)"
+            every { resourceManager.findTempUpload("one.png") } returns null
+
+            val (markdown, _) = markdownProcessor.convertAndProcess(input, eid)
+
+            assertThat(markdown.trim()).isEqualTo(input)
+            verify(exactly = 0) { resourceManager.attach(eid, any()) }
+        }
+
+        @Test
+        fun testOtherTempImageIsIgnored() {
+            val input = "![desc](${TEMP_URL}abc/thumbnail.jpg)"
+
+            val (markdown, _) = markdownProcessor.convertAndProcess(input, eid)
+
+            assertThat(markdown.trim()).isEqualTo(input)
+            verify(exactly = 0) { resourceManager.findTempUpload(any()) }
         }
 
     }

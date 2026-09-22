@@ -4,6 +4,7 @@ import lynks.common.Entries
 import lynks.common.EntryType
 import lynks.common.EntryVersions
 import lynks.db.DatabaseFactory
+import lynks.resource.Resources
 import org.flywaydb.core.api.migration.BaseJavaMigration
 import org.flywaydb.core.api.migration.Context
 import java.sql.Connection
@@ -15,6 +16,14 @@ class V1__Init_default : BaseJavaMigration() {
         val connection = context.connection
         createPostgresEntryAuditTriggers(connection)
         createPostgresEntrySearch(connection)
+        deferResourceEntryKey(connection)
+    }
+
+    // Pasted images are attached while the markdown is processed, before the entry row is inserted
+    private fun deferResourceEntryKey(conn: Connection) {
+        conn.createStatement().use {
+            it.execute("ALTER TABLE ${Resources.tableName} ALTER CONSTRAINT ${Resources.ENTRY_FK} DEFERRABLE INITIALLY DEFERRED")
+        }
     }
 
     private fun createPostgresEntrySearch(conn: Connection) {

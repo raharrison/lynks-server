@@ -81,9 +81,8 @@ fun Route.resource(resourceManager: ResourceManager) {
             return@post
         }
 
-        val file = resourceManager.saveTempFile(IMAGE_UPLOAD_BASE, bytes, ResourceType.UPLOAD, ext)
-        val uploadFilePath = "$TEMP_URL${resourceManager.constructTempUrlFromPath(file)}"
-        call.respond(HttpStatusCode.OK, ImageUploadResponse(ImageUploadFilePath(uploadFilePath)))
+        val file = resourceManager.saveTempUpload(bytes, ext)
+        call.respond(HttpStatusCode.OK, ImageUploadResponse(ImageUploadFilePath("$TEMP_UPLOAD_URL${file.fileName}")))
     }
 
 

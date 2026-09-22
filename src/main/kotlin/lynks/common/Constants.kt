@@ -9,8 +9,9 @@ val TEMP_URL = "${Environment.server.rootPath}/temp/"
 // maximum size of image uploads
 const val MAX_IMAGE_UPLOAD_BYTES = 1024 * 1024 * 10 // 10MB
 
-// resource name for image uploads
-const val IMAGE_UPLOAD_BASE = "imageUpload"
+// pasted images waiting for their entry to be saved
+const val TEMP_UPLOAD_DIR = "uploads"
+val TEMP_UPLOAD_URL = "$TEMP_URL$TEMP_UPLOAD_DIR/"
 
 // allowed image upload extensions
 val ALLOWED_IMAGE_EXTENSIONS = setOf("jpg", "png", "gif", "webp")

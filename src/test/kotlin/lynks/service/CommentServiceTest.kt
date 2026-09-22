@@ -2,15 +2,15 @@ package lynks.service
 
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.verify
 import lynks.comment.CommentService
 import lynks.comment.NewComment
 import lynks.common.*
 import lynks.common.page.PageRequest
 import lynks.common.page.SortDirection
-import lynks.resource.Resource
+import lynks.resource.PendingResource
 import lynks.resource.ResourceManager
-import lynks.resource.ResourceType
 import lynks.util.createDummyEntry
 import lynks.util.markdown.MarkdownProcessor
 import lynks.worker.CrudType
@@ -54,20 +54,21 @@ class CommentServiceTest : DatabaseTest() {
         assertThat(added.entryId).isEqualTo(EntryId("e1"))
         assertThat(added.plainContent).isEqualTo(plain)
         assertThat(added.renderedContent).isEqualTo(markdown)
-        verify(exactly = 0) { resourceManager.migrateGeneratedResources(EntryId("e1"), any()) }
+        verify(exactly = 0) { resourceManager.attach(EntryId("e1"), any()) }
         verify { workerRegistry.acceptCommentRefWork(added.entryId, added.id, CrudType.CREATE) }
     }
 
     @Test
     fun testCreateCommentWithTempImage() {
-        val plain = "something ![desc](${TEMP_URL}abc/one.png)"
-        val resource = Resource(ResourceId("rid"), "pid", EntryId("eid"), 1, "one", "png", ResourceType.UPLOAD, 12, Instant.EPOCH)
-        every { resourceManager.constructTempBasePath(IMAGE_UPLOAD_BASE) } returns Path.of("migrated/")
-        every { resourceManager.migrateGeneratedResources(EntryId("e1"), any()) } returns listOf(resource)
+        val plain = "something ![desc](${TEMP_UPLOAD_URL}one.png)"
+        every { resourceManager.findTempUpload("one.png") } returns Path.of("one.png")
+        val committed = slot<List<PendingResource>>()
+        every { resourceManager.attach(EntryId("e1"), capture(committed)) } returns emptyList()
         val added = commentService.addComment(EntryId("e1"), newComment(content = plain))
+        val reserved = committed.captured.single()
         assertThat(added.entryId).isEqualTo(EntryId("e1"))
-        assertThat(added.plainContent.trim()).isEqualTo("something ![desc](${Environment.server.rootPath}/entry/e1/resource/${resource.id})")
-        verify(exactly = 1) { resourceManager.migrateGeneratedResources(EntryId("e1"), any()) }
+        assertThat(added.plainContent.trim()).isEqualTo("something ![desc](${Environment.server.rootPath}/entry/e1/resource/${reserved.id})")
+        verify(exactly = 1) { resourceManager.attach(EntryId("e1"), any()) }
         verify { workerRegistry.acceptCommentRefWork(added.entryId, added.id, CrudType.CREATE) }
     }
 
@@ -216,13 +217,15 @@ class CommentServiceTest : DatabaseTest() {
     @Test
     fun testUpdateExistingCommentWithTempImage() {
         val added = commentService.addComment(EntryId("e1"), newComment(content = "comment content 1"))
-        val resource = Resource(ResourceId("rid"), "pid", EntryId("e1"), 1, "one", "png", ResourceType.UPLOAD, 12, Instant.ofEpochMilli(123))
-        every { resourceManager.constructTempBasePath(IMAGE_UPLOAD_BASE) } returns Path.of("migrated/")
-        every { resourceManager.migrateGeneratedResources(EntryId("e1"), any()) } returns listOf(resource)
-        val updated = commentService.updateComment(EntryId("e1"), newComment(added.id, "changed ![desc](${TEMP_URL}abc/one.png)"))
+        every { resourceManager.findTempUpload("one.png") } returns Path.of("one.png")
+        val committed = slot<List<PendingResource>>()
+        every { resourceManager.attach(EntryId("e1"), capture(committed)) } returns emptyList()
+        val updated =
+            commentService.updateComment(EntryId("e1"), newComment(added.id, "changed ![desc](${TEMP_UPLOAD_URL}one.png)"))
+        val reserved = committed.captured.single()
         assertThat(updated?.entryId).isEqualTo(EntryId("e1"))
-        assertThat(updated?.plainContent?.trim()).isEqualTo("changed ![desc](${Environment.server.rootPath}/entry/e1/resource/${resource.id})")
-        verify(exactly = 1) { resourceManager.migrateGeneratedResources(EntryId("e1"), any()) }
+        assertThat(updated?.plainContent?.trim()).isEqualTo("changed ![desc](${Environment.server.rootPath}/entry/e1/resource/${reserved.id})")
+        verify(exactly = 1) { resourceManager.attach(EntryId("e1"), any()) }
         verify { workerRegistry.acceptCommentRefWork(added.entryId, added.id, CrudType.UPDATE) }
     }
 

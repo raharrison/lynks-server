@@ -38,9 +38,10 @@ class TempFileCleanupWorkerTest {
         Files.createDirectories(oldFile.parent)
         Files.createFile(oldFile)
         val oldTime = Instant.now().minus(15, ChronoUnit.DAYS)
-        val attributes = Files.getFileAttributeView(oldFile.parent, BasicFileAttributeView::class.java)
         val time = FileTime.from(oldTime)
-        attributes.setTimes(time, time, time)
+        listOf(oldFile, oldFile.parent).forEach {
+            Files.getFileAttributeView(it, BasicFileAttributeView::class.java).setTimes(time, time, time)
+        }
 
         Files.createDirectories(newFile.parent)
         Files.createFile(newFile)
@@ -57,6 +58,7 @@ class TempFileCleanupWorkerTest {
 
         assertThat(Files.exists(newFile)).isTrue()
         assertThat(Files.exists(oldFile)).isFalse()
+        assertThat(Files.exists(oldFile.parent)).isFalse()
 
         send.close()
         worker.cancel()

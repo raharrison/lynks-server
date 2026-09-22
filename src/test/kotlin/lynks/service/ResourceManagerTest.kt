@@ -7,8 +7,10 @@ import lynks.util.FileUtils.removeExtension
 import lynks.util.createDummyEntry
 import lynks.util.toUrlString
 import org.assertj.core.api.Assertions.assertThat
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.junit.jupiter.api.*
 import java.nio.file.Files
+import java.nio.file.Path
 import java.nio.file.Paths
 import java.time.Instant
 
@@ -178,11 +180,9 @@ class ResourceManagerTest: DatabaseTest() {
     }
 
     @Test
-    fun testMigrateResourcesMissingFileRollsBack() {
+    fun testMigrateResourcesSkipsMissingFile() {
         val entryId = EntryId("eid")
-        val tempPath = Paths.get(Environment.resource.resourceTempPath, "temp1.txt")
-        Files.createDirectories(tempPath.parent)
-        Files.write(tempPath, byteArrayOf(1, 2, 3))
+        val tempPath = writeTemp("temp1.txt", byteArrayOf(1, 2, 3))
         val missingPath = Paths.get(Environment.resource.resourceTempPath, "missing.txt")
         val generatedResources = listOf(
             GeneratedResource(ResourceType.DOCUMENT, tempPath.toString(), TEXT),
@@ -190,31 +190,90 @@ class ResourceManagerTest: DatabaseTest() {
         )
 
         val resources = resourceManager.migrateGeneratedResources(entryId, generatedResources)
-        assertThat(resources).isEmpty()
-        assertThat(Files.exists(tempPath)).isTrue()
-
-        val entryDir = resourceManager.constructPath(entryId, ResourceId("")).toFile()
-        assertThat(entryDir.exists()).isFalse()
+        assertThat(resources).hasSize(1)
+        assertThat(Files.exists(tempPath)).isFalse()
+        assertThat(resourceManager.getResourcesFor(entryId)).hasSize(1)
     }
 
     @Test
-    fun testSaveGeneratedResourceFromTempRollsBackOnDbFailure() {
+    fun testAttachRestoresTempFileOnDbFailure() {
         val entryId = EntryId("missing")
-        val tempPath = Paths.get(Environment.resource.resourceTempPath, "temp2.txt")
-        Files.createDirectories(tempPath.parent)
-        Files.write(tempPath, byteArrayOf(4, 5, 6))
+        val tempPath = writeTemp("temp2.txt", byteArrayOf(4, 5, 6))
 
         assertThrows<Exception> {
-            resourceManager.saveGeneratedResource(entryId, ResourceType.DOCUMENT, tempPath)
+            resourceManager.attach(entryId, listOf(PendingResource(ResourceId("r1"), ResourceType.DOCUMENT, tempPath)))
         }
 
         assertThat(Files.exists(tempPath)).isTrue()
-        val entryDir = resourceManager.constructPath(entryId, ResourceId("")).toFile()
-        if (entryDir.exists()) {
-            assertThat(entryDir.listFiles().orEmpty()).isEmpty()
-        } else {
-            assertThat(entryDir.exists()).isFalse()
+        assertThat(resourceManager.constructPath(entryId, ResourceId("r1.txt")).toFile().exists()).isFalse()
+    }
+
+    @Test
+    fun testAttachRestoresTempFilesWhenOuterTransactionFails() {
+        val first = writeTemp("first.png", byteArrayOf(1))
+        val second = writeTemp("second.png", byteArrayOf(2))
+        val pending = listOf(
+            PendingResource(ResourceId("r1"), ResourceType.UPLOAD, first),
+            PendingResource(ResourceId("r2"), ResourceType.UPLOAD, second)
+        )
+
+        assertThrows<IllegalStateException> {
+            transaction {
+                resourceManager.attach(EntryId("eid"), pending)
+                error("later failure")
+            }
         }
+
+        assertThat(Files.exists(first)).isTrue()
+        assertThat(Files.exists(second)).isTrue()
+        assertThat(resourceManager.getResourcesFor(EntryId("eid"))).isEmpty()
+        assertThat(resourceManager.constructPath(EntryId("eid"), ResourceId("r1.png")).toFile().exists()).isFalse()
+    }
+
+    @Test
+    fun testDeleteKeepsFileWhenTransactionFails() {
+        val resource = resourceManager.saveGeneratedResource(EntryId("eid"), "res.jpg", ResourceType.SCREENSHOT, byteArrayOf(1))
+        val file = resourceManager.getResourceAsFile(resource.id)!!.second
+
+        assertThrows<IllegalStateException> {
+            transaction {
+                resourceManager.delete(resource.id)
+                error("later failure")
+            }
+        }
+
+        assertThat(file.exists()).isTrue()
+        assertThat(resourceManager.getResource(resource.id)).isNotNull()
+    }
+
+    @Test
+    fun testDeleteRemovesFileAfterCommit() {
+        val resource = resourceManager.saveGeneratedResource(EntryId("eid"), "res.jpg", ResourceType.SCREENSHOT, byteArrayOf(1))
+        val file = resourceManager.getResourceAsFile(resource.id)!!.second
+
+        assertThat(resourceManager.delete(resource.id)).isTrue()
+
+        assertThat(file.exists()).isFalse()
+        assertThat(resourceManager.getResource(resource.id)).isNull()
+    }
+
+    @Test
+    fun testSaveTempUploadNamesAreUnique() {
+        val first = resourceManager.saveTempUpload(byteArrayOf(1), PNG)
+        val second = resourceManager.saveTempUpload(byteArrayOf(2), PNG)
+        assertThat(first).isNotEqualTo(second)
+        assertThat(first.parent).isEqualTo(second.parent)
+        assertThat(resourceManager.findTempUpload(first.fileName.toString())).isEqualTo(first)
+    }
+
+    @Test
+    fun testFindTempUploadStaysInUploadDirectory() {
+        val upload = resourceManager.saveTempUpload(byteArrayOf(1), PNG)
+        writeTemp("outside.png", byteArrayOf(1))
+        assertThat(resourceManager.findTempUpload("../outside.png")).isNull()
+        assertThat(resourceManager.findTempUpload("nested/${upload.fileName}")).isNull()
+        assertThat(resourceManager.findTempUpload("missing.png")).isNull()
+        assertThat(resourceManager.findTempUpload("")).isNull()
     }
 
     @Test
@@ -371,7 +430,8 @@ class ResourceManagerTest: DatabaseTest() {
         assertFileCount(resourceManager.constructPath(entryId, ResourceId("")).toString(), 1)
         assertFileContents(path.toString(), data)
 
-        val resource = resourceManager.saveGeneratedResource(EntryId("eid"), ResourceType.UPLOAD, path)
+        val resource =
+            resourceManager.attach(entryId, listOf(PendingResource(newResourceId(), ResourceType.UPLOAD, path))).single()
         assertThat(resource.entryId).isEqualTo(entryId)
         assertThat(resource.version).isOne()
         assertThat(resource.extension).isEqualTo(JPG)
@@ -564,6 +624,12 @@ class ResourceManagerTest: DatabaseTest() {
         assertThat(resourceManager.getResource(resource.id)).isNull()
         assertThat(resourceManager.getResource(resource2.id)).isNull()
         assertThat(Files.exists(resourceManager.constructPath(entryId, ResourceId("")))).isFalse()
+    }
+
+    private fun writeTemp(name: String, data: ByteArray): Path {
+        val path = Paths.get(Environment.resource.resourceTempPath, name)
+        Files.createDirectories(path.parent)
+        return Files.write(path, data)
     }
 
     private fun fileExists(path: String) = Files.exists(Paths.get(path))

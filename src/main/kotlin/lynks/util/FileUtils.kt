@@ -1,8 +1,11 @@
 package lynks.util
 
+import java.io.IOException
 import java.math.BigInteger
+import java.nio.file.FileVisitResult
 import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.SimpleFileVisitor
 import java.nio.file.attribute.BasicFileAttributes
 import java.security.MessageDigest
 import java.time.Instant
@@ -53,12 +56,31 @@ object FileUtils {
         return Path.of(str).name
     }
 
-    fun directoriesOlderThan(path: Path, days: Long): List<Path> {
-        val now = Instant.now().minus(days, ChronoUnit.DAYS)
-        return Files.newDirectoryStream(path) {
-            Files.readAttributes(it, BasicFileAttributes::class.java)
-                .lastModifiedTime().toInstant().isBefore(now)
-        }.use { it.toList() }
+    // Walks by file age because uploads share one directory whose timestamp every upload refreshes.
+    // A directory's own timestamp is read before its contents are deleted, so one being filled right now survives.
+    fun deleteOlderThan(root: Path, days: Long): Int {
+        val cutoff = Instant.now().minus(days, ChronoUnit.DAYS)
+        val staleDirs = mutableSetOf<Path>()
+        var deleted = 0
+        Files.walkFileTree(root, object : SimpleFileVisitor<Path>() {
+            override fun preVisitDirectory(dir: Path, attrs: BasicFileAttributes): FileVisitResult {
+                if (dir != root && attrs.lastModifiedTime().toInstant().isBefore(cutoff)) staleDirs.add(dir)
+                return FileVisitResult.CONTINUE
+            }
+
+            override fun visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult {
+                if (attrs.lastModifiedTime().toInstant().isBefore(cutoff) && Files.deleteIfExists(file)) deleted++
+                return FileVisitResult.CONTINUE
+            }
+
+            override fun visitFileFailed(file: Path, exc: IOException): FileVisitResult = FileVisitResult.CONTINUE
+
+            override fun postVisitDirectory(dir: Path, exc: IOException?): FileVisitResult {
+                if (dir in staleDirs && dir.toFile().list()?.isEmpty() == true) Files.deleteIfExists(dir)
+                return FileVisitResult.CONTINUE
+            }
+        })
+        return deleted
     }
 
     fun deleteDirectories(dirs: List<Path>) {
