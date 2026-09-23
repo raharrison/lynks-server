@@ -7,6 +7,7 @@ import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
+import io.ktor.server.plugins.*
 import io.ktor.server.plugins.callid.*
 import io.ktor.server.plugins.calllogging.*
 import io.ktor.server.plugins.contentnegotiation.*
@@ -47,6 +48,7 @@ import lynks.util.JsonMapper.defaultMapper
 import lynks.util.RandomUtils
 import lynks.util.markdown.MarkdownProcessor
 import lynks.worker.WorkerRegistry
+import kotlin.time.Duration.Companion.seconds
 
 fun Application.module() {
     install(DefaultHeaders) {
@@ -58,7 +60,10 @@ fun Application.module() {
     install(ContentNegotiation) {
         register(ContentType.Application.Json, JacksonConverter(defaultMapper))
     }
-    install(WebSockets)
+    install(WebSockets) {
+        // nginx drops a proxied socket after 120s without traffic
+        pingPeriod = 30.seconds
+    }
     install(CallId) {
         generate { RandomUtils.generateUuid64() }
         verify { true }
@@ -74,6 +79,10 @@ fun Application.module() {
         }
         exception<NotFoundException> { call, cause ->
             call.respond(HttpStatusCode.NotFound, ErrorResponse(cause.message ?: "Not found"))
+        }
+        // malformed or mistyped request bodies from call.receive
+        exception<BadRequestException> { call, cause ->
+            call.respond(HttpStatusCode.BadRequest, ErrorResponse(cause.message ?: "Bad request"))
         }
         exception<SuggestionUnavailableException> { call, cause ->
             call.respond(HttpStatusCode.UnprocessableEntity, ErrorResponse(cause.message ?: "Suggestion unavailable"))
@@ -202,7 +211,7 @@ private fun Application.installAuth() {
 fun main() {
     embeddedServer(Netty, configure = {
         connectors.add(EngineConnectorBuilder().apply {
-            host = "0.0.0.0"
+            host = Environment.server.host
             port = Environment.server.port
         })
         responseWriteTimeoutSeconds = 120

@@ -13,11 +13,13 @@ private val log = loggerFor<Environment>()
 object Environment {
 
     private object ServerSpec : ConfigSpec("server") {
+        val host by optional("127.0.0.1", description = "address the server will bind to")
         val port by optional(8080, description = "port the server will bind to")
         val rootPath by required<String>(description = "root path of all routes")
     }
 
     data class Server(
+        val host: String = config[ServerSpec.host],
         val port: Int = config[ServerSpec.port],
         val rootPath: String = config[ServerSpec.rootPath]
     )

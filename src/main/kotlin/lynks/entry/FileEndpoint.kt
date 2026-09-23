@@ -9,6 +9,7 @@ import lynks.common.NewFile
 import lynks.common.exception.InvalidModelException
 import lynks.common.exception.NotFoundException
 import lynks.util.pageRequest
+import lynks.util.versionParameter
 
 fun Route.file(fileService: FileService) {
 
@@ -25,9 +26,14 @@ fun Route.file(fileService: FileService) {
 
         get("/{id}/{version}") {
             val id = call.parameters["id"] ?: throw InvalidModelException("Missing id")
-            val version = call.parameters["version"] ?: throw InvalidModelException("Missing version")
-            val file = fileService.get(EntryId(id), version.toInt()) ?: throw NotFoundException()
+            val file = fileService.get(EntryId(id), call.versionParameter()) ?: throw NotFoundException()
             call.respond(file)
+        }
+
+        post("/{id}/revert/{version}") {
+            val id = EntryId(call.parameters["id"] ?: throw InvalidModelException("Missing id"))
+            val reverted = fileService.revert(id, call.versionParameter()) ?: throw NotFoundException()
+            call.respond(HttpStatusCode.OK, reverted)
         }
 
         post {

@@ -90,6 +90,12 @@ class LinkService(
         }
     }
 
+    // Only rescrape when the reverted version points somewhere else
+    override fun toNewEntry(entry: Link) = NewLink(
+        entry.id, entry.title, entry.url, entry.tags.map { it.id }, entry.collections.map { it.id },
+        process = get(entry.id)?.url != entry.url
+    )
+
     override fun toUpdate(entry: Link): BaseEntries.(UpdateBuilder<*>) -> Unit = {
         it[Entries.title] = entry.title
         it[Entries.plainContent] = entry.url

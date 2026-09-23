@@ -4,6 +4,7 @@ import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import lynks.common.Environment
 import lynks.common.UserSession
+import lynks.common.exception.InvalidModelException
 import lynks.common.page.PageRequest
 import lynks.common.page.SortDirection
 import org.jetbrains.exposed.v1.core.*
@@ -16,17 +17,30 @@ fun Query.combine(block: () -> Op<Boolean>): Query {
     return adjustWhere { this?.and(block()) ?: block() }
 }
 
+const val MAX_PAGE_SIZE = 100
+
 fun ApplicationCall.pageRequest(): PageRequest {
-    val page: Long = request.queryParameters["page"]?.toLong() ?: 1
-    val size: Int = request.queryParameters["size"]?.toInt() ?: 25
+    val page: Long = request.queryParameters["page"]?.let {
+        it.toLongOrNull()?.takeIf { page -> page >= 1 } ?: throw InvalidModelException("Invalid page: $it")
+    } ?: 1
+    val size: Int = request.queryParameters["size"]?.let {
+        it.toIntOrNull()?.takeIf { size -> size >= 1 }?.coerceAtMost(MAX_PAGE_SIZE)
+            ?: throw InvalidModelException("Invalid size: $it")
+    } ?: 25
     val tags: List<String> = request.queryParameters["tags"]?.split(",") ?: emptyList()
     val collections: List<String> = request.queryParameters["collections"]?.split(",") ?: emptyList()
     val source: String? = request.queryParameters["source"]
     val sort: String? = request.queryParameters["sort"]
     val direction: SortDirection? = request.queryParameters["direction"]?.let {
-        SortDirection.valueOf(it.uppercase())
+        SortDirection.entries.find { direction -> direction.name.equals(it, ignoreCase = true) }
+            ?: throw InvalidModelException("Invalid direction: $it")
     }
     return PageRequest(page, size, tags, collections, source, sort, direction)
+}
+
+fun ApplicationCall.versionParameter(): Int {
+    val version = parameters["version"] ?: throw InvalidModelException("Missing version")
+    return version.toIntOrNull() ?: throw InvalidModelException("Invalid version: $version")
 }
 
 // check if the given call is authorized to perform actions for given user
@@ -48,13 +62,13 @@ fun Table.findColumn(name: String?): Column<*>? {
     return this.columns.find { it.name.equals(name, true) || it.name.equals(columnFormat, true) }
 }
 
-fun Query.orderBy(column: Expression<*>, direction: SortDirection): Query {
-    val order = SortOrder.valueOf(direction.name)
-    return orderBy(column to order)
-}
+fun Query.orderBy(column: Expression<*>, direction: SortDirection): Query = orderBy(listOf(column to direction))
 
 fun Query.orderBy(orders: List<Pair<Expression<*>, SortDirection>>): Query {
-    val mappedOrders = orders.map { it.first to SortOrder.valueOf(it.second.name) }
+    val mappedOrders = orders.map { (column, direction) ->
+        if (direction == SortDirection.RAND) Random() to SortOrder.ASC
+        else column to SortOrder.valueOf(direction.name)
+    }
     return orderBy(*mappedOrders.toTypedArray())
 }
 

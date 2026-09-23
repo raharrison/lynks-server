@@ -8,6 +8,7 @@
         {
             "$schema": "https://raw.githubusercontent.com/raharrison/lynks-server/master/config/lynks.schema.json",
             "server": {
+                "host": "127.0.0.1",
                 "port": 8080,
                 "rootPath": "/api"
             },
@@ -53,11 +54,20 @@
             "description": "Core server configuration",
             "examples": [
                 {
+                    "host": "127.0.0.1",
                     "port": 8080,
                     "rootPath": "/api"
                 }
             ],
             "properties": {
+                "host": {
+                    "$id": "#/properties/server/properties/host",
+                    "type": "string",
+                    "description": "The address the server should bind to, loopback by default since nginx proxies to it",
+                    "examples": [
+                        "127.0.0.1"
+                    ]
+                },
                 "port": {
                     "$id": "#/properties/server/properties/port",
                     "type": "integer",

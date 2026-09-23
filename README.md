@@ -52,12 +52,13 @@ docker compose -f compose.yaml up -d   # Postgres for local work
 
 Nothing here runs in a container except Postgres, and the scraper in its own repo.
 
-```bash
-./gradlew shadowJar
-scp build/libs/lynks-server-*-all.jar vps:/opt/lynks/lynks-server.jar
-```
+Pushing a version tag (e.g. `2.1.0`, matching `version` in `build.gradle.kts`) runs
+the `Release` workflow, which builds and copies `lynks-server-<version>-all.jar`
+to `API_TARGET_PATH` on the host. Point `/home/lynks/lynks/lynks-server.jar` at it and
+restart the service. `lynks-ui` does the same for `dist/`, into
+`UI_TARGET_PATH<version>/`.
 
-On the host, as the `lynks` user with `/opt/lynks` as the working directory:
+On the host, as the `lynks` user with `/home/lynks/lynks` as the working directory:
 
 | Piece    | How it runs                                                                                |
 |----------|--------------------------------------------------------------------------------------------|
@@ -77,3 +78,10 @@ uses.** The API sends absolute target paths, so `compose.yaml` there mounts
 `$LYNKS_MEDIA` at `$LYNKS_MEDIA` and runs the container as the `lynks` uid/gid.
 Mount it elsewhere, or run it as another user, and the scraper writes files the
 API cannot find or read.
+
+### Backups
+
+`scripts/backup_lynks.sh` dumps Postgres and pushes the dump plus `media/` (minus
+`media/temp`) to restic. It assumes the install at `/home/$USER/lynks` with restic
+under `~/bak`. `config/lynks-backup.service` and `config/lynks-backup.timer` run it
+daily as `lynks`, which has to be in the `docker` group for the dump.

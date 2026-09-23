@@ -442,6 +442,30 @@ class NoteServiceTest : DatabaseTest() {
     }
 
     @Test
+    fun testRevertCreatesNewVersionWithOldContent() {
+        val added = noteService.add(newNote("n1", "original", listOf("t1")))
+        noteService.update(newNote(added.id, "edited", "changed", listOf("t1", "t2")))
+
+        val reverted = noteService.revert(added.id, 1)
+
+        assertThat(reverted?.version).isEqualTo(3)
+        assertThat(reverted?.title).isEqualTo("n1")
+        assertThat(reverted?.plainContent).isEqualTo("original")
+        assertThat(reverted?.renderedContent).isEqualTo("<p>original</p>\n")
+        // groups are not versioned
+        assertThat(reverted?.tags).extracting("id").containsExactlyInAnyOrder("t1", "t2")
+        assertThat(noteService.get(added.id, 2)?.title).isEqualTo("edited")
+        verify { entryAuditService.acceptAuditEvent(added.id, any(), "Reverted to version 1") }
+    }
+
+    @Test
+    fun testRevertMissingVersionReturnsNull() {
+        val added = noteService.add(newNote("n1", "original"))
+        assertThat(noteService.revert(added.id, 5)).isNull()
+        assertThat(noteService.revert(EntryId("missing"), 1)).isNull()
+    }
+
+    @Test
     fun testVersioning() {
         val added = noteService.add(newNote("n1", "some content"))
         ResourceManager(FileStore(), ResourceRepository()).saveGeneratedResource(ResourceId("r1"), added.id, "resource name", "jpg", ResourceType.SCREENSHOT, 11)

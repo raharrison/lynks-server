@@ -76,6 +76,10 @@ class SnippetService(
         }
     }
 
+    override fun toNewEntry(entry: Snippet) = NewSnippet(
+        entry.id, entry.plainContent, entry.tags.map { it.id }, entry.collections.map { it.id }
+    )
+
     override fun toUpdate(entry: Snippet): BaseEntries.(UpdateBuilder<*>) -> Unit = {
         it[plainContent] = entry.plainContent
         it[content] = markdownProcessor.convertToMarkdown(entry.plainContent)

@@ -109,6 +109,55 @@ class EntryEndpointTest : ServerTest() {
     }
 
     @Test
+    fun testInvalidPageParamsReturnBadRequest() {
+        listOf("page" to "abc", "page" to "0", "size" to "-1", "direction" to "sideways").forEach { (name, value) ->
+            given()
+                .queryParam(name, value)
+                .get("/entry")
+                .then()
+                .statusCode(400)
+        }
+    }
+
+    @Test
+    fun testOversizedPageIsCapped() {
+        val entries = given()
+            .queryParam("size", 100_000)
+            .get("/entry")
+            .then()
+            .statusCode(200)
+            .extract().to<Page<*>>()
+        assertThat(entries.size).isEqualTo(MAX_PAGE_SIZE)
+    }
+
+    @Test
+    fun testInvalidVersionReturnsBadRequest() {
+        get("/entry/{id}/{version}", "e1", "latest")
+            .then()
+            .statusCode(400)
+    }
+
+    @Test
+    fun testRandomOrderSearch() {
+        given()
+            .queryParam("q", "expedition")
+            .queryParam("direction", "rand")
+            .get("/entry/search")
+            .then()
+            .statusCode(200)
+    }
+
+    @Test
+    fun testMalformedBodyReturnsBadRequest() {
+        given()
+            .contentType(ContentType.JSON)
+            .body("{not json")
+            .put("/entry/{id}/groups", "e1")
+            .then()
+            .statusCode(400)
+    }
+
+    @Test
     fun testSuggestByTitle() {
         val entries = given()
             .queryParam("q", "expedition")

@@ -261,6 +261,36 @@ class NoteEndpointTest: ServerTest() {
     }
 
     @Test
+    fun testRevertToVersion() {
+        val created = given()
+            .contentType(ContentType.JSON)
+            .body(NewNote(null, "title", "content", emptyList()))
+            .When()
+            .post("/note")
+            .then()
+            .statusCode(201)
+            .extract().to<Note>()
+        given()
+            .contentType(ContentType.JSON)
+            .body(NewNote(created.id, "edited", "new content", emptyList()))
+            .When()
+            .put("/note")
+            .then()
+            .statusCode(200)
+
+        val reverted = post("/note/{id}/revert/{version}", created.id.value, 1)
+            .then()
+            .statusCode(200)
+            .extract().to<Note>()
+        assertThat(reverted.version).isEqualTo(3)
+        assertThat(reverted.title).isEqualTo("title")
+        assertThat(reverted.plainContent).isEqualTo("content")
+
+        post("/note/{id}/revert/{version}", created.id.value, 9).then().statusCode(404)
+        post("/note/{id}/revert/{version}", created.id.value, "latest").then().statusCode(400)
+    }
+
+    @Test
     fun testGetVersion() {
         val newNote = NewNote(null, "title4", "content4", emptyList())
         val created = given()

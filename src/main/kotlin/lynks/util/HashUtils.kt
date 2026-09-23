@@ -20,7 +20,7 @@ object HashUtils {
     }
 
     fun bcryptHash(str: String): String {
-        return BCrypt.withDefaults().hashToString(8, str.toCharArray());
+        return BCrypt.withDefaults().hashToString(12, str.toCharArray())
     }
 
     fun verifyBcryptHash(raw: CharArray, hash: CharArray): Boolean {

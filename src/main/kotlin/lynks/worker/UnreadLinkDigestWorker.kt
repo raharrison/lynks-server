@@ -22,20 +22,18 @@ class UnreadLinkDigestWorker(
     }
 
     override suspend fun doWork(input: String) {
-        // time till next fire on Monday mornings
-        val today = LocalDateTime.now()
-        val fire = today.with(TemporalAdjusters.next(DayOfWeek.MONDAY))
-            .withHour(9)
-            .withMinute(0)
-        val initialDelay = today.until(fire, ChronoUnit.SECONDS)
-
         while (true) {
-            log.debug("Link digest worker sleeping for {} hours until initial fire", initialDelay / 60 / 24)
-            delay(Duration.ofSeconds(initialDelay))
+            val wait = untilNextFire(LocalDateTime.now())
+            log.debug("Link digest worker sleeping for {} hours until next fire", wait.toHours())
+            delay(wait)
             regenerate()
-            log.info("Link digest worker run completed, sleeping for 7 days")
-            delay(Duration.ofDays(7))
         }
+    }
+
+    internal fun untilNextFire(now: LocalDateTime): Duration {
+        val thisWeek = now.with(TemporalAdjusters.nextOrSame(DayOfWeek.MONDAY)).truncatedTo(ChronoUnit.DAYS).withHour(9)
+        val fire = if (thisWeek.isAfter(now)) thisWeek else thisWeek.plusWeeks(1)
+        return Duration.between(now, fire)
     }
 
     private suspend fun regenerate() {

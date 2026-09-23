@@ -9,6 +9,7 @@ import lynks.common.NewSnippet
 import lynks.common.exception.InvalidModelException
 import lynks.common.exception.NotFoundException
 import lynks.util.pageRequest
+import lynks.util.versionParameter
 
 fun Route.snippet(snippetService: SnippetService) {
 
@@ -25,9 +26,14 @@ fun Route.snippet(snippetService: SnippetService) {
 
         get("/{id}/{version}") {
             val id = call.parameters["id"] ?: throw InvalidModelException("Missing id")
-            val version = call.parameters["version"] ?: throw InvalidModelException("Missing version")
-            val snippet = snippetService.get(EntryId(id), version.toInt()) ?: throw NotFoundException()
+            val snippet = snippetService.get(EntryId(id), call.versionParameter()) ?: throw NotFoundException()
             call.respond(snippet)
+        }
+
+        post("/{id}/revert/{version}") {
+            val id = EntryId(call.parameters["id"] ?: throw InvalidModelException("Missing id"))
+            val reverted = snippetService.revert(id, call.versionParameter()) ?: throw NotFoundException()
+            call.respond(HttpStatusCode.OK, reverted)
         }
 
         post {

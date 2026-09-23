@@ -15,9 +15,12 @@ import lynks.digest.DigestService
 import lynks.notify.NotifyService
 import lynks.user.UserService
 import lynks.util.createDummyUser
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import java.time.Duration
 import java.time.Instant
+import java.time.LocalDateTime
 import java.util.concurrent.TimeUnit
 
 @ExperimentalCoroutinesApi
@@ -74,6 +77,15 @@ class UnreadLinkDigestWorkerTest: DatabaseTest() {
         coVerify(exactly = 0) { notifyService.create(any(), any()) }
         send.close()
         worker.cancel()
+    }
+
+    @Test
+    fun testNextFireIsFollowingMondayMorning() {
+        val worker = UnreadLinkDigestWorker(notifyService, digestService, userService)
+        // 2026-09-21 is a Monday
+        assertThat(worker.untilNextFire(LocalDateTime.of(2026, 9, 21, 8, 0))).isEqualTo(Duration.ofHours(1))
+        assertThat(worker.untilNextFire(LocalDateTime.of(2026, 9, 21, 9, 0))).isEqualTo(Duration.ofDays(7))
+        assertThat(worker.untilNextFire(LocalDateTime.of(2026, 9, 20, 9, 0))).isEqualTo(Duration.ofDays(1))
     }
 
 }

@@ -17,8 +17,9 @@ source "$CONFIG_PATH/.env"
 POSTGRES_CONTAINER=lynks-postgres-1
 DUMP_FILEPATH=$TARGET_DIR/dump_$(date +"%Y-%m-%d_%H_%M").gz
 
-docker exec -t $POSTGRES_CONTAINER bash -c 'pg_dumpall -c -U $POSTGRES_USER -l $POSTGRES_DB | gzip > /tmp/lynksdb.dump'
+docker exec $POSTGRES_CONTAINER bash -c 'pg_dumpall -c -U $POSTGRES_USER -l $POSTGRES_DB | gzip > /tmp/lynksdb.dump'
 docker cp $POSTGRES_CONTAINER:/tmp/lynksdb.dump "$DUMP_FILEPATH"
+docker exec $POSTGRES_CONTAINER rm /tmp/lynksdb.dump
 
 echo "Database dump saved to ${DUMP_FILEPATH}"
 

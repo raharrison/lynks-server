@@ -61,6 +61,10 @@ class EntryService(
         throw NotImplementedError("EntryService.toInsert is unreachable - use a type-specific service")
 
     @Deprecated("EntryService does not support insert/update via the generic path", level = DeprecationLevel.ERROR)
+    override fun toNewEntry(entry: Entry): NewEntry =
+        throw NotImplementedError("EntryService.toNewEntry is unreachable - use a type-specific service")
+
+    @Deprecated("EntryService does not support insert/update via the generic path", level = DeprecationLevel.ERROR)
     override fun toUpdate(entry: NewEntry): BaseEntries.(UpdateBuilder<*>) -> Unit =
         throw NotImplementedError("EntryService.toUpdate(NewEntry) is unreachable - use a type-specific service")
 
@@ -103,7 +107,9 @@ class EntryService(
                 """.trimIndent()
 
         val sortOrder = page.direction ?: SortDirection.DESC
-        val orderBy = if (page.sort == null || page.sort == "mostRelevant") {
+        val orderBy = if (sortOrder == SortDirection.RAND) {
+            "RANDOM()"
+        } else if (page.sort == null || page.sort == "mostRelevant") {
             "ts_rank(TS_DOC, query_ts) ${sortOrder.name}"
         } else {
             val sortColumn = Entries.findColumn(page.sort) ?: Entries.dateUpdated

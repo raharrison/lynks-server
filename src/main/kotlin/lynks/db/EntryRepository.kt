@@ -190,6 +190,14 @@ abstract class EntryRepository<T : Entry, S : SlimEntry, U : NewEntry>(
         }
     }
 
+    // Groups are not versioned, so the entry keeps its current tags and collections
+    fun revert(id: EntryId, version: Int): T? {
+        val previous = get(id, version) ?: return null
+        return update(toNewEntry(previous), newVersion = true)?.also {
+            entryAuditService.acceptAuditEvent(id, this::class.simpleName, "Reverted to version $version")
+        }
+    }
+
     fun mergeProps(id: EntryId, props: BaseProperties): Unit = transaction {
         val row = getBaseQuery().adjustSelect { select(Entries.props) }
             .combine { Entries.id eq id.value }
@@ -263,6 +271,8 @@ abstract class EntryRepository<T : Entry, S : SlimEntry, U : NewEntry>(
     protected abstract fun toUpdate(entry: U): BaseEntries.(UpdateBuilder<*>) -> Unit
 
     protected abstract fun toUpdate(entry: T): BaseEntries.(UpdateBuilder<*>) -> Unit
+
+    protected abstract fun toNewEntry(entry: T): U
 
     protected abstract fun toModel(row: ResultRow, groups: GroupSet = GroupSet(), table: BaseEntries = Entries): T
 

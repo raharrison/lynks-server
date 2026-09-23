@@ -95,9 +95,9 @@ class ReminderService(private val workerRegistry: WorkerRegistry) {
             it[reminderId] = reminder.reminderId.value
             it[entryId] = reminder.entryId.value
             it[type] = reminder.type
-            it[notifyMethods] = reminder.notifyMethods.joinToString(",")
+            it[notifyMethods] = checkValidNotifyMethods(reminder.notifyMethods)
             it[message] = reminder.message
-            it[spec] = reminder.spec
+            it[spec] = checkValidSpec(reminder.type, reminder.spec)
             it[tz] = checkValidTimeZone(reminder.tz)
             it[status] = reminder.status
             it[dateCreated] = time
@@ -117,9 +117,9 @@ class ReminderService(private val workerRegistry: WorkerRegistry) {
             it[reminderId] = id.value
             it[entryId] = reminder.entryId.value
             it[type] = reminder.type
-            it[notifyMethods] = reminder.notifyMethods.joinToString(",")
+            it[notifyMethods] = checkValidNotifyMethods(reminder.notifyMethods)
             it[message] = reminder.message
-            it[spec] = reminder.spec
+            it[spec] = checkValidSpec(reminder.type, reminder.spec)
             it[tz] = checkValidTimeZone(reminder.tz)
             it[status] = reminder.status
             it[dateCreated] = time
@@ -139,9 +139,9 @@ class ReminderService(private val workerRegistry: WorkerRegistry) {
         } else {
             val updatedCount = Reminders.update({ Reminders.reminderId eq reminder.reminderId.value }) {
                 it[type] = reminder.type
-                it[notifyMethods] = reminder.notifyMethods.joinToString(",")
+                it[notifyMethods] = checkValidNotifyMethods(reminder.notifyMethods)
                 it[message] = reminder.message
-                it[spec] = reminder.spec
+                it[spec] = checkValidSpec(reminder.type, reminder.spec)
                 it[tz] = checkValidTimeZone(reminder.tz)
                 it[status] = reminder.status
                 it[dateUpdated] = OffsetDateTime.now(ZoneOffset.UTC)
@@ -191,8 +191,26 @@ class ReminderService(private val workerRegistry: WorkerRegistry) {
             ZoneId.of(tz)
             return tz
         } catch (_: Exception) {
-            throw IllegalArgumentException("Invalid timezone code: $tz")
+            throw InvalidModelException("Invalid timezone code: $tz")
         }
+    }
+
+    // A bad spec would otherwise only surface when the row is read back or the worker schedules it
+    private fun checkValidSpec(type: ReminderType, spec: String): String {
+        when (type) {
+            ReminderType.ADHOC -> spec.toLongOrNull() ?: throw InvalidModelException("Invalid reminder time: $spec")
+            ReminderType.RECURRING -> try {
+                Schedule.parse(spec)
+            } catch (e: InvalidScheduleException) {
+                throw InvalidModelException(e.message ?: "Invalid schedule definition")
+            }
+        }
+        return spec
+    }
+
+    private fun checkValidNotifyMethods(methods: List<NotificationMethod>): String {
+        if (methods.isEmpty()) throw InvalidModelException("At least one notification method is required")
+        return methods.joinToString(",")
     }
 
 }

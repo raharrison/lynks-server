@@ -1,6 +1,7 @@
 package lynks.worker
 
 import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.channels.actor
 import lynks.util.JsonMapper.defaultMapper
@@ -40,7 +41,8 @@ abstract class Worker<T> : CoroutineScope {
 abstract class ChannelBasedWorker<T> : Worker<T>() {
 
     @OptIn(ObsoleteCoroutinesApi::class)
-    fun worker(): SendChannel<T> = actor {
+    // Callers use trySend, which a rendezvous channel rejects whenever the actor is busy
+    fun worker(): SendChannel<T> = actor(capacity = Channel.UNLIMITED) {
         beforeWork()
         for (request in channel) {
             onChannelReceive(request)

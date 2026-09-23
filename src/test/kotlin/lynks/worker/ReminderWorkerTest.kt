@@ -365,6 +365,32 @@ class ReminderWorkerTest {
         coVerify(exactly = 0) { notifyService.sendJoltNotification(any(), any()) }
     }
 
+    @Test
+    fun testUpdateCancelsReminderLaunchedAtStartup() = runTest {
+        val tz = ZoneId.systemDefault()
+        val fire = Instant.now().plus(15, ChronoUnit.MINUTES).toEpochMilli()
+        val reminder = AdhocReminder(
+            ReminderId("sc1"), EntryId("e1"),
+            listOf(NotificationMethod.PUSH), "original", fire, tz.id, ReminderStatus.ACTIVE, Instant.EPOCH, Instant.EPOCH
+        )
+        val updatedReminder = reminder.copy(
+            message = "updated",
+            interval = Instant.now().plus(45, ChronoUnit.MINUTES).toEpochMilli()
+        )
+        every { reminderService.getAllActiveReminders() } returns listOf(reminder)
+
+        val worker = createWorker(coroutineContext)
+        val send = worker.worker()
+        send.send(ReminderWorkerRequest(updatedReminder, CrudType.UPDATE))
+
+        advanceTimeBy(TimeUnit.MINUTES.toMillis(50))
+        send.close()
+        worker.cancelAll()
+
+        coVerify(exactly = 0) { notifyService.create(coMatch { it.message == reminder.message }, false) }
+        coVerify(exactly = 1) { notifyService.create(coMatch { it.message == updatedReminder.message }, false) }
+    }
+
     private fun createWorker(context: CoroutineContext) = ReminderWorker(reminderService, notifyService)
         .apply { runner = context }
 }

@@ -49,6 +49,10 @@ class FileService(
         it[dateUpdated] = OffsetDateTime.now(ZoneOffset.UTC)
     }
 
+    override fun toNewEntry(entry: File) = NewFile(
+        entry.id, entry.title, entry.tags.map { it.id }, entry.collections.map { it.id }
+    )
+
     override fun toUpdate(entry: File): BaseEntries.(UpdateBuilder<*>) -> Unit = {
         it[title] = entry.title
         it[props] = entry.props

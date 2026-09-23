@@ -9,6 +9,8 @@ import lynks.resource.Resource
 import lynks.resource.ResourceType
 import lynks.util.createDummyEntry
 import org.assertj.core.api.Assertions.assertThat
+import org.hamcrest.Matchers.nullValue
+import org.hamcrest.Matchers.startsWith
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.nio.file.Paths
@@ -154,8 +156,19 @@ class ResourceEndpointTest : ServerTest() {
                 .then()
                 .statusCode(200)
                 .header("Content-Disposition", "inline; filename=\"$filename\"")
+            .header("Content-Security-Policy", startsWith("sandbox"))
                 .extract().asByteArray()
         assertThat(resource).isEqualTo(content)
+    }
+
+    @Test
+    fun testGetPdfResourceFileIsNotSandboxed() {
+        val generated = uploadResource("document.pdf", byteArrayOf(1, 2, 3, 4))
+
+        get("/entry/{entryId}/resource/{id}", generated.entryId.value, generated.id.value)
+            .then()
+            .statusCode(200)
+            .header("Content-Security-Policy", nullValue())
     }
 
     @Test

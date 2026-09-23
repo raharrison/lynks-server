@@ -11,6 +11,7 @@ import lynks.entry.ref.EntryRefService
 import lynks.group.GroupIdSet
 import lynks.reminder.ReminderService
 import lynks.util.pageRequest
+import lynks.util.versionParameter
 
 fun Route.entry(
     entryService: EntryService,
@@ -32,8 +33,7 @@ fun Route.entry(
 
         get("/{id}/{version}") {
             val id = call.parameters["id"] ?: throw InvalidModelException("Missing id")
-            val version = call.parameters["version"] ?: throw InvalidModelException("Missing version")
-            val entry = entryService.get(EntryId(id), version.toInt()) ?: throw NotFoundException()
+            val entry = entryService.get(EntryId(id), call.versionParameter()) ?: throw NotFoundException()
             call.respond(entry)
         }
 

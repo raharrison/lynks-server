@@ -11,6 +11,7 @@ import lynks.resource.WebResourceRetriever
 import lynks.task.link.LinkProcessingTask
 import lynks.util.JsonMapper
 import lynks.util.Result
+import java.time.Duration
 import java.util.*
 import kotlin.io.path.absolutePathString
 
@@ -38,7 +39,7 @@ open class DefaultLinkProcessor(
         val scrapeUrl = Environment.external.scraperHost + "/scrape"
         val scrapeRequest = ScrapeRequest(url, resourceSet.toList(), targetPath.absolutePathString())
 
-        return when (val result = webResourceRetriever.postStringResult(scrapeUrl, scrapeRequest)) {
+        return when (val result = webResourceRetriever.postStringResult(scrapeUrl, scrapeRequest, SCRAPE_TIMEOUT)) {
             is Result.Failure -> throw result.reason
             is Result.Success -> JsonMapper.defaultMapper.readValue(result.value)
         }
@@ -51,7 +52,7 @@ open class DefaultLinkProcessor(
         val suggestUrl = "$scraperHost/suggest"
         val suggestRequest = ScrapeRequest(url, resourceSet.toList(), targetPath.absolutePathString())
 
-        return when (val result = webResourceRetriever.postStringResult(suggestUrl, suggestRequest)) {
+        return when (val result = webResourceRetriever.postStringResult(suggestUrl, suggestRequest, SUGGEST_TIMEOUT)) {
             is Result.Failure -> throw SuggestionUnavailableException(
                 "Scraper request failed: ${result.reason.message}",
                 result.reason
@@ -59,6 +60,14 @@ open class DefaultLinkProcessor(
 
             is Result.Success -> JsonMapper.defaultMapper.readValue(result.value)
         }
+    }
+
+    private companion object {
+        // headless Chrome waits up to 60s for the page, then renders every requested resource
+        val SCRAPE_TIMEOUT: Duration = Duration.ofMinutes(5)
+
+        // the scraper allows 30s each for the page and its main image
+        val SUGGEST_TIMEOUT: Duration = Duration.ofSeconds(90)
     }
 
 }

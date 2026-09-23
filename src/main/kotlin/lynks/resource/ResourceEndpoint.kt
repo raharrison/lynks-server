@@ -2,6 +2,7 @@ package lynks.resource
 
 import io.ktor.http.*
 import io.ktor.http.content.*
+import io.ktor.server.application.*
 import io.ktor.server.http.content.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
@@ -20,7 +21,9 @@ import java.util.concurrent.ConcurrentHashMap
 
 fun Route.resource(resourceManager: ResourceManager) {
 
-    staticFiles("temp", File(Environment.resource.resourceTempPath))
+    staticFiles("temp", File(Environment.resource.resourceTempPath)) {
+        modify { file, call -> call.sandboxUnlessPdf(file.extension) }
+    }
 
     fun deriveMimeType(filename: String): String {
         val contentType = ContentType.defaultForFilePath(filename)
@@ -114,6 +117,7 @@ fun Route.resource(resourceManager: ResourceManager) {
             call.response.header(HttpHeaders.ContentDisposition, "inline; filename=\"${res.first.name}\"")
             call.response.header(HttpHeaders.Expires, cacheExpiresAge)
             call.response.header(HttpHeaders.ETag, res.first.dateCreated.toString())
+            call.sandboxUnlessPdf(res.first.extension)
             call.respondFile(res.second)
         }
 
@@ -151,5 +155,13 @@ fun Route.resource(resourceManager: ResourceManager) {
             call.respond(HttpStatusCode.OK)
         }
 
+    }
+}
+
+// Scraped pages and uploads are untrusted but served from the app's own origin. PDFs are left out
+// because browsers refuse to run their PDF viewer inside a sandbox.
+private fun ApplicationCall.sandboxUnlessPdf(extension: String) {
+    if (!extension.equals("pdf", ignoreCase = true)) {
+        response.header("Content-Security-Policy", "sandbox")
     }
 }

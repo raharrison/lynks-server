@@ -27,11 +27,9 @@ class ReminderWorker(
 
     override suspend fun beforeWork() {
         super.beforeWork()
+        // Tracked like any other request, so a later update or delete can cancel it
         reminderService.getAllActiveReminders().forEach {
-            when (it) {
-                is AdhocReminder -> launchJob { launchAdhocReminder(it) }
-                is RecurringReminder -> launchJob { launchRecurringReminder(it) }
-            }
+            onChannelReceive(ReminderWorkerRequest(it, CrudType.CREATE))
         }
     }
 

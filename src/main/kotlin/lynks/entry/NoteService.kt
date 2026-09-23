@@ -78,6 +78,10 @@ class NoteService(
         }
     }
 
+    override fun toNewEntry(entry: Note) = NewNote(
+        entry.id, entry.title, entry.plainContent, entry.tags.map { it.id }, entry.collections.map { it.id }
+    )
+
     override fun toUpdate(entry: Note): BaseEntries.(UpdateBuilder<*>) -> Unit = {
         it[title] = entry.title
         it[plainContent] = entry.plainContent

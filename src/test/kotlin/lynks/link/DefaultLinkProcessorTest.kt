@@ -44,7 +44,7 @@ class DefaultLinkProcessorTest {
     @Test
     fun testScrapeResourcesSuccess() = runBlocking {
         every { resourceManager.constructTempBasePath(url) } returns Path.of("tempPath")
-        coEvery { resourceRetriever.postStringResult(any(), any()) } returns Result.Success(scrapeLinkResponse)
+        coEvery { resourceRetriever.postStringResult(any(), any(), any()) } returns Result.Success(scrapeLinkResponse)
         val processor = DefaultLinkProcessor(url, resourceRetriever, resourceManager)
         processor.use {
             processor.init()
@@ -59,7 +59,7 @@ class DefaultLinkProcessorTest {
     @Test
     fun testScrapeResourcesFailure() = runBlocking {
         every { resourceManager.constructTempBasePath(url) } returns Path.of("tempPath")
-        coEvery { resourceRetriever.postStringResult(any(), any()) } returns Result.Failure(ExecutionException("failed"))
+        coEvery { resourceRetriever.postStringResult(any(), any(), any()) } returns Result.Failure(ExecutionException("failed"))
         val processor = DefaultLinkProcessor(url, resourceRetriever, resourceManager)
         processor.use {
             processor.init()
@@ -73,7 +73,7 @@ class DefaultLinkProcessorTest {
     @Test
     fun testSuggestSuccess() = runBlocking {
         every { resourceManager.constructTempBasePath(url) } returns Path.of("tempPath")
-        coEvery { resourceRetriever.postStringResult(any(), any()) } returns Result.Success(suggestLinkResponse)
+        coEvery { resourceRetriever.postStringResult(any(), any(), any()) } returns Result.Success(suggestLinkResponse)
         val processor = DefaultLinkProcessor(url, resourceRetriever, resourceManager)
         processor.use {
             processor.init()
@@ -94,7 +94,7 @@ class DefaultLinkProcessorTest {
     @Test
     fun testSuggestFailure() = runBlocking {
         every { resourceManager.constructTempBasePath(url) } returns Path.of("tempPath")
-        coEvery { resourceRetriever.postStringResult(any(), any()) } returns Result.Failure(ExecutionException("failed"))
+        coEvery { resourceRetriever.postStringResult(any(), any(), any()) } returns Result.Failure(ExecutionException("failed"))
         val processor = DefaultLinkProcessor(url, resourceRetriever, resourceManager)
         processor.use {
             processor.init()
