@@ -1,5 +1,8 @@
 {
     "$schema": "https://raw.githubusercontent.com/raharrison/lynks-server/master/config/lynks.schema.json",
+    "server": {
+        "host": "0.0.0.0"
+    },
     "database": {
         "url": "jdbc:postgresql://localhost:5432/lynksdb",
         "user": "lynksuser",

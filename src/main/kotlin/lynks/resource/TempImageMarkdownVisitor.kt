@@ -11,6 +11,7 @@ import lynks.util.loggerFor
 import java.nio.file.Path
 
 class TempImageMarkdownVisitor(
+    private val userId: UserId,
     private val eid: EntryId,
     private val resourceManager: ResourceManager
 ) {
@@ -34,7 +35,7 @@ class TempImageMarkdownVisitor(
         val ref = node.pageRef.toString()
         if (!ref.startsWith(TEMP_UPLOAD_URL)) return
 
-        val file = resourceManager.findTempUpload(ref.removePrefix(TEMP_UPLOAD_URL)) ?: run {
+        val file = resourceManager.findTempUpload(userId, ref.removePrefix(TEMP_UPLOAD_URL)) ?: run {
             log.warn("Temporary image for entry={} at {} does not exist", eid, ref)
             return
         }

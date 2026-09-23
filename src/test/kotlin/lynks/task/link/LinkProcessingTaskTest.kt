@@ -7,6 +7,7 @@ import lynks.common.Link
 import lynks.common.TaskId
 import lynks.entry.LinkService
 import lynks.resource.ResourceType
+import lynks.util.TEST_USER
 import lynks.worker.PersistLinkProcessingRequest
 import lynks.worker.WorkerRegistry
 import org.assertj.core.api.Assertions.assertThat
@@ -18,7 +19,7 @@ class LinkProcessingTaskTest {
     private val workerRegistry = mockk<WorkerRegistry>()
     private val linkService = mockk<LinkService>()
 
-    private val linkProcessingTask = LinkProcessingTask(TaskId("tid"), EntryId("eid")).also {
+    private val linkProcessingTask = LinkProcessingTask(TaskId("tid"), EntryId("eid"), TEST_USER).also {
         it.workerRegistry = workerRegistry
         it.linkService = linkService
     }
@@ -58,14 +59,14 @@ class LinkProcessingTaskTest {
         val context = linkProcessingTask.createContext(emptyMap())
         val link = Link(EntryId("eid"), "title", "url", "", "", Instant.EPOCH, Instant.EPOCH)
 
-        every { linkService.get(EntryId("eid")) } returns link
+        every { linkService.get(TEST_USER, EntryId("eid")) } returns link
         every { workerRegistry.acceptLinkWork(any()) } just Runs
 
         runBlocking {
             linkProcessingTask.process(context)
         }
 
-        verify(exactly = 1) { linkService.get(EntryId("eid")) }
+        verify(exactly = 1) { linkService.get(TEST_USER, EntryId("eid")) }
         verify(exactly = 1) { workerRegistry.acceptLinkWork(match {
             it is PersistLinkProcessingRequest && it.link == link
         }) }
@@ -76,14 +77,14 @@ class LinkProcessingTaskTest {
         val context = linkProcessingTask.createContext(mapOf("type" to ResourceType.SCREENSHOT.name))
         val link = Link(EntryId("eid"), "title", "url", "", "", Instant.EPOCH, Instant.EPOCH)
 
-        every { linkService.get(EntryId("eid")) } returns link
+        every { linkService.get(TEST_USER, EntryId("eid")) } returns link
         every { workerRegistry.acceptLinkWork(any()) } just Runs
 
         runBlocking {
             linkProcessingTask.process(context)
         }
 
-        verify(exactly = 1) { linkService.get(EntryId("eid")) }
+        verify(exactly = 1) { linkService.get(TEST_USER, EntryId("eid")) }
         verify(exactly = 1) { workerRegistry.acceptLinkWork(match {
             it is PersistLinkProcessingRequest && it.link == link && it.resourceSet.contains(ResourceType.SCREENSHOT)
         }) }
@@ -93,13 +94,13 @@ class LinkProcessingTaskTest {
     fun testProcessNoResult() {
         val context = linkProcessingTask.createContext(emptyMap())
 
-        every { linkService.get(EntryId("eid")) } returns null
+        every { linkService.get(TEST_USER, EntryId("eid")) } returns null
 
         runBlocking {
             linkProcessingTask.process(context)
         }
 
-        verify(exactly = 1) { linkService.get(EntryId("eid")) }
+        verify(exactly = 1) { linkService.get(TEST_USER, EntryId("eid")) }
     }
 
 }

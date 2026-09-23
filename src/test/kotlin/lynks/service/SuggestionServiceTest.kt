@@ -5,6 +5,7 @@ import io.mockk.mockk
 import kotlinx.coroutines.runBlocking
 import lynks.suggest.Suggestion
 import lynks.suggest.SuggestionService
+import lynks.util.TEST_USER
 import lynks.worker.SuggestLinkProcessingRequest
 import lynks.worker.WorkerRegistry
 import org.assertj.core.api.Assertions.assertThat
@@ -23,11 +24,12 @@ class SuggestionServiceTest {
         every { workerRegistry.acceptLinkWork(any()) } answers {
             val req = this.firstArg<SuggestLinkProcessingRequest>()
             assertThat(req.url).isEqualTo("https://google.com")
+            assertThat(req.userId).isEqualTo(TEST_USER)
             req.response.complete(suggestion)
         }
 
         runBlocking {
-            val response = service.processLink("https://google.com")
+            val response = service.processLink(TEST_USER, "https://google.com")
             assertThat(response).isEqualTo(suggestion)
             assertThat(response.preview).isNull()
             assertThat(response.thumbnail).isNull()
@@ -43,11 +45,12 @@ class SuggestionServiceTest {
         every { workerRegistry.acceptLinkWork(any()) } answers {
             val req = this.firstArg<SuggestLinkProcessingRequest>()
             assertThat(req.url).isEqualTo("https://gmail.com")
+            assertThat(req.userId).isEqualTo(TEST_USER)
             req.response.complete(suggestion)
         }
 
         runBlocking {
-            val response = service.processLink("gmail.com")
+            val response = service.processLink(TEST_USER, "gmail.com")
             assertThat(response).isEqualTo(suggestion)
             assertThat(response.preview).isNull()
             assertThat(response.thumbnail).isNull()

@@ -9,11 +9,10 @@ class JoltClient(private val webResourceRetriever: WebResourceRetriever) {
 
     private val log = loggerFor<JoltClient>()
 
-    suspend fun sendNotification(title: String?, message: String, click: String? = null) {
+    suspend fun sendNotification(token: String, title: String?, message: String, click: String? = null) {
         val host = Environment.external.joltHost
-        val token = Environment.external.joltToken
-        if (host == null || token == null) {
-            log.warn("Jolt host or channel token not set, unable to send notification")
+        if (host == null) {
+            log.warn("Jolt host not set, unable to send notification")
             return
         }
 

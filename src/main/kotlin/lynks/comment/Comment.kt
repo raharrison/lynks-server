@@ -8,12 +8,16 @@ import java.time.Instant
 
 object Comments : Table("comments") {
     val id = varchar("id", UID_LENGTH)
-    val entryId = (varchar("entry_id", UID_LENGTH).index().references(Entries.id, ReferenceOption.CASCADE))
+    val entryId = varchar("entry_id", UID_LENGTH).references(Entries.id, ReferenceOption.CASCADE)
     val plainContent = text("plain_content")
     val renderedContent = text("rendered_content")
-    val dateCreated = timestampWithTimeZone("date_created").index()
+    val dateCreated = timestampWithTimeZone("date_created")
     val dateUpdated = timestampWithTimeZone("date_updated")
     override val primaryKey = PrimaryKey(id)
+
+    init {
+        index(false, entryId, dateCreated)
+    }
 }
 
 

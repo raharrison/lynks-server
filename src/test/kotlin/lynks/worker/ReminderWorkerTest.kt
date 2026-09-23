@@ -16,6 +16,7 @@ import lynks.reminder.AdhocReminder
 import lynks.reminder.RecurringReminder
 import lynks.reminder.ReminderService
 import lynks.reminder.ReminderStatus
+import lynks.util.TEST_USER
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -35,12 +36,11 @@ class ReminderWorkerTest {
     fun before() {
         every { reminderService.getAllActiveReminders() } returns emptyList()
         every { reminderService.updateReminderStatus(any(), any()) } returns 1
-        every { entryService.get(EntryId("e1")) } returns null
-        coEvery { notifyService.create(any(), false) } returns Notification(
+        every { entryService.get(TEST_USER, EntryId("e1")) } returns null
+        coEvery { notifyService.create(TEST_USER, any()) } returns Notification(
             NotificationId("n1"), NotificationType.DISCUSSIONS, "found", false, dateCreated = Instant.now()
         )
-        coEvery { notifyService.sendWebNotification(any()) } just Runs
-        coEvery { notifyService.sendJoltNotification(any(), any()) } just Runs
+        coEvery { notifyService.sendJoltNotification(TEST_USER, any(), any()) } just Runs
         every { reminderService.isActive(any()) } returns true
     }
 
@@ -64,26 +64,26 @@ class ReminderWorkerTest {
 
         val worker = createWorker(coroutineContext)
         val send = worker.worker()
-        send.send(ReminderWorkerRequest(reminder, CrudType.CREATE))
-        send.send(ReminderWorkerRequest(reminder2, CrudType.CREATE))
+        send.send(ReminderWorkerRequest(TEST_USER, reminder, CrudType.CREATE))
+        send.send(ReminderWorkerRequest(TEST_USER, reminder2, CrudType.CREATE))
 
         advanceTimeBy(TimeUnit.MINUTES.toMillis(14))
-        coVerify(exactly = 0) { notifyService.create(coMatch { it.message == reminder.message }, false) }
-        coVerify(exactly = 0) { notifyService.create(coMatch { it.message == reminder2.message }, false) }
-        coVerify(exactly = 0) { notifyService.sendJoltNotification(any(), any()) }
+        coVerify(exactly = 0) { notifyService.create(TEST_USER, coMatch { it.message == reminder.message }) }
+        coVerify(exactly = 0) { notifyService.create(TEST_USER, coMatch { it.message == reminder2.message }) }
+        coVerify(exactly = 0) { notifyService.sendJoltNotification(TEST_USER, any(), any()) }
 
         advanceTimeBy(TimeUnit.MINUTES.toMillis(1))
-        coVerify(exactly = 1) { notifyService.create(coMatch { it.message == reminder.message }, false) }
-        coVerify(exactly = 0) { notifyService.create(coMatch { it.message == reminder2.message }, false) }
-        coVerify(exactly = 0) { notifyService.sendJoltNotification(any(), any()) }
+        coVerify(exactly = 1) { notifyService.create(TEST_USER, coMatch { it.message == reminder.message }) }
+        coVerify(exactly = 0) { notifyService.create(TEST_USER, coMatch { it.message == reminder2.message }) }
+        coVerify(exactly = 0) { notifyService.sendJoltNotification(TEST_USER, any(), any()) }
 
         advanceTimeBy(TimeUnit.MINUTES.toMillis(35))
         send.close()
         worker.cancelAll()
 
-        coVerify(exactly = 1) { notifyService.create(coMatch { it.message == reminder.message }, false) }
-        coVerify(exactly = 1) { notifyService.create(coMatch { it.message == reminder2.message }, false) }
-        coVerify(exactly = 1) { notifyService.sendJoltNotification(any(), any()) }
+        coVerify(exactly = 1) { notifyService.create(TEST_USER, coMatch { it.message == reminder.message }) }
+        coVerify(exactly = 1) { notifyService.create(TEST_USER, coMatch { it.message == reminder2.message }) }
+        coVerify(exactly = 1) { notifyService.sendJoltNotification(TEST_USER, any(), any()) }
         coVerify(exactly = 1) { reminderService.updateReminderStatus(reminder.reminderId, ReminderStatus.COMPLETED) }
         coVerify(exactly = 1) { reminderService.updateReminderStatus(reminder2.reminderId, ReminderStatus.COMPLETED) }
     }
@@ -102,27 +102,27 @@ class ReminderWorkerTest {
 
         val worker = createWorker(coroutineContext)
         val send = worker.worker()
-        send.send(ReminderWorkerRequest(reminder, CrudType.CREATE))
-        send.send(ReminderWorkerRequest(reminder2, CrudType.CREATE))
+        send.send(ReminderWorkerRequest(TEST_USER, reminder, CrudType.CREATE))
+        send.send(ReminderWorkerRequest(TEST_USER, reminder2, CrudType.CREATE))
 
         advanceTimeBy(TimeUnit.MINUTES.toMillis(118))
-        coVerify(exactly = 0) { notifyService.create(coMatch { it.message == reminder.message }, false) }
-        coVerify(exactly = 0) { notifyService.create(coMatch { it.message == reminder2.message }, false) }
-        coVerify(exactly = 0) { notifyService.sendJoltNotification(any(), any()) }
+        coVerify(exactly = 0) { notifyService.create(TEST_USER, coMatch { it.message == reminder.message }) }
+        coVerify(exactly = 0) { notifyService.create(TEST_USER, coMatch { it.message == reminder2.message }) }
+        coVerify(exactly = 0) { notifyService.sendJoltNotification(TEST_USER, any(), any()) }
 
         advanceTimeBy(TimeUnit.MINUTES.toMillis(2))
-        coVerify(exactly = 1) { notifyService.create(coMatch { it.message == reminder.message }, false) }
-        coVerify(exactly = 1) { notifyService.sendJoltNotification(any(), any()) }
-        coVerify(exactly = 0) { notifyService.create(coMatch { it.message == reminder2.message }, false) }
+        coVerify(exactly = 1) { notifyService.create(TEST_USER, coMatch { it.message == reminder.message }) }
+        coVerify(exactly = 1) { notifyService.sendJoltNotification(TEST_USER, any(), any()) }
+        coVerify(exactly = 0) { notifyService.create(TEST_USER, coMatch { it.message == reminder2.message }) }
 
         advanceTimeBy(TimeUnit.MINUTES.toMillis(35))
         send.close()
         worker.cancelAll()
 
-        coVerify(exactly = 1) { notifyService.create(coMatch { it.message == reminder.message }, false) }
-        coVerify(exactly = 1) { notifyService.sendJoltNotification(any(), any()) }
+        coVerify(exactly = 1) { notifyService.create(TEST_USER, coMatch { it.message == reminder.message }) }
+        coVerify(exactly = 1) { notifyService.sendJoltNotification(TEST_USER, any(), any()) }
         coVerify(exactly = 1) { reminderService.updateReminderStatus(reminder.reminderId, ReminderStatus.COMPLETED) }
-        coVerify(exactly = 1) { notifyService.create(coMatch { it.message == reminder2.message }, false) }
+        coVerify(exactly = 1) { notifyService.create(TEST_USER, coMatch { it.message == reminder2.message }) }
         coVerify(exactly = 1) { reminderService.updateReminderStatus(reminder2.reminderId, ReminderStatus.COMPLETED) }
     }
 
@@ -135,30 +135,30 @@ class ReminderWorkerTest {
 
         val worker = createWorker(coroutineContext)
         val send = worker.worker()
-        send.send(ReminderWorkerRequest(reminder, CrudType.CREATE))
+        send.send(ReminderWorkerRequest(TEST_USER, reminder, CrudType.CREATE))
 
         advanceTimeBy(TimeUnit.MINUTES.toMillis(25))
-        coVerify(exactly = 0) { notifyService.create(coMatch { it.message == reminder.message }, false) }
-        coVerify(exactly = 0) { notifyService.sendJoltNotification(any(), any()) }
+        coVerify(exactly = 0) { notifyService.create(TEST_USER, coMatch { it.message == reminder.message }) }
+        coVerify(exactly = 0) { notifyService.sendJoltNotification(TEST_USER, any(), any()) }
 
         advanceTimeBy(TimeUnit.MINUTES.toMillis(160))
-        coVerify(exactly = 6) { notifyService.create(coMatch { it.message == reminder.message }, false) }
-        coVerify(exactly = 6) { notifyService.sendJoltNotification(any(), any()) }
+        coVerify(exactly = 6) { notifyService.create(TEST_USER, coMatch { it.message == reminder.message }) }
+        coVerify(exactly = 6) { notifyService.sendJoltNotification(TEST_USER, any(), any()) }
 
         advanceTimeBy(TimeUnit.MINUTES.toMillis(65))
-        coVerify(exactly = 8) { notifyService.create(coMatch { it.message == reminder.message }, false) }
-        coVerify(exactly = 8) { notifyService.sendJoltNotification(any(), any()) }
+        coVerify(exactly = 8) { notifyService.create(TEST_USER, coMatch { it.message == reminder.message }) }
+        coVerify(exactly = 8) { notifyService.sendJoltNotification(TEST_USER, any(), any()) }
 
         advanceTimeBy(TimeUnit.MINUTES.toMillis(125))
-        coVerify(exactly = 12) { notifyService.create(coMatch { it.message == reminder.message }, false) }
-        coVerify(exactly = 12) { notifyService.sendJoltNotification(any(), any()) }
+        coVerify(exactly = 12) { notifyService.create(TEST_USER, coMatch { it.message == reminder.message }) }
+        coVerify(exactly = 12) { notifyService.sendJoltNotification(TEST_USER, any(), any()) }
 
         advanceTimeBy(TimeUnit.MINUTES.toMillis(185))
         send.close()
         worker.cancelAll()
 
-        coVerify(exactly = 18) { notifyService.create(coMatch { it.message == reminder.message }, false) }
-        coVerify(exactly = 18) { notifyService.sendJoltNotification(any(), any()) }
+        coVerify(exactly = 18) { notifyService.create(TEST_USER, coMatch { it.message == reminder.message }) }
+        coVerify(exactly = 18) { notifyService.sendJoltNotification(TEST_USER, any(), any()) }
     }
 
     @Test
@@ -170,7 +170,7 @@ class ReminderWorkerTest {
 
         val worker = createWorker(coroutineContext)
         val send = worker.worker()
-        send.send(ReminderWorkerRequest(reminder, CrudType.CREATE))
+        send.send(ReminderWorkerRequest(TEST_USER, reminder, CrudType.CREATE))
 
         val day = LocalDateTime.now(tz).let {
             if (it.hour >= 6) it.plusDays(1)
@@ -182,14 +182,14 @@ class ReminderWorkerTest {
 
         // 200ms buffer
         advanceTimeBy(TimeUnit.MILLISECONDS.toMillis((until / 2) + 200))
-        coVerify(exactly = 0) { notifyService.create(coMatch { it.message == reminder.message }, false) }
+        coVerify(exactly = 0) { notifyService.create(TEST_USER, coMatch { it.message == reminder.message }) }
 
         advanceTimeBy(TimeUnit.MILLISECONDS.toMillis((until / 2) + 200))
         send.close()
         worker.cancelAll()
 
-        coVerify(exactly = 1) { notifyService.create(coMatch { it.message == reminder.message }, false) }
-        coVerify(exactly = 0) { notifyService.sendJoltNotification(any(), any()) }
+        coVerify(exactly = 1) { notifyService.create(TEST_USER, coMatch { it.message == reminder.message }) }
+        coVerify(exactly = 0) { notifyService.sendJoltNotification(TEST_USER, any(), any()) }
     }
 
     @Test
@@ -202,14 +202,14 @@ class ReminderWorkerTest {
         every { reminderService.isActive(reminder.reminderId) } returns false
         val worker = createWorker(coroutineContext)
         val send = worker.worker()
-        send.send(ReminderWorkerRequest(reminder, CrudType.CREATE))
+        send.send(ReminderWorkerRequest(TEST_USER, reminder, CrudType.CREATE))
 
         advanceTimeBy(TimeUnit.MINUTES.toMillis(16))
         send.close()
         worker.cancelAll()
 
-        coVerify(exactly = 0) { notifyService.create(coMatch { it.message == reminder.message }, false) }
-        coVerify(exactly = 0) { notifyService.sendJoltNotification(any(), any()) }
+        coVerify(exactly = 0) { notifyService.create(TEST_USER, coMatch { it.message == reminder.message }) }
+        coVerify(exactly = 0) { notifyService.sendJoltNotification(TEST_USER, any(), any()) }
         verify(exactly = 1) { reminderService.isActive(reminder.reminderId) }
         verify(exactly = 0) { reminderService.updateReminderStatus(reminder.reminderId, ReminderStatus.COMPLETED) }
     }
@@ -223,14 +223,14 @@ class ReminderWorkerTest {
         every { reminderService.isActive(reminder.reminderId) } returns false
         val worker = createWorker(coroutineContext)
         val send = worker.worker()
-        send.send(ReminderWorkerRequest(reminder, CrudType.CREATE))
+        send.send(ReminderWorkerRequest(TEST_USER, reminder, CrudType.CREATE))
 
         advanceTimeBy(TimeUnit.MINUTES.toMillis(185))
         send.close()
         worker.cancelAll()
 
-        coVerify(exactly = 0) { notifyService.create(coMatch { it.message == reminder.message }, false) }
-        coVerify(exactly = 0) { notifyService.sendJoltNotification(any(), any()) }
+        coVerify(exactly = 0) { notifyService.create(TEST_USER, coMatch { it.message == reminder.message }) }
+        coVerify(exactly = 0) { notifyService.sendJoltNotification(TEST_USER, any(), any()) }
         verify(exactly = 1) { reminderService.isActive(reminder.reminderId) }
     }
 
@@ -245,7 +245,7 @@ class ReminderWorkerTest {
             listOf(NotificationMethod.PUSH, NotificationMethod.JOLT), "message2", "every 3 hours",
             tz.id, ReminderStatus.ACTIVE, Instant.EPOCH, Instant.EPOCH)
 
-        every { reminderService.getAllActiveReminders() } returns listOf(reminder, recurring)
+        every { reminderService.getAllActiveReminders() } returns listOf(TEST_USER to reminder, TEST_USER to recurring)
 
         val worker = createWorker(coroutineContext)
         val send = worker.worker()
@@ -254,9 +254,9 @@ class ReminderWorkerTest {
         send.close()
         worker.cancelAll()
 
-        coVerify(exactly = 1) { notifyService.create(coMatch { it.message == reminder.message }, false) }
-        coVerify(exactly = 1) { notifyService.create(coMatch { it.message == recurring.message }, false) }
-        coVerify(exactly = 1) { notifyService.sendJoltNotification(any(), any()) }
+        coVerify(exactly = 1) { notifyService.create(TEST_USER, coMatch { it.message == reminder.message }) }
+        coVerify(exactly = 1) { notifyService.create(TEST_USER, coMatch { it.message == recurring.message }) }
+        coVerify(exactly = 1) { notifyService.sendJoltNotification(TEST_USER, any(), any()) }
         verify(exactly = 2) { reminderService.isActive(reminder.reminderId) }
         verify(exactly = 1) { reminderService.updateReminderStatus(reminder.reminderId, ReminderStatus.COMPLETED) }
     }
@@ -277,17 +277,17 @@ class ReminderWorkerTest {
 
         val worker = createWorker(coroutineContext)
         val send = worker.worker()
-        send.send(ReminderWorkerRequest(active, CrudType.CREATE))
-        send.send(ReminderWorkerRequest(disabled, CrudType.CREATE))
-        send.send(ReminderWorkerRequest(completed, CrudType.CREATE))
+        send.send(ReminderWorkerRequest(TEST_USER, active, CrudType.CREATE))
+        send.send(ReminderWorkerRequest(TEST_USER, disabled, CrudType.CREATE))
+        send.send(ReminderWorkerRequest(TEST_USER, completed, CrudType.CREATE))
 
         advanceTimeBy(TimeUnit.MINUTES.toMillis(185))
         send.close()
         worker.cancelAll()
 
-        coVerify(exactly = 1) { notifyService.create(coMatch { it.message == active.message }, false) }
-        coVerify(exactly = 0) { notifyService.create(coMatch { it.message == disabled.message }, false) }
-        coVerify(exactly = 0) { notifyService.create(coMatch { it.message == completed.message }, false) }
+        coVerify(exactly = 1) { notifyService.create(TEST_USER, coMatch { it.message == active.message }) }
+        coVerify(exactly = 0) { notifyService.create(TEST_USER, coMatch { it.message == disabled.message }) }
+        coVerify(exactly = 0) { notifyService.create(TEST_USER, coMatch { it.message == completed.message }) }
         verify(exactly = 1) { reminderService.updateReminderStatus(active.reminderId, ReminderStatus.COMPLETED) }
     }
 
@@ -301,20 +301,20 @@ class ReminderWorkerTest {
 
         val worker = createWorker(coroutineContext)
         val send = worker.worker()
-        send.send(ReminderWorkerRequest(reminder, CrudType.CREATE))
+        send.send(ReminderWorkerRequest(TEST_USER, reminder, CrudType.CREATE))
 
         val updatedReminder = reminder.copy(interval = reminder.interval + 1800000) // + 30 mins
 
-        send.send(ReminderWorkerRequest(updatedReminder, CrudType.UPDATE))
+        send.send(ReminderWorkerRequest(TEST_USER, updatedReminder, CrudType.UPDATE))
 
         advanceTimeBy(TimeUnit.MINUTES.toMillis(125))
-        coVerify(exactly = 0) { notifyService.create(coMatch { it.message == reminder.message }) }
+        coVerify(exactly = 0) { notifyService.create(TEST_USER, coMatch { it.message == reminder.message }) }
 
         advanceTimeBy(TimeUnit.MINUTES.toMillis(30))
         send.close()
         worker.cancelAll()
 
-        coVerify(exactly = 1) { notifyService.create(coMatch { it.message == updatedReminder.message }, false) }
+        coVerify(exactly = 1) { notifyService.create(TEST_USER, coMatch { it.message == updatedReminder.message }) }
         coVerify(exactly = 1) { reminderService.updateReminderStatus(reminder.reminderId, ReminderStatus.COMPLETED) }
     }
 
@@ -328,18 +328,18 @@ class ReminderWorkerTest {
 
         val worker = createWorker(coroutineContext)
         val send = worker.worker()
-        send.send(ReminderWorkerRequest(reminder, CrudType.CREATE))
+        send.send(ReminderWorkerRequest(TEST_USER, reminder, CrudType.CREATE))
 
         val updatedReminder = reminder.copy(status = ReminderStatus.DISABLED)
 
-        send.send(ReminderWorkerRequest(updatedReminder, CrudType.UPDATE))
+        send.send(ReminderWorkerRequest(TEST_USER, updatedReminder, CrudType.UPDATE))
 
         advanceTimeBy(TimeUnit.MINUTES.toMillis(125))
 
         send.close()
         worker.cancelAll()
 
-        coVerify(exactly = 0) { notifyService.create(coMatch { it.message == updatedReminder.message }, false) }
+        coVerify(exactly = 0) { notifyService.create(TEST_USER, coMatch { it.message == updatedReminder.message }) }
         coVerify(exactly = 0) { reminderService.updateReminderStatus(reminder.reminderId, ReminderStatus.COMPLETED) }
     }
 
@@ -354,15 +354,15 @@ class ReminderWorkerTest {
         val worker = createWorker(coroutineContext)
         val send = worker.worker()
 
-        send.send(ReminderWorkerRequest(reminder, CrudType.CREATE))
-        send.send(ReminderWorkerRequest(reminder, CrudType.DELETE))
+        send.send(ReminderWorkerRequest(TEST_USER, reminder, CrudType.CREATE))
+        send.send(ReminderWorkerRequest(TEST_USER, reminder, CrudType.DELETE))
 
         advanceTimeBy(TimeUnit.MINUTES.toMillis(125))
         send.close()
         worker.cancelAll()
 
-        coVerify(exactly = 0) { notifyService.create(coMatch { it.message == reminder.message }, false) }
-        coVerify(exactly = 0) { notifyService.sendJoltNotification(any(), any()) }
+        coVerify(exactly = 0) { notifyService.create(TEST_USER, coMatch { it.message == reminder.message }) }
+        coVerify(exactly = 0) { notifyService.sendJoltNotification(TEST_USER, any(), any()) }
     }
 
     @Test
@@ -377,18 +377,18 @@ class ReminderWorkerTest {
             message = "updated",
             interval = Instant.now().plus(45, ChronoUnit.MINUTES).toEpochMilli()
         )
-        every { reminderService.getAllActiveReminders() } returns listOf(reminder)
+        every { reminderService.getAllActiveReminders() } returns listOf(TEST_USER to reminder)
 
         val worker = createWorker(coroutineContext)
         val send = worker.worker()
-        send.send(ReminderWorkerRequest(updatedReminder, CrudType.UPDATE))
+        send.send(ReminderWorkerRequest(TEST_USER, updatedReminder, CrudType.UPDATE))
 
         advanceTimeBy(TimeUnit.MINUTES.toMillis(50))
         send.close()
         worker.cancelAll()
 
-        coVerify(exactly = 0) { notifyService.create(coMatch { it.message == reminder.message }, false) }
-        coVerify(exactly = 1) { notifyService.create(coMatch { it.message == updatedReminder.message }, false) }
+        coVerify(exactly = 0) { notifyService.create(TEST_USER, coMatch { it.message == reminder.message }) }
+        coVerify(exactly = 1) { notifyService.create(TEST_USER, coMatch { it.message == updatedReminder.message }) }
     }
 
     private fun createWorker(context: CoroutineContext) = ReminderWorker(reminderService, notifyService)

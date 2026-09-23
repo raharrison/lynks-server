@@ -7,11 +7,15 @@ import java.time.Instant
 
 object EntryAudit : Table("entry_audits") {
     val auditId = varchar("audit_id", UID_LENGTH)
-    val entryId = (varchar("entry_id", UID_LENGTH).references(Entries.id, ReferenceOption.CASCADE)).index()
+    val entryId = varchar("entry_id", UID_LENGTH).references(Entries.id, ReferenceOption.CASCADE)
     val src = varchar("source", 255).nullable()
     val details = varchar("details", 255)
     val timestamp = timestampWithTimeZone("timestamp")
     override val primaryKey = PrimaryKey(auditId)
+
+    init {
+        index(false, entryId, timestamp)
+    }
 }
 
 data class EntryAuditItem(

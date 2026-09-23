@@ -3,10 +3,7 @@ package lynks.worker
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.coroutineScope
-import lynks.common.BaseProperties
-import lynks.common.DEAD_LINK_PROP
-import lynks.common.Link
-import lynks.common.ResourceId
+import lynks.common.*
 import lynks.common.exception.SuggestionUnavailableException
 import lynks.entry.EntryAuditService
 import lynks.entry.LinkService
@@ -29,11 +26,16 @@ import java.time.ZoneOffset
 import java.util.*
 
 sealed class LinkProcessingRequest
-class PersistLinkProcessingRequest(val link: Link, val resourceSet: EnumSet<ResourceType>, val process: Boolean) :
+class PersistLinkProcessingRequest(
+    val userId: UserId,
+    val link: Link,
+    val resourceSet: EnumSet<ResourceType>,
+    val process: Boolean
+) :
     LinkProcessingRequest()
 
 class ActiveLinkCheckingRequest(val url: String, val response: CompletableDeferred<Boolean>) : LinkProcessingRequest()
-class SuggestLinkProcessingRequest(val url: String, val response: CompletableDeferred<Suggestion>) :
+class SuggestLinkProcessingRequest(val userId: UserId, val url: String, val response: CompletableDeferred<Suggestion>) :
     LinkProcessingRequest()
 
 class LinkProcessorWorker(
@@ -48,13 +50,13 @@ class LinkProcessorWorker(
 
     override suspend fun doWork(input: LinkProcessingRequest) {
         when (input) {
-            is PersistLinkProcessingRequest -> processLinkPersist(input.link, input.resourceSet, input.process)
-            is SuggestLinkProcessingRequest -> processLinkSuggest(input.url, input.response)
+            is PersistLinkProcessingRequest -> processLinkPersist(input.userId, input.link, input.resourceSet, input.process)
+            is SuggestLinkProcessingRequest -> processLinkSuggest(input.userId, input.url, input.response)
             is ActiveLinkCheckingRequest -> processActiveCheck(input.url, input.response)
         }
     }
 
-    private suspend fun processLinkPersist(link: Link, resourceSet: EnumSet<ResourceType>, process: Boolean) {
+    private suspend fun processLinkPersist(userId: UserId, link: Link, resourceSet: EnumSet<ResourceType>, process: Boolean) {
         try {
             resourceManager.deleteTempFiles(link.url)
             val enrichedProps = BaseProperties()
@@ -63,7 +65,7 @@ class LinkProcessorWorker(
                     coroutineScope {
                         proc.enrich(enrichedProps)
                         if (process) {
-                            return@coroutineScope runPersistProcessor(link, resourceSet, proc)
+                            return@coroutineScope runPersistProcessor(userId, link, resourceSet, proc)
                         }
                         return@coroutineScope emptyList()
                     }
@@ -71,10 +73,10 @@ class LinkProcessorWorker(
             }
             val updatedLink = link.copy(thumbnailId = findThumbnail(resources) ?: link.thumbnailId)
             enrichedProps.addAttribute(DEAD_LINK_PROP, false)
-            linkService.mergeProps(updatedLink.id, enrichedProps)
+            linkService.mergeProps(userId, updatedLink.id, enrichedProps)
 
             if (updatedLink != link) {
-                linkService.update(updatedLink)
+                linkService.update(userId, updatedLink)
             } else {
                 log.info("No changes found after link processing, not updating entity")
             }
@@ -86,7 +88,7 @@ class LinkProcessorWorker(
                     LinkProcessorWorker::class.simpleName,
                     message
                 )
-                notifyService.create(NewNotification.processed(message, updatedLink.id))
+                notifyService.create(userId, NewNotification.processed(message, updatedLink.id))
             }
         } catch (e: CancellationException) {
             throw e
@@ -95,10 +97,10 @@ class LinkProcessorWorker(
             // mark as dead if processing failed
             val deadProps = BaseProperties()
             deadProps.addAttribute(DEAD_LINK_PROP, OffsetDateTime.now(ZoneOffset.UTC))
-            linkService.mergeProps(link.id, deadProps)
+            linkService.mergeProps(userId, link.id, deadProps)
             log.info("Link processing worker marked link as dead after failure, sending notification entry={}", link.id)
             entryAuditService.acceptAuditEvent(link.id, LinkProcessorWorker::class.simpleName, "Link processing failed")
-            notifyService.create(NewNotification.error("An error occurred whilst processing the link", link.id))
+            notifyService.create(userId, NewNotification.error("An error occurred whilst processing the link", link.id))
         }
     }
 
@@ -109,7 +111,12 @@ class LinkProcessorWorker(
             .firstOrNull()
     }
 
-    private suspend fun runPersistProcessor(link: Link, resourceSet: EnumSet<ResourceType>, proc: LinkProcessor): List<Resource> {
+    private suspend fun runPersistProcessor(
+        userId: UserId,
+        link: Link,
+        resourceSet: EnumSet<ResourceType>,
+        proc: LinkProcessor
+    ): List<Resource> {
         if (resourceSet.isEmpty())
             return emptyList()
 
@@ -131,13 +138,13 @@ class LinkProcessorWorker(
         // find readable resource and update link content for searching
         resourcesByType[READABLE_TEXT]?.let {
             val readableContent = Files.readString(Path.of(it.targetPath))
-            linkService.updateSearchableContent(link.id, readableContent)
+            linkService.updateSearchableContent(userId, link.id, readableContent)
         }
 
         return savedResources
     }
 
-    private suspend fun processLinkSuggest(url: String, deferred: CompletableDeferred<Suggestion>) {
+    private suspend fun processLinkSuggest(userId: UserId, url: String, deferred: CompletableDeferred<Suggestion>) {
         try {
             log.info("Link processing worker executing suggestion request for url={}", url)
             processorFactory.createProcessors(url).forEach { it ->
@@ -152,7 +159,7 @@ class LinkProcessorWorker(
                             val readableContent = Files.readString(Path.of(it.targetPath))
                             Normalize.normalize(readableContent)
                         }
-                        val matchedGroups = groupSetService.matchWithContent(extractedContent)
+                        val matchedGroups = groupSetService.matchWithContent(userId, extractedContent)
                         log.info("Link processing worker completing suggestion request for url={}", url)
                         deferred.complete(
                             Suggestion(

@@ -2,7 +2,9 @@ package lynks.resource
 
 import lynks.common.EntryId
 import lynks.common.ResourceId
+import lynks.common.UserId
 import lynks.common.newResourceId
+import lynks.db.EntryOwnership
 import lynks.db.afterCommit
 import lynks.db.onRollback
 import lynks.util.FileUtils
@@ -21,21 +23,25 @@ class ResourceManager(
 
     private val log = loggerFor<ResourceManager>()
 
-    fun getResourcesFor(entryId: EntryId): List<Resource> = repository.getResourcesFor(entryId)
+    fun getResourcesFor(userId: UserId, entryId: EntryId): List<Resource> = repository.getResourcesFor(userId, entryId)
 
-    fun getResource(id: ResourceId): Resource? = repository.getResource(id)
+    fun getResource(userId: UserId, entryId: EntryId, id: ResourceId): Resource? =
+        repository.getResource(userId, entryId, id)
 
-    fun getResourceAsFile(id: ResourceId): Pair<Resource, File>? {
-        val res = repository.getResource(id) ?: return null
+    fun getResourceAsFile(userId: UserId, entryId: EntryId, id: ResourceId): Pair<Resource, File>? {
+        val res = repository.getResource(userId, entryId, id) ?: return null
         return Pair(res, fileStore.getFile(res.entryId, res.id, res.extension))
     }
 
     fun saveTempFile(src: String, data: ByteArray, type: ResourceType, extension: String): String =
         fileStore.saveTempFile(src, data, type, extension)
 
-    fun saveTempUpload(data: ByteArray, extension: String): Path = fileStore.saveTempUpload(data, extension)
+    fun saveTempUpload(userId: UserId, data: ByteArray, extension: String): Path =
+        fileStore.saveTempUpload(userId, data, extension)
 
-    fun findTempUpload(name: String): Path? = fileStore.findTempUpload(name)
+    fun findTempUpload(userId: UserId, name: String): Path? = fileStore.findTempUpload(userId, name)
+
+    fun tempUploadBaseDir(): Path = fileStore.tempUploadBaseDir()
 
     fun createTempFile(src: String, extension: String): TempFile =
         fileStore.createTempFile(src, extension)
@@ -89,7 +95,8 @@ class ResourceManager(
         repository.createOrUpdateRecord(id, entryId, name, extension, type, file.size.toLong())
     }
 
-    fun saveUploadedResource(entryId: EntryId, name: String, input: InputStream): Resource = transaction {
+    fun saveUploadedResource(userId: UserId, entryId: EntryId, name: String, input: InputStream): Resource? = transaction {
+        if (!EntryOwnership.isOwner(userId, entryId)) return@transaction null
         val id = newResourceId()
         val extension = FileUtils.getExtension(name)
         log.info("Saving uploaded resource entry={}", entryId)
@@ -98,9 +105,9 @@ class ResourceManager(
         repository.createOrUpdateRecord(id, entryId, name, extension, ResourceType.UPLOAD, size)
     }
 
-    fun updateResource(resource: Resource): Resource? = transaction {
+    fun updateResource(userId: UserId, entryId: EntryId, resource: Resource): Resource? = transaction {
         val id = resource.id
-        repository.getResource(id)?.let { originalResource ->
+        repository.getResource(userId, entryId, id)?.let { originalResource ->
             val resourceName = resource.name
             val format = FileUtils.getExtension(resourceName)
             val versions = repository.getResourceVersions(originalResource.parentId)
@@ -129,7 +136,8 @@ class ResourceManager(
         }
     }
 
-    fun delete(id: ResourceId): Boolean = transaction {
+    fun delete(userId: UserId, entryId: EntryId, id: ResourceId): Boolean = transaction {
+        if (repository.getResource(userId, entryId, id) == null) return@transaction false
         val res = repository.deleteRecord(id) ?: return@transaction false
         afterCommit {
             log.info("Deleting entry resource id={} entry={}", res.id, res.entryId)
@@ -138,6 +146,7 @@ class ResourceManager(
         true
     }
 
+    // callers have already confined the entry to its owner
     fun deleteAll(entryId: EntryId): Boolean = transaction {
         repository.deleteAllRecords(entryId)
         afterCommit {

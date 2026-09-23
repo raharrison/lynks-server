@@ -1,9 +1,7 @@
 package lynks.notify
 
-import io.ktor.websocket.*
 import io.mockk.*
 import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import lynks.common.DatabaseTest
@@ -17,7 +15,11 @@ import lynks.notify.NewNotification.Companion.error
 import lynks.notify.NewNotification.Companion.processed
 import lynks.notify.NewNotification.Companion.reminder
 import lynks.notify.jolt.JoltClient
+import lynks.user.UserService
+import lynks.util.OTHER_USER
+import lynks.util.TEST_USER
 import lynks.util.createDummyEntry
+import lynks.util.createDummyUser
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -26,7 +28,8 @@ import org.junit.jupiter.api.Test
 class NotifyServiceTest: DatabaseTest() {
 
     private val joltClient = mockk<JoltClient>()
-    private val notifyService = NotifyService(joltClient)
+    private val userService = UserService(mockk())
+    private val notifyService = NotifyService(joltClient, userService)
 
     @BeforeEach
     fun setup() {
@@ -36,33 +39,33 @@ class NotifyServiceTest: DatabaseTest() {
 
     @Test
     fun testGetNotification() = runBlocking {
-        val notification = notifyService.create(reminder("elapsed", EntryId("e1")), false)
+        val notification = notifyService.create(TEST_USER, reminder("elapsed", EntryId("e1")))
         assertThat(notification.type).isEqualTo(NotificationType.REMINDER)
         assertThat(notification.message).isEqualTo("elapsed")
         assertThat(notification.read).isFalse()
         assertThat(notification.entryId).isEqualTo(EntryId("e1"))
         assertThat(notification.entryTitle).isEqualTo("title")
         assertThat(notification.entryType).isEqualTo(EntryType.NOTE)
-        val retrieved = notifyService.getNotification(notification.id)
+        val retrieved = notifyService.getNotification(TEST_USER, notification.id)
         assertThat(retrieved).isEqualTo(notification)
         Unit
     }
 
     @Test
     fun testGetNotificationNotFound() = runBlocking {
-        val notification = notifyService.getNotification(NotificationId("notfound"))
+        val notification = notifyService.getNotification(TEST_USER, NotificationId("notfound"))
         assertThat(notification).isNull()
     }
 
     @Test
     fun testGetNotificationsPaging() = runBlocking {
-        val processed = notifyService.create(processed(), false)
+        val processed = notifyService.create(TEST_USER, processed())
         delay(10)
-        val discussions = notifyService.create(discussions(), false)
+        val discussions = notifyService.create(TEST_USER, discussions())
         delay(10)
-        val reminder = notifyService.create(reminder(), false)
+        val reminder = notifyService.create(TEST_USER, reminder())
 
-        var notifications = notifyService.getNotifications(PageRequest(1, 1))
+        var notifications = notifyService.getNotifications(TEST_USER, PageRequest(1, 1))
         assertThat(notifications.content).hasSize(1)
         assertThat(notifications.page).isEqualTo(1L)
         assertThat(notifications.size).isEqualTo(1)
@@ -70,7 +73,7 @@ class NotifyServiceTest: DatabaseTest() {
         assertThat(notifications.content).extracting<NotificationId> { it.id }
             .containsExactly(reminder.id)
 
-        notifications = notifyService.getNotifications(PageRequest(2, 1))
+        notifications = notifyService.getNotifications(TEST_USER, PageRequest(2, 1))
         assertThat(notifications.content).hasSize(1)
         assertThat(notifications.page).isEqualTo(2L)
         assertThat(notifications.size).isEqualTo(1)
@@ -78,7 +81,7 @@ class NotifyServiceTest: DatabaseTest() {
         assertThat(notifications.content).extracting<NotificationId> { it.id }
             .containsExactly(discussions.id)
 
-        notifications = notifyService.getNotifications(PageRequest(1, 3))
+        notifications = notifyService.getNotifications(TEST_USER, PageRequest(1, 3))
         assertThat(notifications.content).hasSize(3)
         assertThat(notifications.page).isEqualTo(1L)
         assertThat(notifications.size).isEqualTo(3)
@@ -86,7 +89,7 @@ class NotifyServiceTest: DatabaseTest() {
         assertThat(notifications.content).extracting<NotificationId> { it.id }
             .containsExactly(reminder.id, discussions.id, processed.id)
 
-        notifications = notifyService.getNotifications(PageRequest(1, 10))
+        notifications = notifyService.getNotifications(TEST_USER, PageRequest(1, 10))
         assertThat(notifications.content).hasSize(3)
         assertThat(notifications.page).isEqualTo(1L)
         assertThat(notifications.size).isEqualTo(10)
@@ -98,20 +101,22 @@ class NotifyServiceTest: DatabaseTest() {
 
     @Test
     fun testGetNotificationsSorting() = runBlocking {
-        val processed = notifyService.create(processed(), false)
+        val processed = notifyService.create(TEST_USER, processed())
         delay(10)
-        val discussions = notifyService.create(discussions(), false)
+        val discussions = notifyService.create(TEST_USER, discussions())
         delay(10)
-        val reminder = notifyService.create(reminder(), false)
+        val reminder = notifyService.create(TEST_USER, reminder())
 
-        var notifications = notifyService.getNotifications(PageRequest(1, 10, sort = "dateCreated", direction = SortDirection.DESC))
+        var notifications =
+            notifyService.getNotifications(TEST_USER, PageRequest(1, 10, sort = "dateCreated", direction = SortDirection.DESC))
         assertThat(notifications.content).extracting<NotificationId> { it.id }
             .containsExactly(reminder.id, discussions.id, processed.id)
         assertThat(notifications.page).isEqualTo(1L)
         assertThat(notifications.size).isEqualTo(10)
         assertThat(notifications.total).isEqualTo(3)
 
-        notifications = notifyService.getNotifications(PageRequest(1, 10, sort = "dateCreated", direction = SortDirection.ASC))
+        notifications =
+            notifyService.getNotifications(TEST_USER, PageRequest(1, 10, sort = "dateCreated", direction = SortDirection.ASC))
         assertThat(notifications.content).extracting<NotificationId> { it.id }
             .containsExactly(processed.id, discussions.id, reminder.id)
         assertThat(notifications.page).isEqualTo(1L)
@@ -122,15 +127,15 @@ class NotifyServiceTest: DatabaseTest() {
 
     @Test
     fun testGetNotificationsSortByRead() = runBlocking {
-        val processed = notifyService.create(processed(), false)
+        val processed = notifyService.create(TEST_USER, processed())
         delay(10)
-        val discussions = notifyService.create(discussions(), false)
+        val discussions = notifyService.create(TEST_USER, discussions())
         delay(10)
-        val reminder = notifyService.create(reminder(), false)
+        val reminder = notifyService.create(TEST_USER, reminder())
 
-        notifyService.read(reminder.id, true)
+        notifyService.read(TEST_USER, reminder.id, true)
 
-        val notifications = notifyService.getNotifications(PageRequest(sort = "read", direction = SortDirection.ASC))
+        val notifications = notifyService.getNotifications(TEST_USER, PageRequest(sort = "read", direction = SortDirection.ASC))
         assertThat(notifications.content).hasSize(3)
         assertThat(notifications.total).isEqualTo(3)
         assertThat(notifications.content).extracting<NotificationId> { it.id }
@@ -140,17 +145,17 @@ class NotifyServiceTest: DatabaseTest() {
 
     @Test
     fun testGetUnreadCount() = runBlocking {
-        val processed = notifyService.create(processed(), false)
-        notifyService.create(discussions(), false)
-        assertThat(notifyService.getUnreadCount()).isEqualTo(2)
-        notifyService.read(processed.id, true)
-        assertThat(notifyService.getUnreadCount()).isOne()
+        val processed = notifyService.create(TEST_USER, processed())
+        notifyService.create(TEST_USER, discussions())
+        assertThat(notifyService.getUnreadCount(TEST_USER)).isEqualTo(2)
+        notifyService.read(TEST_USER, processed.id, true)
+        assertThat(notifyService.getUnreadCount(TEST_USER)).isOne()
         Unit
     }
 
     @Test
     fun testCreateNotificationNoEntry() = runBlocking {
-        val notification = notifyService.create(processed("complete"), false)
+        val notification = notifyService.create(TEST_USER, processed("complete"))
         assertThat(notification.type).isEqualTo(NotificationType.PROCESSED)
         assertThat(notification.message).isEqualTo("complete")
         assertThat(notification.read).isFalse()
@@ -161,7 +166,7 @@ class NotifyServiceTest: DatabaseTest() {
 
     @Test
     fun testCreateNotificationWithEntry() = runBlocking {
-        val notification = notifyService.create(discussions("found", EntryId("e2")), false)
+        val notification = notifyService.create(TEST_USER, discussions("found", EntryId("e2")))
         assertThat(notification.type).isEqualTo(NotificationType.DISCUSSIONS)
         assertThat(notification.message).isEqualTo("found")
         assertThat(notification.read).isFalse()
@@ -172,109 +177,57 @@ class NotifyServiceTest: DatabaseTest() {
     }
 
     @Test
-    fun testCreateNotificationAndSendWeb() = runBlocking {
-        val channel = mockk<SendChannel<Frame>>(relaxUnitFun = true)
-        every { channel.isClosedForSend } returns false
-        coEvery { channel.send(any()) } just Runs
-
-        notifyService.join(channel)
-        notifyService.create(error("error", EntryId("e2")), true)
-        coVerify(exactly = 1) { channel.send(any()) }
-    }
-
-    @Test
     fun testReadNotificationSuccess() = runBlocking {
-        val notification = notifyService.create(error("error", EntryId("e2")), false)
+        val notification = notifyService.create(TEST_USER, error("error", EntryId("e2")))
         assertThat(notification.read).isFalse()
 
-        val readUpdate = notifyService.read(notification.id, true)
+        val readUpdate = notifyService.read(TEST_USER, notification.id, true)
         assertThat(readUpdate).isOne()
-        val updated = notifyService.getNotification(notification.id)
+        val updated = notifyService.getNotification(TEST_USER, notification.id)
         assertThat(updated?.read).isTrue()
 
-        val unreadUpdate = notifyService.read(notification.id, false)
+        val unreadUpdate = notifyService.read(TEST_USER, notification.id, false)
         assertThat(unreadUpdate).isOne()
-        val updated2 = notifyService.getNotification(notification.id)
+        val updated2 = notifyService.getNotification(TEST_USER, notification.id)
         assertThat(updated2?.read).isFalse()
         Unit
     }
 
     @Test
     fun testReadNotificationNotFound() = runBlocking {
-        val updated = notifyService.read(NotificationId("notfound"), true)
+        val updated = notifyService.read(TEST_USER, NotificationId("notfound"), true)
         assertThat(updated).isZero()
         Unit
     }
 
     @Test
     fun testMarkAllRead() = runBlocking {
-        notifyService.create(processed(), false)
-        notifyService.create(discussions(), false)
-        notifyService.create(reminder(), false)
-        assertThat(notifyService.getUnreadCount()).isEqualTo(3)
-        assertThat(notifyService.markAllRead()).isEqualTo(3)
-        assertThat(notifyService.getUnreadCount()).isZero()
+        notifyService.create(TEST_USER, processed())
+        notifyService.create(TEST_USER, discussions())
+        notifyService.create(TEST_USER, reminder())
+        assertThat(notifyService.getUnreadCount(TEST_USER)).isEqualTo(3)
+        assertThat(notifyService.markAllRead(TEST_USER)).isEqualTo(3)
+        assertThat(notifyService.getUnreadCount(TEST_USER)).isZero()
         Unit
     }
 
     @Test
-    fun testSendWebNotificationToOpen() = runBlocking {
-        val channel = mockk<SendChannel<Frame>>(relaxUnitFun = true)
-        every { channel.isClosedForSend } returns false
-        coEvery { channel.send(any()) } just Runs
-
-        val channel2 = mockk<SendChannel<Frame>>(relaxUnitFun = true)
-        every { channel2.isClosedForSend } returns false
-        coEvery { channel2.send(any()) } just Runs
-
-        val processed = notifyService.create(processed(), false)
-        notifyService.join(channel)
-        notifyService.join(channel2)
-
-        notifyService.sendWebNotification(processed)
-
-        coVerify(exactly = 1) { channel.send(any()) }
-        coVerify(exactly = 1) { channel2.send(any()) }
+    fun testSendJoltNotificationUsesOwnersToken() = runBlocking {
+        createDummyUser("other-user", id = OTHER_USER)
+        userService.updateJoltToken(TEST_USER, "mine")
+        userService.updateJoltToken(OTHER_USER, "theirs")
+        val notification = notifyService.create(TEST_USER, processed("success"))
+        coEvery { joltClient.sendNotification(any(), any(), notification.message, any()) } just Runs
+        notifyService.sendJoltNotification(TEST_USER, notification, "title")
+        coVerify(exactly = 1) { joltClient.sendNotification("mine", "title", notification.message, any()) }
+        coVerify(exactly = 0) { joltClient.sendNotification("theirs", any(), any(), any()) }
     }
 
     @Test
-    fun testLeave() = runBlocking {
-        val channel = mockk<SendChannel<Frame>>(relaxUnitFun = true)
-        every { channel.isClosedForSend } returns false
-
-        val processed = notifyService.create(processed(), false)
-        notifyService.join(channel)
-        notifyService.leave(channel)
-        notifyService.sendWebNotification(processed)
-
-        coVerify(exactly = 0) { channel.send(any()) }
-    }
-
-    @Test
-    fun testRemoveClosed() = runBlocking {
-        val channel = mockk<SendChannel<Frame>>(relaxUnitFun = true)
-        every { channel.isClosedForSend } returns false
-        coEvery { channel.send(any()) } just Runs
-
-        val channel2 = mockk<SendChannel<Frame>>(relaxUnitFun = true)
-        coEvery { channel2.send(any()) } just Runs
-        every { channel2.isClosedForSend } returns true
-
-        val processed = notifyService.create(processed(), false)
-        notifyService.join(channel)
-        notifyService.join(channel2)
-        notifyService.sendWebNotification(processed)
-
-        coVerify(exactly = 1) { channel.send(any()) }
-        coVerify(exactly = 0) { channel2.send(any()) }
-    }
-
-    @Test
-    fun testSendJoltNotification() = runBlocking {
-        val notification = notifyService.create(processed("success"), false)
-        coEvery { joltClient.sendNotification(any(), notification.message, any()) } just Runs
-        notifyService.sendJoltNotification(notification, "title")
-        coVerify(exactly = 1) { joltClient.sendNotification("title", notification.message, any()) }
+    fun testSendJoltNotificationWithoutTokenIsSkipped() = runBlocking {
+        val notification = notifyService.create(TEST_USER, processed("success"))
+        notifyService.sendJoltNotification(TEST_USER, notification, "title")
+        coVerify(exactly = 0) { joltClient.sendNotification(any(), any(), any(), any()) }
     }
 
 }

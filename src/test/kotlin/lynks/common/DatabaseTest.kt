@@ -1,6 +1,8 @@
 package lynks.common
 
 import lynks.db.DatabaseFactory
+import lynks.util.TEST_USER
+import lynks.util.createDummyUser
 import org.junit.jupiter.api.BeforeEach
 
 abstract class DatabaseTest {
@@ -18,6 +20,7 @@ abstract class DatabaseTest {
             databaseFactory.connectAndMigrate()
         }
         databaseFactory.resetAll()
+        createDummyUser("test-user", id = TEST_USER)
     }
 
 }

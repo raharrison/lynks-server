@@ -1,21 +1,20 @@
 package lynks.notify
 
-import io.ktor.websocket.*
-import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.channels.SendChannel
 import lynks.common.Entries
 import lynks.common.NotificationId
 import lynks.common.RowMapper.toNotification
+import lynks.common.UserId
 import lynks.common.newNotificationId
 import lynks.common.page.DefaultPageRequest
 import lynks.common.page.Page
 import lynks.common.page.PageRequest
 import lynks.common.page.SortDirection
 import lynks.notify.jolt.JoltClient
-import lynks.util.JsonMapper.defaultMapper
+import lynks.user.UserService
 import lynks.util.findColumn
 import lynks.util.loggerFor
 import lynks.util.orderBy
+import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.select
@@ -24,16 +23,14 @@ import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.jetbrains.exposed.v1.jdbc.update
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
-import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.max
 
-class NotifyService(private val joltClient: JoltClient) {
+class NotifyService(private val joltClient: JoltClient, private val userService: UserService) {
 
     private val log = loggerFor<NotifyService>()
-    private val webNotifiers = ConcurrentHashMap.newKeySet<SendChannel<Frame>>()
     private val notificationQuerySlice = Notifications.columns + listOf(Entries.type, Entries.title)
 
-    fun getNotifications(pageRequest: PageRequest = DefaultPageRequest): Page<Notification> = transaction {
+    fun getNotifications(userId: UserId, pageRequest: PageRequest = DefaultPageRequest): Page<Notification> = transaction {
         val sortColumn = Notifications.findColumn(pageRequest.sort) ?: Notifications.dateCreated
         val sortOrder = pageRequest.direction ?: SortDirection.DESC
         val orders = buildList {
@@ -43,7 +40,8 @@ class NotifyService(private val joltClient: JoltClient) {
                 add(Notifications.dateCreated to SortDirection.DESC)
             }
         }
-        val baseQuery = Notifications.leftJoin(Entries).selectAll()
+        val baseQuery = Notifications.leftJoin(Entries).select(notificationQuerySlice)
+            .where { Notifications.userId eq userId.value }
         Page.of(
             baseQuery.copy()
                 .orderBy(orders)
@@ -53,81 +51,51 @@ class NotifyService(private val joltClient: JoltClient) {
         )
     }
 
-    fun getNotification(id: NotificationId): Notification? = transaction {
+    fun getNotification(userId: UserId, id: NotificationId): Notification? = transaction {
         Notifications.leftJoin(Entries)
             .select(notificationQuerySlice)
-            .where { Notifications.notificationId eq id.value }
+            .where { (Notifications.notificationId eq id.value) and (Notifications.userId eq userId.value) }
             .mapNotNull { toNotification(it) }.singleOrNull()
     }
 
-    fun getUnreadCount(): Long = transaction {
-        Notifications.selectAll().where { Notifications.read eq false }.count()
+    fun getUnreadCount(userId: UserId): Long = transaction {
+        Notifications.selectAll().where { (Notifications.userId eq userId.value) and (Notifications.read eq false) }.count()
     }
 
-    suspend fun create(newNotification: NewNotification, sendWeb: Boolean = true): Notification {
-        val notification = transaction {
-            val id = newNotificationId()
-            val time = OffsetDateTime.now(ZoneOffset.UTC)
-            Notifications.insert {
-                it[notificationId] = id.value
-                it[notificationType] = newNotification.type
-                it[message] = newNotification.message
-                it[read] = false
-                it[entryId] = newNotification.entryId?.value
-                it[dateCreated] = time
-            }
-            getNotification(id) ?: throw IllegalStateException("Notification ${id.value} not found after insert")
+    fun create(userId: UserId, newNotification: NewNotification): Notification = transaction {
+        val id = newNotificationId()
+        val time = OffsetDateTime.now(ZoneOffset.UTC)
+        Notifications.insert {
+            it[notificationId] = id.value
+            it[Notifications.userId] = userId.value
+            it[notificationType] = newNotification.type
+            it[message] = newNotification.message
+            it[read] = false
+            it[entryId] = newNotification.entryId?.value
+            it[dateCreated] = time
         }
-        if (sendWeb) {
-            sendWebNotification(notification)
-        }
-        return notification
+        getNotification(userId, id) ?: throw IllegalStateException("Notification ${id.value} not found after insert")
     }
 
-    fun read(id: NotificationId, isRead: Boolean): Int = transaction {
-        Notifications.update({ Notifications.notificationId eq id.value }) {
+    fun read(userId: UserId, id: NotificationId, isRead: Boolean): Int = transaction {
+        Notifications.update({ (Notifications.notificationId eq id.value) and (Notifications.userId eq userId.value) }) {
             it[read] = isRead
         }
     }
 
-    fun markAllRead(): Int = transaction {
-        Notifications.update({ Notifications.read eq false }) {
+    fun markAllRead(userId: UserId): Int = transaction {
+        Notifications.update({ (Notifications.userId eq userId.value) and (Notifications.read eq false) }) {
             it[read] = true
         }
     }
 
-    fun join(outgoing: SendChannel<Frame>) {
-        webNotifiers += outgoing
-    }
-
-    fun leave(outgoing: SendChannel<Frame>) {
-        webNotifiers -= outgoing
-    }
-
-    @OptIn(DelicateCoroutinesApi::class)
-    suspend fun sendWebNotification(notification: Notification) {
-        log.info("Sending web ${notification.type} notification: ${notification.message}")
-        val payload = defaultMapper.writeValueAsString(notification)
-        val toRemove = mutableListOf<SendChannel<Frame>>()
-        for (channel in webNotifiers) {
-            if (channel.isClosedForSend) {
-                toRemove += channel
-                continue
-            }
-            val result = runCatching { channel.send(Frame.Text(payload)) }
-            if (result.isFailure) {
-                log.warn("Failed to send web notification, removing notifier", result.exceptionOrNull())
-                toRemove += channel
-            }
+    suspend fun sendJoltNotification(userId: UserId, notification: Notification, title: String?) {
+        val token = userService.getJoltToken(userId)
+        if (token == null) {
+            log.warn("No jolt token set, unable to send notification user={}", userId)
+            return
         }
-        toRemove.forEach {
-            webNotifiers.remove(it)
-            runCatching { it.close() }
-        }
-    }
-
-    suspend fun sendJoltNotification(notification: Notification, title: String?) {
-        joltClient.sendNotification(title, notification.message)
+        joltClient.sendNotification(token, title, notification.message)
     }
 
 }

@@ -14,6 +14,7 @@ import lynks.group.CollectionService
 import lynks.group.GroupSetService
 import lynks.group.TagService
 import lynks.resource.*
+import lynks.util.TEST_USER
 import lynks.util.createDummyCollection
 import lynks.util.createDummyTag
 import lynks.util.markdown.MarkdownProcessor
@@ -47,7 +48,7 @@ class NoteServiceTest : DatabaseTest() {
 
     @Test
     fun testCreateBasicNote() {
-        val note = noteService.add(newNote("n1", "content"))
+        val note = noteService.add(TEST_USER, newNote("n1", "content"))
         assertThat(note.type).isEqualTo(EntryType.NOTE)
         assertThat(note.title).isEqualTo("n1")
         assertThat(note.plainContent).isEqualTo("content")
@@ -56,58 +57,59 @@ class NoteServiceTest : DatabaseTest() {
         assertThat(note.dateCreated).isEqualTo(note.dateUpdated)
         verify(exactly = 0) { resourceManager.attach(note.id, any()) }
         verify { entryAuditService.acceptAuditEvent(note.id, any(), any()) }
-        verify { workerRegistry.acceptEntryRefWork(note.id) }
+        verify { workerRegistry.acceptEntryRefWork(TEST_USER, note.id) }
     }
 
     @Test
     fun testCreateNoteWithTempImage() {
         val plain = "something ![desc](${TEMP_UPLOAD_URL}one.png)"
-        every { resourceManager.findTempUpload("one.png") } returns Path.of("one.png")
+        every { resourceManager.findTempUpload(TEST_USER, "one.png") } returns Path.of("one.png")
         val committed = slot<List<PendingResource>>()
         every { resourceManager.attach(any(), capture(committed)) } returns emptyList()
-        val note = noteService.add(newNote("n1", plain))
+        val note = noteService.add(TEST_USER, newNote("n1", plain))
         val reserved = committed.captured.single()
         assertThat(note.type).isEqualTo(EntryType.NOTE)
         assertThat(note.title).isEqualTo("n1")
         assertThat(note.plainContent.trim()).isEqualTo("something ![desc](${Environment.server.rootPath}/entry/${note.id}/resource/${reserved.id})")
         verify(exactly = 1) { resourceManager.attach(note.id, any()) }
         verify { entryAuditService.acceptAuditEvent(note.id, any(), any()) }
-        verify { workerRegistry.acceptEntryRefWork(note.id) }
+        verify { workerRegistry.acceptEntryRefWork(TEST_USER, note.id) }
     }
 
     @Test
     fun testCreateNoteWithTags() {
-        val note = noteService.add(newNote("n1", "content", listOf("t1", "t2")))
+        val note = noteService.add(TEST_USER, newNote("n1", "content", listOf("t1", "t2")))
         assertThat(note.type).isEqualTo(EntryType.NOTE)
         assertThat(note.title).isEqualTo("n1")
         assertThat(note.plainContent).isEqualTo("content")
         assertThat(note.tags).hasSize(2).extracting("id").containsExactly("t1", "t2")
         assertThat(note.dateCreated).isEqualTo(note.dateUpdated)
         verify { entryAuditService.acceptAuditEvent(note.id, any(), any()) }
-        verify { workerRegistry.acceptEntryRefWork(note.id) }
+        verify { workerRegistry.acceptEntryRefWork(TEST_USER, note.id) }
     }
 
     @Test
     fun testCreateNoteWithInvalidTag() {
-        assertThrows<InvalidModelException> { noteService.add(newNote("n1", "content", listOf("t1", "invalid"))) }
+        assertThrows<InvalidModelException> { noteService.add(TEST_USER, newNote("n1", "content", listOf("t1", "invalid"))) }
     }
 
     @Test
     fun testCreateNoteWithCollections() {
-        val note = noteService.add(newNote("n1", "content", cols = listOf("c1", "c2")))
+        val note = noteService.add(TEST_USER, newNote("n1", "content", cols = listOf("c1", "c2")))
         assertThat(note.type).isEqualTo(EntryType.NOTE)
         assertThat(note.title).isEqualTo("n1")
         assertThat(note.plainContent).isEqualTo("content")
         assertThat(note.collections).hasSize(2).extracting("id").containsExactly("c1", "c2")
         assertThat(note.dateCreated).isEqualTo(note.dateUpdated)
         verify { entryAuditService.acceptAuditEvent(note.id, any(), any()) }
-        verify { workerRegistry.acceptEntryRefWork(note.id) }
+        verify { workerRegistry.acceptEntryRefWork(TEST_USER, note.id) }
     }
 
     @Test
     fun testCreateNoteWithInvalidCollection() {
         assertThrows<InvalidModelException> {
             noteService.add(
+                TEST_USER,
                 newNote(
                     "n1",
                     "content",
@@ -119,9 +121,9 @@ class NoteServiceTest : DatabaseTest() {
 
     @Test
     fun testGetNoteById() {
-        noteService.add(newNote("n1", "content1", listOf("t1", "t2"), listOf("c1")))
-        val note2 = noteService.add(newNote("n2", "content1", listOf("t2"), listOf("c2")))
-        val retrieved = noteService.get(note2.id)
+        noteService.add(TEST_USER, newNote("n1", "content1", listOf("t1", "t2"), listOf("c1")))
+        val note2 = noteService.add(TEST_USER, newNote("n2", "content1", listOf("t2"), listOf("c2")))
+        val retrieved = noteService.get(TEST_USER, note2.id)
         assertThat(retrieved?.id).isEqualTo(note2.id)
         assertThat(retrieved?.tags).isEqualTo(note2.tags)
         assertThat(retrieved?.collections).isEqualTo(note2.collections)
@@ -131,38 +133,38 @@ class NoteServiceTest : DatabaseTest() {
 
     @Test
     fun testGetNoteDoesntExist() {
-        assertThat(noteService.get(EntryId("invalid"))).isNull()
+        assertThat(noteService.get(TEST_USER, EntryId("invalid"))).isNull()
     }
 
     @Test
     fun testGetNotesPage() {
-        noteService.add(newNote("n1", "content1", listOf("t1", "t2"), listOf("c1")))
+        noteService.add(TEST_USER, newNote("n1", "content1", listOf("t1", "t2"), listOf("c1")))
         Thread.sleep(10)
-        noteService.add(newNote("n2", "content2", listOf("t1", "t2"), listOf("c1")))
+        noteService.add(TEST_USER, newNote("n2", "content2", listOf("t1", "t2"), listOf("c1")))
         Thread.sleep(10)
-        noteService.add(newNote("n3", "content3", listOf("t1", "t2"), listOf("c1")))
+        noteService.add(TEST_USER, newNote("n3", "content3", listOf("t1", "t2"), listOf("c1")))
 
-        var notes = noteService.get(PageRequest(1, 1))
+        var notes = noteService.get(TEST_USER, PageRequest(1, 1))
         assertThat(notes.content).hasSize(1)
         assertThat(notes.page).isEqualTo(1L)
         assertThat(notes.size).isEqualTo(1)
         assertThat(notes.total).isEqualTo(3)
         assertThat(notes.content).extracting("title").containsOnly("n3")
 
-        notes = noteService.get(PageRequest(2, 1))
+        notes = noteService.get(TEST_USER, PageRequest(2, 1))
         assertThat(notes.content).hasSize(1)
         assertThat(notes.page).isEqualTo(2L)
         assertThat(notes.size).isEqualTo(1)
         assertThat(notes.total).isEqualTo(3)
         assertThat(notes.content).extracting("title").containsOnly("n2")
 
-        notes = noteService.get(PageRequest(1, 3))
+        notes = noteService.get(TEST_USER, PageRequest(1, 3))
         assertThat(notes.content).hasSize(3)
         assertThat(notes.page).isEqualTo(1L)
         assertThat(notes.size).isEqualTo(3)
         assertThat(notes.total).isEqualTo(3)
 
-        notes = noteService.get(PageRequest(1, 10))
+        notes = noteService.get(TEST_USER, PageRequest(1, 10))
         assertThat(notes.content).hasSize(3)
         assertThat(notes.page).isEqualTo(1L)
         assertThat(notes.size).isEqualTo(10)
@@ -172,129 +174,129 @@ class NoteServiceTest : DatabaseTest() {
 
     @Test
     fun testGetNotesSortOrdering() {
-        noteService.add(newNote("n1", "content1", listOf("t1", "t2"), listOf("c1")))
+        noteService.add(TEST_USER, newNote("n1", "content1", listOf("t1", "t2"), listOf("c1")))
         Thread.sleep(10)
-        noteService.add(newNote("n2", "content2", listOf("t1", "t2"), listOf("c1")))
+        noteService.add(TEST_USER, newNote("n2", "content2", listOf("t1", "t2"), listOf("c1")))
         Thread.sleep(10)
-        noteService.add(newNote("n3", "content3", listOf("t1", "t2"), listOf("c1")))
+        noteService.add(TEST_USER, newNote("n3", "content3", listOf("t1", "t2"), listOf("c1")))
 
-        val notes = noteService.get(PageRequest(1, 10, sort = "dateCreated", direction = SortDirection.ASC))
+        val notes = noteService.get(TEST_USER, PageRequest(1, 10, sort = "dateCreated", direction = SortDirection.ASC))
         assertThat(notes.content).extracting("title").containsExactly("n1", "n2", "n3")
 
-        val notes2 = noteService.get(PageRequest(1, 10, sort = "dateCreated", direction = SortDirection.DESC))
+        val notes2 = noteService.get(TEST_USER, PageRequest(1, 10, sort = "dateCreated", direction = SortDirection.DESC))
         assertThat(notes2.content).extracting("title").containsExactly("n3", "n2", "n1")
     }
 
     @Test
     fun testGetNotesByGroup() {
-        noteService.add(newNote("n1", "content1", listOf("t1", "t2"), listOf("c1")))
-        noteService.add(newNote("n2", "content2", listOf("t1")))
-        noteService.add(newNote("n3", "content3", emptyList(), listOf("c2")))
-        noteService.add(newNote("n4", "content3"))
+        noteService.add(TEST_USER, newNote("n1", "content1", listOf("t1", "t2"), listOf("c1")))
+        noteService.add(TEST_USER, newNote("n2", "content2", listOf("t1")))
+        noteService.add(TEST_USER, newNote("n3", "content3", emptyList(), listOf("c2")))
+        noteService.add(TEST_USER, newNote("n4", "content3"))
 
-        val onlyTags = noteService.get(PageRequest(tags = listOf("t1")))
+        val onlyTags = noteService.get(TEST_USER, PageRequest(tags = listOf("t1")))
         assertThat(onlyTags.content).hasSize(2)
         assertThat(onlyTags.content).extracting("title").containsExactlyInAnyOrder("n1", "n2")
 
-        val onlyTags2 = noteService.get(PageRequest(tags = listOf("t2")))
+        val onlyTags2 = noteService.get(TEST_USER, PageRequest(tags = listOf("t2")))
         assertThat(onlyTags2.content).hasSize(1)
         assertThat(onlyTags2.content).extracting("title").containsExactlyInAnyOrder("n1")
 
-        val onlyCollections = noteService.get(PageRequest(collections = listOf("c1")))
+        val onlyCollections = noteService.get(TEST_USER, PageRequest(collections = listOf("c1")))
         assertThat(onlyCollections.content).hasSize(1)
         assertThat(onlyCollections.content).extracting("title").containsExactlyInAnyOrder("n1")
 
-        val onlyCollections2 = noteService.get(PageRequest(collections = listOf("c2")))
+        val onlyCollections2 = noteService.get(TEST_USER, PageRequest(collections = listOf("c2")))
         assertThat(onlyCollections2.content).hasSize(1)
         assertThat(onlyCollections2.content).extracting("title").containsExactlyInAnyOrder("n3")
 
-        val both = noteService.get(PageRequest(tags = listOf("t1"), collections = listOf("c1")))
+        val both = noteService.get(TEST_USER, PageRequest(tags = listOf("t1"), collections = listOf("c1")))
         assertThat(both.content).hasSize(1)
         assertThat(both.content).extracting("title").containsExactlyInAnyOrder("n1")
     }
 
     @Test
     fun testGetNotesBySource() {
-        noteService.add(newNote("n1", "content1", listOf("t1", "t2"), listOf("c1")))
-        noteService.add(newNote("n2", "content2", listOf("t1")))
+        noteService.add(TEST_USER, newNote("n1", "content1", listOf("t1", "t2"), listOf("c1")))
+        noteService.add(TEST_USER, newNote("n2", "content2", listOf("t1")))
         // notes no longer have a hardcoded source
-        val notesFromSource = noteService.get(PageRequest(source = "me"))
+        val notesFromSource = noteService.get(TEST_USER, PageRequest(source = "me"))
         assertThat(notesFromSource.total).isZero()
         assertThat(notesFromSource.content).isEmpty()
-        val notesFromMissingSource = noteService.get(PageRequest(source = "invalid"))
+        val notesFromMissingSource = noteService.get(TEST_USER, PageRequest(source = "invalid"))
         assertThat(notesFromMissingSource.total).isZero()
         assertThat(notesFromMissingSource.content).isEmpty()
     }
 
     @Test
     fun testDeleteTags() {
-        val added1 = noteService.add(newNote("n1", "note content 1", listOf("t1")))
-        val added2 = noteService.add(newNote("n12", "note content 2", listOf("t1", "t2")))
+        val added1 = noteService.add(TEST_USER, newNote("n1", "note content 1", listOf("t1")))
+        val added2 = noteService.add(TEST_USER, newNote("n12", "note content 2", listOf("t1", "t2")))
 
-        assertThat(noteService.get(added1.id)?.tags).hasSize(1).extracting("id").containsExactly("t1")
-        assertThat(noteService.get(added2.id)?.tags).hasSize(2).extracting("id").containsExactly("t1", "t2")
+        assertThat(noteService.get(TEST_USER, added1.id)?.tags).hasSize(1).extracting("id").containsExactly("t1")
+        assertThat(noteService.get(TEST_USER, added2.id)?.tags).hasSize(2).extracting("id").containsExactly("t1", "t2")
 
-        tagService.delete("t2")
+        tagService.delete(TEST_USER, "t2")
 
-        assertThat(noteService.get(added1.id)?.tags).hasSize(1).extracting("id").containsExactly("t1")
-        assertThat(noteService.get(added2.id)?.tags).hasSize(1).extracting("id").containsExactly("t1")
+        assertThat(noteService.get(TEST_USER, added1.id)?.tags).hasSize(1).extracting("id").containsExactly("t1")
+        assertThat(noteService.get(TEST_USER, added2.id)?.tags).hasSize(1).extracting("id").containsExactly("t1")
 
-        tagService.delete("t1")
+        tagService.delete(TEST_USER, "t1")
 
-        assertThat(noteService.get(added1.id)?.tags).isEmpty()
-        assertThat(noteService.get(added2.id)?.tags).isEmpty()
+        assertThat(noteService.get(TEST_USER, added1.id)?.tags).isEmpty()
+        assertThat(noteService.get(TEST_USER, added2.id)?.tags).isEmpty()
     }
 
     @Test
     fun testDeleteCollections() {
-        val added1 = noteService.add(newNote("n1", "note content 1", emptyList(), listOf("c1")))
-        val added2 = noteService.add(newNote("n12", "note content 2", emptyList(), listOf("c1", "c2")))
+        val added1 = noteService.add(TEST_USER, newNote("n1", "note content 1", emptyList(), listOf("c1")))
+        val added2 = noteService.add(TEST_USER, newNote("n12", "note content 2", emptyList(), listOf("c1", "c2")))
 
-        assertThat(noteService.get(added1.id)?.collections).hasSize(1).extracting("id").containsExactly("c1")
-        assertThat(noteService.get(added2.id)?.collections).hasSize(2).extracting("id").containsExactly("c1", "c2")
+        assertThat(noteService.get(TEST_USER, added1.id)?.collections).hasSize(1).extracting("id").containsExactly("c1")
+        assertThat(noteService.get(TEST_USER, added2.id)?.collections).hasSize(2).extracting("id").containsExactly("c1", "c2")
 
-        collectionService.delete("c2")
+        collectionService.delete(TEST_USER, "c2")
 
-        assertThat(noteService.get(added1.id)?.collections).hasSize(1).extracting("id").containsExactly("c1")
-        assertThat(noteService.get(added2.id)?.collections).hasSize(1).extracting("id").containsExactly("c1")
+        assertThat(noteService.get(TEST_USER, added1.id)?.collections).hasSize(1).extracting("id").containsExactly("c1")
+        assertThat(noteService.get(TEST_USER, added2.id)?.collections).hasSize(1).extracting("id").containsExactly("c1")
 
-        collectionService.delete("c1")
+        collectionService.delete(TEST_USER, "c1")
 
-        assertThat(noteService.get(added1.id)?.collections).isEmpty()
-        assertThat(noteService.get(added2.id)?.collections).isEmpty()
+        assertThat(noteService.get(TEST_USER, added1.id)?.collections).isEmpty()
+        assertThat(noteService.get(TEST_USER, added2.id)?.collections).isEmpty()
     }
 
     @Test
     fun testDeleteNote() {
-        assertThat(noteService.delete(EntryId("invalid"))).isFalse()
+        assertThat(noteService.delete(TEST_USER, EntryId("invalid"))).isFalse()
 
-        val added1 = noteService.add(newNote("n1", "note content 1"))
-        val added2 = noteService.add(newNote("n12", "note content 2"))
+        val added1 = noteService.add(TEST_USER, newNote("n1", "note content 1"))
+        val added2 = noteService.add(TEST_USER, newNote("n12", "note content 2"))
 
         every { resourceManager.deleteAll(any()) } returns true
 
-        assertThat(noteService.delete(EntryId("e1"))).isFalse()
-        assertThat(noteService.delete(added1.id)).isTrue()
+        assertThat(noteService.delete(TEST_USER, EntryId("e1"))).isFalse()
+        assertThat(noteService.delete(TEST_USER, added1.id)).isTrue()
 
-        assertThat(noteService.get().content).hasSize(1)
-        assertThat(noteService.get(added1.id)).isNull()
+        assertThat(noteService.get(TEST_USER).content).hasSize(1)
+        assertThat(noteService.get(TEST_USER, added1.id)).isNull()
 
-        assertThat(noteService.delete(added2.id)).isTrue()
+        assertThat(noteService.delete(TEST_USER, added2.id)).isTrue()
 
-        assertThat(noteService.get().content).isEmpty()
-        assertThat(noteService.get(added2.id)).isNull()
+        assertThat(noteService.get(TEST_USER).content).isEmpty()
+        assertThat(noteService.get(TEST_USER, added2.id)).isNull()
         verify(exactly = 2) { resourceManager.deleteAll(any()) }
     }
 
     @Test
     fun testUpdateExistingNote() {
-        val added1 = noteService.add(newNote("n1", "note content 1"))
-        assertThat(noteService.get(added1.id)?.title).isEqualTo("n1")
-        assertThat(noteService.get(added1.id)?.tags).isEmpty()
-        assertThat(noteService.get(added1.id)?.collections).isEmpty()
+        val added1 = noteService.add(TEST_USER, newNote("n1", "note content 1"))
+        assertThat(noteService.get(TEST_USER, added1.id)?.title).isEqualTo("n1")
+        assertThat(noteService.get(TEST_USER, added1.id)?.tags).isEmpty()
+        assertThat(noteService.get(TEST_USER, added1.id)?.collections).isEmpty()
 
-        val updated = noteService.update(newNote(added1.id, "updated", "new content", listOf("t1"), listOf("c1")))
-        val newNote = noteService.get(updated!!.id)
+        val updated = noteService.update(TEST_USER, newNote(added1.id, "updated", "new content", listOf("t1"), listOf("c1")))
+        val newNote = noteService.get(TEST_USER, updated!!.id)
         assertThat(newNote?.id).isEqualTo(added1.id)
         assertThat(newNote?.title).isEqualTo("updated")
         assertThat(newNote?.plainContent).isEqualTo("new content")
@@ -302,9 +304,9 @@ class NoteServiceTest : DatabaseTest() {
         assertThat(newNote?.collections).hasSize(1)
         assertThat(newNote?.dateUpdated).isNotEqualTo(newNote?.dateCreated)
         verify { entryAuditService.acceptAuditEvent(added1.id, any(), any()) }
-        verify { workerRegistry.acceptEntryRefWork(added1.id) }
+        verify { workerRegistry.acceptEntryRefWork(TEST_USER, added1.id) }
 
-        val oldNote = noteService.get(added1.id)
+        val oldNote = noteService.get(TEST_USER, added1.id)
         assertThat(oldNote?.id).isEqualTo(updated.id)
         assertThat(oldNote?.plainContent).isEqualTo("new content")
         assertThat(oldNote?.title).isEqualTo("updated")
@@ -314,79 +316,79 @@ class NoteServiceTest : DatabaseTest() {
 
     @Test
     fun testUpdateExistingNoteWithTempImage() {
-        val added = noteService.add(newNote("n1", "note content 1"))
-        every { resourceManager.findTempUpload("one.png") } returns Path.of("one.png")
+        val added = noteService.add(TEST_USER, newNote("n1", "note content 1"))
+        every { resourceManager.findTempUpload(TEST_USER, "one.png") } returns Path.of("one.png")
         val committed = slot<List<PendingResource>>()
         every { resourceManager.attach(added.id, capture(committed)) } returns emptyList()
-        val updated = noteService.update(newNote(added.id, "updated", "something ![desc](${TEMP_UPLOAD_URL}one.png)"))
+        val updated = noteService.update(TEST_USER, newNote(added.id, "updated", "something ![desc](${TEMP_UPLOAD_URL}one.png)"))
         val reserved = committed.captured.single()
         assertThat(updated?.plainContent?.trim()).isEqualTo("something ![desc](${Environment.server.rootPath}/entry/${added.id}/resource/${reserved.id})")
         verify(exactly = 1) { resourceManager.attach(added.id, any()) }
-        verify { workerRegistry.acceptEntryRefWork(added.id) }
+        verify { workerRegistry.acceptEntryRefWork(TEST_USER, added.id) }
     }
 
     @Test
     fun testUpdateNoteTags() {
-        val added1 = noteService.add(newNote("n1", "content 1", listOf("t1", "t2")))
-        assertThat(noteService.get(added1.id)?.title).isEqualTo("n1")
-        assertThat(noteService.get(added1.id)?.plainContent).isEqualTo("content 1")
-        assertThat(noteService.get(added1.id)?.tags).extracting("id").containsExactlyInAnyOrder("t1", "t2")
+        val added1 = noteService.add(TEST_USER, newNote("n1", "content 1", listOf("t1", "t2")))
+        assertThat(noteService.get(TEST_USER, added1.id)?.title).isEqualTo("n1")
+        assertThat(noteService.get(TEST_USER, added1.id)?.plainContent).isEqualTo("content 1")
+        assertThat(noteService.get(TEST_USER, added1.id)?.tags).extracting("id").containsExactlyInAnyOrder("t1", "t2")
 
-        noteService.update(newNote(added1.id, "n1", "content 1", listOf("t2")))
-        assertThat(noteService.get(added1.id)?.title).isEqualTo("n1")
-        assertThat(noteService.get(added1.id)?.plainContent).isEqualTo("content 1")
-        assertThat(noteService.get(added1.id)?.tags).extracting("id").containsExactlyInAnyOrder("t2")
+        noteService.update(TEST_USER, newNote(added1.id, "n1", "content 1", listOf("t2")))
+        assertThat(noteService.get(TEST_USER, added1.id)?.title).isEqualTo("n1")
+        assertThat(noteService.get(TEST_USER, added1.id)?.plainContent).isEqualTo("content 1")
+        assertThat(noteService.get(TEST_USER, added1.id)?.tags).extracting("id").containsExactlyInAnyOrder("t2")
 
-        noteService.update(newNote(added1.id, "n1", "content 1", listOf("t2", "t3")))
-        assertThat(noteService.get(added1.id)?.tags).extracting("id").containsExactlyInAnyOrder("t2", "t3")
+        noteService.update(TEST_USER, newNote(added1.id, "n1", "content 1", listOf("t2", "t3")))
+        assertThat(noteService.get(TEST_USER, added1.id)?.tags).extracting("id").containsExactlyInAnyOrder("t2", "t3")
         verify(exactly = 3) { entryAuditService.acceptAuditEvent(added1.id, any(), any()) }
-        verify { workerRegistry.acceptEntryRefWork(added1.id) }
+        verify { workerRegistry.acceptEntryRefWork(TEST_USER, added1.id) }
     }
 
     @Test
     fun testUpdateNoteCollections() {
-        val added1 = noteService.add(newNote("n1", "content 1", emptyList(), listOf("c1", "c2")))
-        assertThat(noteService.get(added1.id)?.title).isEqualTo("n1")
-        assertThat(noteService.get(added1.id)?.plainContent).isEqualTo("content 1")
-        assertThat(noteService.get(added1.id)?.collections).extracting("id").containsExactlyInAnyOrder("c1", "c2")
+        val added1 = noteService.add(TEST_USER, newNote("n1", "content 1", emptyList(), listOf("c1", "c2")))
+        assertThat(noteService.get(TEST_USER, added1.id)?.title).isEqualTo("n1")
+        assertThat(noteService.get(TEST_USER, added1.id)?.plainContent).isEqualTo("content 1")
+        assertThat(noteService.get(TEST_USER, added1.id)?.collections).extracting("id").containsExactlyInAnyOrder("c1", "c2")
 
-        noteService.update(newNote(added1.id, "n1", "content 1", emptyList(), listOf("c2")))
-        assertThat(noteService.get(added1.id)?.title).isEqualTo("n1")
-        assertThat(noteService.get(added1.id)?.plainContent).isEqualTo("content 1")
-        assertThat(noteService.get(added1.id)?.collections).extracting("id").containsExactlyInAnyOrder("c2")
+        noteService.update(TEST_USER, newNote(added1.id, "n1", "content 1", emptyList(), listOf("c2")))
+        assertThat(noteService.get(TEST_USER, added1.id)?.title).isEqualTo("n1")
+        assertThat(noteService.get(TEST_USER, added1.id)?.plainContent).isEqualTo("content 1")
+        assertThat(noteService.get(TEST_USER, added1.id)?.collections).extracting("id").containsExactlyInAnyOrder("c2")
         verify { entryAuditService.acceptAuditEvent(added1.id, any(), any()) }
-        verify { workerRegistry.acceptEntryRefWork(added1.id) }
+        verify { workerRegistry.acceptEntryRefWork(TEST_USER, added1.id) }
 
-        noteService.update(newNote(added1.id, "n1", "content 1", emptyList(), emptyList()))
-        assertThat(noteService.get(added1.id)?.collections).extracting("id").isEmpty()
+        noteService.update(TEST_USER, newNote(added1.id, "n1", "content 1", emptyList(), emptyList()))
+        assertThat(noteService.get(TEST_USER, added1.id)?.collections).extracting("id").isEmpty()
     }
 
     @Test
     fun testUpdateNoteNoId() {
-        val added1 = noteService.add(newNote("n1", "note content 1"))
-        assertThat(noteService.get(added1.id)?.title).isEqualTo("n1")
+        val added1 = noteService.add(TEST_USER, newNote("n1", "note content 1"))
+        assertThat(noteService.get(TEST_USER, added1.id)?.title).isEqualTo("n1")
 
-        val updated = noteService.update(newNote("updated", "new content"))
-        assertThat(noteService.get(updated!!.id)?.id).isNotEqualTo(added1.id)
+        val updated = noteService.update(TEST_USER, newNote("updated", "new content"))
+        assertThat(noteService.get(TEST_USER, updated!!.id)?.id).isNotEqualTo(added1.id)
         assertThat(added1.id).isNotEqualTo(updated.id)
         assertThat(updated.title).isEqualTo("updated")
         assertThat(updated.dateUpdated).isEqualTo(updated.dateCreated)
         assertThat(added1.dateCreated).isNotEqualTo(updated.dateCreated)
         verify { entryAuditService.acceptAuditEvent(added1.id, any(), any()) }
-        verify { workerRegistry.acceptEntryRefWork(added1.id) }
+        verify { workerRegistry.acceptEntryRefWork(TEST_USER, added1.id) }
 
-        assertThat(noteService.get(added1.id)?.title).isEqualTo("n1")
+        assertThat(noteService.get(TEST_USER, added1.id)?.title).isEqualTo("n1")
     }
 
     @Test
     fun testUpdatePropsAttributes() {
-        val added = noteService.add(newNote("n1", "note content 1"))
+        val added = noteService.add(TEST_USER, newNote("n1", "note content 1"))
         added.props.addAttribute("key1", "attribute1")
         added.props.addAttribute("key2", "attribute2")
 
-        noteService.update(added)
+        noteService.update(TEST_USER, added)
 
-        val updated = noteService.get(added.id)
+        val updated = noteService.get(TEST_USER, added.id)
         assertThat(updated?.props?.containsAttribute("key1")).isTrue()
         assertThat(updated?.props?.containsAttribute("key2")).isTrue()
         assertThat(updated?.props?.containsAttribute("key3")).isFalse()
@@ -395,18 +397,18 @@ class NoteServiceTest : DatabaseTest() {
         assertThat(updated?.props?.getAttribute("key3")).isNull()
         assertThat(updated?.dateUpdated).isEqualTo(updated?.dateCreated)
         verify { entryAuditService.acceptAuditEvent(added.id, any(), any()) }
-        verify { workerRegistry.acceptEntryRefWork(added.id) }
+        verify { workerRegistry.acceptEntryRefWork(TEST_USER, added.id) }
     }
 
     @Test
     fun testUpdatePropsTasks() {
-        val added = noteService.add(newNote("n1", "note content 1"))
+        val added = noteService.add(TEST_USER, newNote("n1", "note content 1"))
         val task = TaskDefinition(TaskId("t1"), "description", "className")
         added.props.addTask(task)
 
-        noteService.update(added)
+        noteService.update(TEST_USER, added)
 
-        val updated = noteService.get(added.id)
+        val updated = noteService.get(TEST_USER, added.id)
         assertThat(updated?.props?.getTask(TaskId("t1"))).isEqualTo(task)
         assertThat(updated?.props?.getAttribute("t3")).isNull()
         assertThat(updated?.dateUpdated).isEqualTo(updated?.dateCreated)
@@ -414,12 +416,12 @@ class NoteServiceTest : DatabaseTest() {
 
     @Test
     fun testMergeProps() {
-        val added = noteService.add(newNote("n1", "note content 1"))
+        val added = noteService.add(TEST_USER, newNote("n1", "note content 1"))
         added.props.addAttribute("key1", "attribute1")
         added.props.addAttribute("key2", "attribute2")
         val task = TaskDefinition(TaskId("t1"), "description", "className")
         added.props.addTask(task)
-        noteService.update(added)
+        noteService.update(TEST_USER, added)
 
         val updatedProps = BaseProperties()
         updatedProps.addAttribute("key2", "updated")
@@ -427,9 +429,9 @@ class NoteServiceTest : DatabaseTest() {
         val updatedTask = TaskDefinition(TaskId("t3"), "description", "className")
         updatedProps.addTask(updatedTask)
 
-        noteService.mergeProps(added.id, updatedProps)
+        noteService.mergeProps(TEST_USER, added.id, updatedProps)
 
-        val updated = noteService.get(added.id)
+        val updated = noteService.get(TEST_USER, added.id)
         assertThat(updated?.props?.attributes).hasSize(3)
         assertThat(updated?.props?.getAttribute("key1")).isEqualTo("attribute1")
         assertThat(updated?.props?.getAttribute("key2")).isEqualTo("updated")
@@ -443,10 +445,10 @@ class NoteServiceTest : DatabaseTest() {
 
     @Test
     fun testRevertCreatesNewVersionWithOldContent() {
-        val added = noteService.add(newNote("n1", "original", listOf("t1")))
-        noteService.update(newNote(added.id, "edited", "changed", listOf("t1", "t2")))
+        val added = noteService.add(TEST_USER, newNote("n1", "original", listOf("t1")))
+        noteService.update(TEST_USER, newNote(added.id, "edited", "changed", listOf("t1", "t2")))
 
-        val reverted = noteService.revert(added.id, 1)
+        val reverted = noteService.revert(TEST_USER, added.id, 1)
 
         assertThat(reverted?.version).isEqualTo(3)
         assertThat(reverted?.title).isEqualTo("n1")
@@ -454,55 +456,55 @@ class NoteServiceTest : DatabaseTest() {
         assertThat(reverted?.renderedContent).isEqualTo("<p>original</p>\n")
         // groups are not versioned
         assertThat(reverted?.tags).extracting("id").containsExactlyInAnyOrder("t1", "t2")
-        assertThat(noteService.get(added.id, 2)?.title).isEqualTo("edited")
+        assertThat(noteService.get(TEST_USER, added.id, 2)?.title).isEqualTo("edited")
         verify { entryAuditService.acceptAuditEvent(added.id, any(), "Reverted to version 1") }
     }
 
     @Test
     fun testRevertMissingVersionReturnsNull() {
-        val added = noteService.add(newNote("n1", "original"))
-        assertThat(noteService.revert(added.id, 5)).isNull()
-        assertThat(noteService.revert(EntryId("missing"), 1)).isNull()
+        val added = noteService.add(TEST_USER, newNote("n1", "original"))
+        assertThat(noteService.revert(TEST_USER, added.id, 5)).isNull()
+        assertThat(noteService.revert(TEST_USER, EntryId("missing"), 1)).isNull()
     }
 
     @Test
     fun testVersioning() {
-        val added = noteService.add(newNote("n1", "some content"))
+        val added = noteService.add(TEST_USER, newNote("n1", "some content"))
         ResourceManager(FileStore(), ResourceRepository()).saveGeneratedResource(ResourceId("r1"), added.id, "resource name", "jpg", ResourceType.SCREENSHOT, 11)
-        val version1 = noteService.get(added.id, 1)
+        val version1 = noteService.get(TEST_USER, added.id, 1)
         assertThat(added.version).isOne()
         assertThat(added).usingRecursiveComparison().ignoringFields("props").isEqualTo(version1)
         assertThat(added.dateUpdated).isEqualTo(added.dateCreated)
 
         // update via new entity
-        val updated = noteService.update(newNote(added.id, "edited", "different content"))
-        val version2 = noteService.get(added.id, 2)
+        val updated = noteService.update(TEST_USER, newNote(added.id, "edited", "different content"))
+        val version2 = noteService.get(TEST_USER, added.id, 2)
         assertThat(updated?.version).isEqualTo(2)
         assertThat(version2).usingRecursiveComparison().ignoringFields("props").isEqualTo(updated)
         assertThat(version2?.title).isEqualTo("edited")
         assertThat(updated?.dateUpdated).isNotEqualTo(updated?.dateCreated)
 
         // get original
-        val first = noteService.get(added.id, 1)
+        val first = noteService.get(TEST_USER, added.id, 1)
         assertThat(first?.title).isEqualTo("n1")
         assertThat(first?.version).isOne()
         assertThat(first?.dateCreated).isEqualTo(first?.dateUpdated)
 
         // update directly
-        val updatedDirect = noteService.update(updated!!.copy(title = "new title"), true)
-        val version3 = noteService.get(added.id)
+        val updatedDirect = noteService.update(TEST_USER, updated!!.copy(title = "new title"), true)
+        val version3 = noteService.get(TEST_USER, added.id)
         assertThat(version3?.title).isEqualTo(updatedDirect?.title)
         assertThat(version3?.version).isEqualTo(3)
         assertThat(version3?.dateUpdated).isNotEqualTo(updated.dateUpdated)
 
         // get version before
-        val stepBack = noteService.get(added.id, 2)
+        val stepBack = noteService.get(TEST_USER, added.id, 2)
         assertThat(stepBack?.version).isEqualTo(2)
         assertThat(stepBack?.title).isEqualTo(version2?.title)
         assertThat(stepBack?.dateUpdated).isNotEqualTo(version3?.dateUpdated)
 
         // get current version
-        val current = noteService.get(added.id)
+        val current = noteService.get(TEST_USER, added.id)
         assertThat(current?.version).isEqualTo(3)
         assertThat(current?.title).isEqualTo(version3?.title)
         assertThat(current?.dateUpdated).isNotEqualTo(stepBack?.dateUpdated)
@@ -511,11 +513,11 @@ class NoteServiceTest : DatabaseTest() {
 
     @Test
     fun testGetInvalidVersion() {
-        val added = noteService.add(newNote("n1", "some content"))
-        assertThat(noteService.get(added.id, 0)).isNull()
-        assertThat(noteService.get(added.id, 2)).isNull()
-        assertThat(noteService.get(added.id, -1)).isNull()
-        assertThat(noteService.get(EntryId("invalid"), 0)).isNull()
+        val added = noteService.add(TEST_USER, newNote("n1", "some content"))
+        assertThat(noteService.get(TEST_USER, added.id, 0)).isNull()
+        assertThat(noteService.get(TEST_USER, added.id, 2)).isNull()
+        assertThat(noteService.get(TEST_USER, added.id, -1)).isNull()
+        assertThat(noteService.get(TEST_USER, EntryId("invalid"), 0)).isNull()
     }
 
     private fun newNote(

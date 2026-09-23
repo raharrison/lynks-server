@@ -4,6 +4,7 @@ import lynks.common.DatabaseTest
 import lynks.common.EntryId
 import lynks.common.EntryType
 import lynks.entry.EntryAuditService
+import lynks.util.TEST_USER
 import lynks.util.createDummyEntry
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -23,7 +24,7 @@ class EntryAuditServiceTest: DatabaseTest() {
         entryAuditService.acceptAuditEvent(EntryId("e1"), "source", "message")
         entryAuditService.acceptAuditEvent(EntryId("e1"), "source2", "message2")
 
-        val entryAudit = entryAuditService.getEntryAudit(EntryId("e1"))
+        val entryAudit = entryAuditService.getEntryAudit(TEST_USER, EntryId("e1"))
         assertThat(entryAudit).hasSize(2)
         assertThat(entryAudit).extracting<EntryId> { it.entryId }
             .containsOnly(EntryId("e1"))
@@ -33,6 +34,6 @@ class EntryAuditServiceTest: DatabaseTest() {
 
     @Test
     fun testGetAuditItemsNotExists() {
-        assertThat(entryAuditService.getEntryAudit(EntryId("invalid"))).isEmpty()
+        assertThat(entryAuditService.getEntryAudit(TEST_USER, EntryId("invalid"))).isEmpty()
     }
 }

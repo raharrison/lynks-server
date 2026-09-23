@@ -47,13 +47,11 @@ class EnvironmentTest {
         val youtubeApiKey = node.get("youtubeApiKey").textValue()
         val youtubeApiBaseUrl = node.get("youtubeApiBaseUrl").textValue()
         val joltHost = node.get("joltHost").textValue()
-        val joltToken = node.get("joltToken").textValue()
 
         assertThat(scraperHost).isEqualTo(Environment.external.scraperHost)
         assertThat(youtubeApiKey).isEqualTo(Environment.external.youtubeApiKey)
         assertThat(youtubeApiBaseUrl).isEqualTo(Environment.external.youtubeApiBaseUrl)
         assertThat(joltHost).isEqualTo(Environment.external.joltHost)
-        assertThat(joltToken).isEqualTo(Environment.external.joltToken)
     }
 
 }

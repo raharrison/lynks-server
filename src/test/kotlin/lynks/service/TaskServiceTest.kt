@@ -8,6 +8,7 @@ import lynks.entry.EntryService
 import lynks.entry.LinkService
 import lynks.task.TaskService
 import lynks.task.link.LinkProcessingTask
+import lynks.util.TEST_USER
 import lynks.worker.WorkerRegistry
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -45,15 +46,16 @@ class TaskServiceTest {
             )
         )
         val entry = Link(EntryId("entry1"), "title", "google.com", "src", "", Instant.EPOCH, Instant.EPOCH, emptyList(), emptyList(), props)
-        every { entryService.get(EntryId("entry1")) } returns entry
+        every { entryService.get(TEST_USER, EntryId("entry1")) } returns entry
         every { workerRegistry.acceptTaskWork(any(), any()) } just Runs
 
-        val res = taskService.runTask(EntryId("entry1"), TaskId("task1"), mapOf("p1" to "v3", "p2" to "v2", "p3" to "e2"))
+        val res =
+            taskService.runTask(TEST_USER, EntryId("entry1"), TaskId("task1"), mapOf("p1" to "v3", "p2" to "v2", "p3" to "e2"))
 
         assertThat(res).isTrue()
 
         val context = LinkProcessingTask.LinkProcessingTaskContext(mapOf("p1" to "v1", "p2" to "v2", "p3" to "e2"))
-        verify(exactly = 1) { entryService.get(EntryId("entry1")) }
+        verify(exactly = 1) { entryService.get(TEST_USER, EntryId("entry1")) }
         verify { workerRegistry.acceptTaskWork(match {
             if(it::class == LinkProcessingTask::class) {
                 val processingTask = it as LinkProcessingTask
@@ -80,9 +82,9 @@ class TaskServiceTest {
             )
         )
         val entry = Link(EntryId("entry1"), "title", "google.com", "src", "", Instant.EPOCH, Instant.EPOCH, emptyList(), emptyList(), props)
-        every { entryService.get(EntryId("entry1")) } returns entry
+        every { entryService.get(TEST_USER, EntryId("entry1")) } returns entry
 
-        assertThrows<InvalidModelException> { taskService.runTask(EntryId("entry1"), TaskId("task1"), emptyMap()) }
+        assertThrows<InvalidModelException> { taskService.runTask(TEST_USER, EntryId("entry1"), TaskId("task1"), emptyMap()) }
     }
 
     @Test
@@ -97,17 +99,24 @@ class TaskServiceTest {
             )
         )
         val entry = Link(EntryId("entry1"), "title", "google.com", "src", "", Instant.EPOCH, Instant.EPOCH, emptyList(), emptyList(), props)
-        every { entryService.get(EntryId("entry1")) } returns entry
+        every { entryService.get(TEST_USER, EntryId("entry1")) } returns entry
 
-        assertThrows<InvalidModelException> { taskService.runTask(EntryId("entry1"), TaskId("task1"), mapOf("p1" to "invalid")) }
+        assertThrows<InvalidModelException> {
+            taskService.runTask(
+                TEST_USER,
+                EntryId("entry1"),
+                TaskId("task1"),
+                mapOf("p1" to "invalid")
+            )
+        }
     }
 
     @Test
     fun testNoEntryReturnsFalse() {
-        every { entryService.get(EntryId("invalid")) } returns null
-        val res = taskService.runTask(EntryId("invalid"), TaskId("task1"), emptyMap())
+        every { entryService.get(TEST_USER, EntryId("invalid")) } returns null
+        val res = taskService.runTask(TEST_USER, EntryId("invalid"), TaskId("task1"), emptyMap())
         assertThat(res).isFalse()
-        verify(exactly = 1) { entryService.get(EntryId("invalid")) }
+        verify(exactly = 1) { entryService.get(TEST_USER, EntryId("invalid")) }
     }
 
     @Test
@@ -121,11 +130,11 @@ class TaskServiceTest {
             )
         )
         val entry = Link(EntryId("entry1"), "title", "google.com", "src", "", Instant.EPOCH, Instant.EPOCH, emptyList(), emptyList(), props)
-        every { entryService.get(EntryId("entry1")) } returns entry
+        every { entryService.get(TEST_USER, EntryId("entry1")) } returns entry
 
-        val res = taskService.runTask(EntryId("entry1"), TaskId("invalid"), emptyMap())
+        val res = taskService.runTask(TEST_USER, EntryId("entry1"), TaskId("invalid"), emptyMap())
         assertThat(res).isFalse()
-        verify(exactly = 1) { entryService.get(EntryId("entry1")) }
+        verify(exactly = 1) { entryService.get(TEST_USER, EntryId("entry1")) }
     }
 
     @Test
@@ -134,10 +143,10 @@ class TaskServiceTest {
             addTask(TaskDefinition(TaskId("task1"), "description", TaskService::class.qualifiedName!!))
         }
         val entry = Link(EntryId("entry1"), "title", "google.com", "src", "", Instant.EPOCH, Instant.EPOCH, emptyList(), emptyList(), props)
-        every { entryService.get(EntryId("entry1")) } returns entry
+        every { entryService.get(TEST_USER, EntryId("entry1")) } returns entry
 
         assertThrows<IllegalArgumentException> {
-            taskService.runTask(EntryId("entry1"), TaskId("task1"), emptyMap())
+            taskService.runTask(TEST_USER, EntryId("entry1"), TaskId("task1"), emptyMap())
         }
     }
 }

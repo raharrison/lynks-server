@@ -55,19 +55,22 @@ class FileStore {
         return path.toAbsolutePath().toUrlString()
     }
 
-    private fun tempUploadDir(): Path =
+    fun tempUploadBaseDir(): Path =
         Paths.get(Environment.resource.resourceTempPath, TEMP_UPLOAD_DIR).toAbsolutePath().normalize()
 
-    fun saveTempUpload(data: ByteArray, extension: String): Path {
-        val path = tempUploadDir().resolve("${RandomUtils.generateUid()}.$extension")
+    // Pasted images belong to no entry yet, so each user's are kept apart and only resolved for that user
+    private fun tempUploadDir(userId: UserId): Path = tempUploadBaseDir().resolve(userId.value)
+
+    fun saveTempUpload(userId: UserId, data: ByteArray, extension: String): Path {
+        val path = tempUploadDir(userId).resolve("${RandomUtils.generateUid()}.$extension")
         FileUtils.writeToFile(path, data)
         log.info("Temporary upload saved at {}", path)
         return path
     }
 
     // The name comes from user markdown, so it must not resolve outside the upload directory
-    fun findTempUpload(name: String): Path? {
-        val dir = tempUploadDir()
+    fun findTempUpload(userId: UserId, name: String): Path? {
+        val dir = tempUploadDir(userId)
         val path = runCatching { dir.resolve(name).normalize() }.getOrNull() ?: return null
         return path.takeIf { it.parent == dir && Files.isRegularFile(it) }
     }

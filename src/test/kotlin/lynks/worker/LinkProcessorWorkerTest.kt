@@ -22,6 +22,7 @@ import lynks.notify.NotifyService
 import lynks.resource.*
 import lynks.suggest.Suggestion
 import lynks.util.FileUtils
+import lynks.util.TEST_USER
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -48,7 +49,7 @@ class LinkProcessorWorkerTest {
 
     @BeforeEach
     fun setup() {
-        coEvery { notifyService.create(any()) } returns Notification(
+        coEvery { notifyService.create(TEST_USER, any()) } returns Notification(
             NotificationId("n1"), NotificationType.DISCUSSIONS, "found", false, dateCreated = Instant.now()
         )
     }
@@ -87,20 +88,20 @@ class LinkProcessorWorkerTest {
 
             coEvery { processorFactory.createProcessors(link.url) } returns listOf(processor)
             every { resourceManager.deleteTempFiles(link.url) } just Runs
-            every { linkService.updateSearchableContent(link.id, any()) } returns "updated content"
-            every { linkService.update(any<Link>()) } returns link
-            every { linkService.mergeProps(eq(EntryId("id1")), any()) } just Runs
+            every { linkService.updateSearchableContent(TEST_USER, link.id, any()) } returns "updated content"
+            every { linkService.update(TEST_USER, any<Link>()) } returns link
+            every { linkService.mergeProps(TEST_USER, eq(EntryId("id1")), any()) } just Runs
 
             val channel = worker.apply { runner = this@runTest.coroutineContext }.worker()
-            channel.send(PersistLinkProcessingRequest(link, resourceSet, true))
+            channel.send(PersistLinkProcessingRequest(TEST_USER, link, resourceSet, true))
             advanceUntilIdle()
             channel.close()
 
             coVerify(exactly = 1) { processorFactory.createProcessors(link.url) }
             verify(exactly = 1) { processor.close() }
-            verify(exactly = 1) { linkService.mergeProps(eq(EntryId("id1")), any()) }
-            verify(exactly = 1) { linkService.updateSearchableContent(link.id, any()) }
-            coVerify(exactly = 1) { notifyService.create(any()) }
+            verify(exactly = 1) { linkService.mergeProps(TEST_USER, eq(EntryId("id1")), any()) }
+            verify(exactly = 1) { linkService.updateSearchableContent(TEST_USER, link.id, any()) }
+            coVerify(exactly = 1) { notifyService.create(TEST_USER, any()) }
 
             coVerify(exactly = 1) { processor.scrapeResources(resourceSet) }
             verify(exactly = 1) { entryAuditService.acceptAuditEvent(link.id, any(), any()) }
@@ -123,18 +124,18 @@ class LinkProcessorWorkerTest {
 
             coEvery { processorFactory.createProcessors(link.url) } returns listOf(processor)
             every { resourceManager.deleteTempFiles(link.url) } just Runs
-            every { linkService.update(link) } returns link
-            every { linkService.mergeProps(eq(EntryId("id1")), any()) } just Runs
+            every { linkService.update(TEST_USER, link) } returns link
+            every { linkService.mergeProps(TEST_USER, eq(EntryId("id1")), any()) } just Runs
 
             val channel = worker.apply { runner = this@runTest.coroutineContext }.worker()
-            channel.send(PersistLinkProcessingRequest(link, resourceSet, true))
+            channel.send(PersistLinkProcessingRequest(TEST_USER, link, resourceSet, true))
             advanceUntilIdle()
             channel.close()
 
             coVerify(exactly = 1) { processorFactory.createProcessors(link.url) }
             verify(exactly = 1) { processor.close() }
-            verify(exactly = 1) { linkService.mergeProps(eq(EntryId("id1")), any()) }
-            coVerify(exactly = 1) { notifyService.create(any()) }
+            verify(exactly = 1) { linkService.mergeProps(TEST_USER, eq(EntryId("id1")), any()) }
+            coVerify(exactly = 1) { notifyService.create(TEST_USER, any()) }
             coVerify(exactly = 1) { processor.scrapeResources(resourceSet) }
             verify(exactly = 1) { resourceManager.migrateGeneratedResources(link.id, generatedResources) }
             verify(exactly = 1) { entryAuditService.acceptAuditEvent(link.id, any(), any()) }
@@ -149,19 +150,19 @@ class LinkProcessorWorkerTest {
             every { processor.close() } just Runs
 
             coEvery { processorFactory.createProcessors(link.url) } returns listOf(processor)
-            every { linkService.update(link) } returns link
-            every { linkService.mergeProps(eq(EntryId("id1")), any()) } just Runs
+            every { linkService.update(TEST_USER, link) } returns link
+            every { linkService.mergeProps(TEST_USER, eq(EntryId("id1")), any()) } just Runs
             every { resourceManager.deleteTempFiles(link.url) } just Runs
 
             val channel = worker.apply { runner = this@runTest.coroutineContext }.worker()
-            channel.send(PersistLinkProcessingRequest(link, ResourceType.linkBaseline(), false))
+            channel.send(PersistLinkProcessingRequest(TEST_USER, link, ResourceType.linkBaseline(), false))
             advanceUntilIdle()
             channel.close()
 
             coVerify(exactly = 1) { processorFactory.createProcessors(link.url) }
             verify(exactly = 1) { processor.close() }
-            verify(exactly = 1) { linkService.mergeProps(eq(EntryId("id1")), any()) }
-            coVerify(exactly = 0) { notifyService.create(any()) }
+            verify(exactly = 1) { linkService.mergeProps(TEST_USER, eq(EntryId("id1")), any()) }
+            coVerify(exactly = 0) { notifyService.create(TEST_USER, any()) }
 
             coVerify(exactly = 0) { processor.scrapeResources(any()) }
             verify(exactly = 0) { entryAuditService.acceptAuditEvent(link.id, any(), any()) }
@@ -174,19 +175,19 @@ class LinkProcessorWorkerTest {
             val processor = mockk<LinkProcessor>(relaxUnitFun = true)
 
             coEvery { processorFactory.createProcessors(link.url) } returns listOf(processor)
-            every { linkService.update(link) } returns link
-            every { linkService.mergeProps(eq(EntryId("id1")), any()) } just Runs
+            every { linkService.update(TEST_USER, link) } returns link
+            every { linkService.mergeProps(TEST_USER, eq(EntryId("id1")), any()) } just Runs
             every { resourceManager.deleteTempFiles(link.url) } just Runs
 
             val channel = worker.apply { runner = this@runTest.coroutineContext }.worker()
-            channel.send(PersistLinkProcessingRequest(link, EnumSet.noneOf(ResourceType::class.java), true))
+            channel.send(PersistLinkProcessingRequest(TEST_USER, link, EnumSet.noneOf(ResourceType::class.java), true))
             advanceUntilIdle()
             channel.close()
 
             coVerify(exactly = 1) { processorFactory.createProcessors(link.url) }
             verify(exactly = 1) { processor.close() }
-            verify(exactly = 1) { linkService.mergeProps(eq(EntryId("id1")), any()) }
-            coVerify(exactly = 1) { notifyService.create(any()) }
+            verify(exactly = 1) { linkService.mergeProps(TEST_USER, eq(EntryId("id1")), any()) }
+            coVerify(exactly = 1) { notifyService.create(TEST_USER, any()) }
 
             coVerify(exactly = 0) { processor.scrapeResources(any()) }
             verify(exactly = 1) { entryAuditService.acceptAuditEvent(link.id, any(), any()) }
@@ -202,21 +203,21 @@ class LinkProcessorWorkerTest {
             every { processor.close() } just Runs
 
             coEvery { processorFactory.createProcessors(link.url) } returns listOf(processor)
-            every { linkService.update(link) } returns link
-            every { linkService.mergeProps(eq(EntryId("id1")), any()) } just Runs
+            every { linkService.update(TEST_USER, link) } returns link
+            every { linkService.mergeProps(TEST_USER, eq(EntryId("id1")), any()) } just Runs
             every { resourceManager.deleteTempFiles(link.url) } just Runs
 
             val channel = worker.apply { runner = this@runTest.coroutineContext }.worker()
-            channel.send(PersistLinkProcessingRequest(link, ResourceType.linkBaseline(), true))
+            channel.send(PersistLinkProcessingRequest(TEST_USER, link, ResourceType.linkBaseline(), true))
             advanceUntilIdle()
             channel.close()
 
             val propsSlot = slot<BaseProperties>()
             coVerify(exactly = 1) { processorFactory.createProcessors(link.url) }
             verify(exactly = 1) { processor.close() }
-            verify(exactly = 0) { linkService.update(link) }
-            verify(exactly = 1) { linkService.mergeProps(eq(EntryId("id1")), capture(propsSlot)) }
-            coVerify(exactly = 1) { notifyService.create(any()) }
+            verify(exactly = 0) { linkService.update(TEST_USER, link) }
+            verify(exactly = 1) { linkService.mergeProps(TEST_USER, eq(EntryId("id1")), capture(propsSlot)) }
+            coVerify(exactly = 1) { notifyService.create(TEST_USER, any()) }
             verify(exactly = 1) { entryAuditService.acceptAuditEvent(link.id, any(), any()) }
             assertThat(propsSlot.captured.containsAttribute(DEAD_LINK_PROP)).isTrue()
 
@@ -254,13 +255,13 @@ class LinkProcessorWorkerTest {
             every { processor.close() } just Runs
             every { resourceManager.constructTempUrlFromPath("thumbPath") } returns "thumbPath"
             every { resourceManager.constructTempUrlFromPath("previewPath") } returns "previewPath"
-            every { groupSetService.matchWithContent(content) } returns GroupSet(tags, collections)
+            every { groupSetService.matchWithContent(TEST_USER, content) } returns GroupSet(tags, collections)
 
             coEvery { processorFactory.createProcessors(url) } returns listOf(processor)
 
             val deferred = CompletableDeferred<Suggestion>()
             val channel = worker.apply { runner = this@runTest.coroutineContext }.worker()
-            channel.send(SuggestLinkProcessingRequest(url, deferred))
+            channel.send(SuggestLinkProcessingRequest(TEST_USER, url, deferred))
             advanceUntilIdle()
             channel.close()
 
@@ -276,7 +277,7 @@ class LinkProcessorWorkerTest {
             coVerify(exactly = 1) { processorFactory.createProcessors(url) }
             verify(exactly = 1) { processor.close() }
 
-            coVerify(exactly = 1) { groupSetService.matchWithContent(content) }
+            coVerify(exactly = 1) { groupSetService.matchWithContent(TEST_USER, content) }
             coVerify(exactly = 1) { processor.suggest(resourceSet) }
         }
 
@@ -294,7 +295,7 @@ class LinkProcessorWorkerTest {
 
             val deferred = CompletableDeferred<Suggestion>()
             val channel = worker.apply { runner = this@runTest.coroutineContext }.worker()
-            channel.send(SuggestLinkProcessingRequest(url, deferred))
+            channel.send(SuggestLinkProcessingRequest(TEST_USER, url, deferred))
             advanceUntilIdle()
             channel.close()
 

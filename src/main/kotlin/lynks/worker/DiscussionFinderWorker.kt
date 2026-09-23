@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode
 import kotlinx.coroutines.time.delay
 import lynks.common.DISCUSSIONS_PROP
 import lynks.common.EntryId
+import lynks.common.UserId
 import lynks.entry.EntryAuditService
 import lynks.entry.LinkService
 import lynks.notify.NewNotification
@@ -14,7 +15,7 @@ import java.net.URLEncoder
 import java.time.Duration
 import java.time.Instant
 
-data class DiscussionFinderWorkerRequest(val linkId: EntryId, val intervalIndex: Int = -1) :
+data class DiscussionFinderWorkerRequest(val userId: UserId, val linkId: EntryId, val intervalIndex: Int = -1) :
     PersistVariableWorkerRequest() {
     override val key = linkId.value
     override fun hashCode() = key.hashCode()
@@ -44,7 +45,7 @@ class DiscussionFinderWorker(
     override suspend fun doWork(input: DiscussionFinderWorkerRequest) {
         log.info("Launching discussion finder for entry={}", input.linkId)
         checkLastRunTime(input)
-        findDiscussions(input.linkId, input.intervalIndex)
+        findDiscussions(input.userId, input.linkId, input.intervalIndex)
     }
 
     private val intervals = listOf<Long>(24, 48, 72) // in hours
@@ -66,12 +67,12 @@ class DiscussionFinderWorker(
         }
     }
 
-    private suspend fun findDiscussions(linkId: EntryId, initialIntervalIndex: Int) {
+    private suspend fun findDiscussions(userId: UserId, linkId: EntryId, initialIntervalIndex: Int) {
         var intervalIndex = initialIntervalIndex
         var previousDiscussionCount = -1
 
         while (true) {
-            val link = linkService.get(linkId) ?: break
+            val link = linkService.get(userId, linkId) ?: break
             log.info("Finding discussions for entry={}", link.id)
             val discussions = mutableListOf<Discussion>().apply {
                 addAll(hackerNewsDiscussions(link.url))
@@ -85,14 +86,14 @@ class DiscussionFinderWorker(
 
             if (discussions.isNotEmpty()) {
                 link.props.addAttribute(DISCUSSIONS_PROP, discussions)
-                linkService.mergeProps(link.id, link.props)
+                linkService.mergeProps(userId, link.id, link.props)
 
                 val difference = discussions.size - current.size
                 if (difference > 0) {
                     val message = "Discussion finder found $difference new references"
                     log.info("Discussion finder worker creating notification entry={} differences={}", link.id, difference)
                     entryAuditService.acceptAuditEvent(link.id, DiscussionFinderWorker::class.simpleName, message)
-                    notifyService.create(NewNotification.discussions(message, link.id))
+                    notifyService.create(userId, NewNotification.discussions(message, link.id))
                 }
             } else {
                 log.info("Discussion finder worker found found no items entry={}", link.id)
@@ -111,7 +112,7 @@ class DiscussionFinderWorker(
             }
             previousDiscussionCount = discussions.size
 
-            updateSchedule(DiscussionFinderWorkerRequest(linkId, intervalIndex))
+            updateSchedule(DiscussionFinderWorkerRequest(userId, linkId, intervalIndex))
             val interval = intervals[intervalIndex]
             log.info("Discussion finder worker sleeping for {} hours entry={}", interval, link.id)
 

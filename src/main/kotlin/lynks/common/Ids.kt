@@ -34,6 +34,11 @@ value class CommentId(@JsonValue val value: String) {
 }
 
 @JvmInline
+value class UserId(@JsonValue val value: String) {
+    override fun toString(): String = value
+}
+
+@JvmInline
 value class DigestId(@JsonValue val value: String) {
     override fun toString(): String = value
 }
@@ -45,3 +50,4 @@ fun newNotificationId(): NotificationId = NotificationId(RandomUtils.generateUid
 fun newReminderId(): ReminderId = ReminderId(RandomUtils.generateUid())
 fun newCommentId(): CommentId = CommentId(RandomUtils.generateUid())
 fun newDigestId(): DigestId = DigestId(RandomUtils.generateUid())
+fun newUserId(): UserId = UserId(RandomUtils.generateUid())

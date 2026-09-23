@@ -1,6 +1,7 @@
 package lynks.worker
 
 import kotlinx.coroutines.delay
+import lynks.common.UserId
 import lynks.notify.NewNotification
 import lynks.notify.Notification
 import lynks.notify.NotificationMethod
@@ -10,11 +11,10 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
-import java.util.*
 import kotlin.math.max
 import com.github.shyiko.skedule.Schedule as Skedule
 
-class ReminderWorkerRequest(val reminder: Reminder, crudType: CrudType) : VariableWorkerRequest(crudType) {
+class ReminderWorkerRequest(val userId: UserId, val reminder: Reminder, crudType: CrudType) : VariableWorkerRequest(crudType) {
     override fun hashCode(): Int = reminder.reminderId.hashCode()
     override fun equals(other: Any?): Boolean =
         other is ReminderWorkerRequest && this.reminder.reminderId == other.reminder.reminderId
@@ -28,8 +28,8 @@ class ReminderWorker(
     override suspend fun beforeWork() {
         super.beforeWork()
         // Tracked like any other request, so a later update or delete can cancel it
-        reminderService.getAllActiveReminders().forEach {
-            onChannelReceive(ReminderWorkerRequest(it, CrudType.CREATE))
+        reminderService.getAllActiveReminders().forEach { (userId, reminder) ->
+            onChannelReceive(ReminderWorkerRequest(userId, reminder, CrudType.CREATE))
         }
     }
 
@@ -39,12 +39,12 @@ class ReminderWorker(
             return
         }
         when (input.reminder) {
-            is AdhocReminder -> launchAdhocReminder(input.reminder)
-            is RecurringReminder -> launchRecurringReminder(input.reminder)
+            is AdhocReminder -> launchAdhocReminder(input.userId, input.reminder)
+            is RecurringReminder -> launchRecurringReminder(input.userId, input.reminder)
         }
     }
 
-    private suspend fun launchAdhocReminder(reminder: AdhocReminder) {
+    private suspend fun launchAdhocReminder(userId: UserId, reminder: AdhocReminder) {
         val fireDate = ZonedDateTime.ofInstant(Instant.ofEpochMilli(reminder.interval), ZoneId.of(reminder.tz))
         log.info(
             "Launching single reminder entry={} id={} nextFire={}",
@@ -57,13 +57,13 @@ class ReminderWorker(
             sleep / 1000 / 60, reminder.entryId, reminder.reminderId)
         delay(sleep)
         if (reminderService.isActive(reminder.reminderId)){
-            reminderElapsed(reminder)
+            reminderElapsed(userId, reminder)
             log.info("Marking adhoc reminder as completed reminder={}", reminder.reminderId)
             reminderService.updateReminderStatus(reminder.reminderId, ReminderStatus.COMPLETED)
         }
     }
 
-    private suspend fun launchRecurringReminder(reminder: RecurringReminder) {
+    private suspend fun launchRecurringReminder(userId: UserId, reminder: RecurringReminder) {
         val fire = reminder.fire
         val tz = ZoneId.of(reminder.tz)
         val schedule = Skedule.parse(fire)
@@ -83,40 +83,30 @@ class ReminderWorker(
                 reminder.reminderId
             )
             delay(sleep)
-            if (reminderService.isActive(reminder.reminderId)) reminderElapsed(reminder)
+            if (reminderService.isActive(reminder.reminderId)) reminderElapsed(userId, reminder)
             else break
         }
     }
 
-    private suspend fun reminderElapsed(reminder: Reminder) {
+    private suspend fun reminderElapsed(userId: UserId, reminder: Reminder) {
         log.info("Reminder elapsed entry={} reminder={}", reminder.entryId, reminder.reminderId)
 
         val message = reminder.message ?: "Reminder Elapsed"
-        val notification = notifyService.create(NewNotification.reminder(message, reminder.entryId), false)
+        // the in-app notification is what PUSH delivers, and the UI polls for it
+        val notification = notifyService.create(userId, NewNotification.reminder(message, reminder.entryId))
 
-        for (notifyMethod in EnumSet.copyOf(reminder.notifyMethods)) {
-            if (notifyMethod == NotificationMethod.PUSH) {
-                try {
-                    notifyService.sendWebNotification(notification)
-                } catch (e: Exception) {
-                    log.error("Reminder push notification failed", e)
-                }
+        if (NotificationMethod.JOLT in reminder.notifyMethods) {
+            try {
+                sendJoltNotification(userId, reminder, notification)
+            } catch (e: Exception) {
+                log.error("Reminder jolt notification failed", e)
             }
-
-            if (notifyMethod == NotificationMethod.JOLT) {
-                try {
-                    sendJoltNotification(reminder, notification)
-                } catch (e: Exception) {
-                    log.error("Reminder jolt notification failed", e)
-                }
-            }
-
         }
     }
 
-    private suspend fun sendJoltNotification(reminder: Reminder, notification: Notification) {
+    private suspend fun sendJoltNotification(userId: UserId, reminder: Reminder, notification: Notification) {
         val title = if (reminder.message == null) null else "Reminder Elapsed"
-        notifyService.sendJoltNotification(notification, title)
+        notifyService.sendJoltNotification(userId, notification, title)
     }
 
     private fun calcDelay(date: ZonedDateTime): Long {

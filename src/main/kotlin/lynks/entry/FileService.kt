@@ -6,12 +6,10 @@ import lynks.group.GroupSet
 import lynks.group.GroupSetService
 import lynks.resource.ResourceManager
 import org.jetbrains.exposed.v1.core.Column
-import org.jetbrains.exposed.v1.core.ColumnSet
+import org.jetbrains.exposed.v1.core.Op
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.statements.UpdateBuilder
-import org.jetbrains.exposed.v1.jdbc.Query
-import org.jetbrains.exposed.v1.jdbc.selectAll
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
 
@@ -27,14 +25,12 @@ class FileService(
         return RowMapper.toSlimFile(table, row, groups.tags, groups.collections)
     }
 
-    override fun getBaseQuery(base: ColumnSet, where: BaseEntries): Query {
-        return base.selectAll().where { where.type eq EntryType.FILE }
-    }
+    override fun typeCondition(table: BaseEntries): Op<Boolean> = table.type eq EntryType.FILE
 
     override val slimColumnSet: List<Column<*>> =
         listOf(Entries.id, Entries.title, Entries.dateUpdated, Entries.starred)
 
-    override fun toInsert(eId: EntryId, entry: NewFile): BaseEntries.(UpdateBuilder<*>) -> Unit = {
+    override fun toInsert(userId: UserId, eId: EntryId, entry: NewFile): BaseEntries.(UpdateBuilder<*>) -> Unit = {
         val time = OffsetDateTime.now(ZoneOffset.UTC)
         it[id] = eId.value
         it[title] = entry.title
@@ -44,16 +40,16 @@ class FileService(
         it[dateUpdated] = time
     }
 
-    override fun toUpdate(entry: NewFile): BaseEntries.(UpdateBuilder<*>) -> Unit = {
+    override fun toUpdate(userId: UserId, entry: NewFile): BaseEntries.(UpdateBuilder<*>) -> Unit = {
         it[title] = entry.title
         it[dateUpdated] = OffsetDateTime.now(ZoneOffset.UTC)
     }
 
-    override fun toNewEntry(entry: File) = NewFile(
+    override fun toNewEntry(userId: UserId, entry: File) = NewFile(
         entry.id, entry.title, entry.tags.map { it.id }, entry.collections.map { it.id }
     )
 
-    override fun toUpdate(entry: File): BaseEntries.(UpdateBuilder<*>) -> Unit = {
+    override fun toUpdate(userId: UserId, entry: File): BaseEntries.(UpdateBuilder<*>) -> Unit = {
         it[title] = entry.title
         it[props] = entry.props
     }

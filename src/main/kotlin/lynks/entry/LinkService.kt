@@ -14,9 +14,7 @@ import lynks.worker.WorkerRegistry
 import org.jetbrains.exposed.v1.core.*
 import org.jetbrains.exposed.v1.core.statements.InsertStatement
 import org.jetbrains.exposed.v1.core.statements.UpdateBuilder
-import org.jetbrains.exposed.v1.jdbc.Query
 import org.jetbrains.exposed.v1.jdbc.select
-import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.jetbrains.exposed.v1.jdbc.update
 import java.time.OffsetDateTime
@@ -36,16 +34,14 @@ class LinkService(
     resourceManager: ResourceManager, private val workerRegistry: WorkerRegistry
 ) : EntryRepository<Link, SlimLink, NewLink>(groupSetService, entryAuditService, resourceManager) {
 
-    override fun getBaseQuery(base: ColumnSet, where: BaseEntries): Query {
-        return base.selectAll().where { where.type eq EntryType.LINK }
-    }
+    override fun typeCondition(table: BaseEntries): Op<Boolean> = table.type eq EntryType.LINK
 
     override val slimColumnSet: List<Column<*>> = listOf(
         Entries.id, Entries.title, Entries.src, Entries.plainContent, Entries.dateUpdated,
         Entries.starred, Entries.thumbnailId, Entries.read
     )
 
-    override fun toInsert(eId: EntryId, entry: NewLink): BaseEntries.(InsertStatement<*>) -> Unit = {
+    override fun toInsert(userId: UserId, eId: EntryId, entry: NewLink): BaseEntries.(InsertStatement<*>) -> Unit = {
         val time = OffsetDateTime.now(ZoneOffset.UTC)
         it[id] = eId.value
         it[title] = entry.title
@@ -57,7 +53,7 @@ class LinkService(
         it[read] = false
     }
 
-    override fun toUpdate(entry: NewLink): BaseEntries.(UpdateBuilder<*>) -> Unit = {
+    override fun toUpdate(userId: UserId, entry: NewLink): BaseEntries.(UpdateBuilder<*>) -> Unit = {
         it[title] = entry.title
         it[plainContent] = entry.url
         it[src] = URLUtils.extractSource(entry.url)
@@ -72,31 +68,38 @@ class LinkService(
         return RowMapper.toSlimLink(table, row, groups.tags, groups.collections)
     }
 
-    override fun add(entry: NewLink): Link {
+    override fun add(userId: UserId, entry: NewLink): Link {
         val fullEntry = entry.copy(url = URLUtils.ensureUrlProtocol(entry.url))
-        val link = super.add(fullEntry)
-        workerRegistry.acceptLinkWork(PersistLinkProcessingRequest(link, ResourceType.linkBaseline(), fullEntry.process))
+        val link = super.add(userId, fullEntry)
+        workerRegistry.acceptLinkWork(PersistLinkProcessingRequest(userId, link, ResourceType.linkBaseline(), fullEntry.process))
         if (fullEntry.process)
-            workerRegistry.acceptDiscussionWork(link.id)
+            workerRegistry.acceptDiscussionWork(userId, link.id)
         return link
     }
 
-    override fun update(entry: NewLink, newVersion: Boolean): Link? {
+    override fun update(userId: UserId, entry: NewLink, newVersion: Boolean): Link? {
         val fullEntry = entry.copy(url = URLUtils.ensureUrlProtocol(entry.url))
-        return super.update(fullEntry, newVersion)?.also {
-            workerRegistry.acceptLinkWork(PersistLinkProcessingRequest(it, ResourceType.linkBaseline(), fullEntry.process))
+        return super.update(userId, fullEntry, newVersion)?.also {
+            workerRegistry.acceptLinkWork(
+                PersistLinkProcessingRequest(
+                    userId,
+                    it,
+                    ResourceType.linkBaseline(),
+                    fullEntry.process
+                )
+            )
             if (fullEntry.process)
-                workerRegistry.acceptDiscussionWork(it.id)
+                workerRegistry.acceptDiscussionWork(userId, it.id)
         }
     }
 
     // Only rescrape when the reverted version points somewhere else
-    override fun toNewEntry(entry: Link) = NewLink(
+    override fun toNewEntry(userId: UserId, entry: Link) = NewLink(
         entry.id, entry.title, entry.url, entry.tags.map { it.id }, entry.collections.map { it.id },
-        process = get(entry.id)?.url != entry.url
+        process = get(userId, entry.id)?.url != entry.url
     )
 
-    override fun toUpdate(entry: Link): BaseEntries.(UpdateBuilder<*>) -> Unit = {
+    override fun toUpdate(userId: UserId, entry: Link): BaseEntries.(UpdateBuilder<*>) -> Unit = {
         it[Entries.title] = entry.title
         it[Entries.plainContent] = entry.url
         it[Entries.src] = URLUtils.extractSource(entry.url)
@@ -105,41 +108,42 @@ class LinkService(
         // content (searchable text) is managed exclusively via updateSearchableContent
     }
 
-    fun read(id: EntryId, read: Boolean): Link? = transaction {
-        val where = getBaseQuery().combine { Entries.id eq id.value }.where
+    fun read(userId: UserId, id: EntryId, read: Boolean): Link? = transaction {
+        val where = baseQuery(userId).combine { Entries.id eq id.value }.where
             ?: throw IllegalStateException("Missing where clause for link read update id=${id.value}")
         Entries.update({ where }) { it[Entries.read] = read }
         val readMessage = if (read) "read" else "unread"
-        get(id)?.also {
+        get(userId, id)?.also {
             entryAuditService.acceptAuditEvent(id, LinkService::class.simpleName, "Link marked as $readMessage")
         }
     }
 
-    fun getUnread(): List<Link> = transaction {
-        getBaseQuery().combine { Entries.read eq false }.map { toModel(it) }
+    fun getUnread(userId: UserId): List<Link> = transaction {
+        baseQuery(userId).combine { Entries.read eq false }.map { toModel(userId, it) }
     }
 
-    fun getDead(): List<Link> = transaction {
-        getBaseQuery().combine { Entries.props.isNotNull() and deadLinkJsonbOp }.map { toModel(it) }
+    fun getDead(userId: UserId): List<Link> = transaction {
+        baseQuery(userId).combine { Entries.props.isNotNull() and deadLinkJsonbOp }.map { toModel(userId, it) }
     }
 
-    fun getSlim(ids: List<EntryId>): List<SlimLink> = transaction {
+    fun getSlim(userId: UserId, ids: List<EntryId>): List<SlimLink> = transaction {
         if (ids.isEmpty()) return@transaction emptyList()
         val values = ids.map { it.value }
-        getBaseQuery().adjustSelect { select(slimColumnSet) }
+        baseQuery(userId).adjustSelect { select(slimColumnSet) }
             .combine { Entries.id inList values }
             .map { toSlimModel(it) }
             .sortedBy { values.indexOf(it.id.value) }
     }
 
-    fun checkExistingWithUrl(url: String): List<SlimLink> = transaction {
+    fun checkExistingWithUrl(userId: UserId, url: String): List<SlimLink> = transaction {
         val fullUrl = URLUtils.ensureUrlProtocol(url)
-        getBaseQuery().adjustSelect { select(slimColumnSet) }.combine { Entries.plainContent eq fullUrl }.map { toSlimModel(it) }
+        baseQuery(userId).adjustSelect { select(slimColumnSet) }.combine { Entries.plainContent eq fullUrl }
+            .map { toSlimModel(it) }
     }
 
-    fun updateSearchableContent(id: EntryId, content: String?): String? = transaction {
+    fun updateSearchableContent(userId: UserId, id: EntryId, content: String?): String? = transaction {
         val normalizedContent = content?.let { Normalize.mostCommonWords(Normalize.normalize(it), 500) }
-        val where = getBaseQuery().combine { Entries.id eq id.value }.where
+        val where = baseQuery(userId).combine { Entries.id eq id.value }.where
             ?: throw IllegalStateException("Missing where clause for content update id=${id.value}")
         val updated = Entries.update({ where }) { it[Entries.content] = normalizedContent }
         if(updated > 0) normalizedContent else null

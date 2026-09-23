@@ -1,24 +1,24 @@
 package lynks.comment
 
-import lynks.common.CommentId
-import lynks.common.EntryId
+import lynks.common.*
 import lynks.common.RowMapper.toComment
-import lynks.common.newCommentId
 import lynks.common.page.DefaultPageRequest
 import lynks.common.page.Page
 import lynks.common.page.PageRequest
 import lynks.common.page.SortDirection
+import lynks.db.EntryOwnership
 import lynks.util.findColumn
 import lynks.util.loggerFor
 import lynks.util.markdown.MarkdownProcessor
 import lynks.util.orderBy
 import lynks.worker.CrudType
 import lynks.worker.WorkerRegistry
+import org.jetbrains.exposed.v1.core.Op
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.insert
-import org.jetbrains.exposed.v1.jdbc.selectAll
+import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.jetbrains.exposed.v1.jdbc.update
 import java.time.OffsetDateTime
@@ -29,16 +29,20 @@ private val log = loggerFor<CommentService>()
 
 class CommentService(private val workerRegistry: WorkerRegistry, private val markdownProcessor: MarkdownProcessor) {
 
-    fun getComment(entryId: EntryId, id: CommentId): Comment? = transaction {
-        Comments.selectAll().where { Comments.id eq id.value and (Comments.entryId eq entryId.value) }.mapNotNull {
-            toComment(it)
-        }.singleOrNull()
+    private fun owned(userId: UserId, entryId: EntryId): Op<Boolean> =
+        (Comments.entryId eq entryId.value) and (Entries.userId eq userId.value)
+
+    fun getComment(userId: UserId, entryId: EntryId, id: CommentId): Comment? = transaction {
+        Comments.innerJoin(Entries).select(Comments.columns)
+            .where { (Comments.id eq id.value) and owned(userId, entryId) }
+            .mapNotNull { toComment(it) }
+            .singleOrNull()
     }
 
-    fun getCommentsFor(id: EntryId, pageRequest: PageRequest = DefaultPageRequest): Page<Comment> = transaction {
+    fun getCommentsFor(userId: UserId, id: EntryId, pageRequest: PageRequest = DefaultPageRequest): Page<Comment> = transaction {
         val sortColumn = Comments.findColumn(pageRequest.sort) ?: Comments.dateCreated
         val sortOrder = pageRequest.direction ?: SortDirection.ASC
-        val baseQuery = Comments.selectAll().where { Comments.entryId eq id.value }
+        val baseQuery = Comments.innerJoin(Entries).select(Comments.columns).where { owned(userId, id) }
         Page.of(
             baseQuery.copy()
                 .orderBy(sortColumn, sortOrder)
@@ -48,10 +52,11 @@ class CommentService(private val workerRegistry: WorkerRegistry, private val mar
         )
     }
 
-    fun addComment(eId: EntryId, comment: NewComment): Comment = transaction {
+    fun addComment(userId: UserId, eId: EntryId, comment: NewComment): Comment? = transaction {
+        if (!EntryOwnership.isOwner(userId, eId)) return@transaction null
         val newId = newCommentId()
         val time = OffsetDateTime.now(ZoneOffset.UTC)
-        val (processedText, html) = markdownProcessor.convertAndProcess(comment.plainContent, eId)
+        val (processedText, html) = markdownProcessor.convertAndProcess(userId, comment.plainContent, eId)
         Comments.insert {
             it[id] = newId.value
             it[entryId] = eId.value
@@ -60,39 +65,40 @@ class CommentService(private val workerRegistry: WorkerRegistry, private val mar
             it[dateCreated] = time
             it[dateUpdated] = time
         }
-        workerRegistry.acceptCommentRefWork(eId, newId, CrudType.CREATE)
-        getComment(eId, newId)
+        workerRegistry.acceptCommentRefWork(userId, eId, newId, CrudType.CREATE)
+        getComment(userId, eId, newId)
             ?: throw IllegalStateException("Comment ${newId.value} not found after insert")
     }
 
-    fun updateComment(entryId: EntryId, comment: NewComment): Comment? {
+    fun updateComment(userId: UserId, entryId: EntryId, comment: NewComment): Comment? {
         val id = comment.id
         return if (id == null) {
             log.info("Updating comment but no id, reverting to add entry={}", entryId.value)
-            addComment(entryId, comment)
+            addComment(userId, entryId, comment)
         } else {
             transaction {
-                val (processedText, html) = markdownProcessor.convertAndProcess(comment.plainContent, entryId)
-                val updated = Comments.update({ Comments.id eq id.value and (Comments.entryId eq entryId.value) }) {
+                // processing attaches pasted images to the entry, so ownership is checked first
+                if (getComment(userId, entryId, id) == null) {
+                    log.info("No comment found to update id={} entry={}", id, entryId.value)
+                    return@transaction null
+                }
+                val (processedText, html) = markdownProcessor.convertAndProcess(userId, comment.plainContent, entryId)
+                Comments.update({ Comments.id eq id.value and (Comments.entryId eq entryId.value) }) {
                     it[plainContent] = processedText
                     it[renderedContent] = html
                     it[dateUpdated] = OffsetDateTime.now(ZoneOffset.UTC)
                 }
-                if (updated > 0) {
-                    workerRegistry.acceptCommentRefWork(entryId, id, CrudType.UPDATE)
-                    getComment(entryId, id)
-                } else {
-                    log.info("No rows modified when updating comment id={} entry={}", id, entryId.value)
-                    null
-                }
+                workerRegistry.acceptCommentRefWork(userId, entryId, id, CrudType.UPDATE)
+                getComment(userId, entryId, id)
             }
         }
     }
 
-    fun deleteComment(entryId: EntryId, id: CommentId): Boolean = transaction {
+    fun deleteComment(userId: UserId, entryId: EntryId, id: CommentId): Boolean = transaction {
+        if (getComment(userId, entryId, id) == null) return@transaction false
         val deleted = Comments.deleteWhere { Comments.id eq id.value and (Comments.entryId eq entryId.value) }
         if (deleted > 0) {
-            workerRegistry.acceptCommentRefWork(entryId, id, CrudType.DELETE)
+            workerRegistry.acceptCommentRefWork(userId, entryId, id, CrudType.DELETE)
         }
         deleted > 0
     }

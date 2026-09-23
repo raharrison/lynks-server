@@ -1,9 +1,7 @@
 package lynks.resource
 
-import lynks.common.EntryId
-import lynks.common.ResourceId
+import lynks.common.*
 import lynks.common.RowMapper.toResource
-import lynks.common.newResourceId
 import lynks.util.loggerFor
 import org.jetbrains.exposed.v1.core.*
 import org.jetbrains.exposed.v1.jdbc.*
@@ -15,11 +13,26 @@ class ResourceRepository {
 
     private val log = loggerFor<ResourceRepository>()
 
-    fun getResourcesFor(entryId: EntryId): List<Resource> = transaction {
-        Resources.innerJoin(ResourceVersions, { id }, { resourceId })
-            .selectAll().where { Resources.entryId eq entryId.value }
+    private fun ownedResources() = Resources.innerJoin(ResourceVersions, { id }, { resourceId })
+        .join(Entries, JoinType.INNER, Resources.entryId, Entries.id)
+
+    fun getResourcesFor(userId: UserId, entryId: EntryId): List<Resource> = transaction {
+        ownedResources()
+            .select(Resources.columns + ResourceVersions.columns)
+            .where { (Resources.entryId eq entryId.value) and (Entries.userId eq userId.value) }
             .orderBy(Resources.dateCreated)
             .map { toResource(it) }
+    }
+
+    fun getResource(userId: UserId, entryId: EntryId, id: ResourceId): Resource? = transaction {
+        ownedResources()
+            .select(Resources.columns + ResourceVersions.columns)
+            .where {
+                (ResourceVersions.id eq id.value) and (Resources.entryId eq entryId.value) and
+                    (Entries.userId eq userId.value)
+            }
+            .map { toResource(it) }
+            .singleOrNull()
     }
 
     fun getResource(id: ResourceId): Resource? = transaction {

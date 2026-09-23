@@ -14,6 +14,7 @@ import lynks.common.*
 import lynks.common.exception.InvalidModelException
 import lynks.common.exception.NotFoundException
 import lynks.util.FileUtils
+import lynks.util.userId
 import java.io.File
 import java.time.LocalDate
 import java.time.temporal.TemporalAdjusters
@@ -21,8 +22,23 @@ import java.util.concurrent.ConcurrentHashMap
 
 fun Route.resource(resourceManager: ResourceManager) {
 
+    // pasted images are served by the route below, which only looks in the caller's own directory
+    val tempUploadDir = resourceManager.tempUploadBaseDir().toFile()
     staticFiles("temp", File(Environment.resource.resourceTempPath)) {
+        exclude { file -> file.absoluteFile.normalize().startsWith(tempUploadDir) }
         modify { file, call -> call.sandboxUnlessPdf(file.extension) }
+    }
+
+    get("temp/$TEMP_UPLOAD_DIR/{name}") {
+        val name = call.parameters["name"] ?: throw InvalidModelException("Missing name")
+        val file = resourceManager.findTempUpload(call.userId(), name)?.toFile() ?: throw NotFoundException()
+        call.sandboxUnlessPdf(file.extension)
+        call.respondFile(file)
+    }
+
+    // static exclusion answers 403, which would confirm a file exists in another user's directory
+    get("temp/$TEMP_UPLOAD_DIR/{path...}") {
+        throw NotFoundException()
     }
 
     fun deriveMimeType(filename: String): String {
@@ -84,7 +100,7 @@ fun Route.resource(resourceManager: ResourceManager) {
             return@post
         }
 
-        val file = resourceManager.saveTempUpload(bytes, ext)
+        val file = resourceManager.saveTempUpload(call.userId(), bytes, ext)
         call.respond(HttpStatusCode.OK, ImageUploadResponse(ImageUploadFilePath("$TEMP_UPLOAD_URL${file.fileName}")))
     }
 
@@ -93,27 +109,36 @@ fun Route.resource(resourceManager: ResourceManager) {
 
         val cacheExpiresAge = LocalDate.now().plusYears(5).atStartOfDay()
             .with(TemporalAdjusters.firstDayOfYear())
-        // used when retrieving resource files to prevent lookups
-        val resourceCache = ConcurrentHashMap<ResourceId, Pair<Resource, File>>()
+        // used when retrieving resource files to prevent lookups, keyed by owner so a hit never crosses users
+        val resourceCache = ConcurrentHashMap<Pair<UserId, ResourceId>, Pair<Resource, File>>()
 
         get {
             val id = EntryId(call.parameters["entryId"] ?: throw InvalidModelException("Missing entryId"))
-            call.respond(resourceManager.getResourcesFor(id))
+            call.respond(resourceManager.getResourcesFor(call.userId(), id))
         }
 
         get("/{id}/info") {
+            val entryId = EntryId(call.parameters["entryId"] ?: throw InvalidModelException("Missing entryId"))
             val id = ResourceId(call.parameters["id"] ?: throw InvalidModelException("Missing id"))
-            val resource = resourceManager.getResource(id) ?: throw NotFoundException()
+            val resource = resourceManager.getResource(call.userId(), entryId, id) ?: throw NotFoundException()
             call.response.header("X-Resource-Mime-Type", deriveMimeType(resource.name))
             call.respond(resource)
         }
 
         get("/{id}") {
+            val userId = call.userId()
+            val entryId = EntryId(call.parameters["entryId"] ?: throw InvalidModelException("Missing entryId"))
             val id = ResourceId(call.parameters["id"] ?: throw InvalidModelException("Missing id"))
-            val res = resourceCache[id] ?: resourceManager.getResourceAsFile(id)?.also {
-                resourceCache.putIfAbsent(id, it)
+            val key = userId to id
+            // a deleted entry removes its files after commit, which the cache would otherwise outlive
+            val cached = resourceCache[key]?.takeIf { it.first.entryId == entryId && it.second.exists() }
+            val res = cached ?: resourceManager.getResourceAsFile(userId, entryId, id)?.also {
+                resourceCache[key] = it
             }
-            if (res == null) throw NotFoundException()
+            if (res == null) {
+                resourceCache.remove(key)
+                throw NotFoundException()
+            }
             call.response.header(HttpHeaders.ContentDisposition, "inline; filename=\"${res.first.name}\"")
             call.response.header(HttpHeaders.Expires, cacheExpiresAge)
             call.response.header(HttpHeaders.ETag, res.first.dateCreated.toString())
@@ -122,6 +147,7 @@ fun Route.resource(resourceManager: ResourceManager) {
         }
 
         post {
+            val userId = call.userId()
             val entryId = EntryId(call.parameters["entryId"] ?: throw InvalidModelException("Missing entryId"))
             val multipart = call.receiveMultipart()
             var res: Resource? = null
@@ -130,7 +156,8 @@ fun Route.resource(resourceManager: ResourceManager) {
                     if (part is PartData.FileItem) {
                         val name = part.originalFileName ?: throw InvalidModelException("Missing fileName")
                         part.provider().toInputStream().use { input ->
-                            res = resourceManager.saveUploadedResource(entryId, name, input)
+                            res = resourceManager.saveUploadedResource(userId, entryId, name, input)
+                                ?: throw NotFoundException()
                         }
                     }
                 } finally {
@@ -142,16 +169,20 @@ fun Route.resource(resourceManager: ResourceManager) {
         }
 
         put {
+            val userId = call.userId()
+            val entryId = EntryId(call.parameters["entryId"] ?: throw InvalidModelException("Missing entryId"))
             val resource = call.receive<Resource>()
-            val updated = resourceManager.updateResource(resource) ?: throw NotFoundException()
-            resourceCache.remove(updated.id)
+            val updated = resourceManager.updateResource(userId, entryId, resource) ?: throw NotFoundException()
+            resourceCache.remove(userId to updated.id)
             call.respond(HttpStatusCode.OK, updated)
         }
 
         delete("/{id}") {
+            val userId = call.userId()
+            val entryId = EntryId(call.parameters["entryId"] ?: throw InvalidModelException("Missing entryId"))
             val id = ResourceId(call.parameters["id"] ?: throw InvalidModelException("Missing id"))
-            if (!resourceManager.delete(id)) throw NotFoundException()
-            resourceCache.remove(id)
+            if (!resourceManager.delete(userId, entryId, id)) throw NotFoundException()
+            resourceCache.remove(userId to id)
             call.respond(HttpStatusCode.OK)
         }
 

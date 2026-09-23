@@ -18,7 +18,6 @@ import io.ktor.server.plugins.statuspages.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.sessions.*
-import io.ktor.server.websocket.*
 import lynks.comment.CommentService
 import lynks.comment.comment
 import lynks.common.*
@@ -26,6 +25,7 @@ import lynks.common.endpoint.health
 import lynks.common.exception.InvalidModelException
 import lynks.common.exception.NotFoundException
 import lynks.common.exception.SuggestionUnavailableException
+import lynks.common.exception.UnauthorizedException
 import lynks.common.inject.ServiceProvider
 import lynks.db.DatabaseFactory
 import lynks.digest.DigestService
@@ -48,7 +48,6 @@ import lynks.util.JsonMapper.defaultMapper
 import lynks.util.RandomUtils
 import lynks.util.markdown.MarkdownProcessor
 import lynks.worker.WorkerRegistry
-import kotlin.time.Duration.Companion.seconds
 
 fun Application.module() {
     install(DefaultHeaders) {
@@ -59,10 +58,6 @@ fun Application.module() {
     install(PartialContent)
     install(ContentNegotiation) {
         register(ContentType.Application.Json, JacksonConverter(defaultMapper))
-    }
-    install(WebSockets) {
-        // nginx drops a proxied socket after 120s without traffic
-        pingPeriod = 30.seconds
     }
     install(CallId) {
         generate { RandomUtils.generateUuid64() }
@@ -80,6 +75,9 @@ fun Application.module() {
         exception<NotFoundException> { call, cause ->
             call.respond(HttpStatusCode.NotFound, ErrorResponse(cause.message ?: "Not found"))
         }
+        exception<UnauthorizedException> { call, cause ->
+            call.respond(HttpStatusCode.Unauthorized, ErrorResponse(cause.message ?: "Unauthorized"))
+        }
         // malformed or mistyped request bodies from call.receive
         exception<BadRequestException> { call, cause ->
             call.respond(HttpStatusCode.BadRequest, ErrorResponse(cause.message ?: "Bad request"))
@@ -93,10 +91,6 @@ fun Application.module() {
         }
     }
 
-    if (Environment.auth.enabled) {
-        installAuth()
-    }
-
     DatabaseFactory().connectAndMigrate()
 
     val workerRegistry = WorkerRegistry()
@@ -106,7 +100,7 @@ fun Application.module() {
         register(TwoFactorService())
         register(UserService(get()))
         register(JoltClient(get()))
-        register(NotifyService(get()))
+        register(NotifyService(get(), get()))
         register(FileStore())
         register(ResourceRepository())
         register(ResourceManager(get(), get()))
@@ -130,20 +124,22 @@ fun Application.module() {
         seal()
     }
 
+    val userService = serviceProvider.get<UserService>()
+    userService.ensureDefaultUser()
+    installAuth(userService)
+
     routing {
         val prefix = Environment.server.rootPath
         route(prefix) {
             unprotectedRoutes(serviceProvider)
-            if (Environment.auth.enabled) {
-                authenticate("auth_session") {
-                    protectedRoutes(serviceProvider)
-                }
-            } else {
+            authenticate(AUTH_PROVIDER) {
                 protectedRoutes(serviceProvider)
             }
         }
     }
 }
+
+private const val AUTH_PROVIDER = "auth_session"
 
 private fun Route.protectedRoutes(serviceProvider: ServiceProvider) {
     with(serviceProvider) {
@@ -173,7 +169,26 @@ private fun Route.unprotectedRoutes(serviceProvider: ServiceProvider) {
     }
 }
 
-private fun Application.installAuth() {
+private fun Application.installAuth(userService: UserService) {
+    if (!Environment.auth.enabled) {
+        install(Authentication) {
+            provider(AUTH_PROVIDER) {
+                authenticate { context ->
+                    val principal = userService.getPrincipal(Environment.auth.defaultUserName)
+                    if (principal != null) {
+                        context.principal(principal)
+                    } else {
+                        context.challenge(AUTH_PROVIDER, AuthenticationFailedCause.NoCredentials) { challenge, call ->
+                            call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Unauthorized"))
+                            challenge.complete()
+                        }
+                    }
+                }
+            }
+        }
+        return
+    }
+
     install(Sessions) {
         cookie<UserSession>("lynks_session", SessionStorageMemory()) {
             serializer = object : SessionSerializer<UserSession> {
@@ -199,8 +214,9 @@ private fun Application.installAuth() {
     }
 
     install(Authentication) {
-        session<UserSession>("auth_session") {
-            validate { session -> session }
+        session<UserSession>(AUTH_PROVIDER) {
+            // looked up on every request so deactivating a user ends their existing sessions
+            validate { session -> userService.getPrincipal(UserId(session.userId)) }
             challenge {
                 call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Unauthorized"))
             }

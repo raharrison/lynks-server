@@ -5,6 +5,8 @@ DELETE FROM groups;
 DELETE FROM comments;
 DELETE FROM reminders;
 DELETE FROM notifications;
+DELETE
+FROM digests;
 DELETE FROM worker_schedules;
 DELETE FROM entry_refs;
 DELETE FROM entry_versions;

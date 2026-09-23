@@ -1,5 +1,6 @@
 package lynks.worker
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.time.delay
 import lynks.digest.DigestService
 import lynks.notify.NewNotification
@@ -37,16 +38,25 @@ class UnreadLinkDigestWorker(
     }
 
     private suspend fun regenerate() {
-        val digest = digestService.generate()
-        if (digest == null) {
-            log.info("Link digest worker found no unread links, no digest generated")
-            return
+        for (user in userService.getActiveUsers()) {
+            try {
+                val digest = digestService.generate(user.id)
+                if (digest == null) {
+                    log.info("Link digest worker found no unread links, no digest generated user={}", user.id)
+                } else if (!user.digest) {
+                    log.info("Digest regenerated but digest notifications are disabled user={}", user.id)
+                } else {
+                    notifyService.create(
+                        user.id,
+                        NewNotification.digest("Weekly digest ready with ${digest.links.size} unread links")
+                    )
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                log.error("Link digest worker failed user={}", user.id, e)
+            }
         }
-        if (!userService.isDigestEnabled()) {
-            log.info("Digest regenerated but no user has digest notifications enabled")
-            return
-        }
-        notifyService.create(NewNotification.digest("Weekly digest ready with ${digest.links.size} unread links"))
     }
 
 }

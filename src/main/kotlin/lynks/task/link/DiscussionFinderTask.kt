@@ -2,6 +2,7 @@ package lynks.task.link
 
 import lynks.common.EntryId
 import lynks.common.TaskId
+import lynks.common.UserId
 import lynks.common.inject.Inject
 import lynks.entry.LinkService
 import lynks.task.Task
@@ -9,7 +10,7 @@ import lynks.task.TaskBuilder
 import lynks.task.TaskContext
 import lynks.worker.WorkerRegistry
 
-class DiscussionFinderTask(id: TaskId, entryId: EntryId) : Task<TaskContext>(id, entryId) {
+class DiscussionFinderTask(id: TaskId, entryId: EntryId, userId: UserId) : Task<TaskContext>(id, entryId, userId) {
 
     @Inject
     lateinit var workerRegistry: WorkerRegistry
@@ -18,8 +19,8 @@ class DiscussionFinderTask(id: TaskId, entryId: EntryId) : Task<TaskContext>(id,
     lateinit var linkService: LinkService
 
     override suspend fun process(context: TaskContext) {
-        linkService.get(entryId)?.also {
-            workerRegistry.acceptDiscussionWork(it.id)
+        linkService.get(userId, entryId)?.also {
+            workerRegistry.acceptDiscussionWork(userId, it.id)
         }
     }
 

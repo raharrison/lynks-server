@@ -1,78 +1,36 @@
 package lynks.user
 
 import io.ktor.http.*
-import io.ktor.server.auth.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import lynks.common.ConfigMode
-import lynks.common.Environment
-import lynks.common.ErrorResponse
-import lynks.common.UserSession
-import lynks.util.isCallAuthorizedForUser
+import lynks.common.exception.UnauthorizedException
+import lynks.util.userId
 
 fun Route.twoFactor(twoFactorService: TwoFactorService) {
-
 
     route("/user/2fa") {
 
         get {
-            val username = call.principal<UserSession>()?.username ?: if (Environment.mode != ConfigMode.PROD) {
-                Environment.auth.defaultUserName
-            } else {
-                return@get call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Unauthorized"))
-            }
-            if (call.isCallAuthorizedForUser(username)) {
-                val enabled = twoFactorService.getTwoFactorSecret(username) != null
-                call.respond(HttpStatusCode.OK, mapOf("enabled" to enabled))
-            } else {
-                call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Unauthorized"))
-            }
+            val enabled = twoFactorService.getTwoFactorSecret(call.userId()) != null
+            call.respond(HttpStatusCode.OK, mapOf("enabled" to enabled))
         }
 
         get("/secret") {
-            val username = call.principal<UserSession>()?.username ?: if (Environment.mode != ConfigMode.PROD) {
-                Environment.auth.defaultUserName
-            } else {
-                return@get call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Unauthorized"))
-            }
-            if (call.isCallAuthorizedForUser(username)) {
-                val secret = twoFactorService.getTwoFactorSecret(username) ?: ""
-                call.respond(HttpStatusCode.OK, mapOf("secret" to secret))
-            } else {
-                call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Unauthorized"))
-            }
+            val secret = twoFactorService.getTwoFactorSecret(call.userId()) ?: ""
+            call.respond(HttpStatusCode.OK, mapOf("secret" to secret))
         }
 
         post("/validate") {
-            val username = call.principal<UserSession>()?.username ?: if (Environment.mode != ConfigMode.PROD) {
-                Environment.auth.defaultUserName
-            } else {
-                return@post call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Unauthorized"))
-            }
             val request = call.receive<TwoFactorValidateRequest>()
-            if (call.isCallAuthorizedForUser(username)) {
-                val valid = twoFactorService.validateTotp(username, request.code) == AuthResult.SUCCESS
-                call.respond(HttpStatusCode.OK, mapOf("valid" to valid))
-            } else {
-                call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Unauthorized"))
-            }
+            val valid = twoFactorService.validateTotp(call.userId(), request.code) == AuthResult.SUCCESS
+            call.respond(HttpStatusCode.OK, mapOf("valid" to valid))
         }
 
         put {
-            val username = call.principal<UserSession>()?.username ?: if (Environment.mode != ConfigMode.PROD) {
-                Environment.auth.defaultUserName
-            } else {
-                return@put call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Unauthorized"))
-            }
             val request = call.receive<TwoFactorUpdateRequest>()
-            if (call.isCallAuthorizedForUser(username)) {
-                val updated = twoFactorService.updateTwoFactorEnabled(username, request.enabled)
-                if (!updated) call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Unauthorized"))
-                else call.respond(HttpStatusCode.OK)
-            } else {
-                call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Unauthorized"))
-            }
+            if (!twoFactorService.updateTwoFactorEnabled(call.userId(), request.enabled)) throw UnauthorizedException()
+            call.respond(HttpStatusCode.OK)
         }
 
     }

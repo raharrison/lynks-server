@@ -1,5 +1,6 @@
 package lynks.group
 
+import lynks.common.UserId
 import lynks.common.exception.InvalidModelException
 import org.jetbrains.exposed.v1.core.statements.InsertStatement
 import org.jetbrains.exposed.v1.core.statements.UpdateBuilder
@@ -8,7 +9,7 @@ import java.time.ZoneOffset
 
 class CollectionService : GroupService<Collection, NewCollection>(GroupType.COLLECTION) {
 
-    override fun add(group: NewCollection): Collection {
+    override fun add(userId: UserId, group: NewCollection): Collection {
         if (group.name.contains("/")) {
             if (group.parentId != null) {
                 throw InvalidModelException("New collection cannot contain slashes if parent is defined")
@@ -18,10 +19,10 @@ class CollectionService : GroupService<Collection, NewCollection>(GroupType.COLL
             if (name.isEmpty() || parents.any { it.isEmpty() }) {
                 throw InvalidModelException("Invalid group format, expected: 'parent1/parent2/group1'")
             }
-            val parent = getOrCreateFromPath(parents)
-            return super.add(group.copy(name = name, parentId = parent.id))
+            val parent = getOrCreateFromPath(userId, parents)
+            return super.add(userId, group.copy(name = name, parentId = parent.id))
         }
-        return super.add(group)
+        return super.add(userId, group)
     }
 
     override fun toInsert(gid: String, entity: NewCollection): Groups.(InsertStatement<*>) -> Unit = {

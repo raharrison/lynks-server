@@ -4,6 +4,7 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import lynks.group.Collection
 import lynks.group.Tag
 import lynks.resource.ResourceVersions
+import lynks.user.Users
 import lynks.util.JsonMapper
 import org.jetbrains.exposed.v1.core.Column
 import org.jetbrains.exposed.v1.core.ReferenceOption
@@ -14,13 +15,14 @@ import java.time.Instant
 
 abstract class BaseEntries(name: String) : Table(name) {
     val id = varchar("id", UID_LENGTH)
+    val userId = varchar("user_id", UID_LENGTH).references(Users.id, ReferenceOption.CASCADE)
     val title = varchar("title", 255).nullable()
     val plainContent = text("plain_content").nullable()
     val content = text("content").nullable()
     val src = text("source").nullable()
-    val type = enumerationByName<EntryType>("type", 20).index()
+    val type = enumerationByName<EntryType>("type", 20)
     val dateCreated = timestampWithTimeZone("date_created")
-    val dateUpdated = timestampWithTimeZone("date_updated").index()
+    val dateUpdated = timestampWithTimeZone("date_updated")
     val props = jsonb("props", { JsonMapper.defaultMapper.writeValueAsString(it) }, { JsonMapper.defaultMapper.readValue<BaseProperties>(it) }).nullable()
     abstract val version: Column<Int>
     val starred = bool("starred").default(false)
@@ -33,13 +35,23 @@ object Entries : BaseEntries("entries") {
     // as override to avoid cyclic foreign key issues between entries and resources
     override val thumbnailId = varchar("thumbnail_id", UID_LENGTH).references(ResourceVersions.id, ReferenceOption.SET_NULL).nullable().index()
     override val primaryKey = PrimaryKey(id)
+
+    // every listing is one user's entries, optionally of one type, newest first
+    init {
+        index(false, userId, dateUpdated)
+        index(false, userId, type, dateUpdated)
+    }
 }
 
 object EntryVersions : BaseEntries("entry_versions") {
     override val version = integer("version").default(1)
     override val thumbnailId = varchar("thumbnail_id", UID_LENGTH).references(ResourceVersions.id, ReferenceOption.SET_NULL).nullable().index()
     override val primaryKey = PrimaryKey(id, version)
-    init { index(false, id) }
+
+    init {
+        index(false, userId)
+        foreignKey(id to Entries.id, onDelete = ReferenceOption.CASCADE)
+    }
 }
 
 interface Entry : TypedIdEntity<EntryId> {

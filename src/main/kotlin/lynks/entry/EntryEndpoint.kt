@@ -11,6 +11,7 @@ import lynks.entry.ref.EntryRefService
 import lynks.group.GroupIdSet
 import lynks.reminder.ReminderService
 import lynks.util.pageRequest
+import lynks.util.userId
 import lynks.util.versionParameter
 
 fun Route.entry(
@@ -23,28 +24,30 @@ fun Route.entry(
     route("/entry") {
 
         get {
-            call.respond(entryService.get(call.pageRequest()))
+            call.respond(entryService.get(call.userId(), call.pageRequest()))
         }
 
         get("/{id}") {
-            val entry = entryService.get(EntryId(call.parameters["id"] ?: throw InvalidModelException("Missing id"))) ?: throw NotFoundException()
+            val entry =
+                entryService.get(call.userId(), EntryId(call.parameters["id"] ?: throw InvalidModelException("Missing id")))
+                    ?: throw NotFoundException()
             call.respond(entry)
         }
 
         get("/{id}/{version}") {
             val id = call.parameters["id"] ?: throw InvalidModelException("Missing id")
-            val entry = entryService.get(EntryId(id), call.versionParameter()) ?: throw NotFoundException()
+            val entry = entryService.get(call.userId(), EntryId(id), call.versionParameter()) ?: throw NotFoundException()
             call.respond(entry)
         }
 
         get("/search") {
             val query = call.request.queryParameters["q"] ?: throw InvalidModelException("Missing search query")
-            call.respond(entryService.search(query, call.pageRequest()))
+            call.respond(entryService.search(call.userId(), query, call.pageRequest()))
         }
 
         get("/suggest") {
             val query = call.request.queryParameters["q"] ?: throw InvalidModelException("Missing query")
-            call.respond(entryService.suggest(query, call.pageRequest()))
+            call.respond(entryService.suggest(call.userId(), query, call.pageRequest()))
         }
 
         get("/resolve") {
@@ -53,46 +56,52 @@ fun Route.entry(
                 ?.filter { it.isNotBlank() }
                 ?.map { EntryId(it) }
                 ?: emptyList()
-            call.respond(if (ids.isEmpty()) emptyList<Any>() else entryService.get(ids).content)
+            call.respond(if (ids.isEmpty()) emptyList<Any>() else entryService.get(call.userId(), ids).content)
         }
 
         get("/{id}/reminder") {
             val id = call.parameters["id"] ?: throw InvalidModelException("Missing id")
-            call.respond(reminderService.getRemindersForEntry(EntryId(id)))
+            call.respond(reminderService.getRemindersForEntry(call.userId(), EntryId(id)))
         }
 
         get("/{id}/history") {
             val id = call.parameters["id"] ?: throw InvalidModelException("Missing id")
-            call.respond(entryService.getEntryVersions(EntryId(id)))
+            call.respond(entryService.getEntryVersions(call.userId(), EntryId(id)))
         }
 
         get("/{id}/audit") {
             val id = call.parameters["id"] ?: throw InvalidModelException("Missing id")
-            call.respond(entryAuditService.getEntryAudit(EntryId(id)))
+            call.respond(entryAuditService.getEntryAudit(call.userId(), EntryId(id)))
         }
 
         post("/{id}/star") {
             val id = call.parameters["id"] ?: throw InvalidModelException("Missing id")
-            val updated = entryService.star(EntryId(id), true) ?: throw NotFoundException()
+            val updated = entryService.star(call.userId(), EntryId(id), true) ?: throw NotFoundException()
             call.respond(updated)
         }
 
         post("/{id}/unstar") {
             val id = call.parameters["id"] ?: throw InvalidModelException("Missing id")
-            val updated = entryService.star(EntryId(id), false) ?: throw NotFoundException()
+            val updated = entryService.star(call.userId(), EntryId(id), false) ?: throw NotFoundException()
             call.respond(updated)
         }
 
         put("/{id}/groups") {
             val id = call.parameters["id"] ?: throw InvalidModelException("Missing id")
             val groupIds = call.receive<GroupIdSet>()
-            if (!entryService.updateEntryGroups(EntryId(id), groupIds.tags, groupIds.collections)) throw NotFoundException()
+            if (!entryService.updateEntryGroups(
+                    call.userId(),
+                    EntryId(id),
+                    groupIds.tags,
+                    groupIds.collections
+                )
+            ) throw NotFoundException()
             call.respond(HttpStatusCode.OK)
         }
 
         get("/{id}/refs") {
             val id = call.parameters["id"] ?: throw InvalidModelException("Missing id")
-            call.respond(entryRefService.getRefsForEntry(EntryId(id)))
+            call.respond(entryRefService.getRefsForEntry(call.userId(), EntryId(id)))
         }
     }
 }

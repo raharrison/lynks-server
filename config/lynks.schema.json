@@ -34,8 +34,7 @@
                 "youtubeApiKey": "abcdef123",
                 "youtubeApiBaseUrl": "https://www.googleapis.com",
                 "scraperHost": "http://localhost:3000/api",
-                "joltHost": "https://jolt.example.com/api/v1",
-                "joltToken": "jlt_live_xxx"
+                "joltHost": "https://jolt.example.com/api/v1"
             }
         }
     ],
@@ -112,7 +111,7 @@
                 "registrationsEnabled": {
                     "$id": "#/properties/auth/properties/registrationsEnabled",
                     "type": "boolean",
-                    "description": "if new users can be registered (still requiring activation)",
+                    "description": "If new users can register themselves. They stay inactive until activated with scripts/manage_users.py",
                     "examples": [
                         false
                     ]
@@ -136,7 +135,7 @@
                 "defaultUserName": {
                     "$id": "#/properties/auth/properties/defaultUserName",
                     "type": "string",
-                    "description": "Username for the default auto-created user, created on first start",
+                    "description": "Username of the user created on first start. With auth disabled every request acts as this user, so it is created whenever it is missing",
                     "examples": [
                         "user"
                     ]
@@ -144,7 +143,7 @@
                 "defaultUserPassword": {
                     "$id": "#/properties/auth/properties/defaultUserPassword",
                     "type": "string",
-                    "description": "Password raw text or bcrypt hash for auto-created user, created on first start",
+                    "description": "Password raw text or bcrypt hash for the default user. With auth enabled and no users, nothing is created without it",
                     "examples": [
                         "abcdef123"
                     ]
@@ -246,8 +245,7 @@
             "examples": [
                 {
                     "scraperHost": "http://localhost:3000/api",
-                    "joltHost": "https://jolt.example.com/api/v1",
-                    "joltToken": "jlt_live_xxx"
+                    "joltHost": "https://jolt.example.com/api/v1"
                 }
             ],
             "properties": {
@@ -278,17 +276,9 @@
                 "joltHost": {
                     "$id": "#/properties/external/properties/joltHost",
                     "type": "string",
-                    "description": "Base URL of the jolt API used for outbound notifications",
+                    "description": "Base URL of the jolt API used for outbound notifications. Each user sets their own inbound channel token in their profile",
                     "examples": [
                         "https://jolt.example.com/api/v1"
-                    ]
-                },
-                "joltToken": {
-                    "$id": "#/properties/external/properties/joltToken",
-                    "type": "string",
-                    "description": "Jolt inbound channel token",
-                    "examples": [
-                        "jlt_live_xxx"
                     ]
                 }
             },

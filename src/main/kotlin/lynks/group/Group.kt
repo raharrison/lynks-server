@@ -4,6 +4,7 @@ import lynks.common.Entries
 import lynks.common.IdBasedCreatedEntity
 import lynks.common.IdBasedNewEntity
 import lynks.common.UID_LENGTH
+import lynks.user.Users
 import org.jetbrains.exposed.v1.core.ReferenceOption
 import org.jetbrains.exposed.v1.core.Table
 import org.jetbrains.exposed.v1.javatime.timestampWithTimeZone
@@ -11,12 +12,17 @@ import java.time.Instant
 
 object Groups: Table("groups") {
     val id = varchar("id", UID_LENGTH)
-    val type = enumerationByName<GroupType>("type", 20).index()
+    val userId = varchar("user_id", UID_LENGTH).references(Users.id, ReferenceOption.CASCADE)
+    val type = enumerationByName<GroupType>("type", 20)
     val name = varchar("name", 255)
     val parentId = (varchar("parent_id", UID_LENGTH) references id).nullable().index()
     val dateCreated = timestampWithTimeZone("date_created")
     val dateUpdated = timestampWithTimeZone("date_updated")
     override val primaryKey = PrimaryKey(id)
+
+    init {
+        index(false, userId, type)
+    }
 }
 
 object EntryGroups: Table("entry_groups") {

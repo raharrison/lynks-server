@@ -16,6 +16,7 @@ import lynks.common.page.DefaultPageRequest
 import lynks.common.page.Page
 import lynks.entry.EntryService
 import lynks.entry.ref.EntryRefService
+import lynks.util.TEST_USER
 import lynks.util.markdown.MarkdownProcessor
 import org.junit.jupiter.api.Test
 import java.time.Instant
@@ -34,84 +35,90 @@ class EntryRefWorkerTest {
 
     @Test
     fun testSetEntryRefsFromEntry(): Unit = runTest {
-        every { entryService.get(EntryId("id1")) } returns note1
-        every { entryService.get(listOf(EntryId("id2"), EntryId("id3"), EntryId("id4")), any()) } returns Page.of(slimNotes, DefaultPageRequest, 2)
+        every { entryService.get(TEST_USER, EntryId("id1")) } returns note1
+        every { entryService.get(TEST_USER, listOf(EntryId("id2"), EntryId("id3"), EntryId("id4")), any()) } returns Page.of(
+            slimNotes,
+            DefaultPageRequest,
+            2
+        )
         val entryRefWorker = EntryRefWorker(markdownProcessor, entryRefService, entryService, commentService)
             .apply { runner = this@runTest.coroutineContext }.worker()
 
-        val request = DefaultEntryRefWorkerRequest(EntryId("id1"))
+        val request = DefaultEntryRefWorkerRequest(TEST_USER, EntryId("id1"))
         entryRefWorker.send(request)
         advanceUntilIdle()
         entryRefWorker.close()
 
-        coVerify(exactly = 1) { entryService.get(EntryId("id1")) }
-        coVerify(exactly = 1) { entryService.get(listOf(EntryId("id2"), EntryId("id3"), EntryId("id4")), any()) }
+        coVerify(exactly = 1) { entryService.get(TEST_USER, EntryId("id1")) }
+        coVerify(exactly = 1) { entryService.get(TEST_USER, listOf(EntryId("id2"), EntryId("id3"), EntryId("id4")), any()) }
         coVerify(exactly = 1) { entryRefService.setEntryRefs(EntryId("id1"), listOf("id2", "id3"), "id1") }
     }
 
     @Test
     fun testEntryNotFound() = runTest {
-        every { entryService.get(EntryId("id1")) } returns null
+        every { entryService.get(TEST_USER, EntryId("id1")) } returns null
         val entryRefWorker = EntryRefWorker(markdownProcessor, entryRefService, entryService, commentService)
             .apply { runner = this@runTest.coroutineContext }.worker()
 
-        val request = DefaultEntryRefWorkerRequest(EntryId("id1"))
+        val request = DefaultEntryRefWorkerRequest(TEST_USER, EntryId("id1"))
         entryRefWorker.send(request)
         advanceUntilIdle()
         entryRefWorker.close()
 
-        coVerify(exactly = 1) { entryService.get(EntryId("id1")) }
+        coVerify(exactly = 1) { entryService.get(TEST_USER, EntryId("id1")) }
         coVerify(exactly = 0) { entryRefService.setEntryRefs(any(), any(), any()) }
     }
 
     @Test
     fun testSetEntryRefsFromNewComment() = runTest {
-        every { commentService.getComment(EntryId("id1"), CommentId("cid1")) } returns comment
-        every { entryService.get(listOf(EntryId("id2"), EntryId("id3"), EntryId("id4")), any()) } returns Page.of(slimNotes, DefaultPageRequest, 2)
+        every { commentService.getComment(TEST_USER, EntryId("id1"), CommentId("cid1")) } returns comment
+        every { entryService.get(TEST_USER, listOf(EntryId("id2"), EntryId("id3"), EntryId("id4")), any()) } returns Page.of(
+            slimNotes,
+            DefaultPageRequest,
+            2
+        )
         val entryRefWorker = EntryRefWorker(markdownProcessor, entryRefService, entryService, commentService)
             .apply { runner = this@runTest.coroutineContext }.worker()
 
-        val request = CommentRefWorkerRequest(EntryId("id1"), CommentId("cid1"), CrudType.CREATE)
+        val request = CommentRefWorkerRequest(TEST_USER, EntryId("id1"), CommentId("cid1"), CrudType.CREATE)
         entryRefWorker.send(request)
         advanceUntilIdle()
         entryRefWorker.close()
 
-        coVerify(exactly = 1) { commentService.getComment(EntryId("id1"), CommentId("cid1")) }
-        coVerify(exactly = 1) { entryService.get(listOf(EntryId("id2"), EntryId("id3"), EntryId("id4")), any()) }
+        coVerify(exactly = 1) { commentService.getComment(TEST_USER, EntryId("id1"), CommentId("cid1")) }
+        coVerify(exactly = 1) { entryService.get(TEST_USER, listOf(EntryId("id2"), EntryId("id3"), EntryId("id4")), any()) }
         coVerify(exactly = 1) { entryRefService.setEntryRefs(EntryId("id1"), listOf("id2", "id3"), "cid1") }
     }
 
     @Test
-    fun testSetEntryRefsFromDeletedComment() = runTest {
-        every { commentService.getComment(EntryId("id1"), CommentId("cid1")) } returns comment
-        every { entryService.get(listOf(EntryId("id2"), EntryId("id3"), EntryId("id4")), any()) } returns Page.of(slimNotes, DefaultPageRequest, 2)
+    fun testRemoveEntryRefsFromDeletedComment() = runTest {
+        // the row is gone by the time the worker runs
+        every { commentService.getComment(TEST_USER, EntryId("id1"), CommentId("cid1")) } returns null
         every { entryRefService.deleteOrigin("cid1") } returns 1
         val entryRefWorker = EntryRefWorker(markdownProcessor, entryRefService, entryService, commentService)
             .apply { runner = this@runTest.coroutineContext }.worker()
 
-        val request = CommentRefWorkerRequest(EntryId("id1"), CommentId("cid1"), CrudType.DELETE)
+        val request = CommentRefWorkerRequest(TEST_USER, EntryId("id1"), CommentId("cid1"), CrudType.DELETE)
         entryRefWorker.send(request)
         advanceUntilIdle()
         entryRefWorker.close()
 
-        coVerify(exactly = 1) { commentService.getComment(EntryId("id1"), CommentId("cid1")) }
-        coVerify(exactly = 1) { entryService.get(listOf(EntryId("id2"), EntryId("id3"), EntryId("id4")), any()) }
-        coVerify(exactly = 1) { entryRefService.setEntryRefs(EntryId("id1"), listOf("id2", "id3"), "cid1") }
         coVerify(exactly = 1) { entryRefService.deleteOrigin("cid1") }
+        coVerify(exactly = 0) { entryRefService.setEntryRefs(any(), any(), any()) }
     }
 
     @Test
     fun testCommentNotFound() = runTest {
-        every { commentService.getComment(EntryId("id1"), CommentId("cid1")) } returns null
+        every { commentService.getComment(TEST_USER, EntryId("id1"), CommentId("cid1")) } returns null
         val entryRefWorker = EntryRefWorker(markdownProcessor, entryRefService, entryService, commentService)
             .apply { runner = this@runTest.coroutineContext }.worker()
 
-        val request = CommentRefWorkerRequest(EntryId("id1"), CommentId("cid1"), CrudType.CREATE)
+        val request = CommentRefWorkerRequest(TEST_USER, EntryId("id1"), CommentId("cid1"), CrudType.CREATE)
         entryRefWorker.send(request)
         advanceUntilIdle()
         entryRefWorker.close()
 
-        coVerify(exactly = 1) { commentService.getComment(EntryId("id1"), CommentId("cid1")) }
+        coVerify(exactly = 1) { commentService.getComment(TEST_USER, EntryId("id1"), CommentId("cid1")) }
         coVerify(exactly = 0) { entryRefService.setEntryRefs(any(), any(), any()) }
     }
 

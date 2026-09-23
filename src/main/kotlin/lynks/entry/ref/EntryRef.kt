@@ -10,7 +10,7 @@ import org.jetbrains.exposed.v1.core.Table
 object EntryRefs : Table("entry_refs") {
     val sourceEntryId = (varchar("source_entry_id", UID_LENGTH).references(Entries.id, ReferenceOption.CASCADE))
     val targetEntryId = (varchar("target_entry_id", UID_LENGTH).references(Entries.id, ReferenceOption.CASCADE)).index()
-    val originId = varchar("origin", UID_LENGTH)
+    val originId = varchar("origin", UID_LENGTH).index()
     override val primaryKey = PrimaryKey(sourceEntryId, targetEntryId, originId)
 }
 

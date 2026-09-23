@@ -26,11 +26,17 @@ object Environment {
 
     private object AuthSpec : ConfigSpec("auth") {
         val enabled by required<Boolean>(description = "protect all endpoints to be accessible only to authorized users")
-        val registrationsEnabled by optional(default = false, description = "if new users can be registered (still requiring activation)")
+        val registrationsEnabled by optional(
+            default = false,
+            description = "if new users can register themselves, staying inactive until activated with scripts/manage_users.py"
+        )
         val signingKey by optional<String?>(null, description = "key (32 chars) used to sign session cookies, should be kept secret")
         val encryptionKey by optional<String?>(null, description = "key (16+ chars) used to encrypt session cookies, should be kept secret and different from signingKey")
-        val defaultUserName by optional("user", description = "username for default auto-created user")
-        val defaultUserPassword by optional<String?>(null, description = "password raw text or bcrypt hash for auto-created user")
+        val defaultUserName by optional(
+            "user",
+            description = "user created on first start, which every request acts as when auth is disabled"
+        )
+        val defaultUserPassword by optional<String?>(null, description = "password raw text or bcrypt hash for the default user")
     }
 
     data class Auth(
@@ -73,15 +79,13 @@ object Environment {
         val youtubeApiBaseUrl by optional("https://www.googleapis.com", description = "base url of the YouTube Data API v3")
         val scraperHost by optional<String?>(null, description = "url to the scraper component")
         val joltHost by optional<String?>(null, description = "base url of the jolt api, e.g. https://jolt.example.com/api/v1")
-        val joltToken by optional<String?>(null, description = "jolt inbound channel token")
     }
 
     data class External(
         val youtubeApiKey: String? = config[ExternalSpec.youtubeApiKey],
         val youtubeApiBaseUrl: String = config[ExternalSpec.youtubeApiBaseUrl],
         val scraperHost: String? = config[ExternalSpec.scraperHost],
-        val joltHost: String? = config[ExternalSpec.joltHost],
-        val joltToken: String? = config[ExternalSpec.joltToken]
+        val joltHost: String? = config[ExternalSpec.joltHost]
     )
 
     val mode: ConfigMode = ConfigMode.valueOf(System.getProperty("CONFIG_MODE")?.uppercase() ?: "DEV")

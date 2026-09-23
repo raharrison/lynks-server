@@ -3,11 +3,10 @@ package lynks.endpoint
 import io.restassured.RestAssured.*
 import io.restassured.http.ContentType
 import lynks.common.*
-import lynks.resource.ImageUploadErrorResponse
-import lynks.resource.ImageUploadResponse
-import lynks.resource.Resource
-import lynks.resource.ResourceType
+import lynks.resource.*
+import lynks.util.OTHER_USER
 import lynks.util.createDummyEntry
+import lynks.util.createDummyUser
 import org.assertj.core.api.Assertions.assertThat
 import org.hamcrest.Matchers.nullValue
 import org.hamcrest.Matchers.startsWith
@@ -41,6 +40,15 @@ class ResourceEndpointTest : ServerTest() {
             .statusCode(200)
             .extract().asByteArray()
         assertThat(resource).isEqualTo(content)
+    }
+
+    @Test
+    fun testUploadedImagesOnlyServedToOwner() {
+        createDummyUser("other-user", id = OTHER_USER)
+        val name = FileStore().saveTempUpload(OTHER_USER, byteArrayOf(1, 2, 3), "png").fileName
+        get("/temp/$TEMP_UPLOAD_DIR/$name").then().statusCode(404)
+        // nor reachable through the static temp files
+        get("/temp/$TEMP_UPLOAD_DIR/$OTHER_USER/$name").then().statusCode(404)
     }
 
     @Test
@@ -100,7 +108,7 @@ class ResourceEndpointTest : ServerTest() {
     }
 
     @Test
-    fun testCreateResourceInvalidEntryRollsBack() {
+    fun testCreateResourceUnknownEntry() {
         val filename = "attachment.txt"
         val content = byteArrayOf(1, 2, 3)
         given()
@@ -108,7 +116,7 @@ class ResourceEndpointTest : ServerTest() {
             .When()
             .post("/entry/{entryId}/resource", "missing")
             .then()
-            .statusCode(500)
+            .statusCode(404)
 
         val entryId = "missing"
         val firstDir = entryId.substring(0, 1)

@@ -7,6 +7,7 @@ import lynks.common.Link
 import lynks.common.TaskId
 import lynks.entry.LinkService
 import lynks.task.TaskContext
+import lynks.util.TEST_USER
 import lynks.worker.WorkerRegistry
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -17,7 +18,7 @@ class DiscussionFinderTaskTest {
     private val workerRegistry = mockk<WorkerRegistry>()
     private val linkService = mockk<LinkService>()
 
-    private val discussionFinderTask = DiscussionFinderTask(TaskId("tid"), EntryId("eid")).also {
+    private val discussionFinderTask = DiscussionFinderTask(TaskId("tid"), EntryId("eid"), TEST_USER).also {
         it.workerRegistry = workerRegistry
         it.linkService = linkService
     }
@@ -40,28 +41,28 @@ class DiscussionFinderTaskTest {
         val context = discussionFinderTask.createContext(emptyMap())
         val link = Link(EntryId("eid"), "title", "url", "", "", Instant.EPOCH, Instant.EPOCH)
 
-        every { linkService.get(EntryId("eid")) } returns link
-        every { workerRegistry.acceptDiscussionWork(any()) } just Runs
+        every { linkService.get(TEST_USER, EntryId("eid")) } returns link
+        every { workerRegistry.acceptDiscussionWork(TEST_USER, any()) } just Runs
 
         runBlocking {
             discussionFinderTask.process(context)
         }
 
-        verify(exactly = 1) { linkService.get(EntryId("eid")) }
-        verify(exactly = 1) { workerRegistry.acceptDiscussionWork(link.id) }
+        verify(exactly = 1) { linkService.get(TEST_USER, EntryId("eid")) }
+        verify(exactly = 1) { workerRegistry.acceptDiscussionWork(TEST_USER, link.id) }
     }
 
     @Test
     fun testProcessNoResult() {
         val context = discussionFinderTask.createContext(emptyMap())
 
-        every { linkService.get(EntryId("eid")) } returns null
+        every { linkService.get(TEST_USER, EntryId("eid")) } returns null
 
         runBlocking {
             discussionFinderTask.process(context)
         }
 
-        verify(exactly = 1) { linkService.get(EntryId("eid")) }
+        verify(exactly = 1) { linkService.get(TEST_USER, EntryId("eid")) }
     }
 
 }

@@ -1,9 +1,6 @@
 package lynks.task
 
-import lynks.common.EntryId
-import lynks.common.TaskDefinition
-import lynks.common.TaskId
-import lynks.common.TaskParameterType
+import lynks.common.*
 import lynks.common.exception.InvalidModelException
 import lynks.common.inject.Inject
 import lynks.common.inject.ServiceProvider
@@ -19,10 +16,10 @@ class TaskService(private val entryService: EntryService,
 
     private val log = loggerFor<TaskService>()
 
-    fun runTask(eid: EntryId, taskId: TaskId, params: Map<String, String>): Boolean {
-        entryService.get(eid)?.let { it ->
+    fun runTask(userId: UserId, eid: EntryId, taskId: TaskId, params: Map<String, String>): Boolean {
+        entryService.get(userId, eid)?.let { it ->
             it.props.getTask(taskId)?.let {
-                val task = convertToConcreteTask(taskId, eid, it)
+                val task = convertToConcreteTask(taskId, eid, userId, it)
                 log.info("Submitting task work request for entry={} task={}", eid, taskId)
                 val taskParams = formTaskParams(it, params)
                 workerRegistry.acceptTaskWork(task, task.createContext(taskParams))
@@ -34,14 +31,14 @@ class TaskService(private val entryService: EntryService,
     }
 
     @Suppress("UNCHECKED_CAST")
-    private fun convertToConcreteTask(taskId: TaskId, eid: EntryId, def: TaskDefinition): Task<TaskContext> {
+    private fun convertToConcreteTask(taskId: TaskId, eid: EntryId, userId: UserId, def: TaskDefinition): Task<TaskContext> {
         val clazz = Class.forName(def.className).kotlin
 
         val ctor = clazz.primaryConstructor
-            ?: clazz.constructors.firstOrNull { it.parameters.size == 2 }
+            ?: clazz.constructors.firstOrNull { it.parameters.size == 3 }
             ?: throw IllegalArgumentException("No constructor available for ${clazz.qualifiedName}")
 
-        val instance = ctor.call(taskId, eid) as Task<TaskContext>
+        val instance = ctor.call(taskId, eid, userId) as Task<TaskContext>
         return instance.also(::autowire)
     }
 

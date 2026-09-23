@@ -136,10 +136,14 @@ class WebResourceRetriever : ResourceRetriever {
         return builder
     }
 
-    private val secrets = listOfNotNull(Environment.external.youtubeApiKey, Environment.external.joltToken)
-        .filter { it.isNotBlank() }
+    private val secrets = listOfNotNull(Environment.external.youtubeApiKey).filter { it.isNotBlank() }
 
-    private fun redact(location: String): String = secrets.fold(location) { acc, secret -> acc.replace(secret, "***") }
+    // jolt tokens belong to users, so they are masked by position rather than listed up front
+    private val joltToken = Regex("/inbound/[^/?#]+")
+
+    private fun redact(location: String): String = secrets
+        .fold(location) { acc, secret -> acc.replace(secret, "***") }
+        .replace(joltToken, "/inbound/***")
 
     companion object {
         val REQUEST_TIMEOUT: Duration = Duration.ofSeconds(30)

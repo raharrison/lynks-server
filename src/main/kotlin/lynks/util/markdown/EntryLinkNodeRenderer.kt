@@ -6,22 +6,20 @@ import com.vladsch.flexmark.html.renderer.NodeRendererContext
 import com.vladsch.flexmark.html.renderer.NodeRendererFactory
 import com.vladsch.flexmark.html.renderer.NodeRenderingHandler
 import com.vladsch.flexmark.util.data.DataHolder
-import lynks.common.EntryId
-import lynks.common.Link
-import lynks.common.Note
-import lynks.common.Snippet
+import lynks.common.*
 import lynks.entry.EntryService
 
 internal class EntryLinkNodeRenderer(private val entryService: EntryService) : NodeRenderer {
 
     override fun getNodeRenderingHandlers(): Set<NodeRenderingHandler<*>> {
-        return setOf(NodeRenderingHandler(EntryLinkNode::class.java) { node: EntryLinkNode, _: NodeRendererContext, html: HtmlWriter ->
-            render(node, html)
+        return setOf(NodeRenderingHandler(EntryLinkNode::class.java) { node: EntryLinkNode, context: NodeRendererContext, html: HtmlWriter ->
+            render(node, context, html)
         })
     }
 
-    private fun render(node: EntryLinkNode, html: HtmlWriter) {
-        val entry = entryService.get(EntryId(node.text.toString()))
+    private fun render(node: EntryLinkNode, context: NodeRendererContext, html: HtmlWriter) {
+        val owner = DOCUMENT_OWNER.get(context.document)
+        val entry = if (owner.isEmpty()) null else entryService.get(UserId(owner), EntryId(node.text.toString()))
         if (entry == null) {
             html.srcPos(node.chars).text(node.chars)
         } else {

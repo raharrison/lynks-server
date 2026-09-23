@@ -1,15 +1,15 @@
 package lynks.user
 
-import lynks.common.Entries
-import lynks.common.EntryAudit
-import lynks.common.RowMapper
+import lynks.common.*
 import lynks.common.exception.InvalidModelException
 import lynks.common.page.Page
 import lynks.common.page.PageRequest
 import lynks.common.page.SortDirection
 import lynks.util.HashUtils
+import lynks.util.RandomUtils
 import lynks.util.loggerFor
 import lynks.util.orderBy
+import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.insert
@@ -24,88 +24,170 @@ import kotlin.math.max
 class UserService(private val twoFactorService: TwoFactorService) {
 
     private val log = loggerFor<UserService>()
-    private val userColumns = Users.columns - Users.password
+    private val userColumns = Users.columns - Users.password - Users.totp
     private val activityLogColumns = EntryAudit.columns + listOf(Entries.type, Entries.title)
 
-    fun getUser(username: String): User? = transaction {
-        Users.select(userColumns).where { Users.username eq username and Users.activated }.map {
-            User(
-                it[Users.username],
-                it[Users.displayName],
-                it[Users.digest],
-                it[Users.dateCreated].toInstant(),
-                it[Users.dateUpdated].toInstant()
-            )
-        }.singleOrNull()
+    private fun toUser(row: ResultRow) = User(
+        UserId(row[Users.id]),
+        row[Users.username],
+        row[Users.displayName],
+        row[Users.digest],
+        row[Users.joltToken] != null,
+        row[Users.dateCreated].toInstant(),
+        row[Users.dateUpdated].toInstant()
+    )
+
+    fun getUser(userId: UserId): User? = transaction {
+        Users.select(userColumns).where { (Users.id eq userId.value) and Users.activated }
+            .map { toUser(it) }
+            .singleOrNull()
     }
 
-    fun register(request: AuthRequest): String = transaction {
-        if (Users.selectAll().where { Users.username eq request.username }.count() > 0) {
+    fun getActiveUsers(): List<User> = transaction {
+        Users.select(userColumns).where { Users.activated eq true }.map { toUser(it) }
+    }
+
+    fun getPrincipal(userId: UserId): UserPrincipal? = transaction {
+        Users.select(Users.id, Users.username).where { (Users.id eq userId.value) and Users.activated }
+            .map { UserPrincipal(UserId(it[Users.id]), it[Users.username]) }
+            .singleOrNull()
+    }
+
+    fun getPrincipal(username: String): UserPrincipal? = transaction {
+        Users.select(Users.id, Users.username).where { (Users.username eq username) and Users.activated }
+            .map { UserPrincipal(UserId(it[Users.id]), it[Users.username]) }
+            .singleOrNull()
+    }
+
+    // registered users stay inactive until activated with scripts/manage_users.py
+    fun register(request: AuthRequest): String {
+        Credentials.checkUsername(request.username)
+        Credentials.checkPassword(request.password)
+        createUser(request.username, HashUtils.bcryptHash(request.password), activated = false)
+        log.info("Successfully registered new user {}", request.username)
+        return request.username
+    }
+
+    private fun createUser(username: String, passwordHash: String, activated: Boolean): UserId = transaction {
+        if (!Users.selectAll().where { Users.username eq username }.empty()) {
             throw InvalidModelException("User with that name already exists")
         }
+        val id = newUserId()
         val currentTime = OffsetDateTime.now(ZoneOffset.UTC)
         Users.insert {
-            it[username] = request.username
-            it[password] = HashUtils.bcryptHash(request.password)
+            it[Users.id] = id.value
+            it[Users.username] = username
+            it[password] = passwordHash
             it[dateCreated] = currentTime
             it[dateUpdated] = currentTime
-            it[activated] = false
+            it[Users.activated] = activated
         }
-        log.info("Successfully registered new user {}", request.username)
-        request.username
+        id
     }
 
-    fun activateUser(username: String): Int = transaction {
-        Users.update({ Users.username eq username }) {
-            it[activated] = true
-            it[dateUpdated] = OffsetDateTime.now(ZoneOffset.UTC)
+    // With auth disabled every request acts as the default user, so it has to exist even without a password
+    fun ensureDefaultUser() {
+        val username = Environment.auth.defaultUserName
+        val configuredPassword = Environment.auth.defaultUserPassword
+        val (exists, activated, noUsers) = transaction {
+            val row = Users.select(Users.activated).where { Users.username eq username }.singleOrNull()
+            Triple(row != null, row?.get(Users.activated) ?: false, Users.selectAll().empty())
         }
+
+        if (exists) {
+            if (!Environment.auth.enabled && !activated) {
+                log.warn("Auth is disabled but default user '{}' is deactivated, so every request will be rejected", username)
+            }
+            return
+        }
+
+        if (Environment.auth.enabled) {
+            if (!noUsers) return
+            if (configuredPassword == null) {
+                log.warn("Auth is enabled but no users exist. Set auth.defaultUserPassword or create one with scripts/manage_users.py")
+                return
+            }
+        }
+
+        val passwordHash = when {
+            configuredPassword == null -> HashUtils.bcryptHash(RandomUtils.generateUuid64())
+            BCRYPT_PATTERN.containsMatchIn(configuredPassword) -> configuredPassword
+            else -> HashUtils.bcryptHash(configuredPassword)
+        }
+        createUser(username, passwordHash, activated = true)
+        log.info("Default user with name '{}' created", username)
     }
 
-    fun updateUser(userUpdate: UserUpdateRequest): User? = transaction {
-        val updated = Users.update({ Users.username eq userUpdate.username and Users.activated }) {
+    fun updateUser(userId: UserId, userUpdate: UserUpdateRequest): User? = transaction {
+        val updated = Users.update({ (Users.id eq userId.value) and Users.activated }) {
             it[displayName] = userUpdate.displayName
             it[digest] = userUpdate.digest
             it[dateUpdated] = OffsetDateTime.now(ZoneOffset.UTC)
         }
-        if (updated > 0) getUser(userUpdate.username) else null
+        if (updated > 0) getUser(userId) else null
     }
 
-    fun changePassword(request: ChangePasswordRequest): Boolean = transaction {
-        if (checkAuth(AuthRequest(request.username, request.oldPassword), false) == AuthResult.SUCCESS) {
-            return@transaction Users.update({ Users.username eq request.username and Users.activated }) {
-                it[password] = HashUtils.bcryptHash(request.newPassword)
-                it[dateUpdated] = OffsetDateTime.now(ZoneOffset.UTC)
-            } > 0
+    fun getJoltToken(userId: UserId): String? = transaction {
+        Users.select(Users.joltToken).where { (Users.id eq userId.value) and Users.activated }
+            .map { it[Users.joltToken] }
+            .singleOrNull()
+    }
+
+    // blank clears the token; it becomes a url path segment, so only url safe characters are accepted
+    fun updateJoltToken(userId: UserId, token: String?): User? = transaction {
+        val cleaned = token?.trim()?.ifEmpty { null }
+        if (cleaned != null && !JOLT_TOKEN_PATTERN.matches(cleaned)) {
+            throw InvalidModelException("Jolt token must be up to $JOLT_TOKEN_MAX_LENGTH letters, digits, '_' or '-'")
         }
-        log.info("Auth check failed during password change for user {}", request.username)
-        false
+        val updated = Users.update({ (Users.id eq userId.value) and Users.activated }) {
+            it[joltToken] = cleaned
+            it[dateUpdated] = OffsetDateTime.now(ZoneOffset.UTC)
+        }
+        if (updated > 0) getUser(userId) else null
     }
 
-    fun checkAuth(request: AuthRequest, twoFactor: Boolean = true): AuthResult = transaction {
+    fun changePassword(userId: UserId, request: ChangePasswordRequest): Boolean = transaction {
         val storedPassword = Users.select(Users.password)
-            .where { Users.username eq request.username and Users.activated }
-            .map { it[Users.password].toCharArray() }.singleOrNull()
-            ?: return@transaction AuthResult.INVALID_CREDENTIALS
+            .where { (Users.id eq userId.value) and Users.activated }
+            .map { it[Users.password] }
+            .singleOrNull()
+        if (storedPassword == null || !HashUtils.verifyBcryptHash(
+                request.oldPassword.toCharArray(),
+                storedPassword.toCharArray()
+            )
+        ) {
+            log.info("Auth check failed during password change for user {}", userId)
+            return@transaction false
+        }
+        Credentials.checkPassword(request.newPassword)
+        Users.update({ Users.id eq userId.value }) {
+            it[password] = HashUtils.bcryptHash(request.newPassword)
+            it[dateUpdated] = OffsetDateTime.now(ZoneOffset.UTC)
+        } > 0
+    }
 
-        val twoFactorCheck = if(twoFactor) twoFactorService.validateTotp(request.username, request.totp) else AuthResult.SUCCESS
+    fun checkAuth(request: AuthRequest, twoFactor: Boolean = true): AuthOutcome = transaction {
+        val (userId, storedPassword) = Users.select(Users.id, Users.password)
+            .where { (Users.username eq request.username) and Users.activated }
+            .map { UserId(it[Users.id]) to it[Users.password].toCharArray() }
+            .singleOrNull()
+            ?: return@transaction AuthOutcome(AuthResult.INVALID_CREDENTIALS)
+
+        val twoFactorCheck = if (twoFactor) twoFactorService.validateTotp(userId, request.totp) else AuthResult.SUCCESS
         if (twoFactorCheck == AuthResult.SUCCESS) {
             if (HashUtils.verifyBcryptHash(request.password.toCharArray(), storedPassword))
-                AuthResult.SUCCESS
+                AuthOutcome(AuthResult.SUCCESS, userId)
             else
-                AuthResult.INVALID_CREDENTIALS
+                AuthOutcome(AuthResult.INVALID_CREDENTIALS)
         } else {
-            twoFactorCheck
+            AuthOutcome(twoFactorCheck)
         }
     }
 
-    fun isDigestEnabled(): Boolean = transaction {
-        Users.selectAll().where { Users.digest and Users.activated }.empty().not()
-    }
-
-    fun getUserActivityLog(pageRequest: PageRequest = PageRequest()): Page<ActivityLogItem> = transaction {
+    fun getUserActivityLog(userId: UserId, pageRequest: PageRequest = PageRequest()): Page<ActivityLogItem> = transaction {
         val sortOrder = pageRequest.direction ?: SortDirection.DESC
-        val baseQuery = EntryAudit.leftJoin(Entries).select(activityLogColumns)
+        val baseQuery = EntryAudit.innerJoin(Entries).select(activityLogColumns)
+            .where { Entries.userId eq userId.value }
         Page.of(
             baseQuery.copy()
                 .orderBy(EntryAudit.timestamp, sortOrder)
@@ -113,6 +195,11 @@ class UserService(private val twoFactorService: TwoFactorService) {
                 .offset(max(0, (pageRequest.page - 1) * pageRequest.size))
                 .map { RowMapper.toActivityLogItem(it) }, pageRequest, baseQuery.count()
         )
+    }
+
+    private companion object {
+        val BCRYPT_PATTERN = Regex("""^\$2[abxy]\$\d{2}\$""")
+        val JOLT_TOKEN_PATTERN = Regex("^[A-Za-z0-9_-]{1,$JOLT_TOKEN_MAX_LENGTH}$")
     }
 
 }

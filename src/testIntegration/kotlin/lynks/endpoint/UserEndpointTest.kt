@@ -4,12 +4,12 @@ import io.restassured.RestAssured.*
 import io.restassured.http.ContentType
 import lynks.common.EntryId
 import lynks.common.EntryType
+import lynks.common.Environment
 import lynks.common.ServerTest
 import lynks.common.page.Page
+import lynks.entry.EntryAuditService
 import lynks.user.*
-import lynks.util.activateUser
-import lynks.util.createDummyEntry
-import lynks.util.createDummyUser
+import lynks.util.*
 import org.assertj.core.api.Assertions.assertThat
 import org.hamcrest.Matchers
 import org.junit.jupiter.api.BeforeEach
@@ -22,61 +22,61 @@ class UserEndpointTest : ServerTest() {
         createDummyUser("user1", "Bob Smith")
     }
 
-    @Test
-    fun testGetDefaultUser() {
-        get("/user")
+    private fun login(username: String, password: String): Int =
+        given()
+            .contentType(ContentType.JSON)
+            .body(AuthRequest(username, password))
+            .When()
+            .post("/login")
             .then()
-            .statusCode(401)
-    }
+            .extract().statusCode()
 
     @Test
-    fun testGetUser() {
-        // created user
-        createDummyUser("user2", "Bert Smith")
-        val user = get("/user/{id}", "user2")
+    fun testGetCurrentUser() {
+        // with auth disabled every request acts as the default user
+        val user = get("/user")
             .then()
             .statusCode(200)
             .extract().to<User>()
-        assertThat(user.username).isEqualTo("user2")
-        assertThat(user.displayName).isEqualTo("Bert Smith")
-        assertThat(user.dateCreated).isEqualTo(user.dateUpdated)
+        assertThat(user.id).isEqualTo(TEST_USER)
+        assertThat(user.username).isEqualTo(Environment.auth.defaultUserName)
     }
 
     @Test
-    fun testGetUserNotFound() {
-        get("/user/invalid")
+    fun testDeactivatedDefaultUserIsRejected() {
+        activateUser(Environment.auth.defaultUserName, false)
+        get("/user").then().statusCode(401)
+        get("/entry").then().statusCode(401)
+    }
+
+    @Test
+    fun testOtherUsersAreNotAddressable() {
+        get("/user/{id}", "user1")
             .then()
-            .statusCode(401)
+            .statusCode(404)
     }
 
     @Test
     fun testRegisterUser() {
         given()
             .contentType(ContentType.JSON)
-            .body(AuthRequest("user2", "pass"))
+            .body(AuthRequest("user2", "password1"))
             .When()
             .post("/user/register")
             .then()
             .statusCode(201)
             .body("username", Matchers.equalTo("user2"))
         // by default not activated
-        get("/user/{id}", "user2")
-            .then()
-            .statusCode(401)
+        assertThat(login("user2", "password1")).isEqualTo(401)
         activateUser("user2")
-        val user = get("/user/{id}", "user2")
-            .then()
-            .statusCode(200)
-            .extract().to<User>()
-        assertThat(user.username).isEqualTo("user2")
-        assertThat(user.displayName).isNull()
+        assertThat(login("user2", "password1")).isEqualTo(200)
     }
 
     @Test
     fun testRegisterUserAlreadyExists() {
         given()
             .contentType(ContentType.JSON)
-            .body(AuthRequest("user1", "pass"))
+            .body(AuthRequest("user1", "password1"))
             .When()
             .post("/user/register")
             .then()
@@ -84,10 +84,23 @@ class UserEndpointTest : ServerTest() {
     }
 
     @Test
+    fun testRegisterInvalidCredentials() {
+        listOf(AuthRequest("user2", "short"), AuthRequest("x", "password1"), AuthRequest("bad name", "password1")).forEach {
+            given()
+                .contentType(ContentType.JSON)
+                .body(it)
+                .When()
+                .post("/user/register")
+                .then()
+                .statusCode(400)
+        }
+    }
+
+    @Test
     fun testLoginUser() {
         given()
             .contentType(ContentType.JSON)
-            .body(AuthRequest("user1", "pass"))
+            .body(AuthRequest("user1", DUMMY_USER_PASSWORD))
             .When()
             .post("/login")
             .then()
@@ -105,6 +118,12 @@ class UserEndpointTest : ServerTest() {
     }
 
     @Test
+    fun testLoginDeactivatedUser() {
+        activateUser("user1", false)
+        assertThat(login("user1", DUMMY_USER_PASSWORD)).isEqualTo(401)
+    }
+
+    @Test
     fun testLogout() {
         given()
             .contentType(ContentType.JSON)
@@ -118,34 +137,22 @@ class UserEndpointTest : ServerTest() {
     fun testChangePassword() {
         given()
             .contentType(ContentType.JSON)
-            .body(AuthRequest("user2", "pass123"))
-            .When()
-            .post("/user/register")
-            .then()
-            .statusCode(201)
-        activateUser("user2")
-        given()
-            .contentType(ContentType.JSON)
-            .body(ChangePasswordRequest("user2", "pass123", "pass456"))
+            .body(ChangePasswordRequest(DUMMY_USER_PASSWORD, "password456"))
             .When()
             .post("/user/changePassword")
             .then()
             .statusCode(200)
+        assertThat(login(Environment.auth.defaultUserName, DUMMY_USER_PASSWORD)).isEqualTo(401)
+        assertThat(login(Environment.auth.defaultUserName, "password456")).isEqualTo(200)
+        // only the caller's own password changes
+        assertThat(login("user1", DUMMY_USER_PASSWORD)).isEqualTo(200)
     }
 
     @Test
     fun testChangePasswordInvalidOldPassword() {
         given()
             .contentType(ContentType.JSON)
-            .body(AuthRequest("user2", "pass123"))
-            .When()
-            .post("/user/register")
-            .then()
-            .statusCode(201)
-        activateUser("user2")
-        given()
-            .contentType(ContentType.JSON)
-            .body(ChangePasswordRequest("user2", "invalid", "pass456"))
+            .body(ChangePasswordRequest("invalid", "password456"))
             .When()
             .post("/user/changePassword")
             .then()
@@ -153,30 +160,39 @@ class UserEndpointTest : ServerTest() {
     }
 
     @Test
+    fun testChangePasswordTooShort() {
+        given()
+            .contentType(ContentType.JSON)
+            .body(ChangePasswordRequest(DUMMY_USER_PASSWORD, "short"))
+            .When()
+            .post("/user/changePassword")
+            .then()
+            .statusCode(400)
+        assertThat(login(Environment.auth.defaultUserName, DUMMY_USER_PASSWORD)).isEqualTo(200)
+    }
+
+    @Test
     fun testUpdateUser() {
-        createDummyUser("user2", "Bert Smith")
-        val original = get("/user/{id}", "user2")
+        val original = get("/user")
             .then()
             .statusCode(200)
             .extract().to<User>()
-        assertThat(original.username).isEqualTo("user2")
-        assertThat(original.displayName).isEqualTo("Bert Smith")
+        assertThat(original.displayName).isNull()
         assertThat(original.digest).isFalse()
-        assertThat(original.dateCreated).isEqualTo(original.dateUpdated)
         val updated = given()
             .contentType(ContentType.JSON)
-            .body(UserUpdateRequest(original.username, "Bart Smith", true))
+            .body(UserUpdateRequest("Bart Smith", true))
             .When()
             .put("/user")
             .then()
             .statusCode(200)
             .extract().to<User>()
-        assertThat(updated).isNotNull()
+        assertThat(updated.id).isEqualTo(original.id)
         assertThat(updated.username).isEqualTo(original.username)
         assertThat(updated.displayName).isEqualTo("Bart Smith")
         assertThat(updated.digest).isTrue()
         assertThat(updated.dateCreated).isNotEqualTo(updated.dateUpdated)
-        val user = get("/user/{id}", updated.username)
+        val user = get("/user")
             .then()
             .statusCode(200)
             .extract().to<User>()
@@ -184,21 +200,32 @@ class UserEndpointTest : ServerTest() {
     }
 
     @Test
-    fun testUpdateUserNotFound() {
-        given()
+    fun testJoltToken() {
+        val updated = given()
             .contentType(ContentType.JSON)
-            .body(UserUpdateRequest("invalid", "Bill Smith"))
+            .body(JoltTokenRequest("jlt_live_abc"))
             .When()
-            .put("/user")
+            .put("/user/jolt")
             .then()
-            .statusCode(404)
+            .statusCode(200)
+            .body("joltToken", Matchers.nullValue())
+            .extract().to<User>()
+        assertThat(updated.joltConfigured).isTrue()
+        get("/user").then().statusCode(200).body("joltConfigured", Matchers.equalTo(true))
+
+        given().contentType(ContentType.JSON).body(JoltTokenRequest("not/safe"))
+            .When().put("/user/jolt").then().statusCode(400)
+        given().contentType(ContentType.JSON).body(JoltTokenRequest(null))
+            .When().put("/user/jolt").then().statusCode(200).body("joltConfigured", Matchers.equalTo(false))
     }
 
     @Test
     fun testGetUserActivityLog() {
         createDummyEntry("e1", "note1", "note content", EntryType.NOTE)
+        createDummyEntry("e2", "note2", "note content", EntryType.NOTE, userId = createDummyUser("user2"))
         post("/entry/{id}/star", "e1")
         post("/entry/{id}/unstar", "e1")
+        EntryAuditService().acceptAuditEvent(EntryId("e2"), "source", "not mine")
 
         val activityLog = get("/user/activity")
             .then()
@@ -214,9 +241,7 @@ class UserEndpointTest : ServerTest() {
         assertThat(activityLog.content).extracting("details").doesNotHaveDuplicates()
         assertThat(activityLog.content).extracting("entryType").containsOnly(EntryType.NOTE)
         assertThat(activityLog.content).extracting("entryTitle").containsOnly("note1")
-        assertThat(activityLog.content).extracting("details").doesNotHaveDuplicates()
         assertThat(activityLog.content).extracting("timestamp").doesNotContainNull()
     }
-
 
 }

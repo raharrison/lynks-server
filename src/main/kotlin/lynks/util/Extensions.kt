@@ -2,11 +2,12 @@ package lynks.util
 
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
-import lynks.common.Environment
-import lynks.common.UserSession
+import lynks.common.UserId
 import lynks.common.exception.InvalidModelException
+import lynks.common.exception.UnauthorizedException
 import lynks.common.page.PageRequest
 import lynks.common.page.SortDirection
+import lynks.user.UserPrincipal
 import org.jetbrains.exposed.v1.core.*
 import org.jetbrains.exposed.v1.jdbc.Query
 import org.slf4j.Logger
@@ -43,14 +44,7 @@ fun ApplicationCall.versionParameter(): Int {
     return version.toIntOrNull() ?: throw InvalidModelException("Invalid version: $version")
 }
 
-// check if the given call is authorized to perform actions for given user
-fun ApplicationCall.isCallAuthorizedForUser(username: String): Boolean {
-    if(Environment.auth.enabled) {
-        val session = principal<UserSession>() ?: return false
-        return session.username == username
-    }
-    return true
-}
+fun ApplicationCall.userId(): UserId = principal<UserPrincipal>()?.id ?: throw UnauthorizedException()
 
 fun Path.toUrlString(): String {
     return toString().replace("\\", "/")

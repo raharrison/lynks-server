@@ -3,6 +3,7 @@ package lynks.worker
 import kotlinx.coroutines.channels.SendChannel
 import lynks.common.CommentId
 import lynks.common.EntryId
+import lynks.common.UserId
 import lynks.common.inject.ServiceProvider
 import lynks.task.Task
 import lynks.task.TaskContext
@@ -39,20 +40,20 @@ class WorkerRegistry {
         taskWorker.trySend(TaskRunnerRequest(task, context))
     }
 
-    fun acceptDiscussionWork(linkId: EntryId) {
-        discussionWorker.trySend(DiscussionFinderWorkerRequest(linkId))
+    fun acceptDiscussionWork(userId: UserId, linkId: EntryId) {
+        discussionWorker.trySend(DiscussionFinderWorkerRequest(userId, linkId))
     }
 
     fun acceptReminderWork(request: ReminderWorkerRequest) {
         reminderWorker.trySend(request)
     }
 
-    fun acceptEntryRefWork(entryId: EntryId) {
-        entryRefWorker.trySend(DefaultEntryRefWorkerRequest(entryId))
+    fun acceptEntryRefWork(userId: UserId, entryId: EntryId) {
+        entryRefWorker.trySend(DefaultEntryRefWorkerRequest(userId, entryId))
     }
 
-    fun acceptCommentRefWork(entryId: EntryId, commentId: CommentId, updateType: CrudType) {
-        entryRefWorker.trySend(CommentRefWorkerRequest(entryId, commentId, updateType))
+    fun acceptCommentRefWork(userId: UserId, entryId: EntryId, commentId: CommentId, updateType: CrudType) {
+        entryRefWorker.trySend(CommentRefWorkerRequest(userId, entryId, commentId, updateType))
     }
 
 }

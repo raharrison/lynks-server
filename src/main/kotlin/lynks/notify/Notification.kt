@@ -1,6 +1,7 @@
 package lynks.notify
 
 import lynks.common.*
+import lynks.user.Users
 import org.jetbrains.exposed.v1.core.ReferenceOption
 import org.jetbrains.exposed.v1.core.Table
 import org.jetbrains.exposed.v1.javatime.timestampWithTimeZone
@@ -8,17 +9,22 @@ import java.time.Instant
 
 object Notifications : Table("notifications") {
     val notificationId = varchar("id", UID_LENGTH)
+    val userId = varchar("user_id", UID_LENGTH).references(Users.id, ReferenceOption.CASCADE)
     val notificationType = enumerationByName<NotificationType>("type", 30)
     val message = varchar("message", 255)
     val read = bool("read")
-    val entryId = varchar("entry_id", UID_LENGTH).references(Entries.id, ReferenceOption.CASCADE).nullable()
-    val dateCreated = timestampWithTimeZone("date_created").index()
+    val entryId = varchar("entry_id", UID_LENGTH).references(Entries.id, ReferenceOption.CASCADE).nullable().index()
+    val dateCreated = timestampWithTimeZone("date_created")
     override val primaryKey = PrimaryKey(notificationId)
+
+    init {
+        index(false, userId, dateCreated)
+    }
 }
 
 enum class NotificationType { PROCESSED, ERROR, REMINDER, DISCUSSIONS, DIGEST }
 
-// PUSH is currently delivered over the websocket; JOLT hands off to jolt's inbound channel
+// PUSH is the in-app notification list, which the UI polls; JOLT also hands off to jolt's inbound channel
 enum class NotificationMethod { PUSH, JOLT }
 
 // entry point from services to save into main table

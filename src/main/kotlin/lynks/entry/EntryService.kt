@@ -13,15 +13,14 @@ import lynks.util.combine
 import lynks.util.findColumn
 import org.jetbrains.exposed.v1.core.*
 import org.jetbrains.exposed.v1.core.statements.UpdateBuilder
-import org.jetbrains.exposed.v1.jdbc.Query
 import org.jetbrains.exposed.v1.jdbc.select
-import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.statements.jdbc.JdbcConnectionImpl
 import org.jetbrains.exposed.v1.jdbc.statements.jdbc.JdbcResult
 import org.jetbrains.exposed.v1.jdbc.transactions.TransactionManager
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.jetbrains.exposed.v1.jdbc.update
 import java.sql.Connection
+import java.sql.PreparedStatement
 import kotlin.math.max
 
 class EntryService(
@@ -47,9 +46,7 @@ class EntryService(
         }
     }
 
-    override fun getBaseQuery(base: ColumnSet, where: BaseEntries): Query {
-        return base.selectAll()
-    }
+    override fun typeCondition(table: BaseEntries): Op<Boolean>? = null
 
     override val slimColumnSet: List<Expression<*>> = listOf(
         Entries.id, Entries.title, Entries.src, Entries.dateUpdated, Entries.content,
@@ -57,53 +54,53 @@ class EntryService(
     )
 
     @Deprecated("EntryService does not support insert/update via the generic path", level = DeprecationLevel.ERROR)
-    override fun toInsert(eId: EntryId, entry: NewEntry): BaseEntries.(UpdateBuilder<*>) -> Unit =
+    override fun toInsert(userId: UserId, eId: EntryId, entry: NewEntry): BaseEntries.(UpdateBuilder<*>) -> Unit =
         throw NotImplementedError("EntryService.toInsert is unreachable - use a type-specific service")
 
     @Deprecated("EntryService does not support insert/update via the generic path", level = DeprecationLevel.ERROR)
-    override fun toNewEntry(entry: Entry): NewEntry =
+    override fun toNewEntry(userId: UserId, entry: Entry): NewEntry =
         throw NotImplementedError("EntryService.toNewEntry is unreachable - use a type-specific service")
 
     @Deprecated("EntryService does not support insert/update via the generic path", level = DeprecationLevel.ERROR)
-    override fun toUpdate(entry: NewEntry): BaseEntries.(UpdateBuilder<*>) -> Unit =
+    override fun toUpdate(userId: UserId, entry: NewEntry): BaseEntries.(UpdateBuilder<*>) -> Unit =
         throw NotImplementedError("EntryService.toUpdate(NewEntry) is unreachable - use a type-specific service")
 
     @Deprecated("EntryService does not support insert/update via the generic path", level = DeprecationLevel.ERROR)
-    override fun toUpdate(entry: Entry): BaseEntries.(UpdateBuilder<*>) -> Unit =
+    override fun toUpdate(userId: UserId, entry: Entry): BaseEntries.(UpdateBuilder<*>) -> Unit =
         throw NotImplementedError("EntryService.toUpdate(Entry) is unreachable - use a type-specific service")
 
-    fun suggest(term: String, page: PageRequest = DefaultPageRequest): Page<SlimEntry> {
+    fun suggest(userId: UserId, term: String, page: PageRequest = DefaultPageRequest): Page<SlimEntry> {
         if (term.isBlank()) return Page.empty()
         return transaction {
             val pattern = "${term.lowercase()}%"
-            val baseQuery = getBaseQuery(Entries)
+            val baseQuery = baseQuery(userId)
                 .adjustSelect { select(slimColumnSet + Entries.type) }
                 .combine { Entries.title.lowerCase() like pattern }
                 .orderBy(Entries.dateUpdated, SortOrder.DESC)
             val entries = baseQuery.copy().apply {
                 limit(page.size)
                 offset(max(0, (page.page - 1) * page.size))
-            }.toList().let { resolveEntryRows(it) }
+            }.toList().let { resolveEntryRows(userId, it) }
             val count = baseQuery.count()
             Page.of(entries, page, count)
         }
     }
 
-    fun search(term: String, page: PageRequest = DefaultPageRequest): Page<SlimEntry> {
+    fun search(userId: UserId, term: String, page: PageRequest = DefaultPageRequest): Page<SlimEntry> {
         if (term.isBlank()) return Page.empty()
         return transaction {
             val conn = (TransactionManager.current().connection as JdbcConnectionImpl).connection
-            runPostgresSearchQuery(conn, term, page)
+            runPostgresSearchQuery(conn, userId, term, page)
         }
     }
 
-    private fun runPostgresSearchQuery(conn: Connection, term: String, page: PageRequest): Page<SlimEntry> {
+    private fun runPostgresSearchQuery(conn: Connection, userId: UserId, term: String, page: PageRequest): Page<SlimEntry> {
         val columns = slimColumnSet + Entries.type
         val columnSelect = columns.joinToString(", ") { (it as Column<*>).name }
         val andWhere = if (page.source != null) " AND ${Entries.src.name} LIKE ?" else ""
         val baseSql = """
                     FROM ${Entries.tableName}, websearch_to_tsquery('english', ?) query_ts
-                    WHERE TS_DOC @@ query_ts $andWhere
+                    WHERE ${Entries.userId.name} = ? AND TS_DOC @@ query_ts $andWhere
                 """.trimIndent()
 
         val sortOrder = page.direction ?: SortDirection.DESC
@@ -122,16 +119,21 @@ class EntryService(
                     LIMIT ${page.size} OFFSET ${max(0, (page.page - 1) * page.size)}
                 """.trimIndent()
 
+        fun PreparedStatement.bindSearch() {
+            setString(1, term)
+            setString(2, userId.value)
+            if (page.source != null) setString(3, page.source)
+        }
+
         val entries = conn.prepareStatement(searchSql).use { prep ->
-            prep.setString(1, term)
-            if (page.source != null) prep.setString(2, page.source)
+            prep.bindSearch()
             prep.executeQuery().use { set ->
                 val fieldMap = columns.mapIndexed { index, expression -> expression to index }.toMap()
                 val resultRows = mutableListOf<ResultRow>()
                 while (set.next()) {
                     resultRows.add(ResultRow.create(JdbcResult(set), fieldMap))
                 }
-                resolveEntryRows(resultRows)
+                resolveEntryRows(userId, resultRows)
             }
         }
         val countSql = """
@@ -139,8 +141,7 @@ class EntryService(
                     $baseSql
                 """.trimIndent()
         val count = conn.prepareStatement(countSql).use { prep ->
-            prep.setString(1, term)
-            if (page.source != null) prep.setString(2, page.source)
+            prep.bindSearch()
             prep.executeQuery().use { set ->
                 set.next()
                 set.getLong(1)
@@ -149,22 +150,24 @@ class EntryService(
         return Page.of(entries, page, count)
     }
 
-    fun star(id: EntryId, starred: Boolean): Entry? = transaction {
-        val updated = Entries.update({ Entries.id eq id.value }) {
+    fun star(userId: UserId, id: EntryId, starred: Boolean): Entry? = transaction {
+        val where = baseQuery(userId).combine { Entries.id eq id.value }.where
+            ?: throw IllegalStateException("Missing where clause for entry star update id=${id.value}")
+        val updated = Entries.update({ where }) {
             it[Entries.starred] = starred
         }
         if (updated > 0) {
             val starMessage = if (starred) "starred" else "unstarred"
             entryAuditService.acceptAuditEvent(id, EntryService::class.simpleName, "Entry $starMessage")
-            get(id)
+            get(userId, id)
         } else {
             null
         }
     }
 
-    fun getEntryVersions(id: EntryId): List<EntryVersion> = transaction {
+    fun getEntryVersions(userId: UserId, id: EntryId): List<EntryVersion> = transaction {
         EntryVersions.select(EntryVersions.id, EntryVersions.version, EntryVersions.dateUpdated)
-            .where { EntryVersions.id eq id.value }
+            .where { (EntryVersions.id eq id.value) and (EntryVersions.userId eq userId.value) }
             .orderBy(EntryVersions.version, SortOrder.ASC)
             .map {
                 EntryVersion(
@@ -175,12 +178,12 @@ class EntryService(
             }
     }
 
-    fun updateEntryGroups(entryId: EntryId, tagIds: List<String>, collectionIds: List<String>): Boolean {
-        groupSetService.assertGroups(tagIds, collectionIds)
-        if (get(entryId) == null) return false
-        transaction {
-            updateGroupsForEntry(tagIds + collectionIds, entryId)
+    fun updateEntryGroups(userId: UserId, entryId: EntryId, tagIds: List<String>, collectionIds: List<String>): Boolean {
+        groupSetService.assertGroups(userId, tagIds, collectionIds)
+        return transaction {
+            if (baseQuery(userId).combine { Entries.id eq entryId.value }.empty()) return@transaction false
+            updateGroupsForEntry(userId, tagIds + collectionIds, entryId)
+            true
         }
-        return true
     }
 }

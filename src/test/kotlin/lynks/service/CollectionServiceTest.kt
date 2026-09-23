@@ -9,6 +9,7 @@ import lynks.group.CollectionService
 import lynks.group.GroupSetService
 import lynks.group.NewCollection
 import lynks.group.TagService
+import lynks.util.TEST_USER
 import lynks.util.createDummyCollection
 import lynks.util.markdown.MarkdownProcessor
 import org.assertj.core.api.Assertions.assertThat
@@ -50,20 +51,20 @@ class CollectionServiceTest : DatabaseTest() {
 
     @Test
     fun testGetAllCollections() {
-        val collections = collectionService.getAll()
+        val collections = collectionService.getAll(TEST_USER)
         assertThat(collections).hasSize(2)
         assertThat(collections).extracting("id").doesNotHaveDuplicates()
     }
 
     @Test
     fun testGetCollectionById() {
-        val collection = collectionService.get("c1")
+        val collection = collectionService.get(TEST_USER, "c1")
         assertThat(collection?.id).isEqualTo("c1")
         assertThat(collection?.name).isEqualTo("col1")
         assertThat(collection?.path).isEqualTo("col1")
         assertThat(collection?.children).isEmpty()
 
-        val col2 = collectionService.get("c2")
+        val col2 = collectionService.get(TEST_USER, "c2")
         assertThat(col2?.id).isEqualTo("c2")
         assertThat(col2?.name).isEqualTo("col2")
         assertThat(col2?.path).isEqualTo("col2")
@@ -72,42 +73,42 @@ class CollectionServiceTest : DatabaseTest() {
 
     @Test
     fun testGetCollectionDoesntExist() {
-        assertThat(collectionService.get("invalid")).isNull()
+        assertThat(collectionService.get(TEST_USER, "invalid")).isNull()
     }
 
     @Test
     fun testGetCollectionsByIds() {
-        val collections = collectionService.getIn(listOf("c1", "c2"))
+        val collections = collectionService.getIn(TEST_USER, listOf("c1", "c2"))
         assertThat(collections).hasSize(2).extracting("id").containsExactlyInAnyOrder("c1", "c2")
 
-        val collections2 = collectionService.getIn(listOf("c3", "invalid"))
+        val collections2 = collectionService.getIn(TEST_USER, listOf("c3", "invalid"))
         assertThat(collections2).hasSize(1).extracting("id").containsExactlyInAnyOrder("c3")
     }
 
     @Test
     fun testGetSubtree() {
-        val tree = collectionService.subtree("c3")
+        val tree = collectionService.subtree(TEST_USER, "c3")
         assertThat(tree).hasSize(4).extracting("id").containsExactlyInAnyOrder("c3", "c5", "c6", "c8")
 
-        val tree2 = collectionService.subtree("c1")
+        val tree2 = collectionService.subtree(TEST_USER, "c1")
         assertThat(tree2).hasSize(1).extracting("id").containsExactlyInAnyOrder("c1")
     }
 
     @Test
     fun testGetSubtreeDoesntExist() {
-        assertThat(collectionService.subtree("invalid")).isEmpty()
+        assertThat(collectionService.subtree(TEST_USER, "invalid")).isEmpty()
     }
 
     @Test
     fun testDeleteCollectionDoesntExist() {
-        assertThat(collectionService.delete("invalid")).isFalse()
+        assertThat(collectionService.delete(TEST_USER, "invalid")).isFalse()
     }
 
     @Test
     fun testDeleteCollectionNoChildren() {
-        assertThat(collectionService.delete("c1")).isTrue()
-        assertThat(collectionService.getAll()).hasSize(1).extracting("id").containsExactly("c2")
-        assertThat(collectionService.get("c1")).isNull()
+        assertThat(collectionService.delete(TEST_USER, "c1")).isTrue()
+        assertThat(collectionService.getAll(TEST_USER)).hasSize(1).extracting("id").containsExactly("c2")
+        assertThat(collectionService.get(TEST_USER, "c1")).isNull()
     }
 
     @Test
@@ -116,35 +117,35 @@ class CollectionServiceTest : DatabaseTest() {
             GroupSetService(TagService(), collectionService),
             mockk(relaxUnitFun = true), mockk(), mockk(relaxUnitFun = true), MarkdownProcessor(mockk(), mockk())
         )
-        val note = noteService.add(NewNote(null, "n1", "content", emptyList(), listOf("c1")))
+        val note = noteService.add(TEST_USER, NewNote(null, "n1", "content", emptyList(), listOf("c1")))
         assertThat(note.collections).hasSize(1).extracting("id").containsOnly("c1")
-        assertThat(collectionService.delete("c1")).isTrue()
-        assertThat(noteService.get(note.id)?.collections).isEmpty()
+        assertThat(collectionService.delete(TEST_USER, "c1")).isTrue()
+        assertThat(noteService.get(TEST_USER, note.id)?.collections).isEmpty()
     }
 
     @Test
     fun testDeleteCollectionWithChildren() {
-        assertThat(collectionService.delete("c5")).isTrue()
-        assertThat(collectionService.get("c5")).isNull()
-        assertThat(collectionService.get("c8")).isNull()
-        assertThat(collectionService.getIn(listOf("c5", "c8"))).isEmpty()
+        assertThat(collectionService.delete(TEST_USER, "c5")).isTrue()
+        assertThat(collectionService.get(TEST_USER, "c5")).isNull()
+        assertThat(collectionService.get(TEST_USER, "c8")).isNull()
+        assertThat(collectionService.getIn(TEST_USER, listOf("c5", "c8"))).isEmpty()
 
-        assertThat(collectionService.delete("c2")).isTrue()
-        assertThat(collectionService.getAll()).hasSize(1).extracting("id").containsExactly("c1")
-        assertThat(collectionService.get("c2")).isNull()
-        assertThat(collectionService.get("c3")).isNull()
-        assertThat(collectionService.get("c4")).isNull()
+        assertThat(collectionService.delete(TEST_USER, "c2")).isTrue()
+        assertThat(collectionService.getAll(TEST_USER)).hasSize(1).extracting("id").containsExactly("c1")
+        assertThat(collectionService.get(TEST_USER, "c2")).isNull()
+        assertThat(collectionService.get(TEST_USER, "c3")).isNull()
+        assertThat(collectionService.get(TEST_USER, "c4")).isNull()
     }
 
     @Test
     fun testCreateCollectionNoParent() {
-        val created = collectionService.add(NewCollection(null, "newCollection", null))
+        val created = collectionService.add(TEST_USER, NewCollection(null, "newCollection", null))
         assertThat(created.name).isEqualTo("newCollection")
         assertThat(created.path).isEqualTo("newCollection")
         assertThat(created.children).isEmpty()
 
-        assertThat(collectionService.getAll()).hasSize(3).extracting("id").contains(created.id)
-        val retr = collectionService.get(created.id)
+        assertThat(collectionService.getAll(TEST_USER)).hasSize(3).extracting("id").contains(created.id)
+        val retr = collectionService.get(TEST_USER, created.id)
         assertThat(retr).isNotNull
         assertThat(retr).isEqualTo(created)
         assertThat(retr?.dateCreated).isEqualTo(retr?.dateUpdated)
@@ -152,20 +153,20 @@ class CollectionServiceTest : DatabaseTest() {
 
     @Test
     fun testCreateCollectionWithParent() {
-        val created = collectionService.add(NewCollection(null, "newCollection", "c1"))
+        val created = collectionService.add(TEST_USER, NewCollection(null, "newCollection", "c1"))
         assertThat(created.name).isEqualTo("newCollection")
         assertThat(created.path).isEqualTo("col1/newCollection")
         assertThat(created.children).isEmpty()
 
-        assertThat(collectionService.getAll()).hasSize(2)
+        assertThat(collectionService.getAll(TEST_USER)).hasSize(2)
 
-        val parent = collectionService.get("c1")
+        val parent = collectionService.get(TEST_USER, "c1")
         assertThat(parent?.children).hasSize(1).extracting("id").containsExactly(created.id)
 
-        val subtree = collectionService.subtree("c1")
+        val subtree = collectionService.subtree(TEST_USER, "c1")
         assertThat(subtree).hasSize(2).extracting("id").containsExactlyInAnyOrder("c1", created.id)
 
-        val retr = collectionService.get(created.id)
+        val retr = collectionService.get(TEST_USER, created.id)
         assertThat(retr).isNotNull
         assertThat(retr?.children).isEmpty()
         assertThat(retr?.dateCreated).isEqualTo(retr?.dateUpdated)
@@ -173,76 +174,76 @@ class CollectionServiceTest : DatabaseTest() {
 
     @Test
     fun testCreateCollectionWithExistingParentByPath() {
-        val created = collectionService.add(NewCollection(null, "col2/col3/col6/newCollection"))
+        val created = collectionService.add(TEST_USER, NewCollection(null, "col2/col3/col6/newCollection"))
         assertThat(created.name).isEqualTo("newCollection")
         assertThat(created.path).isEqualTo("col2/col3/col6/newCollection")
         assertThat(created.children).isEmpty()
 
-        val parent = collectionService.get("c6")
+        val parent = collectionService.get(TEST_USER, "c6")
         assertThat(parent?.children).hasSize(1).extracting("id").containsExactly(created.id)
-        assertThat(collectionService.get(created.id)).isEqualTo(created)
+        assertThat(collectionService.get(TEST_USER, created.id)).isEqualTo(created)
     }
 
     @Test
     fun testCreateCollectionWithNewParentByPath() {
-        val created = collectionService.add(NewCollection(null, "col2/col3/col6/new7/newCollection"))
+        val created = collectionService.add(TEST_USER, NewCollection(null, "col2/col3/col6/new7/newCollection"))
         assertThat(created.name).isEqualTo("newCollection")
         assertThat(created.path).isEqualTo("col2/col3/col6/new7/newCollection")
         assertThat(created.children).isEmpty()
 
-        val parent = collectionService.getFromPath("col2/col3/col6/new7")
+        val parent = collectionService.getFromPath(TEST_USER, "col2/col3/col6/new7")
         assertThat(parent?.children).hasSize(1).extracting("id").containsExactly(created.id)
-        val parent2 = collectionService.get("c6")
+        val parent2 = collectionService.get(TEST_USER, "c6")
         assertThat(parent2?.children).hasSize(1).extracting("id").containsExactly(parent?.id)
 
-        assertThat(collectionService.get(created.id)).isEqualTo(created)
+        assertThat(collectionService.get(TEST_USER, created.id)).isEqualTo(created)
     }
 
     @Test
     fun testCreateCollectionWithMultipleNewParentsByPath() {
-        val created = collectionService.add(NewCollection(null, "new1/new2/new3/newCollection"))
+        val created = collectionService.add(TEST_USER, NewCollection(null, "new1/new2/new3/newCollection"))
         assertThat(created.name).isEqualTo("newCollection")
         assertThat(created.path).isEqualTo("new1/new2/new3/newCollection")
         assertThat(created.children).isEmpty()
 
-        val parent = collectionService.getFromPath("new1/new2/new3")
+        val parent = collectionService.getFromPath(TEST_USER, "new1/new2/new3")
         assertThat(parent?.children).hasSize(1).extracting("id").containsExactly(created.id)
-        val parent2 = collectionService.getFromPath("new1/new2")
+        val parent2 = collectionService.getFromPath(TEST_USER, "new1/new2")
         assertThat(parent2?.children).hasSize(1).extracting("id").containsExactly(parent?.id)
-        val parent3 = collectionService.getFromPath("new1")
+        val parent3 = collectionService.getFromPath(TEST_USER, "new1")
         assertThat(parent3?.children).hasSize(1).extracting("id").containsExactly(parent2?.id)
 
-        assertThat(collectionService.get(created.id)).isEqualTo(created)
+        assertThat(collectionService.get(TEST_USER, created.id)).isEqualTo(created)
     }
 
     @Test
     fun testCreateCollectionWithPathAndParentThrows() {
-        assertThrows<InvalidModelException> { collectionService.add(NewCollection(null, "c1/c2", "c1"))  }
+        assertThrows<InvalidModelException> { collectionService.add(TEST_USER, NewCollection(null, "c1/c2", "c1")) }
     }
 
     @Test
     fun testCreateCollectionWithInvalidPath() {
-        assertThrows<InvalidModelException> { collectionService.add(NewCollection(null, "/new"))  }
-        assertThrows<InvalidModelException> { collectionService.add(NewCollection(null, "new/"))  }
-        assertThrows<InvalidModelException> { collectionService.add(NewCollection(null, "new1//new2"))  }
+        assertThrows<InvalidModelException> { collectionService.add(TEST_USER, NewCollection(null, "/new")) }
+        assertThrows<InvalidModelException> { collectionService.add(TEST_USER, NewCollection(null, "new/")) }
+        assertThrows<InvalidModelException> { collectionService.add(TEST_USER, NewCollection(null, "new1//new2")) }
     }
 
     @Test
     fun testUpdateCollectionNoId() {
-        val res = collectionService.update(NewCollection(null, "newCollection"))
+        val res = collectionService.update(TEST_USER, NewCollection(null, "newCollection"))
         assertThat(res?.name).isEqualTo("newCollection")
 
-        assertThat(collectionService.getAll()).hasSize(3)
-        assertThat(collectionService.get(res!!.id)).isEqualTo(res)
+        assertThat(collectionService.getAll(TEST_USER)).hasSize(3)
+        assertThat(collectionService.get(TEST_USER, res!!.id)).isEqualTo(res)
     }
 
     @Test
     fun testUpdateCollection() {
-        val current = collectionService.get("c1")
+        val current = collectionService.get(TEST_USER, "c1")
         assertThat(current).isNotNull
         Thread.sleep(10) // makes sure timestamps are different
-        val updated = collectionService.update(NewCollection("c1", "updated"))
-        val retr = collectionService.get("c1")
+        val updated = collectionService.update(TEST_USER, NewCollection("c1", "updated"))
+        val retr = collectionService.get(TEST_USER, "c1")
         assertThat(updated).isEqualTo(retr)
         assertThat(retr).isNotNull
         assertThat(retr?.name).isEqualTo("updated")
@@ -254,33 +255,33 @@ class CollectionServiceTest : DatabaseTest() {
 
     @Test
     fun testUpdateCollectionParent() {
-        val col = collectionService.update(NewCollection("c1", "col1", "c8"))
-        val retr = collectionService.get("c1")
+        val col = collectionService.update(TEST_USER, NewCollection("c1", "col1", "c8"))
+        val retr = collectionService.get(TEST_USER, "c1")
         assertThat(retr).isEqualTo(col)
         assertThat(retr?.children).isEmpty()
         assertThat(retr?.path).isEqualTo("col2/col3/col5/col8/col1")
-        assertThat(collectionService.getAll()).hasSize(1)
-        val parent = collectionService.get("c8")
+        assertThat(collectionService.getAll(TEST_USER)).hasSize(1)
+        val parent = collectionService.get(TEST_USER, "c8")
         assertThat(parent?.children).hasSize(1).extracting("id").containsExactly("c1")
 
-        val noParent = collectionService.update(NewCollection("c3", "col3"))
-        val retr2 = collectionService.get("c3")
+        val noParent = collectionService.update(TEST_USER, NewCollection("c3", "col3"))
+        val retr2 = collectionService.get(TEST_USER, "c3")
         assertThat(retr2).isEqualTo(noParent)
         assertThat(retr2?.path).isEqualTo("col3")
         assertThat(retr2?.children).hasSize(2)
-        assertThat(collectionService.getAll()).hasSize(2).extracting("id").containsExactly("c2", "c3")
+        assertThat(collectionService.getAll(TEST_USER)).hasSize(2).extracting("id").containsExactly("c2", "c3")
 
-        assertThat(collectionService.get("c2")?.children).hasSize(1).extracting("id").containsExactly("c4")
+        assertThat(collectionService.get(TEST_USER, "c2")?.children).hasSize(1).extracting("id").containsExactly("c4")
     }
 
     @Test
     fun testUpdateCollectionDoesntExist() {
-        assertThat(collectionService.update(NewCollection("invalid", "name"))).isNull()
+        assertThat(collectionService.update(TEST_USER, NewCollection("invalid", "name"))).isNull()
     }
 
     @Test
     fun testGetAllAsSequence() {
-        val all = collectionService.sequence().toList()
+        val all = collectionService.sequence(TEST_USER).toList()
         assertThat(all).hasSize(8)
     }
 

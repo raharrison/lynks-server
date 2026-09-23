@@ -1,9 +1,6 @@
 package lynks.task.link
 
-import lynks.common.EntryId
-import lynks.common.TaskId
-import lynks.common.TaskParameter
-import lynks.common.TaskParameterType
+import lynks.common.*
 import lynks.common.inject.Inject
 import lynks.entry.LinkService
 import lynks.resource.ResourceType
@@ -14,8 +11,8 @@ import lynks.worker.PersistLinkProcessingRequest
 import lynks.worker.WorkerRegistry
 import java.util.*
 
-class LinkProcessingTask(id: TaskId, entryId: EntryId) :
-    Task<LinkProcessingTask.LinkProcessingTaskContext>(id, entryId) {
+class LinkProcessingTask(id: TaskId, entryId: EntryId, userId: UserId) :
+    Task<LinkProcessingTask.LinkProcessingTaskContext>(id, entryId, userId) {
 
     @Inject
     lateinit var workerRegistry: WorkerRegistry
@@ -24,9 +21,9 @@ class LinkProcessingTask(id: TaskId, entryId: EntryId) :
     lateinit var linkService: LinkService
 
     override suspend fun process(context: LinkProcessingTaskContext) {
-        linkService.get(entryId)?.also { it ->
+        linkService.get(userId, entryId)?.also { it ->
             val resourceSet = context.type ?: EnumSet.noneOf(ResourceType::class.java)
-            workerRegistry.acceptLinkWork(PersistLinkProcessingRequest(it, resourceSet, true))
+            workerRegistry.acceptLinkWork(PersistLinkProcessingRequest(userId, it, resourceSet, true))
         }
     }
 

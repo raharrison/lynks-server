@@ -1,7 +1,10 @@
 package lynks.group
 
 import lynks.common.IdBasedNewEntity
+import lynks.common.UserId
+import lynks.common.exception.InvalidModelException
 import lynks.util.RandomUtils
+import org.jetbrains.exposed.v1.core.Op
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
@@ -14,14 +17,18 @@ import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.jetbrains.exposed.v1.jdbc.update
 import org.slf4j.LoggerFactory
 import java.time.Instant
+import java.util.concurrent.ConcurrentHashMap
 
 abstract class GroupService<T : Grouping<T>, in U : IdBasedNewEntity>(private val groupType: GroupType) {
 
     private val log = LoggerFactory.getLogger(this::class.java)
 
-    private val collection by lazy {
-        log.info("Building group tree for {}s", groupType.name.lowercase())
-        GroupCollection<T>().apply { build(queryAllGroups()) }
+    // each user's tree is built on first use, since groups are only ever read within one user
+    private val collections = ConcurrentHashMap<UserId, GroupCollection<T>>()
+
+    private fun collection(userId: UserId): GroupCollection<T> = collections.computeIfAbsent(userId) {
+        log.info("Building group tree for {}s user={}", groupType.name.lowercase(), userId)
+        GroupCollection<T>().apply { build(queryAllGroups(userId)) }
     }
 
     protected data class GroupRow(
@@ -32,23 +39,23 @@ abstract class GroupService<T : Grouping<T>, in U : IdBasedNewEntity>(private va
         val dateUpdated: Instant
     )
 
-    protected fun getOrCreateFromPath(pathElements: List<String>): T {
-        val existingGroup = bestMatchingGroup(pathElements)
+    protected fun getOrCreateFromPath(userId: UserId, pathElements: List<String>): T {
+        val existingGroup = bestMatchingGroup(userId, pathElements)
         val remainingPath = pathElements.joinToString("/")
             .removePrefix(existingGroup?.path ?: "").trim('/')
         return if (existingGroup != null && remainingPath.isEmpty()) {
             existingGroup
         } else {
-            add(toCreateModel(pathElements.joinToString("/")))
+            add(userId, toCreateModel(pathElements.joinToString("/")))
         }
     }
 
     // find the best matching group from a given path (forming a parent-child hierarchy)
-    private fun bestMatchingGroup(path: List<String>): T? {
+    private fun bestMatchingGroup(userId: UserId, path: List<String>): T? {
         val elements = path.toMutableList()
         for (i in 0 until elements.size) {
             val searchPath = elements.joinToString("/")
-            val group = collection.groupByPath(searchPath)
+            val group = collection(userId).groupByPath(searchPath)
             if(group != null) {
                 return group
             }
@@ -57,18 +64,20 @@ abstract class GroupService<T : Grouping<T>, in U : IdBasedNewEntity>(private va
         return null
     }
 
-    private fun getGroupChildren(id: String): MutableSet<T> = transaction {
-        Groups.selectAll().where { (Groups.parentId eq id) and (Groups.type eq groupType) }
-            .map { toModel(toGroupRow(it), getGroupChildren(it[Groups.id])) }.toMutableSet()
+    private fun owned(userId: UserId): Op<Boolean> = (Groups.userId eq userId.value) and (Groups.type eq groupType)
+
+    private fun getGroupChildren(userId: UserId, id: String): MutableSet<T> = transaction {
+        Groups.selectAll().where { (Groups.parentId eq id) and owned(userId) }
+            .map { toModel(toGroupRow(it), getGroupChildren(userId, it[Groups.id])) }.toMutableSet()
     }
 
-    private fun queryGroup(id: String): T? = transaction {
-        Groups.selectAll().where { Groups.id eq id and (Groups.type eq groupType) }
-            .map { toModel(toGroupRow(it), getGroupChildren(it[Groups.id])) }.singleOrNull()
+    private fun queryGroup(userId: UserId, id: String): T? = transaction {
+        Groups.selectAll().where { (Groups.id eq id) and owned(userId) }
+            .map { toModel(toGroupRow(it), getGroupChildren(userId, it[Groups.id])) }.singleOrNull()
     }
 
-    private fun queryAllGroups(): List<T> = transaction {
-        val groups = Groups.selectAll().where { (Groups.type eq groupType) }
+    private fun queryAllGroups(userId: UserId): List<T> = transaction {
+        val groups = Groups.selectAll().where { owned(userId) }
             .map { toGroupRow(it) }
         val groupsByParent = groups.groupBy { it.parentId }
         groupsByParent[null]?.map { row ->
@@ -90,42 +99,50 @@ abstract class GroupService<T : Grouping<T>, in U : IdBasedNewEntity>(private va
         dateUpdated = row[Groups.dateUpdated].toInstant()
     )
 
-    fun rebuild() {
-        log.info("Rebuilding group tree for {}s", groupType.name.lowercase())
-        collection.build(queryAllGroups())
+    fun rebuild(userId: UserId) {
+        log.info("Rebuilding group tree for {}s user={}", groupType.name.lowercase(), userId)
+        collection(userId).build(queryAllGroups(userId))
     }
 
-    fun getAll(): List<T> = collection.rootGroups().map { it.copy() }
+    fun getAll(userId: UserId): List<T> = collection(userId).rootGroups().map { it.copy() }
 
-    fun getIn(ids: List<String>): List<T> = collection.groupsIn(ids).map { it.copy() }
+    fun getIn(userId: UserId, ids: List<String>): List<T> = collection(userId).groupsIn(ids).map { it.copy() }
 
-    fun get(id: String): T? = collection.group(id)?.copy()
+    fun get(userId: UserId, id: String): T? = collection(userId).group(id)?.copy()
 
-    fun getFromPath(path: String): T? = collection.groupByPath(path)?.copy()
+    fun getFromPath(userId: UserId, path: String): T? = collection(userId).groupByPath(path)?.copy()
 
-    fun subtree(id: String): List<T> = collection.subtree(id).map { it.copy() }
+    fun subtree(userId: UserId, id: String): List<T> = collection(userId).subtree(id).map { it.copy() }
 
-    fun sequence() = collection.all().asSequence()
+    fun sequence(userId: UserId) = collection(userId).all().asSequence()
 
-    open fun add(group: U): T = transaction {
+    open fun add(userId: UserId, group: U): T = transaction {
+        val parentId = extractParentId(group)
+        checkParent(userId, parentId)
         val newId = RandomUtils.generateUid()
-        Groups.insert(toInsert(newId, group))
-        val created = queryGroup(newId)
+        val insert = toInsert(newId, group)
+        Groups.insert {
+            insert(it)
+            it[Groups.userId] = userId.value
+        }
+        val created = queryGroup(userId, newId)
             ?: throw IllegalStateException("Group $newId not found after insert")
-        collection.add(created, extractParentId(group))
+        collection(userId).add(created, parentId)
     }
 
-    fun update(group: U): T? {
+    fun update(userId: UserId, group: U): T? {
         val id = group.id
         return if (id == null) {
-            add(group)
+            add(userId, group)
         } else {
             transaction {
-                val updated = Groups.update({ Groups.id eq id }, body = toUpdate(group))
+                val parentId = extractParentId(group)
+                checkParent(userId, parentId)
+                val updated = Groups.update({ (Groups.id eq id) and owned(userId) }, body = toUpdate(group))
                 if (updated > 0) {
-                    val existing = queryGroup(id)
+                    val existing = queryGroup(userId, id)
                         ?: throw IllegalStateException("Group $id not found after update")
-                    collection.update(existing, extractParentId(group))
+                    collection(userId).update(existing, parentId)
                 } else {
                     log.info("No rows modified when updating group id={}", id)
                     null
@@ -134,11 +151,20 @@ abstract class GroupService<T : Grouping<T>, in U : IdBasedNewEntity>(private va
         }
     }
 
-    fun delete(id: String): Boolean = transaction {
+    fun delete(userId: UserId, id: String): Boolean = transaction {
         // delete children first
-        Groups.selectAll().where { Groups.parentId eq id and (Groups.type eq groupType) }.forEach { delete(it[Groups.id]) }
+        Groups.selectAll().where { (Groups.parentId eq id) and owned(userId) }.forEach { delete(userId, it[Groups.id]) }
         // delete main group
-        Groups.deleteWhere { Groups.id eq id }.also { collection.delete(id) } > 0
+        (Groups.deleteWhere { (Groups.id eq id) and owned(userId) } > 0).also { deleted ->
+            if (deleted) collection(userId).delete(id)
+        }
+    }
+
+    // a parent from another user or group type would otherwise only fail on the foreign key, or not at all
+    private fun checkParent(userId: UserId, parentId: String?) {
+        if (parentId != null && collection(userId).group(parentId) == null) {
+            throw InvalidModelException("Unknown parent: $parentId")
+        }
     }
 
     protected abstract fun toModel(row: GroupRow, children: MutableSet<T>): T

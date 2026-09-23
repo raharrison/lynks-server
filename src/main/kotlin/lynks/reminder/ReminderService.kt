@@ -2,24 +2,24 @@ package lynks.reminder
 
 import com.github.shyiko.skedule.InvalidScheduleException
 import com.github.shyiko.skedule.Schedule
-import lynks.common.EntryId
-import lynks.common.ReminderId
+import lynks.common.*
 import lynks.common.exception.InvalidModelException
-import lynks.common.newReminderId
 import lynks.common.page.DefaultPageRequest
 import lynks.common.page.Page
 import lynks.common.page.PageRequest
+import lynks.db.EntryOwnership
 import lynks.notify.NotificationMethod
+import lynks.util.combine
 import lynks.util.loggerFor
 import lynks.worker.CrudType
 import lynks.worker.ReminderWorkerRequest
 import lynks.worker.WorkerRegistry
-import org.jetbrains.exposed.v1.core.ResultRow
-import org.jetbrains.exposed.v1.core.SortOrder
-import org.jetbrains.exposed.v1.core.and
-import org.jetbrains.exposed.v1.core.eq
-import org.jetbrains.exposed.v1.jdbc.*
+import org.jetbrains.exposed.v1.core.*
+import org.jetbrains.exposed.v1.jdbc.deleteWhere
+import org.jetbrains.exposed.v1.jdbc.insert
+import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.jetbrains.exposed.v1.jdbc.update
 import java.time.OffsetDateTime
 import java.time.ZoneId
 import java.time.ZoneOffset
@@ -52,14 +52,18 @@ class ReminderService(private val workerRegistry: WorkerRegistry) {
         return str.split(',').map { NotificationMethod.valueOf(it) }
     }
 
-    fun getRemindersForEntry(eId: EntryId) = transaction {
-        Reminders.selectAll().where { Reminders.entryId eq eId.value }
+    private fun owned(userId: UserId): Op<Boolean> = Entries.userId eq userId.value
+
+    private fun ownedQuery(userId: UserId) = Reminders.innerJoin(Entries).select(Reminders.columns).where { owned(userId) }
+
+    fun getRemindersForEntry(userId: UserId, eId: EntryId) = transaction {
+        ownedQuery(userId).combine { Reminders.entryId eq eId.value }
             .orderBy(Reminders.dateUpdated, SortOrder.DESC)
             .map { toModel(it) }
     }
 
-    fun getAllReminders(pageRequest: PageRequest = DefaultPageRequest): Page<Reminder> = transaction {
-        val baseQuery = Reminders.selectAll()
+    fun getAllReminders(userId: UserId, pageRequest: PageRequest = DefaultPageRequest): Page<Reminder> = transaction {
+        val baseQuery = ownedQuery(userId)
         Page.of(
             baseQuery.copy()
                 .orderBy(Reminders.dateUpdated, SortOrder.DESC)
@@ -71,14 +75,16 @@ class ReminderService(private val workerRegistry: WorkerRegistry) {
         )
     }
 
-    fun getAllActiveReminders() = transaction {
-        Reminders.selectAll().where { Reminders.status eq ReminderStatus.ACTIVE }
-            .map { toModel(it) }
+    // for the worker, which schedules every user's reminders
+    fun getAllActiveReminders(): List<Pair<UserId, Reminder>> = transaction {
+        Reminders.innerJoin(Entries).select(Reminders.columns + Entries.userId)
+            .where { Reminders.status eq ReminderStatus.ACTIVE }
+            .map { UserId(it[Entries.userId]) to toModel(it) }
     }
 
-    fun get(id: ReminderId): Reminder? = transaction {
-        Reminders.selectAll().where { Reminders.reminderId eq id.value }
-                .mapNotNull { toModel(it) }.singleOrNull()
+    fun get(userId: UserId, id: ReminderId): Reminder? = transaction {
+        ownedQuery(userId).combine { Reminders.reminderId eq id.value }
+            .mapNotNull { toModel(it) }.singleOrNull()
     }
 
     fun isActive(id: ReminderId): Boolean = transaction {
@@ -89,28 +95,10 @@ class ReminderService(private val workerRegistry: WorkerRegistry) {
             }.count() > 0
     }
 
-    fun add(reminder: Reminder): Reminder = transaction {
-        val time = OffsetDateTime.now(ZoneOffset.UTC)
-        Reminders.insert {
-            it[reminderId] = reminder.reminderId.value
-            it[entryId] = reminder.entryId.value
-            it[type] = reminder.type
-            it[notifyMethods] = checkValidNotifyMethods(reminder.notifyMethods)
-            it[message] = reminder.message
-            it[spec] = checkValidSpec(reminder.type, reminder.spec)
-            it[tz] = checkValidTimeZone(reminder.tz)
-            it[status] = reminder.status
-            it[dateCreated] = time
-            it[dateUpdated] = time
+    fun addReminder(userId: UserId, reminder: NewReminder): Reminder = transaction {
+        if (!EntryOwnership.isOwner(userId, reminder.entryId)) {
+            throw InvalidModelException("Unknown entry: ${reminder.entryId}")
         }
-        val created = get(reminder.reminderId)
-            ?: throw IllegalStateException("Reminder ${reminder.reminderId.value} not found after insert")
-        log.info("Created reminder, submitting worker request id={}", reminder.reminderId)
-        workerRegistry.acceptReminderWork(ReminderWorkerRequest(created, CrudType.CREATE))
-        created
-    }
-
-    fun addReminder(reminder: NewReminder): Reminder = transaction {
         val id = newReminderId()
         val time = OffsetDateTime.now(ZoneOffset.UTC)
         Reminders.insert {
@@ -125,19 +113,22 @@ class ReminderService(private val workerRegistry: WorkerRegistry) {
             it[dateCreated] = time
             it[dateUpdated] = time
         }
-        val created = get(id)
+        val created = get(userId, id)
             ?: throw IllegalStateException("Reminder ${id.value} not found after insert")
         log.info("Created reminder, submitting worker request id={}", id.value)
-        workerRegistry.acceptReminderWork(ReminderWorkerRequest(created, CrudType.CREATE))
+        workerRegistry.acceptReminderWork(ReminderWorkerRequest(userId, created, CrudType.CREATE))
         created
     }
 
-    fun updateReminder(reminder: NewReminder): Reminder? = transaction {
+    fun updateReminder(userId: UserId, reminder: NewReminder): Reminder? = transaction {
         if (reminder.reminderId == null) {
             log.info("No reminder id found, defaulting to adding new reminder")
-            addReminder(reminder)
+            addReminder(userId, reminder)
+        } else if (get(userId, reminder.reminderId) == null) {
+            log.info("No reminder found to update id={}", reminder.reminderId)
+            null
         } else {
-            val updatedCount = Reminders.update({ Reminders.reminderId eq reminder.reminderId.value }) {
+            Reminders.update({ Reminders.reminderId eq reminder.reminderId.value }) {
                 it[type] = reminder.type
                 it[notifyMethods] = checkValidNotifyMethods(reminder.notifyMethods)
                 it[message] = reminder.message
@@ -146,14 +137,9 @@ class ReminderService(private val workerRegistry: WorkerRegistry) {
                 it[status] = reminder.status
                 it[dateUpdated] = OffsetDateTime.now(ZoneOffset.UTC)
             }
-            if (updatedCount > 0) {
-                get(reminder.reminderId)?.also {
-                    log.info("Updated reminder, submitting worker request id={}", reminder.reminderId)
-                    workerRegistry.acceptReminderWork(ReminderWorkerRequest(it, CrudType.UPDATE))
-                }
-            } else {
-                log.info("No rows modified when updating reminder id={}", reminder.reminderId)
-                null
+            get(userId, reminder.reminderId)?.also {
+                log.info("Updated reminder, submitting worker request id={}", reminder.reminderId)
+                workerRegistry.acceptReminderWork(ReminderWorkerRequest(userId, it, CrudType.UPDATE))
             }
         }
     }
@@ -164,11 +150,11 @@ class ReminderService(private val workerRegistry: WorkerRegistry) {
         }
     }
 
-    fun delete(id: ReminderId): Boolean = transaction {
-        val reminder = get(id)
+    fun delete(userId: UserId, id: ReminderId): Boolean = transaction {
+        val reminder = get(userId, id)
         if (reminder != null) {
             Reminders.deleteWhere { Reminders.reminderId eq id.value }
-            workerRegistry.acceptReminderWork(ReminderWorkerRequest(reminder, CrudType.DELETE))
+            workerRegistry.acceptReminderWork(ReminderWorkerRequest(userId, reminder, CrudType.DELETE))
             return@transaction true
         }
         log.info("No reminder found with id={}", id)

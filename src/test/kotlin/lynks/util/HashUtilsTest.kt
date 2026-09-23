@@ -48,4 +48,12 @@ class HashUtilsTest {
         assertThat(HashUtils.verifyBcryptHash("abcdef".toCharArray(), hash)).isFalse()
     }
 
+    @Test
+    fun testVerifyPythonBcryptHash() {
+        // scripts/manage_users.py hashes with Python's bcrypt, which writes the $2b$ prefix
+        val hash = "\$2b\$04\$/OGyxZVZFS3lP6WIjd4bVeYs0GMRgKuGDZQdodE2aY5qZCZ5khvxe".toCharArray()
+        assertThat(HashUtils.verifyBcryptHash("password123".toCharArray(), hash)).isTrue()
+        assertThat(HashUtils.verifyBcryptHash("password124".toCharArray(), hash)).isFalse()
+    }
+
 }

@@ -15,6 +15,8 @@ import io.restassured.specification.RequestSpecification
 import lynks.db.DatabaseFactory
 import lynks.module
 import lynks.util.JsonMapper
+import lynks.util.TEST_USER
+import lynks.util.createDummyUser
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import java.util.concurrent.TimeUnit
@@ -61,8 +63,12 @@ open class ServerTest {
         private val databaseFactory = DatabaseFactory()
     }
 
+    // with auth disabled every request acts as the default user, so it owns what the tests create
     @BeforeEach
-    fun before() = databaseFactory.resetAll()
+    fun before() {
+        databaseFactory.resetAll()
+        createDummyUser(Environment.auth.defaultUserName, id = TEST_USER)
+    }
 
     protected fun refreshGroups() {
         post("/tag/refresh")

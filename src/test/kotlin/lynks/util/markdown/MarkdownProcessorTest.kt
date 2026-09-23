@@ -13,6 +13,7 @@ import lynks.entry.EntryService
 import lynks.resource.PendingResource
 import lynks.resource.ResourceManager
 import lynks.resource.ResourceType
+import lynks.util.TEST_USER
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -37,7 +38,14 @@ class MarkdownProcessorTest {
 
     @Test
     fun testEntryLinks() {
-        every { entryService.get(EntryId("1234")) } returns Note(EntryId("1234"), "My Note Title", "content", "content", Instant.EPOCH, Instant.EPOCH)
+        every { entryService.get(TEST_USER, EntryId("1234")) } returns Note(
+            EntryId("1234"),
+            "My Note Title",
+            "content",
+            "content",
+            Instant.EPOCH,
+            Instant.EPOCH
+        )
 
         assertConvertEqual(
             "link is @1234",
@@ -48,12 +56,12 @@ class MarkdownProcessorTest {
             "<p>link is <a href=\"/notes/1234\"><strong>My Note Title</strong></a> and more</p>\n"
         )
 
-        verify(exactly = 2) { entryService.get(EntryId("1234")) }
+        verify(exactly = 2) { entryService.get(TEST_USER, EntryId("1234")) }
     }
 
     @Test
     fun testEntryLinkRendersLinkTitle() {
-        every { entryService.get(EntryId("linkid")) } returns
+        every { entryService.get(TEST_USER, EntryId("linkid")) } returns
             lynks.common.Link(EntryId("linkid"), "My Link Title", "http://example.com", "example.com", null, Instant.EPOCH, Instant.EPOCH)
 
         assertConvertEqual(
@@ -64,7 +72,7 @@ class MarkdownProcessorTest {
 
     @Test
     fun testEntryLinkRendersFileTitle() {
-        every { entryService.get(EntryId("fileid")) } returns
+        every { entryService.get(TEST_USER, EntryId("fileid")) } returns
             lynks.common.File(EntryId("fileid"), "My File Title", Instant.EPOCH, Instant.EPOCH)
 
         assertConvertEqual(
@@ -75,7 +83,7 @@ class MarkdownProcessorTest {
 
     @Test
     fun testEntryLinkSnippetFallsBackToId() {
-        every { entryService.get(EntryId("snipid")) } returns
+        every { entryService.get(TEST_USER, EntryId("snipid")) } returns
             Snippet(EntryId("snipid"), "some code", "<p>code</p>", Instant.EPOCH, Instant.EPOCH)
 
         assertConvertEqual(
@@ -86,9 +94,9 @@ class MarkdownProcessorTest {
 
     @Test
     fun testEntryLinkEntryNotFound() {
-        every { entryService.get(EntryId("1234")) } returns null
+        every { entryService.get(TEST_USER, EntryId("1234")) } returns null
         assertConvertEqual("something @1234 else", "<p>something @1234 else</p>\n")
-        verify(exactly = 1) { entryService.get(EntryId("1234")) }
+        verify(exactly = 1) { entryService.get(TEST_USER, EntryId("1234")) }
     }
 
     @Test
@@ -147,7 +155,7 @@ class MarkdownProcessorTest {
         @Test
         fun testNoImagesAttachesNothing() {
             val raw = "some text"
-            val (markdown, html) = markdownProcessor.convertAndProcess(raw, eid)
+            val (markdown, html) = markdownProcessor.convertAndProcess(TEST_USER, raw, eid)
             assertThat(markdown.trim()).isEqualTo(raw)
             assertThat(html).isEqualTo("<p>some text</p>\n")
             verify(exactly = 0) { resourceManager.attach(eid, any()) }
@@ -156,11 +164,11 @@ class MarkdownProcessorTest {
         @Test
         fun testTempImageIsAttachedAndRewritten() {
             val file = Path.of("uploads", "one.png")
-            every { resourceManager.findTempUpload("one.png") } returns file
+            every { resourceManager.findTempUpload(TEST_USER, "one.png") } returns file
             val attached = slot<List<PendingResource>>()
             every { resourceManager.attach(eid, capture(attached)) } returns emptyList()
 
-            val (markdown, html) = markdownProcessor.convertAndProcess("![desc](${TEMP_UPLOAD_URL}one.png)", eid)
+            val (markdown, html) = markdownProcessor.convertAndProcess(TEST_USER, "![desc](${TEMP_UPLOAD_URL}one.png)", eid)
 
             val reserved = attached.captured.single()
             assertThat(reserved.resourceType).isEqualTo(ResourceType.UPLOAD)
@@ -174,9 +182,9 @@ class MarkdownProcessorTest {
         @Test
         fun testMissingTempImageIsLeftAlone() {
             val input = "![desc](${TEMP_UPLOAD_URL}one.png)"
-            every { resourceManager.findTempUpload("one.png") } returns null
+            every { resourceManager.findTempUpload(TEST_USER, "one.png") } returns null
 
-            val (markdown, _) = markdownProcessor.convertAndProcess(input, eid)
+            val (markdown, _) = markdownProcessor.convertAndProcess(TEST_USER, input, eid)
 
             assertThat(markdown.trim()).isEqualTo(input)
             verify(exactly = 0) { resourceManager.attach(eid, any()) }
@@ -186,10 +194,10 @@ class MarkdownProcessorTest {
         fun testOtherTempImageIsIgnored() {
             val input = "![desc](${TEMP_URL}abc/thumbnail.jpg)"
 
-            val (markdown, _) = markdownProcessor.convertAndProcess(input, eid)
+            val (markdown, _) = markdownProcessor.convertAndProcess(TEST_USER, input, eid)
 
             assertThat(markdown.trim()).isEqualTo(input)
-            verify(exactly = 0) { resourceManager.findTempUpload(any()) }
+            verify(exactly = 0) { resourceManager.findTempUpload(TEST_USER, any()) }
         }
 
     }
@@ -216,7 +224,7 @@ class MarkdownProcessorTest {
     }
 
     private fun assertConvertEqual(input: String, output: String) {
-        val out = markdownProcessor.convertToMarkdown(input)
+        val out = markdownProcessor.convertToMarkdown(TEST_USER, input)
         assertThat(output).isEqualTo(out)
     }
 

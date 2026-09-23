@@ -2,6 +2,7 @@ package lynks.entry.ref
 
 import lynks.common.Entries
 import lynks.common.EntryId
+import lynks.common.UserId
 import lynks.util.loggerFor
 import org.jetbrains.exposed.v1.core.JoinType
 import org.jetbrains.exposed.v1.core.and
@@ -15,11 +16,11 @@ class EntryRefService {
 
     private val log = loggerFor<EntryRefService>()
 
-    fun getRefsForEntry(eid: EntryId): EntryRefSet = transaction {
+    fun getRefsForEntry(userId: UserId, eid: EntryId): EntryRefSet = transaction {
         val inbound =
             EntryRefs.join(Entries, JoinType.INNER, EntryRefs.sourceEntryId, Entries.id)
                 .select(EntryRefs.sourceEntryId, Entries.type, Entries.title)
-                .where { EntryRefs.targetEntryId eq eid.value }
+                .where { (EntryRefs.targetEntryId eq eid.value) and (Entries.userId eq userId.value) }
                 .map {
                     EntryRefItem(EntryId(it[EntryRefs.sourceEntryId]), it[Entries.type], it[Entries.title])
                 }
@@ -27,7 +28,7 @@ class EntryRefService {
         val outbound =
             EntryRefs.join(Entries, JoinType.INNER, EntryRefs.targetEntryId, Entries.id)
                 .select(EntryRefs.targetEntryId, Entries.type, Entries.title)
-                .where { EntryRefs.sourceEntryId eq eid.value }
+                .where { (EntryRefs.sourceEntryId eq eid.value) and (Entries.userId eq userId.value) }
                 .map {
                     EntryRefItem(EntryId(it[EntryRefs.targetEntryId]), it[Entries.type], it[Entries.title])
                 }
@@ -35,6 +36,7 @@ class EntryRefService {
         EntryRefSet(inbound, outbound)
     }
 
+    // refs must already be limited to entries owned by the source entry's user
     fun setEntryRefs(eid: EntryId, refs: List<String>, origin: String) = transaction {
         EntryRefs.deleteWhere { (EntryRefs.sourceEntryId eq eid.value) and (EntryRefs.originId eq origin) }
         EntryRefs.batchInsert(refs) {

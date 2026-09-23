@@ -18,7 +18,6 @@
         "scraperHost": "http://localhost:3893/api",
         "youtubeApiKey": "test-api-key",
         "youtubeApiBaseUrl": "http://localhost:3893",
-        "joltHost": "http://localhost:3893/api/v1",
-        "joltToken": "jolt-token"
+        "joltHost": "http://localhost:3893/api/v1"
     }
 }

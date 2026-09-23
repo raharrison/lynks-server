@@ -3,22 +3,14 @@ package lynks.endpoint
 import io.restassured.RestAssured.get
 import io.restassured.RestAssured.given
 import io.restassured.http.ContentType
-import lynks.common.Environment
 import lynks.common.ServerTest
 import lynks.user.TwoFactorUpdateRequest
 import lynks.user.TwoFactorValidateRequest
-import lynks.util.createDummyUser
 import org.hamcrest.Matchers.equalTo
 import org.hamcrest.Matchers.hasLength
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
 class TwoFactorEndpointTest : ServerTest() {
-
-    @BeforeEach
-    fun setup() {
-        createDummyUser(Environment.auth.defaultUserName, "Bob Smith")
-    }
 
     @Test
     fun testGetTwoFactorEnabled() {

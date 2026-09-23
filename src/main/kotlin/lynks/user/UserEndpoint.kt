@@ -1,88 +1,46 @@
 package lynks.user
 
 import io.ktor.http.*
-import io.ktor.server.auth.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.sessions.*
-import lynks.common.ConfigMode
 import lynks.common.Environment
 import lynks.common.ErrorResponse
 import lynks.common.UserSession
-import lynks.common.exception.InvalidModelException
-import lynks.common.exception.NotFoundException
-import lynks.util.isCallAuthorizedForUser
+import lynks.common.exception.UnauthorizedException
 import lynks.util.pageRequest
+import lynks.util.userId
 
 fun Route.userProtected(userService: UserService) {
 
     route("/user") {
 
         get {
-            val username = call.principal<UserSession>()?.username ?:
-                if(Environment.mode != ConfigMode.PROD) {
-                    Environment.auth.defaultUserName
-                }
-                else {
-                    return@get call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Unauthorized"))
-                }
-
-            if (call.isCallAuthorizedForUser(username)) {
-                val user = userService.getUser(username)
-                if (user == null) call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Unauthorized"))
-                else call.respond(HttpStatusCode.OK, user)
-            } else {
-                call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Unauthorized"))
-            }
-        }
-
-        get("/{id}") {
-            val username = call.parameters["id"] ?: throw InvalidModelException("Missing id")
-            if (call.isCallAuthorizedForUser(username)) {
-                val user = userService.getUser(username)
-                if (user == null) call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Unauthorized"))
-                else call.respond(HttpStatusCode.OK, user)
-            } else {
-                call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Unauthorized"))
-            }
+            val user = userService.getUser(call.userId()) ?: throw UnauthorizedException()
+            call.respond(HttpStatusCode.OK, user)
         }
 
         post("/changePassword") {
             val changeRequest = call.receive<ChangePasswordRequest>()
-            if (call.isCallAuthorizedForUser(changeRequest.username)) {
-                val changed = userService.changePassword(changeRequest)
-                if (changed) call.respond(HttpStatusCode.OK)
-                else call.respond(HttpStatusCode.BadRequest, ErrorResponse("Old password is not correct"))
-            } else {
-                call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Unauthorized"))
-            }
+            if (userService.changePassword(call.userId(), changeRequest)) call.respond(HttpStatusCode.OK)
+            else call.respond(HttpStatusCode.BadRequest, ErrorResponse("Old password is not correct"))
         }
 
         put {
-            val user = call.receive<UserUpdateRequest>()
-            if (call.isCallAuthorizedForUser(user.username)) {
-                val updated = userService.updateUser(user) ?: throw NotFoundException()
-                call.respond(HttpStatusCode.OK, updated)
-            } else {
-                call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Unauthorized"))
-            }
+            val update = call.receive<UserUpdateRequest>()
+            val updated = userService.updateUser(call.userId(), update) ?: throw UnauthorizedException()
+            call.respond(HttpStatusCode.OK, updated)
+        }
+
+        put("/jolt") {
+            val request = call.receive<JoltTokenRequest>()
+            val updated = userService.updateJoltToken(call.userId(), request.token) ?: throw UnauthorizedException()
+            call.respond(HttpStatusCode.OK, updated)
         }
 
         get("/activity") {
-            val username = call.principal<UserSession>()?.username ?:
-            if(Environment.mode != ConfigMode.PROD) {
-                Environment.auth.defaultUserName
-            }
-            else {
-                return@get call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Unauthorized"))
-            }
-            if (call.isCallAuthorizedForUser(username)) {
-                val page = call.pageRequest()
-                call.respond(userService.getUserActivityLog(page))
-            } else {
-                call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Unauthorized"))
-            }
+            call.respond(userService.getUserActivityLog(call.userId(), call.pageRequest()))
         }
 
     }
@@ -92,14 +50,12 @@ fun Route.userUnprotected(userService: UserService) {
 
     post("/login") {
         val request = call.receive<AuthRequest>()
-        val result = userService.checkAuth(request, twoFactor = true)
-        if (result == AuthResult.SUCCESS) {
-            if(Environment.auth.enabled) {
-                call.sessions.set(UserSession(request.username))
-            }
+        val outcome = userService.checkAuth(request, twoFactor = true)
+        if (outcome.result == AuthResult.SUCCESS && outcome.userId != null && Environment.auth.enabled) {
+            call.sessions.set(UserSession(outcome.userId.value))
         }
-        val code = if(result == AuthResult.SUCCESS) HttpStatusCode.OK else HttpStatusCode.Unauthorized
-        call.respond(code, mapOf("result" to result))
+        val code = if (outcome.result == AuthResult.SUCCESS) HttpStatusCode.OK else HttpStatusCode.Unauthorized
+        call.respond(code, mapOf("result" to outcome.result))
     }
 
     post("/logout") {

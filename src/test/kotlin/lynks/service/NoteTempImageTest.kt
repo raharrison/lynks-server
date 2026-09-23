@@ -9,6 +9,7 @@ import lynks.group.CollectionService
 import lynks.group.GroupSetService
 import lynks.group.TagService
 import lynks.resource.*
+import lynks.util.TEST_USER
 import lynks.util.markdown.MarkdownProcessor
 import lynks.worker.WorkerRegistry
 import org.assertj.core.api.Assertions.assertThat
@@ -40,23 +41,29 @@ class NoteTempImageTest : DatabaseTest() {
     fun testCreateNoteMovesPastedImage() {
         val upload = upload(byteArrayOf(1, 2, 3))
 
-        val note = noteService.add(newNote("before ![img](${url(upload)}) after"))
+        val note = noteService.add(TEST_USER, newNote("before ![img](${url(upload)}) after"))
 
-        val resource = resourceManager.getResourcesFor(note.id).single()
+        val resource = resourceManager.getResourcesFor(TEST_USER, note.id).single()
         assertThat(resource.type).isEqualTo(ResourceType.UPLOAD)
         assertThat(resource.size).isEqualTo(3)
         assertThat(note.plainContent)
             .contains("${Environment.server.rootPath}/entry/${note.id}/resource/${resource.id}")
             .doesNotContain(TEMP_URL)
         assertThat(Files.exists(upload)).isFalse()
-        assertThat(resourceManager.getResourceAsFile(resource.id)!!.second.readBytes()).isEqualTo(byteArrayOf(1, 2, 3))
+        assertThat(resourceManager.getResourceAsFile(TEST_USER, note.id, resource.id)!!.second.readBytes()).isEqualTo(
+            byteArrayOf(
+                1,
+                2,
+                3
+            )
+        )
     }
 
     @Test
     fun testCreateNoteStoresRewrittenContentAsFirstVersion() {
-        val note = noteService.add(newNote("![img](${url(upload(byteArrayOf(1)))})"))
+        val note = noteService.add(TEST_USER, newNote("![img](${url(upload(byteArrayOf(1)))})"))
 
-        val firstVersion = noteService.get(note.id, 1)
+        val firstVersion = noteService.get(TEST_USER, note.id, 1)
 
         assertThat(note.version).isOne()
         assertThat(firstVersion?.plainContent).isEqualTo(note.plainContent)
@@ -66,9 +73,9 @@ class NoteTempImageTest : DatabaseTest() {
     fun testCreateNoteWithTwoImagesKeepsBoth() {
         val content = "![a](${url(upload(byteArrayOf(1)))}) ![b](${url(upload(byteArrayOf(2, 2)))})"
 
-        val note = noteService.add(newNote(content))
+        val note = noteService.add(TEST_USER, newNote(content))
 
-        assertThat(resourceManager.getResourcesFor(note.id)).hasSize(2)
+        assertThat(resourceManager.getResourcesFor(TEST_USER, note.id)).hasSize(2)
         assertThat(note.plainContent).doesNotContain(TEMP_URL)
     }
 
@@ -76,20 +83,20 @@ class NoteTempImageTest : DatabaseTest() {
     fun testCreateNoteReferencingSameImageTwice() {
         val url = url(upload(byteArrayOf(1)))
 
-        val note = noteService.add(newNote("![a]($url) and again ![b]($url)"))
+        val note = noteService.add(TEST_USER, newNote("![a]($url) and again ![b]($url)"))
 
-        val resource = resourceManager.getResourcesFor(note.id).single()
+        val resource = resourceManager.getResourcesFor(TEST_USER, note.id).single()
         assertThat(note.plainContent.split("/resource/${resource.id}")).hasSize(3)
     }
 
     @Test
     fun testUpdateNoteMovesPastedImage() {
-        val added = noteService.add(newNote("nothing yet"))
+        val added = noteService.add(TEST_USER, newNote("nothing yet"))
         val upload = upload(byteArrayOf(1))
 
-        val updated = noteService.update(NewNote(added.id, "n1", "![img](${url(upload)})", emptyList(), emptyList()))
+        val updated = noteService.update(TEST_USER, NewNote(added.id, "n1", "![img](${url(upload)})", emptyList(), emptyList()))
 
-        val resource = resourceManager.getResourcesFor(added.id).single()
+        val resource = resourceManager.getResourcesFor(TEST_USER, added.id).single()
         assertThat(updated?.plainContent).contains("/resource/${resource.id}")
         assertThat(Files.exists(upload)).isFalse()
     }
@@ -99,23 +106,23 @@ class NoteTempImageTest : DatabaseTest() {
         val upload = upload(byteArrayOf(1))
         every { entryAuditService.acceptAuditEvent(any(), any(), any()) } throws IllegalStateException("audit down")
 
-        assertThrows<IllegalStateException> { noteService.add(newNote("![img](${url(upload)})")) }
+        assertThrows<IllegalStateException> { noteService.add(TEST_USER, newNote("![img](${url(upload)})")) }
 
         assertThat(Files.exists(upload)).isTrue()
-        assertThat(noteService.get().content).isEmpty()
+        assertThat(noteService.get(TEST_USER).content).isEmpty()
     }
 
     @Test
     fun testUnknownTempImageIsLeftAlone() {
         val content = "![img](${TEMP_UPLOAD_URL}missing.png)"
 
-        val note = noteService.add(newNote(content))
+        val note = noteService.add(TEST_USER, newNote(content))
 
         assertThat(note.plainContent).isEqualTo(content)
-        assertThat(resourceManager.getResourcesFor(note.id)).isEmpty()
+        assertThat(resourceManager.getResourcesFor(TEST_USER, note.id)).isEmpty()
     }
 
-    private fun upload(data: ByteArray): Path = resourceManager.saveTempUpload(data, PNG)
+    private fun upload(data: ByteArray): Path = resourceManager.saveTempUpload(TEST_USER, data, PNG)
 
     private fun url(upload: Path) = "$TEMP_UPLOAD_URL${upload.fileName}"
 
