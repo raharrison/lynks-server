@@ -117,7 +117,9 @@ left, so `OrphanResourceCleanupWorker` removes them once they are a day old.
 
 ### Backups
 
-`scripts/backup_lynks.sh` dumps Postgres and pushes the dump plus `media/` (minus
-`media/temp`) to restic. It assumes the install at `/home/$USER/lynks` with restic
-under `~/bak`. `config/lynks-backup.service` and `config/lynks-backup.timer` run it
-daily as `lynks`, which has to be in the `docker` group for the dump.
+`scripts/backup_lynks.sh` dumps Postgres with `scripts/backup_db.sh`, then pushes
+the dump plus `media/` (minus `media/temp`) to restic. It assumes the install at
+`/home/$USER/lynks`, with the restic binary and `restic.properties` under `~/bak`.
+The dump runs `docker exec` against the `lynks-postgres-1` container, so the user
+running it has to be in the `docker` group. Nothing schedules it; run it from cron
+or a systemd timer.

@@ -119,7 +119,7 @@ class UserIsolationEndpointTest : ServerTest() {
         delete("/reminder/{id}", "theirReminder").then().statusCode(404)
         val reminder = NewReminder(
             null, EntryId(theirNote), ReminderType.ADHOC, listOf(NotificationMethod.PUSH),
-            "mine", "100", ZoneId.systemDefault().id, ReminderStatus.ACTIVE
+            "mine", 100, null, ZoneId.systemDefault().id, ReminderStatus.ACTIVE
         )
         given().contentType(ContentType.JSON).body(reminder).When().post("/reminder").then().statusCode(400)
     }

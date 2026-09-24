@@ -14,10 +14,11 @@ import lynks.util.createDummyReminder
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import java.time.Instant
-import java.time.ZoneId
+import java.time.*
 
 class ReminderEndpointTest : ServerTest() {
+
+    private val everyHalfHour = IntervalSchedule(30, IntervalUnit.MINUTES)
 
     @BeforeEach
     fun createEntries() {
@@ -52,7 +53,8 @@ class ReminderEndpointTest : ServerTest() {
     fun testGetAllRemindersPaging() {
         createDummyReminder(
             "r2", "e1", ReminderType.RECURRING, listOf(NotificationMethod.JOLT),
-            "msg2", "every day 09:00", status = ReminderStatus.DISABLED)
+            "msg2", CalendarSchedule(LocalTime.of(9, 0)).toSpec(), status = ReminderStatus.DISABLED
+        )
         val page1 = given()
                 .queryParam("page", 1)
                 .queryParam("size", 1)
@@ -93,7 +95,8 @@ class ReminderEndpointTest : ServerTest() {
     fun testCreateReminder() {
         val reminder = NewReminder(
             null, EntryId("e1"), ReminderType.RECURRING, listOf(NotificationMethod.PUSH, NotificationMethod.JOLT),
-                "message", "every 30 minutes", ZoneId.systemDefault().id, status = ReminderStatus.DISABLED)
+            "message", schedule = everyHalfHour, tz = ZoneId.systemDefault().id, status = ReminderStatus.DISABLED
+        )
         val created = given()
                 .contentType(ContentType.JSON)
                 .body(reminder)
@@ -108,7 +111,7 @@ class ReminderEndpointTest : ServerTest() {
         assertThat(created.type).isEqualTo(reminder.type)
         assertThat(created.notifyMethods).containsExactly(NotificationMethod.PUSH, NotificationMethod.JOLT)
         assertThat(created.message).isEqualTo("message")
-        assertThat(created.spec).isEqualTo(reminder.spec)
+        assertThat(created.schedule).isEqualTo(reminder.schedule)
         assertThat(created.tz).isEqualTo(reminder.tz)
         assertThat(created.status).isEqualTo(ReminderStatus.DISABLED)
         assertThat(created.dateCreated).isEqualTo(created.dateUpdated)
@@ -130,8 +133,8 @@ class ReminderEndpointTest : ServerTest() {
     fun testUpdateReminder() {
         val reminder = NewReminder(
             ReminderId("r1"), EntryId("e1"), ReminderType.RECURRING,
-            listOf(NotificationMethod.JOLT), "updated", "every 30 minutes", "Asia/Singapore",
-            ReminderStatus.DISABLED
+            listOf(NotificationMethod.JOLT), "updated", schedule = everyHalfHour, tz = "Asia/Singapore",
+            status = ReminderStatus.DISABLED
         )
         val updated = given()
                 .contentType(ContentType.JSON)
@@ -146,7 +149,7 @@ class ReminderEndpointTest : ServerTest() {
         assertThat(updated.type).isEqualTo(reminder.type)
         assertThat(updated.notifyMethods).containsExactly(NotificationMethod.JOLT)
         assertThat(updated.message).isEqualTo("updated")
-        assertThat(updated.spec).isEqualTo(reminder.spec)
+        assertThat(updated.schedule).isEqualTo(reminder.schedule)
         assertThat(updated.tz).isEqualTo(reminder.tz)
         assertThat(updated.status).isEqualTo(ReminderStatus.DISABLED)
         assertThat(updated.dateUpdated).isNotEqualTo(updated.dateCreated)
@@ -162,7 +165,7 @@ class ReminderEndpointTest : ServerTest() {
     fun testUpdateReminderReturnsNotFound() {
         val reminder = NewReminder(
             ReminderId("invalid"), EntryId("e1"), ReminderType.RECURRING,
-            listOf(NotificationMethod.PUSH), "", "every 30 minutes", ZoneId.systemDefault().id,
+            listOf(NotificationMethod.PUSH), "", schedule = everyHalfHour, tz = ZoneId.systemDefault().id,
             status = ReminderStatus.ACTIVE
         )
         given()
@@ -192,27 +195,48 @@ class ReminderEndpointTest : ServerTest() {
     }
 
     @Test
-    fun testValidateSchedule() {
-        val nextFireTimes = given()
-            .contentType(ContentType.TEXT)
-            .body("every day 17:00")
+    fun testPreviewSchedule() {
+        val fires = given()
+            .contentType(ContentType.JSON)
+            .body("""{"schedule":{"kind":"calendar","at":"17:00","weekdays":["monday"]},"tz":"Asia/Singapore"}""")
             .When()
-            .post("/reminder/validate")
+            .post("/reminder/preview")
             .then()
             .statusCode(200)
             .extract().to<List<String>>()
-        assertThat(nextFireTimes).hasSize(5)
+        assertThat(fires).hasSize(5)
+        assertThat(fires.map { OffsetDateTime.parse(it).atZoneSameInstant(ZoneId.of("Asia/Singapore")) })
+            .allSatisfy {
+                assertThat(it.dayOfWeek).isEqualTo(DayOfWeek.MONDAY)
+                assertThat(it.toLocalTime()).isEqualTo(LocalTime.of(17, 0))
+            }
     }
 
     @Test
-    fun testValidScheduleInvalidDefinition() {
+    fun testPreviewInvalidSchedule() {
         given()
-            .contentType(ContentType.TEXT)
-            .body("every invalid of may 17:00")
+            .contentType(ContentType.JSON)
+            .body("""{"schedule":{"kind":"interval","every":0,"unit":"minutes"},"tz":"UTC"}""")
             .When()
-            .post("/reminder/validate")
+            .post("/reminder/preview")
             .then()
             .statusCode(400)
+        given()
+            .contentType(ContentType.JSON)
+            .body("""{"schedule":{"kind":"sometimes"},"tz":"UTC"}""")
+            .When()
+            .post("/reminder/preview")
+            .then()
+            .statusCode(400)
+    }
+
+    @Test
+    fun testCreateRecurringWithoutSchedule() {
+        val reminder = NewReminder(
+            null, EntryId("e1"), ReminderType.RECURRING, listOf(NotificationMethod.PUSH),
+            tz = "UTC", status = ReminderStatus.ACTIVE
+        )
+        given().contentType(ContentType.JSON).body(reminder).When().post("/reminder").then().statusCode(400)
     }
 
 }

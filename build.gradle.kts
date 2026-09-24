@@ -10,8 +10,6 @@ val bcryptVersion = "0.10.2"
 val totpVersion = "2.4.1"
 val logbackVersion = "1.6.3"
 val konfVersion = "0.0.8"
-val commonslangVersion = "3.14.0"
-val skeduleVersion = "0.4.0"
 
 val testcontainersVersion = "1.21.4"
 val kotlinxCoroutinesTestVersion = "1.11.0"
@@ -128,11 +126,9 @@ dependencies {
     implementation("com.vladsch.flexmark:flexmark-ext-tables:$flexmarkVersion")
     implementation("com.vladsch.flexmark:flexmark-ext-autolink:$flexmarkVersion")
 
-    implementation("com.github.shyiko.skedule:skedule:$skeduleVersion")
     implementation("at.favre.lib:bcrypt:$bcryptVersion")
     implementation("dev.turingcomplete:kotlin-onetimepassword:$totpVersion")
 
-    implementation("org.apache.commons:commons-lang3:$commonslangVersion")
     implementation("ch.qos.logback:logback-classic:$logbackVersion")
     implementation("com.voltstorage:konf-core:$konfVersion")
 

@@ -41,9 +41,9 @@ fun Route.reminder(reminderService: ReminderService) {
             call.respond(HttpStatusCode.OK)
         }
 
-        post("/validate") {
-            val scheduleDef = call.receive<String>()
-            call.respond(HttpStatusCode.OK, reminderService.validateAndTranscribeSchedule(scheduleDef))
+        post("/preview") {
+            val request = call.receive<SchedulePreviewRequest>()
+            call.respond(HttpStatusCode.OK, reminderService.previewSchedule(request.schedule, request.tz))
         }
 
     }

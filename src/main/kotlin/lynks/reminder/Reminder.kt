@@ -1,9 +1,6 @@
 package lynks.reminder
 
-import lynks.common.Entries
-import lynks.common.EntryId
-import lynks.common.ReminderId
-import lynks.common.UID_LENGTH
+import lynks.common.*
 import lynks.notify.NotificationMethod
 import org.jetbrains.exposed.v1.core.ReferenceOption
 import org.jetbrains.exposed.v1.core.Table
@@ -25,8 +22,8 @@ object Reminders : Table("reminders") {
 }
 
 enum class ReminderType {
-    ADHOC, // date to long
-    RECURRING, // string
+    ADHOC,
+    RECURRING,
 }
 
 enum class ReminderStatus {
@@ -41,39 +38,49 @@ interface Reminder {
     val type: ReminderType
     val notifyMethods: List<NotificationMethod>
     val message: String?
-    val spec: String
     val tz: String
     val status: ReminderStatus
     val dateCreated: Instant
     val dateUpdated: Instant
+    val entryType: EntryType?
+    val entryTitle: String?
 }
 
 data class AdhocReminder(override val reminderId: ReminderId,
                          override val entryId: EntryId,
                          override val notifyMethods: List<NotificationMethod>,
                          override val message: String?,
-                         val interval: Long,
+                         val fireAt: Long,
                          override val tz: String,
                          override val status: ReminderStatus,
                          override val dateCreated: Instant,
-                         override val dateUpdated: Instant) : Reminder {
+                         override val dateUpdated: Instant,
+                         override val entryType: EntryType? = null,
+                         override val entryTitle: String? = null
+) : Reminder {
     override val type: ReminderType = ReminderType.ADHOC
-    override val spec: String = interval.toString()
 }
 
 data class RecurringReminder(override val reminderId: ReminderId,
                              override val entryId: EntryId,
                              override val notifyMethods: List<NotificationMethod>,
                              override val message: String?,
-                             val fire: String,
+                             val schedule: Schedule,
                              override val tz: String,
                              override val status: ReminderStatus,
                              override val dateCreated: Instant,
-                             override val dateUpdated: Instant) : Reminder {
+                             override val dateUpdated: Instant,
+                             override val entryType: EntryType? = null,
+                             override val entryTitle: String? = null
+) : Reminder {
     override val type: ReminderType = ReminderType.RECURRING
-    override val spec: String = fire
 }
 
+// An adhoc reminder sets fireAt, epoch millis, and a recurring one sets schedule
 data class NewReminder(val reminderId: ReminderId? = null, val entryId: EntryId, val type: ReminderType,
                        val notifyMethods: List<NotificationMethod>, val message: String? = null,
-                       val spec: String, val tz: String, val status: ReminderStatus)
+                       val fireAt: Long? = null, val schedule: Schedule? = null,
+                       val tz: String, val status: ReminderStatus
+)
+
+data class SchedulePreviewRequest(val schedule: Schedule, val tz: String)

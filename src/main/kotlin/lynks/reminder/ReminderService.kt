@@ -1,7 +1,5 @@
 package lynks.reminder
 
-import com.github.shyiko.skedule.InvalidScheduleException
-import com.github.shyiko.skedule.Schedule
 import lynks.common.*
 import lynks.common.exception.InvalidModelException
 import lynks.common.page.DefaultPageRequest
@@ -24,25 +22,32 @@ import java.time.OffsetDateTime
 import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
-import java.time.format.DateTimeFormatter
 import kotlin.math.max
 
 class ReminderService(private val workerRegistry: WorkerRegistry) {
 
     private val log = loggerFor<ReminderService>()
-    private val scheduleFormatter = DateTimeFormatter.ofPattern("EEE dd MMMM yyyy 'at' HH:mm")
 
     private fun toModel(row: ResultRow): Reminder {
         return when (row[Reminders.type]) {
             ReminderType.ADHOC -> AdhocReminder(
                 ReminderId(row[Reminders.reminderId]), EntryId(row[Reminders.entryId]), toNotifyMethods(row[Reminders.notifyMethods]),
                     row[Reminders.message], row[Reminders.spec].toLong(), row[Reminders.tz], row[Reminders.status],
-                    row[Reminders.dateCreated].toInstant(), row[Reminders.dateUpdated].toInstant()
+                row[Reminders.dateCreated].toInstant(),
+                row[Reminders.dateUpdated].toInstant(),
+                row[Entries.type],
+                row[Entries.title]
             )
             ReminderType.RECURRING -> RecurringReminder(
                     ReminderId(row[Reminders.reminderId]), EntryId(row[Reminders.entryId]), toNotifyMethods(row[Reminders.notifyMethods]),
-                    row[Reminders.message], row[Reminders.spec], row[Reminders.tz], row[Reminders.status],
-                    row[Reminders.dateCreated].toInstant(), row[Reminders.dateUpdated].toInstant()
+                row[Reminders.message],
+                Schedule.fromSpec(row[Reminders.spec]),
+                row[Reminders.tz],
+                row[Reminders.status],
+                row[Reminders.dateCreated].toInstant(),
+                row[Reminders.dateUpdated].toInstant(),
+                row[Entries.type],
+                row[Entries.title]
             )
         }
     }
@@ -54,7 +59,9 @@ class ReminderService(private val workerRegistry: WorkerRegistry) {
 
     private fun owned(userId: UserId): Op<Boolean> = Entries.userId eq userId.value
 
-    private fun ownedQuery(userId: UserId) = Reminders.innerJoin(Entries).select(Reminders.columns).where { owned(userId) }
+    private val reminderQuerySlice = Reminders.columns + listOf(Entries.type, Entries.title)
+
+    private fun ownedQuery(userId: UserId) = Reminders.innerJoin(Entries).select(reminderQuerySlice).where { owned(userId) }
 
     fun getRemindersForEntry(userId: UserId, eId: EntryId) = transaction {
         ownedQuery(userId).combine { Reminders.entryId eq eId.value }
@@ -77,7 +84,7 @@ class ReminderService(private val workerRegistry: WorkerRegistry) {
 
     // for the worker, which schedules every user's reminders
     fun getAllActiveReminders(): List<Pair<UserId, Reminder>> = transaction {
-        Reminders.innerJoin(Entries).select(Reminders.columns + Entries.userId)
+        Reminders.innerJoin(Entries).select(reminderQuerySlice + Entries.userId)
             .where { Reminders.status eq ReminderStatus.ACTIVE }
             .map { UserId(it[Entries.userId]) to toModel(it) }
     }
@@ -107,7 +114,7 @@ class ReminderService(private val workerRegistry: WorkerRegistry) {
             it[type] = reminder.type
             it[notifyMethods] = checkValidNotifyMethods(reminder.notifyMethods)
             it[message] = reminder.message
-            it[spec] = checkValidSpec(reminder.type, reminder.spec)
+            it[spec] = checkValidSpec(reminder)
             it[tz] = checkValidTimeZone(reminder.tz)
             it[status] = reminder.status
             it[dateCreated] = time
@@ -132,7 +139,7 @@ class ReminderService(private val workerRegistry: WorkerRegistry) {
                 it[type] = reminder.type
                 it[notifyMethods] = checkValidNotifyMethods(reminder.notifyMethods)
                 it[message] = reminder.message
-                it[spec] = checkValidSpec(reminder.type, reminder.spec)
+                it[spec] = checkValidSpec(reminder)
                 it[tz] = checkValidTimeZone(reminder.tz)
                 it[status] = reminder.status
                 it[dateUpdated] = OffsetDateTime.now(ZoneOffset.UTC)
@@ -161,15 +168,15 @@ class ReminderService(private val workerRegistry: WorkerRegistry) {
         false
     }
 
-    fun validateAndTranscribeSchedule(definition: String): List<String> {
-        val schedule = try {
-            Schedule.parse(definition)
-        } catch (e: InvalidScheduleException) {
-            throw InvalidModelException(e.message ?: "Invalid schedule definition")
+    fun previewSchedule(schedule: Schedule, tz: String, count: Int = 5): List<OffsetDateTime> {
+        checkValidSchedule(schedule)
+        val fires = mutableListOf<OffsetDateTime>()
+        var next = schedule.next(ZonedDateTime.now(ZoneId.of(checkValidTimeZone(tz))))
+        while (next != null && fires.size < count) {
+            fires += next.toOffsetDateTime()
+            next = schedule.next(next)
         }
-        val now = ZonedDateTime.now()
-        val iterator = schedule.iterate(now)
-        return (1..5).map { iterator.next().format(scheduleFormatter) }
+        return fires
     }
 
     private fun checkValidTimeZone(tz: String): String {
@@ -182,16 +189,17 @@ class ReminderService(private val workerRegistry: WorkerRegistry) {
     }
 
     // A bad spec would otherwise only surface when the row is read back or the worker schedules it
-    private fun checkValidSpec(type: ReminderType, spec: String): String {
-        when (type) {
-            ReminderType.ADHOC -> spec.toLongOrNull() ?: throw InvalidModelException("Invalid reminder time: $spec")
-            ReminderType.RECURRING -> try {
-                Schedule.parse(spec)
-            } catch (e: InvalidScheduleException) {
-                throw InvalidModelException(e.message ?: "Invalid schedule definition")
-            }
-        }
-        return spec
+    private fun checkValidSpec(reminder: NewReminder): String = when (reminder.type) {
+        ReminderType.ADHOC -> (reminder.fireAt ?: throw InvalidModelException("An adhoc reminder needs a fire time")).toString()
+        ReminderType.RECURRING -> checkValidSchedule(
+            reminder.schedule ?: throw InvalidModelException("A recurring reminder needs a schedule")
+        ).toSpec()
+    }
+
+    private fun checkValidSchedule(schedule: Schedule): Schedule {
+        schedule.validate()
+        schedule.next(ZonedDateTime.now(ZoneOffset.UTC)) ?: throw InvalidModelException("This schedule never fires")
+        return schedule
     }
 
     private fun checkValidNotifyMethods(methods: List<NotificationMethod>): String {

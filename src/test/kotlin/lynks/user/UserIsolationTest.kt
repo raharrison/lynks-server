@@ -206,7 +206,8 @@ class UserIsolationTest : DatabaseTest() {
                 ReminderType.ADHOC,
                 listOf(NotificationMethod.PUSH),
                 "mine",
-                "100",
+                100,
+                null,
                 tz,
                 ReminderStatus.ACTIVE
             )
@@ -224,7 +225,8 @@ class UserIsolationTest : DatabaseTest() {
                     ReminderType.ADHOC,
                     listOf(NotificationMethod.PUSH),
                     "theirs",
-                    "100",
+                    100,
+                    null,
                     tz,
                     ReminderStatus.ACTIVE
                 )
@@ -239,7 +241,8 @@ class UserIsolationTest : DatabaseTest() {
                     ReminderType.ADHOC,
                     listOf(NotificationMethod.PUSH),
                     "changed",
-                    "100",
+                    100,
+                    null,
                     tz,
                     ReminderStatus.DISABLED
                 )

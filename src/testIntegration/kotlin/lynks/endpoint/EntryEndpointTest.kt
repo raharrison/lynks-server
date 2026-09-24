@@ -280,7 +280,7 @@ class EntryEndpointTest : ServerTest() {
         assertThat(reminders).extracting("entryId").containsOnly("e1")
         assertThat(reminders).extracting("type").containsOnly(ReminderType.ADHOC.name.lowercase())
         assertThat(reminders).extracting("message").containsOnly("message")
-        assertThat(reminders).extracting("spec").isNotEmpty()
+        assertThat(reminders).extracting("fireAt").doesNotContainNull()
         assertThat(reminders).extracting("tz").containsOnly(ZoneId.systemDefault().id)
 
         val none = get("/entry/{id}/reminder", "e2")

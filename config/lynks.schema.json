@@ -127,9 +127,11 @@
                 "encryptionKey": {
                     "$id": "#/properties/auth/properties/encryptionKey",
                     "type": "string",
-                    "description": "Key (16+ chars) used to encrypt session cookies, should be kept secret and different from signingKey",
+                    "description": "Key (32 ASCII chars) used to encrypt session cookies, should be kept secret and different from signingKey",
+                    "minLength": 32,
+                    "maxLength": 32,
                     "examples": [
-                        "abcdef123"
+                        "tXq0Lm3VbR8zKd2WfYp6NcJs9HgA4eUo"
                     ]
                 },
                 "defaultUserName": {

@@ -16,6 +16,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.time.Instant
+import java.time.LocalTime
 import java.time.ZoneId
 
 class ReminderServiceTest : DatabaseTest() {
@@ -23,6 +24,7 @@ class ReminderServiceTest : DatabaseTest() {
     private val workerRegistry = mockk<WorkerRegistry>(relaxUnitFun = true)
     private val reminderService = ReminderService(workerRegistry)
     private val tz = ZoneId.systemDefault().id
+    private val daily = CalendarSchedule(LocalTime.of(9, 0))
 
     @BeforeEach
     fun insertEntry() {
@@ -34,10 +36,10 @@ class ReminderServiceTest : DatabaseTest() {
     @Test
     fun testAddNewReminder() {
         val reminder1 = NewReminder(null, EntryId("e1"), ReminderType.ADHOC,
-            listOf(NotificationMethod.JOLT, NotificationMethod.PUSH), "message", "100", tz, ReminderStatus.ACTIVE
+            listOf(NotificationMethod.JOLT, NotificationMethod.PUSH), "message", 100, null, tz, ReminderStatus.ACTIVE
         )
         val reminder2 = NewReminder(null, EntryId("e1"), ReminderType.RECURRING,
-            listOf(NotificationMethod.JOLT, NotificationMethod.PUSH), "message2", "every day 09:00", tz, ReminderStatus.DISABLED
+            listOf(NotificationMethod.JOLT, NotificationMethod.PUSH), "message2", null, daily, tz, ReminderStatus.DISABLED
         )
         val saved1 = reminderService.addReminder(TEST_USER, reminder1)
         val saved2 = reminderService.addReminder(TEST_USER, reminder2)
@@ -49,9 +51,11 @@ class ReminderServiceTest : DatabaseTest() {
         assertThat(retrieved2?.tz).isEqualTo(reminder2.tz)
         assertThat(retrieved?.type).isEqualTo(ReminderType.ADHOC)
         assertThat(retrieved2?.type).isEqualTo(ReminderType.RECURRING)
-        assertThat(retrieved?.spec).isEqualTo(reminder1.spec)
-        assertThat(retrieved2?.spec).isEqualTo(reminder2.spec)
+        assertThat((retrieved as AdhocReminder).fireAt).isEqualTo(reminder1.fireAt)
+        assertThat((retrieved2 as RecurringReminder).schedule).isEqualTo(reminder2.schedule)
         assertThat(retrieved?.message).isEqualTo(reminder1.message)
+        assertThat(retrieved?.entryTitle).isEqualTo("title")
+        assertThat(retrieved?.entryType).isEqualTo(EntryType.NOTE)
         assertThat(retrieved2?.message).isEqualTo(reminder2.message)
         assertThat(retrieved?.notifyMethods).containsExactly(NotificationMethod.JOLT, NotificationMethod.PUSH)
         assertThat(retrieved2?.notifyMethods).containsExactly(NotificationMethod.JOLT, NotificationMethod.PUSH)
@@ -68,7 +72,7 @@ class ReminderServiceTest : DatabaseTest() {
             reminderService.addReminder(
                 TEST_USER, NewReminder(
                     null, EntryId("e1"), ReminderType.ADHOC,
-                listOf(NotificationMethod.PUSH), "message", "100", "invalid", ReminderStatus.ACTIVE
+                    listOf(NotificationMethod.PUSH), "message", 100, null, "invalid", ReminderStatus.ACTIVE
             )
             )
         }
@@ -79,20 +83,20 @@ class ReminderServiceTest : DatabaseTest() {
         val rem = reminderService.addReminder(
             TEST_USER, NewReminder(
                 null, EntryId("e1"), ReminderType.ADHOC,
-            listOf(NotificationMethod.JOLT), "message", "100", tz, ReminderStatus.ACTIVE
+                listOf(NotificationMethod.JOLT), "message", 100, null, tz, ReminderStatus.ACTIVE
         )
         )
         val res = reminderService.addReminder(
             TEST_USER, NewReminder(
                 rem.reminderId, EntryId("e1"), ReminderType.RECURRING,
-            listOf(NotificationMethod.PUSH), "message", "every day 09:00", tz, ReminderStatus.COMPLETED
+                listOf(NotificationMethod.PUSH), "message", null, daily, tz, ReminderStatus.COMPLETED
         )
         )
         assertThat(rem.reminderId).isNotEqualTo(res.reminderId)
         assertThat(res.entryId).isEqualTo(EntryId("e1"))
         assertThat(res.type).isEqualTo(ReminderType.RECURRING)
         assertThat(res.message).isEqualTo("message")
-        assertThat(res.spec).isEqualTo("every day 09:00")
+        assertThat((res as RecurringReminder).schedule).isEqualTo(daily)
         assertThat(res.tz).isEqualTo(tz)
         assertThat(rem.dateCreated).isEqualTo(rem.dateUpdated)
         assertThat(res.dateCreated).isEqualTo(res.dateUpdated)
@@ -111,7 +115,7 @@ class ReminderServiceTest : DatabaseTest() {
             reminderService.addReminder(
                 TEST_USER, NewReminder(
                     null, EntryId("nothing"), ReminderType.ADHOC,
-                listOf(NotificationMethod.JOLT), "message", "100", tz, ReminderStatus.ACTIVE
+                    listOf(NotificationMethod.JOLT), "message", 100, null, tz, ReminderStatus.ACTIVE
             )
             )
         }
@@ -144,7 +148,6 @@ class ReminderServiceTest : DatabaseTest() {
             listOf(NotificationMethod.JOLT, NotificationMethod.PUSH)
         )
         assertThat(reminders).extracting("message").containsOnly("message")
-        assertThat(reminders).extracting("spec").doesNotContain("400")
         assertThat(reminders).extracting("tz").containsOnly(tz)
         assertThat(reminders).extracting("status").containsExactlyInAnyOrder(ReminderStatus.ACTIVE,
             ReminderStatus.COMPLETED, ReminderStatus.DISABLED)
@@ -244,7 +247,7 @@ class ReminderServiceTest : DatabaseTest() {
             reminderService.updateReminder(
                 TEST_USER, NewReminder(
                     ReminderId("invalid"), EntryId("e1"), ReminderType.ADHOC,
-            listOf(NotificationMethod.PUSH), "message", "300", tz, ReminderStatus.ACTIVE
+                    listOf(NotificationMethod.PUSH), "message", 300, null, tz, ReminderStatus.ACTIVE
         )
         )
         ).isNull()
@@ -256,7 +259,7 @@ class ReminderServiceTest : DatabaseTest() {
         val res = reminderService.updateReminder(
             TEST_USER, NewReminder(
                 null, EntryId("e1"), ReminderType.ADHOC,
-            listOf(NotificationMethod.JOLT, NotificationMethod.PUSH), "message", "300", tz, ReminderStatus.ACTIVE
+                listOf(NotificationMethod.JOLT, NotificationMethod.PUSH), "message", 300, null, tz, ReminderStatus.ACTIVE
         )
         )
         assertThat(res?.reminderId?.value).isNotBlank()
@@ -264,7 +267,7 @@ class ReminderServiceTest : DatabaseTest() {
         assertThat(res?.type).isEqualTo(ReminderType.ADHOC)
         assertThat(res?.notifyMethods).contains(NotificationMethod.JOLT, NotificationMethod.PUSH)
         assertThat(res?.message).isEqualTo("message")
-        assertThat(res?.spec).isEqualTo("300")
+        assertThat((res as AdhocReminder?)?.fireAt).isEqualTo(300L)
         assertThat(res?.dateCreated).isEqualTo(res?.dateUpdated)
         assertThat(res?.status).isEqualTo(ReminderStatus.ACTIVE)
         assertThat(reminderService.get(TEST_USER, res!!.reminderId)).isEqualTo(res)
@@ -277,13 +280,13 @@ class ReminderServiceTest : DatabaseTest() {
         val res1 = reminderService.addReminder(
             TEST_USER, NewReminder(
                 null, EntryId("e1"), ReminderType.ADHOC,
-            listOf(NotificationMethod.JOLT), "message", "100", tz, ReminderStatus.ACTIVE
+                listOf(NotificationMethod.JOLT), "message", 100, null, tz, ReminderStatus.ACTIVE
         )
         )
         val res2 = reminderService.addReminder(
             TEST_USER, NewReminder(
                 null, EntryId("e1"), ReminderType.RECURRING,
-            listOf(NotificationMethod.PUSH), "message", "every day 09:00", tz, ReminderStatus.DISABLED
+                listOf(NotificationMethod.PUSH), "message", null, daily, tz, ReminderStatus.DISABLED
         )
         )
         assertThat(reminderService.getAllReminders(TEST_USER).content).hasSize(2).extracting<ReminderId> { it.reminderId }
@@ -292,14 +295,14 @@ class ReminderServiceTest : DatabaseTest() {
         val updated = reminderService.updateReminder(
             TEST_USER, NewReminder(
                 res1.reminderId, EntryId("e1"), ReminderType.RECURRING,
-            listOf(NotificationMethod.JOLT, NotificationMethod.PUSH), "message2", "every day 09:00", tz, ReminderStatus.COMPLETED
+                listOf(NotificationMethod.JOLT, NotificationMethod.PUSH), "message2", null, daily, tz, ReminderStatus.COMPLETED
         )
         )
         assertThat(updated?.entryId).isEqualTo(EntryId("e1"))
         assertThat(updated?.type).isEqualTo(ReminderType.RECURRING)
         assertThat(updated?.notifyMethods).containsExactly(NotificationMethod.JOLT, NotificationMethod.PUSH)
         assertThat(updated?.message).isEqualTo("message2")
-        assertThat(updated?.spec).isEqualTo("every day 09:00")
+        assertThat((updated as RecurringReminder?)?.schedule).isEqualTo(daily)
         assertThat(updated?.dateCreated).isBeforeOrEqualTo(updated?.dateUpdated)
         assertThat(updated?.status).isEqualTo(ReminderStatus.COMPLETED)
         assertThat(reminderService.get(TEST_USER, res1.reminderId)).isEqualTo(updated)
@@ -308,14 +311,14 @@ class ReminderServiceTest : DatabaseTest() {
         val updated2 = reminderService.updateReminder(
             TEST_USER, NewReminder(
                 res2.reminderId, EntryId("e2"), ReminderType.ADHOC,
-            listOf(NotificationMethod.JOLT), "message3", "800", "America/New_York", ReminderStatus.ACTIVE
+                listOf(NotificationMethod.JOLT), "message3", 800, null, "America/New_York", ReminderStatus.ACTIVE
         )
         )
         assertThat(updated2?.entryId).isEqualTo(EntryId("e1"))
         assertThat(updated2?.type).isEqualTo(ReminderType.ADHOC)
         assertThat(updated2?.notifyMethods).containsOnly(NotificationMethod.JOLT)
         assertThat(updated2?.message).isEqualTo("message3")
-        assertThat(updated2?.spec).isEqualTo("800")
+        assertThat((updated2 as AdhocReminder?)?.fireAt).isEqualTo(800L)
         assertThat(updated2?.tz).isEqualTo("America/New_York")
         assertThat(updated2?.dateCreated).isNotEqualTo(updated2?.dateUpdated)
         assertThat(updated2?.status).isEqualTo(ReminderStatus.ACTIVE)
@@ -329,14 +332,14 @@ class ReminderServiceTest : DatabaseTest() {
         val res1 = reminderService.addReminder(
             TEST_USER, NewReminder(
                 null, EntryId("e1"), ReminderType.ADHOC,
-            listOf(NotificationMethod.JOLT), "message", "100", tz, ReminderStatus.ACTIVE
+                listOf(NotificationMethod.JOLT), "message", 100, null, tz, ReminderStatus.ACTIVE
         )
         )
         assertThrows<InvalidModelException> {
             reminderService.updateReminder(
                 TEST_USER, NewReminder(
                     res1.reminderId, EntryId("e1"), ReminderType.RECURRING,
-                listOf(NotificationMethod.PUSH), "message", "every day 09:00", "invalid", ReminderStatus.DISABLED
+                    listOf(NotificationMethod.PUSH), "message", null, daily, "invalid", ReminderStatus.DISABLED
             )
             )
         }
@@ -347,7 +350,7 @@ class ReminderServiceTest : DatabaseTest() {
         val res1 = reminderService.addReminder(
             TEST_USER, NewReminder(
                 null, EntryId("e1"), ReminderType.ADHOC,
-            listOf(NotificationMethod.JOLT), "message", "100", tz, ReminderStatus.ACTIVE
+                listOf(NotificationMethod.JOLT), "message", 100, null, tz, ReminderStatus.ACTIVE
         )
         )
         val updated = reminderService.updateReminderStatus(res1.reminderId, ReminderStatus.COMPLETED)
@@ -375,13 +378,13 @@ class ReminderServiceTest : DatabaseTest() {
         val res1 = reminderService.addReminder(
             TEST_USER, NewReminder(
                 null, EntryId("e1"), ReminderType.ADHOC,
-            listOf(NotificationMethod.JOLT), "elapsed", "100", tz, ReminderStatus.ACTIVE
+                listOf(NotificationMethod.JOLT), "elapsed", 100, null, tz, ReminderStatus.ACTIVE
         )
         )
         val res2 = reminderService.addReminder(
             TEST_USER, NewReminder(
                 null, EntryId("e1"), ReminderType.RECURRING,
-            listOf(NotificationMethod.PUSH), "elapsed", "every day 09:00", tz, ReminderStatus.DISABLED
+                listOf(NotificationMethod.PUSH), "elapsed", null, daily, tz, ReminderStatus.DISABLED
         )
         )
         assertThat(reminderService.isActive(res1.reminderId)).isTrue()
@@ -391,17 +394,59 @@ class ReminderServiceTest : DatabaseTest() {
     }
 
     @Test
-    fun testValidateSchedule() {
-        val nextFireTimes = reminderService.validateAndTranscribeSchedule("every day 17:00")
-        assertThat(nextFireTimes).hasSize(5)
-        assertThrows<InvalidModelException> { reminderService.validateAndTranscribeSchedule("every invalid 17:00") }
+    fun testPreviewSchedule() {
+        val fires = reminderService.previewSchedule(CalendarSchedule(LocalTime.of(17, 0)), "Asia/Singapore")
+        assertThat(fires).hasSize(5)
+        assertThat(fires).allSatisfy {
+            assertThat(it.atZoneSameInstant(ZoneId.of("Asia/Singapore")).toLocalTime()).isEqualTo(LocalTime.of(17, 0))
+        }
+        assertThat(fires).isSorted()
+        assertThrows<InvalidModelException> { reminderService.previewSchedule(IntervalSchedule(0, IntervalUnit.HOURS), tz) }
+        assertThrows<InvalidModelException> { reminderService.previewSchedule(daily, "invalid") }
+    }
+
+    @Test
+    fun testAddReminderRejectsBadSpec() {
+        assertThrows<InvalidModelException> {
+            reminderService.addReminder(
+                TEST_USER, NewReminder(
+                    null, EntryId("e1"), ReminderType.RECURRING,
+                    listOf(NotificationMethod.PUSH), tz = tz, status = ReminderStatus.ACTIVE
+                )
+            )
+        }
+        assertThrows<InvalidModelException> {
+            reminderService.addReminder(
+                TEST_USER, NewReminder(
+                    null, EntryId("e1"), ReminderType.ADHOC,
+                    listOf(NotificationMethod.PUSH), schedule = daily, tz = tz, status = ReminderStatus.ACTIVE
+                )
+            )
+        }
+        assertThrows<InvalidModelException> {
+            reminderService.addReminder(
+                TEST_USER, NewReminder(
+                    null,
+                    EntryId("e1"),
+                    ReminderType.RECURRING,
+                    listOf(NotificationMethod.PUSH),
+                    schedule = CalendarSchedule(LocalTime.NOON, monthDays = setOf(30), months = setOf(2)),
+                    tz = tz,
+                    status = ReminderStatus.ACTIVE
+                )
+            )
+        }
     }
 
     // seeds a row with a known id, bypassing the worker
     private fun ReminderService.add(reminder: Reminder): Reminder {
         createDummyReminder(
             reminder.reminderId.value, reminder.entryId.value, reminder.type, reminder.notifyMethods,
-            reminder.message, reminder.spec, reminder.tz, reminder.status
+            reminder.message, when (reminder) {
+                is AdhocReminder -> reminder.fireAt.toString()
+                is RecurringReminder -> reminder.schedule.toSpec()
+                else -> error("Unknown reminder $reminder")
+            }, reminder.tz, reminder.status
         )
         return get(TEST_USER, reminder.reminderId)!!
     }
@@ -415,9 +460,14 @@ class ReminderServiceTest : DatabaseTest() {
         val time = Instant.now()
         return when (type) {
             ReminderType.ADHOC -> AdhocReminder(sid, entryId = eId, message = message, notifyMethods = notifyMethods,
-                interval = interval, tz = this.tz, status = status, dateCreated = time, dateUpdated = time)
+                fireAt = interval, tz = this.tz, status = status, dateCreated = time, dateUpdated = time
+            )
             ReminderType.RECURRING -> RecurringReminder(sid, entryId = eId, message = message, notifyMethods = notifyMethods,
-                fire = "every $interval minutes", tz = this.tz, status = status, dateCreated = time, dateUpdated = time
+                schedule = IntervalSchedule(interval.toInt(), IntervalUnit.MINUTES),
+                tz = this.tz,
+                status = status,
+                dateCreated = time,
+                dateUpdated = time
             )
         }
     }

@@ -9,7 +9,6 @@ import lynks.util.JsonMapper
 import lynks.util.Result
 import lynks.util.URLUtils
 import lynks.util.loggerFor
-import org.apache.commons.lang3.StringUtils
 import org.slf4j.MDC
 import java.net.URI
 import java.net.http.HttpClient
@@ -130,7 +129,7 @@ class WebResourceRetriever : ResourceRetriever {
             .timeout(timeout)
             .header("User-Agent", USER_AGENT)
         val requestId = MDC.get(MDC_REQUEST_ID)
-        if (StringUtils.isNotEmpty(requestId)) {
+        if (!requestId.isNullOrEmpty()) {
             builder.setHeader(HttpHeaders.XRequestId, requestId)
         }
         return builder

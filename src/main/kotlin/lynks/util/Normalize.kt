@@ -1,7 +1,5 @@
 package lynks.util
 
-import org.apache.commons.lang3.StringUtils
-
 object Normalize {
 
     private val entities = mapOf(
@@ -19,23 +17,26 @@ object Normalize {
         "&gt;" to ">"
     )
 
+    // One pass, so a replacement is never re-matched: "&amp;lt;" becomes "&lt;", not "<"
+    private val entityPattern = entities.keys.joinToString("|") { Regex.escape(it) }.toRegex()
+
     private val stopwords : Set<String> by lazy {
         javaClass.getResource("/stopwords/stopwords.txt")
             .readText().lines().toSet()
     }
 
     private fun normalizeEntities(str: String): String {
-        return StringUtils.replaceEach(str, entities.keys.toTypedArray(), entities.values.toTypedArray())
+        return entityPattern.replace(str) { entities.getValue(it.value) }
     }
 
     // replace entities and remove all stopwords
     fun normalize(str: String): String {
-        if (StringUtils.isBlank(str)) {
+        if (str.isBlank()) {
             return ""
         }
         val replaced = normalizeEntities(str).replace("\\p{Punct}".toRegex(), "")
         return replaced.lowercase().splitToSequence("\\s+".toRegex())
-            .filterNot { StringUtils.isWhitespace(it) }
+            .filterNot { it.isBlank() }
             .filterNot { stopwords.contains(it) }
             .joinToString(" ")
     }

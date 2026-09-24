@@ -1,19 +1,20 @@
 package lynks.util
 
 import lynks.common.exception.ExecutionException
-import org.apache.commons.lang3.SystemUtils
 import java.io.InputStream
 
 object ExecUtils {
 
     private val log = loggerFor<ExecUtils>()
 
+    val IS_WINDOWS = System.getProperty("os.name").startsWith("Windows")
+
     private val NOOP_CONSUMER: (line: String) -> Unit = {}
 
     private val startupCommands = generateStartupCommands()
 
     private fun generateStartupCommands(): List<String> =
-            if (SystemUtils.IS_OS_WINDOWS)
+        if (IS_WINDOWS)
                 listOf("cmd.exe", "/C")
             else
                 listOf("sh", "-c")

@@ -2,6 +2,7 @@ package lynks.worker
 
 import io.mockk.*
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runTest
 import lynks.common.EntryId
@@ -12,10 +13,7 @@ import lynks.notify.Notification
 import lynks.notify.NotificationMethod
 import lynks.notify.NotificationType
 import lynks.notify.NotifyService
-import lynks.reminder.AdhocReminder
-import lynks.reminder.RecurringReminder
-import lynks.reminder.ReminderService
-import lynks.reminder.ReminderStatus
+import lynks.reminder.*
 import lynks.util.TEST_USER
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -129,43 +127,44 @@ class ReminderWorkerTest {
     @Test
     fun testRecurringReminderSameTimezone() = runTest {
         val tz = ZoneId.systemDefault()
+        val schedule = IntervalSchedule(30, IntervalUnit.MINUTES)
         val reminder = RecurringReminder(ReminderId("sc2"), EntryId("e1"),
-            listOf(NotificationMethod.PUSH, NotificationMethod.JOLT), "message", "every 30 minutes",
+            listOf(NotificationMethod.PUSH, NotificationMethod.JOLT), "message", schedule,
             tz.id, ReminderStatus.ACTIVE, Instant.EPOCH, Instant.EPOCH)
 
         val worker = createWorker(coroutineContext)
         val send = worker.worker()
         send.send(ReminderWorkerRequest(TEST_USER, reminder, CrudType.CREATE))
 
-        advanceTimeBy(TimeUnit.MINUTES.toMillis(25))
+        // intervals align to the clock, so the first fire is somewhere in the next half hour
+        val untilFirst = ZonedDateTime.now(tz).until(schedule.next(ZonedDateTime.now(tz))!!, ChronoUnit.MILLIS)
+        advanceTimeBy(untilFirst / 2)
         coVerify(exactly = 0) { notifyService.create(TEST_USER, coMatch { it.message == reminder.message }) }
         coVerify(exactly = 0) { notifyService.sendJoltNotification(TEST_USER, any(), any()) }
 
-        advanceTimeBy(TimeUnit.MINUTES.toMillis(160))
+        advanceTimeBy(untilFirst / 2 + 200)
+        coVerify(exactly = 1) { notifyService.create(TEST_USER, coMatch { it.message == reminder.message }) }
+
+        advanceTimeBy(TimeUnit.MINUTES.toMillis(150))
         coVerify(exactly = 6) { notifyService.create(TEST_USER, coMatch { it.message == reminder.message }) }
         coVerify(exactly = 6) { notifyService.sendJoltNotification(TEST_USER, any(), any()) }
 
-        advanceTimeBy(TimeUnit.MINUTES.toMillis(65))
+        advanceTimeBy(TimeUnit.MINUTES.toMillis(60))
         coVerify(exactly = 8) { notifyService.create(TEST_USER, coMatch { it.message == reminder.message }) }
-        coVerify(exactly = 8) { notifyService.sendJoltNotification(TEST_USER, any(), any()) }
 
-        advanceTimeBy(TimeUnit.MINUTES.toMillis(125))
-        coVerify(exactly = 12) { notifyService.create(TEST_USER, coMatch { it.message == reminder.message }) }
-        coVerify(exactly = 12) { notifyService.sendJoltNotification(TEST_USER, any(), any()) }
-
-        advanceTimeBy(TimeUnit.MINUTES.toMillis(185))
+        advanceTimeBy(TimeUnit.MINUTES.toMillis(120))
         send.close()
         worker.cancelAll()
 
-        coVerify(exactly = 18) { notifyService.create(TEST_USER, coMatch { it.message == reminder.message }) }
-        coVerify(exactly = 18) { notifyService.sendJoltNotification(TEST_USER, any(), any()) }
+        coVerify(exactly = 12) { notifyService.create(TEST_USER, coMatch { it.message == reminder.message }) }
+        coVerify(exactly = 12) { notifyService.sendJoltNotification(TEST_USER, any(), any()) }
     }
 
     @Test
     fun testRecurringReminderDifferentTimezone() = runTest {
         val tz = ZoneId.of("Asia/Singapore")
         val reminder = RecurringReminder(ReminderId("sc1"), EntryId("e1"),
-            listOf(NotificationMethod.PUSH), "message", "every day 06:00",
+            listOf(NotificationMethod.PUSH), "message", CalendarSchedule(LocalTime.of(6, 0)),
             tz.id, ReminderStatus.ACTIVE, Instant.EPOCH, Instant.EPOCH)
 
         val worker = createWorker(coroutineContext)
@@ -217,7 +216,7 @@ class ReminderWorkerTest {
     @Test
     fun testRecurringNotExecutedIfNotActive() = runTest {
         val reminder = RecurringReminder(ReminderId("sc1"), EntryId("e1"),
-            listOf(NotificationMethod.PUSH, NotificationMethod.JOLT), "message", "every 3 hours",
+            listOf(NotificationMethod.PUSH, NotificationMethod.JOLT), "message", IntervalSchedule(3, IntervalUnit.HOURS),
             ZoneId.systemDefault().id, ReminderStatus.ACTIVE, Instant.EPOCH, Instant.EPOCH)
 
         every { reminderService.isActive(reminder.reminderId) } returns false
@@ -242,7 +241,7 @@ class ReminderWorkerTest {
             listOf(NotificationMethod.PUSH), "message1", fire,
             tz.id, ReminderStatus.ACTIVE, Instant.EPOCH, Instant.EPOCH)
         val recurring = RecurringReminder(ReminderId("sc1"), EntryId("e1"),
-            listOf(NotificationMethod.PUSH, NotificationMethod.JOLT), "message2", "every 3 hours",
+            listOf(NotificationMethod.PUSH, NotificationMethod.JOLT), "message2", IntervalSchedule(3, IntervalUnit.HOURS),
             tz.id, ReminderStatus.ACTIVE, Instant.EPOCH, Instant.EPOCH)
 
         every { reminderService.getAllActiveReminders() } returns listOf(TEST_USER to reminder, TEST_USER to recurring)
@@ -303,7 +302,7 @@ class ReminderWorkerTest {
         val send = worker.worker()
         send.send(ReminderWorkerRequest(TEST_USER, reminder, CrudType.CREATE))
 
-        val updatedReminder = reminder.copy(interval = reminder.interval + 1800000) // + 30 mins
+        val updatedReminder = reminder.copy(fireAt = reminder.fireAt + 1800000) // + 30 mins
 
         send.send(ReminderWorkerRequest(TEST_USER, updatedReminder, CrudType.UPDATE))
 
@@ -375,7 +374,7 @@ class ReminderWorkerTest {
         )
         val updatedReminder = reminder.copy(
             message = "updated",
-            interval = Instant.now().plus(45, ChronoUnit.MINUTES).toEpochMilli()
+            fireAt = Instant.now().plus(45, ChronoUnit.MINUTES).toEpochMilli()
         )
         every { reminderService.getAllActiveReminders() } returns listOf(TEST_USER to reminder)
 
@@ -391,6 +390,16 @@ class ReminderWorkerTest {
         coVerify(exactly = 1) { notifyService.create(TEST_USER, coMatch { it.message == updatedReminder.message }) }
     }
 
-    private fun createWorker(context: CoroutineContext) = ReminderWorker(reminderService, notifyService)
-        .apply { runner = context }
+    private fun TestScope.createWorker(context: CoroutineContext) =
+        ReminderWorker(reminderService, notifyService, virtualClock()).apply { runner = context }
+
+    // follows virtual time, so the schedule and the delays it produces advance together
+    private fun TestScope.virtualClock(): Clock {
+        val start = Instant.now()
+        return object : Clock() {
+            override fun instant(): Instant = start.plusMillis(testScheduler.currentTime)
+            override fun getZone(): ZoneId = ZoneOffset.UTC
+            override fun withZone(zone: ZoneId): Clock = this
+        }
+    }
 }

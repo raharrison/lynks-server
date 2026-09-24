@@ -31,7 +31,10 @@ object Environment {
             description = "if new users can register themselves, staying inactive until activated with scripts/manage_users.py"
         )
         val signingKey by optional<String?>(null, description = "key (32 chars) used to sign session cookies, should be kept secret")
-        val encryptionKey by optional<String?>(null, description = "key (16+ chars) used to encrypt session cookies, should be kept secret and different from signingKey")
+        val encryptionKey by optional<String?>(
+            null,
+            description = "key (32 ASCII chars) used to encrypt session cookies, should be kept secret and different from signingKey"
+        )
         val defaultUserName by optional(
             "user",
             description = "user created on first start, which every request acts as when auth is disabled"

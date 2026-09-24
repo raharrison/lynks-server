@@ -7,12 +7,12 @@ import lynks.notify.Notification
 import lynks.notify.NotificationMethod
 import lynks.notify.NotifyService
 import lynks.reminder.*
+import java.time.Clock
 import java.time.Instant
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
 import kotlin.math.max
-import com.github.shyiko.skedule.Schedule as Skedule
 
 class ReminderWorkerRequest(val userId: UserId, val reminder: Reminder, crudType: CrudType) : VariableWorkerRequest(crudType) {
     override fun hashCode(): Int = reminder.reminderId.hashCode()
@@ -22,7 +22,8 @@ class ReminderWorkerRequest(val userId: UserId, val reminder: Reminder, crudType
 
 class ReminderWorker(
     private val reminderService: ReminderService,
-    private val notifyService: NotifyService
+    private val notifyService: NotifyService,
+    private val clock: Clock = Clock.systemUTC(),
 ) : VariableChannelBasedWorker<ReminderWorkerRequest>() {
 
     override suspend fun beforeWork() {
@@ -45,7 +46,7 @@ class ReminderWorker(
     }
 
     private suspend fun launchAdhocReminder(userId: UserId, reminder: AdhocReminder) {
-        val fireDate = ZonedDateTime.ofInstant(Instant.ofEpochMilli(reminder.interval), ZoneId.of(reminder.tz))
+        val fireDate = ZonedDateTime.ofInstant(Instant.ofEpochMilli(reminder.fireAt), ZoneId.of(reminder.tz))
         log.info(
             "Launching single reminder entry={} id={} nextFire={}",
             reminder.entryId,
@@ -64,11 +65,16 @@ class ReminderWorker(
     }
 
     private suspend fun launchRecurringReminder(userId: UserId, reminder: RecurringReminder) {
-        val fire = reminder.fire
         val tz = ZoneId.of(reminder.tz)
-        val schedule = Skedule.parse(fire)
+        var previous: ZonedDateTime? = null
         while (true) {
-            val next = schedule.next(ZonedDateTime.now(tz))
+            // stepping on from the last fire means a delay that wakes a little early cannot fire it twice
+            val now = clock.instant().atZone(tz)
+            val next = reminder.schedule.next(previous?.takeIf { it.isAfter(now) } ?: now)
+            if (next == null) {
+                log.info("Recurring reminder will never fire again entry={} id={}", reminder.entryId, reminder.reminderId)
+                break
+            }
             log.info(
                 "Launching recurring reminder entry={} id={} nextFire={}",
                 reminder.entryId,
@@ -85,6 +91,7 @@ class ReminderWorker(
             delay(sleep)
             if (reminderService.isActive(reminder.reminderId)) reminderElapsed(userId, reminder)
             else break
+            previous = next
         }
     }
 
@@ -110,7 +117,7 @@ class ReminderWorker(
     }
 
     private fun calcDelay(date: ZonedDateTime): Long {
-        return max(0, ZonedDateTime.now().until(date, ChronoUnit.MILLIS))
+        return max(0, clock.instant().until(date, ChronoUnit.MILLIS))
     }
 
 }
