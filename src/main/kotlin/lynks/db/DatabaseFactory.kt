@@ -2,6 +2,7 @@ package lynks.db
 
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
+import lynks.auth.UserSessions
 import lynks.comment.Comments
 import lynks.common.Entries
 import lynks.common.EntryAudit
@@ -33,7 +34,7 @@ class DatabaseFactory {
 
     private val tables = listOf(
         Entries, EntryVersions, EntryAudit, EntryRefs,
-        Comments, Resources, ResourceVersions, Reminders, Users,
+        Comments, Resources, ResourceVersions, Reminders, Users, UserSessions,
         Groups, EntryGroups, WorkerSchedules, Notifications, Digests
     )
 

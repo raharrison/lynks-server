@@ -36,7 +36,7 @@ Backend API service for the Lynks project. Accompanied by [lynks-ui](https://git
 - Weekly **digest** page of unread links, regenerated on a schedule
 - **Multiple users**, each with their own entries, tags, collections, reminders,
   notifications and digest
-- Session-based auth with optional **TOTP two-factor authentication**
+- Session-based auth with optional **TOTP two-factor authentication**, and optional **single sign-on** through a self-hosted OpenID Connect provider such as Authelia
 - Runs as a plain systemd service; only Postgres and the scraper use containers
 
 ### Build & Run
@@ -91,9 +91,8 @@ On first start the API creates `auth.defaultUserName` with `auth.defaultUserPass
 request acts as that user, so it is created whenever it is missing, with a random
 password if none is configured.
 
-`auth.registrationsEnabled` lets people register at `POST /api/user/register`. They
-cannot sign in until activated. `scripts/manage_users.py` manages accounts
-directly in Postgres, reading the credentials from `config/.env`:
+Every other account is created by an admin: `scripts/manage_users.py` manages
+accounts directly in Postgres, reading the credentials from `config/.env`:
 
 ```bash
 cd scripts
@@ -105,9 +104,60 @@ python manage_users.py create alice             # prompts for a password
 python manage_users.py create bob --inactive
 python manage_users.py activate bob
 python manage_users.py deactivate bob           # signed in sessions stop working at once
-python manage_users.py set-password alice
+python manage_users.py set-password alice      # also signs alice out everywhere
+python manage_users.py revoke-sessions alice
+python manage_users.py unlink-sso alice
 python manage_users.py delete bob               # asks you to type the username to confirm
 ```
+
+Sessions live in Postgres, so they survive restarts. One expires after
+`auth.session.idleDays` without use (default 30) and `auth.session.maxDays` after
+sign in (default 90). Users can see and sign out their sessions under
+Settings > Security, and changing a password signs out every other session.
+
+### Single sign-on
+
+With `auth.oidc` configured, the login page offers a single sign-on button next to
+the password form. Lynks is a confidential OpenID Connect client using the
+authorization code flow with PKCE. The server does the whole exchange, and the
+browser only ever holds the lynks session cookie. Lynks still owns its users: SSO
+signs in an existing lynks user and never creates one.
+
+```json
+"auth": {
+    "enabled": true,
+    "oidc": {
+        "enabled": true,
+        "issuer": "https://auth.example.com",
+        "clientId": "lynks",
+        "clientSecret": "...",
+        "redirectUri": "https://lynks.example.com/api/auth/oidc/callback"
+    }
+}
+```
+
+Register the same `redirectUri` with the provider, with PKCE (`S256`) required and
+the `openid` and `profile` scopes. Who may use lynks at all is the provider's access
+policy, including whether it demands two factors. Lynks TOTP applies only to
+password sign in.
+
+The first time an identity signs in, it is linked to the lynks user whose username
+exactly matches the provider's `preferred_username`, so keep the usernames the same
+in both. After that only the provider's `sub` counts, so renaming either side
+changes nothing. If the provider loses its storage it issues new subjects; clear
+the old links with `manage_users.py unlink-sso` and each user relinks on their next
+sign in, so back its storage up.
+
+Locally, point `auth.oidc` in `config/lynks.config.json` at a dev provider, such as
+the one in the separate `auth` project: issuer `https://127.0.0.1:9091`, client
+`lynks-dev`, and redirect uri `http://localhost:3000/api/auth/oidc/callback` through
+the Vite proxy. The JVM running the API has to trust that provider's self-signed
+certificate.
+
+Password sign in stays on as the fallback. `auth.passwordLoginEnabled: false`
+makes lynks SSO only; turning it back on and restarting is the way back in if the
+provider is gone. The provider is contacted on first use rather than at startup, so
+lynks starts and password sign in works while it is down.
 
 Jolt reminders go to each user's own inbound channel, set under Settings > Profile.
 `external.joltHost` only says which Jolt server to use.

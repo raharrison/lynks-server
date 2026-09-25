@@ -20,6 +20,7 @@ class WorkerRegistry {
             orphanCleanupWorker = OrphanResourceCleanupWorker().worker()
             reminderWorker = ReminderWorker(get(), get()).worker()
             entryRefWorker = EntryRefWorker(get(), get(), get(), get()).worker()
+            sessionCleanupWorker = SessionCleanupWorker(get()).worker()
         }
     }
 
@@ -31,6 +32,7 @@ class WorkerRegistry {
     private lateinit var orphanCleanupWorker: SendChannel<OrphanResourceCleanupRequest>
     private lateinit var reminderWorker: SendChannel<ReminderWorkerRequest>
     private lateinit var entryRefWorker: SendChannel<EntryRefWorkerRequest>
+    private lateinit var sessionCleanupWorker: SendChannel<SessionCleanupWorkerRequest>
 
     fun acceptLinkWork(request: LinkProcessingRequest) {
         linkWorker.trySend(request)

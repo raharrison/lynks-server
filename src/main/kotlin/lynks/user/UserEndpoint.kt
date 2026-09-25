@@ -4,15 +4,14 @@ import io.ktor.http.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import io.ktor.server.sessions.*
-import lynks.common.Environment
+import lynks.auth.SessionService
+import lynks.auth.sessionId
 import lynks.common.ErrorResponse
-import lynks.common.UserSession
 import lynks.common.exception.UnauthorizedException
 import lynks.util.pageRequest
 import lynks.util.userId
 
-fun Route.userProtected(userService: UserService) {
+fun Route.userProtected(userService: UserService, sessionService: SessionService) {
 
     route("/user") {
 
@@ -23,8 +22,12 @@ fun Route.userProtected(userService: UserService) {
 
         post("/changePassword") {
             val changeRequest = call.receive<ChangePasswordRequest>()
-            if (userService.changePassword(call.userId(), changeRequest)) call.respond(HttpStatusCode.OK)
-            else call.respond(HttpStatusCode.BadRequest, ErrorResponse("Old password is not correct"))
+            if (userService.changePassword(call.userId(), changeRequest)) {
+                sessionService.revokeOthers(call.userId(), call.sessionId())
+                call.respond(HttpStatusCode.OK)
+            } else {
+                call.respond(HttpStatusCode.BadRequest, ErrorResponse("Old password is not correct"))
+            }
         }
 
         put {
@@ -44,36 +47,4 @@ fun Route.userProtected(userService: UserService) {
         }
 
     }
-}
-
-fun Route.userUnprotected(userService: UserService) {
-
-    post("/login") {
-        val request = call.receive<AuthRequest>()
-        val outcome = userService.checkAuth(request, twoFactor = true)
-        if (outcome.result == AuthResult.SUCCESS && outcome.userId != null && Environment.auth.enabled) {
-            call.sessions.set(UserSession(outcome.userId.value))
-        }
-        val code = if (outcome.result == AuthResult.SUCCESS) HttpStatusCode.OK else HttpStatusCode.Unauthorized
-        call.respond(code, mapOf("result" to outcome.result))
-    }
-
-    post("/logout") {
-        if (Environment.auth.enabled) {
-            call.sessions.clear<UserSession>()
-        }
-        call.respond(HttpStatusCode.OK)
-    }
-
-    post("/user/register") {
-        if (!Environment.auth.registrationsEnabled) {
-            call.respond(HttpStatusCode.Forbidden, ErrorResponse("Registrations disabled"))
-            return@post
-        }
-        val registerRequest = call.receive<AuthRequest>()
-        val createdUsername = userService.register(registerRequest)
-        val response = mapOf("username" to createdUsername)
-        call.respond(HttpStatusCode.Created, response)
-    }
-
 }

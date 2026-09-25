@@ -1,8 +1,7 @@
 {
     "$schema": "https://raw.githubusercontent.com/raharrison/lynks-server/master/config/lynks.schema.json",
     "auth": {
-        "enabled": true,
-        "registrationsEnabled": false
+        "enabled": true
     },
     "database": {
         "url": "jdbc:postgresql://localhost:5432/lynksdb",

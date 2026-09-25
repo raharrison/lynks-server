@@ -57,46 +57,6 @@ class UserEndpointTest : ServerTest() {
     }
 
     @Test
-    fun testRegisterUser() {
-        given()
-            .contentType(ContentType.JSON)
-            .body(AuthRequest("user2", "password1"))
-            .When()
-            .post("/user/register")
-            .then()
-            .statusCode(201)
-            .body("username", Matchers.equalTo("user2"))
-        // by default not activated
-        assertThat(login("user2", "password1")).isEqualTo(401)
-        activateUser("user2")
-        assertThat(login("user2", "password1")).isEqualTo(200)
-    }
-
-    @Test
-    fun testRegisterUserAlreadyExists() {
-        given()
-            .contentType(ContentType.JSON)
-            .body(AuthRequest("user1", "password1"))
-            .When()
-            .post("/user/register")
-            .then()
-            .statusCode(400)
-    }
-
-    @Test
-    fun testRegisterInvalidCredentials() {
-        listOf(AuthRequest("user2", "short"), AuthRequest("x", "password1"), AuthRequest("bad name", "password1")).forEach {
-            given()
-                .contentType(ContentType.JSON)
-                .body(it)
-                .When()
-                .post("/user/register")
-                .then()
-                .statusCode(400)
-        }
-    }
-
-    @Test
     fun testLoginUser() {
         given()
             .contentType(ContentType.JSON)

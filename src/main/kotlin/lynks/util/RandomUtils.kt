@@ -15,6 +15,12 @@ object RandomUtils {
         return encoder.encodeToString(bytes)
     }
 
+    fun generateToken(): String {
+        val bytes = ByteArray(32)
+        random.nextBytes(bytes)
+        return encoder.encodeToString(bytes)
+    }
+
     fun generateUuid64(): String {
         val uuid = UUID.randomUUID()
         val bytes = ByteBuffer.wrap(ByteArray(16))

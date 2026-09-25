@@ -14,10 +14,21 @@
             },
             "auth": {
                 "enabled": true,
-                "registrationsEnabled": false,
-                "signingKey": "abcdef123",
+                "passwordLoginEnabled": true,
                 "defaultUserName": "user",
-                "defaultUserPassword": "abcdef123"
+                "defaultUserPassword": "abcdef123",
+                "session": {
+                    "idleDays": 30,
+                    "maxDays": 90
+                },
+                "oidc": {
+                    "enabled": true,
+                    "issuer": "https://auth.example.com",
+                    "clientId": "lynks",
+                    "clientSecret": "abcdef123",
+                    "redirectUri": "https://lynks.example.com/api/auth/oidc/callback",
+                    "label": "Sign in with SSO"
+                }
             },
             "database": {
                 "url": "jdbc:postgresql://localhost:5432/lynksdb",
@@ -93,8 +104,7 @@
             "examples": [
                 {
                     "enabled": true,
-                    "registrationsEnabled": false,
-                    "signingKey": "abcdef123",
+                    "passwordLoginEnabled": true,
                     "defaultUserName": "user",
                     "defaultUserPassword": "abcdef123"
                 }
@@ -108,30 +118,12 @@
                         true
                     ]
                 },
-                "registrationsEnabled": {
-                    "$id": "#/properties/auth/properties/registrationsEnabled",
+                "passwordLoginEnabled": {
+                    "$id": "#/properties/auth/properties/passwordLoginEnabled",
                     "type": "boolean",
-                    "description": "If new users can register themselves. They stay inactive until activated with scripts/manage_users.py",
+                    "description": "If users can sign in with their username and password. The fallback when single sign-on is unavailable, so only turn it off once SSO works",
                     "examples": [
-                        false
-                    ]
-                },
-                "signingKey": {
-                    "$id": "#/properties/auth/properties/signingKey",
-                    "type": "string",
-                    "description": "Key (32 chars) used to sign session cookies, should be kept secret",
-                    "examples": [
-                        "abcdef123"
-                    ]
-                },
-                "encryptionKey": {
-                    "$id": "#/properties/auth/properties/encryptionKey",
-                    "type": "string",
-                    "description": "Key (32 ASCII chars) used to encrypt session cookies, should be kept secret and different from signingKey",
-                    "minLength": 32,
-                    "maxLength": 32,
-                    "examples": [
-                        "tXq0Lm3VbR8zKd2WfYp6NcJs9HgA4eUo"
+                        true
                     ]
                 },
                 "defaultUserName": {
@@ -149,6 +141,88 @@
                     "examples": [
                         "abcdef123"
                     ]
+                },
+                "session": {
+                    "$id": "#/properties/auth/properties/session",
+                    "type": "object",
+                    "description": "Lifetime of signed in sessions, which are stored in the database",
+                    "properties": {
+                        "idleDays": {
+                            "$id": "#/properties/auth/properties/session/properties/idleDays",
+                            "type": "integer",
+                            "minimum": 1,
+                            "description": "Days of inactivity after which a session expires",
+                            "examples": [
+                                30
+                            ]
+                        },
+                        "maxDays": {
+                            "$id": "#/properties/auth/properties/session/properties/maxDays",
+                            "type": "integer",
+                            "minimum": 1,
+                            "description": "Days after sign in when a session expires however active it is. At least idleDays",
+                            "examples": [
+                                90
+                            ]
+                        }
+                    },
+                    "additionalProperties": false
+                },
+                "oidc": {
+                    "$id": "#/properties/auth/properties/oidc",
+                    "type": "object",
+                    "description": "Single sign-on through an OpenID Connect provider such as Authelia. Needs auth.enabled",
+                    "properties": {
+                        "enabled": {
+                            "$id": "#/properties/auth/properties/oidc/properties/enabled",
+                            "type": "boolean",
+                            "description": "Offer single sign-on alongside password login",
+                            "examples": [
+                                false
+                            ]
+                        },
+                        "issuer": {
+                            "$id": "#/properties/auth/properties/oidc/properties/issuer",
+                            "type": "string",
+                            "description": "Issuer url of the provider, whose /.well-known/openid-configuration is fetched on first use",
+                            "examples": [
+                                "https://auth.example.com"
+                            ]
+                        },
+                        "clientId": {
+                            "$id": "#/properties/auth/properties/oidc/properties/clientId",
+                            "type": "string",
+                            "description": "Client id registered with the provider",
+                            "examples": [
+                                "lynks"
+                            ]
+                        },
+                        "clientSecret": {
+                            "$id": "#/properties/auth/properties/oidc/properties/clientSecret",
+                            "type": "string",
+                            "description": "Client secret registered with the provider, should be kept secret",
+                            "examples": [
+                                "abcdef123"
+                            ]
+                        },
+                        "redirectUri": {
+                            "$id": "#/properties/auth/properties/oidc/properties/redirectUri",
+                            "type": "string",
+                            "description": "Callback registered with the provider. Configured rather than derived from request headers, so a spoofed header cannot change it",
+                            "examples": [
+                                "https://lynks.example.com/api/auth/oidc/callback"
+                            ]
+                        },
+                        "label": {
+                            "$id": "#/properties/auth/properties/oidc/properties/label",
+                            "type": "string",
+                            "description": "Text of the single sign-on button",
+                            "examples": [
+                                "Sign in with SSO"
+                            ]
+                        }
+                    },
+                    "additionalProperties": false
                 }
             },
             "additionalProperties": false

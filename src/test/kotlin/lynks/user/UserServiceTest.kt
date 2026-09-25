@@ -9,6 +9,9 @@ import lynks.common.page.PageRequest
 import lynks.entry.EntryAuditService
 import lynks.util.*
 import org.assertj.core.api.Assertions.assertThat
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.jetbrains.exposed.v1.jdbc.update
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -25,10 +28,10 @@ class UserServiceTest : DatabaseTest() {
         createDummyUser("user1", "Bob Smith", id = user1)
     }
 
-    private fun registerAndActivate(username: String, password: String): UserId {
-        userService.register(AuthRequest(username, password))
-        activateUser(username)
-        return userService.getPrincipal(username)!!.id
+    private fun createUser(username: String, password: String, activated: Boolean = true): UserId {
+        val id = createDummyUser(username, activated = activated)
+        transaction { Users.update({ Users.id eq id.value }) { it[Users.password] = HashUtils.bcryptHash(password) } }
+        return id
     }
 
     @Test
@@ -72,44 +75,6 @@ class UserServiceTest : DatabaseTest() {
     }
 
     @Test
-    fun testRegisterUser() {
-        val registeredUsername = userService.register(AuthRequest("user2", "password1"))
-        assertThat(registeredUsername).isEqualTo("user2")
-        // inactive until activated
-        assertThat(userService.getPrincipal("user2")).isNull()
-        activateUser(registeredUsername)
-        val registered = userService.getUser(userService.getPrincipal("user2")!!.id)
-        assertThat(registered).isNotNull()
-        assertThat(registered?.username).isEqualTo("user2")
-        assertThat(registered?.displayName).isNull()
-        assertThat(registered?.digest).isFalse()
-    }
-
-    @Test
-    fun testRegisterUserAlreadyExists() {
-        assertThrows<InvalidModelException> {
-            userService.register(AuthRequest("user1", "password1"))
-        }
-    }
-
-    @Test
-    fun testRegisterInvalidUsername() {
-        listOf("ab", "a".repeat(USERNAME_MAX_LENGTH + 1), "with space", "slash/name", "semi;colon", "").forEach {
-            assertThrows<InvalidModelException> { userService.register(AuthRequest(it, "password1")) }
-        }
-        assertThat(userService.getActiveUsers()).hasSize(2)
-    }
-
-    @Test
-    fun testRegisterInvalidPassword() {
-        assertThrows<InvalidModelException> { userService.register(AuthRequest("user2", "short")) }
-        assertThrows<InvalidModelException> { userService.register(AuthRequest("user2", "a".repeat(73))) }
-        // multi-byte characters count against the bcrypt limit in bytes
-        assertThrows<InvalidModelException> { userService.register(AuthRequest("user2", "é".repeat(37))) }
-        assertThat(userService.getPrincipal("user2")).isNull()
-    }
-
-    @Test
     fun testUpdateUser() {
         val before = userService.getUser(user1)
         assertThat(before?.displayName).isEqualTo("Bob Smith")
@@ -132,7 +97,7 @@ class UserServiceTest : DatabaseTest() {
     @Test
     fun testCheckAuthSuccess() {
         val pass = "password123"
-        val userId = registerAndActivate("user2", pass)
+        val userId = createUser("user2", pass)
         every { twoFactorService.validateTotp(userId, "totp") } returns AuthResult.SUCCESS
         assertThat(userService.checkAuth(AuthRequest("user2", pass, "totp")))
             .isEqualTo(AuthOutcome(AuthResult.SUCCESS, userId))
@@ -141,14 +106,14 @@ class UserServiceTest : DatabaseTest() {
 
     @Test
     fun testCheckAuthFailureUserNotActivated() {
-        userService.register(AuthRequest("user2", "password123"))
+        createUser("user2", "password123", activated = false)
         assertThat(userService.checkAuth(AuthRequest("user2", "password123")).result).isEqualTo(AuthResult.INVALID_CREDENTIALS)
         verify(exactly = 0) { twoFactorService.validateTotp(any(), any())  }
     }
 
     @Test
     fun testCheckAuthFailureInvalidUserNameOrPassword() {
-        val userId = registerAndActivate("user2", "password123")
+        val userId = createUser("user2", "password123")
         every { twoFactorService.validateTotp(userId, null) } returns AuthResult.SUCCESS
         // invalid username
         assertThat(userService.checkAuth(AuthRequest("invalid", "password123")))
@@ -162,7 +127,7 @@ class UserServiceTest : DatabaseTest() {
     @Test
     fun testCheckAuthFailureInvalidTotp() {
         val pass = "password123"
-        val userId = registerAndActivate("user2", pass)
+        val userId = createUser("user2", pass)
         every { twoFactorService.validateTotp(userId, null) } returns AuthResult.TOTP_REQUIRED
         assertThat(userService.checkAuth(AuthRequest("user2", pass))).isEqualTo(AuthOutcome(AuthResult.TOTP_REQUIRED))
         verify(exactly = 1) { twoFactorService.validateTotp(userId, null) }
@@ -187,7 +152,7 @@ class UserServiceTest : DatabaseTest() {
     fun testChangePasswordSuccess() {
         val originalPass = "password123"
         val newPass = "password456"
-        val userId = registerAndActivate("user2", originalPass)
+        val userId = createUser("user2", originalPass)
         every { twoFactorService.validateTotp(userId, any()) } returns AuthResult.SUCCESS
         assertThat(userService.checkAuth(AuthRequest("user2", originalPass)).result).isEqualTo(AuthResult.SUCCESS)
         val changed = userService.changePassword(userId, ChangePasswordRequest(originalPass, newPass))
@@ -200,7 +165,7 @@ class UserServiceTest : DatabaseTest() {
     fun testChangePasswordBadAuth() {
         val originalPass = "original-pass"
         val newPass = "password456"
-        val userId = registerAndActivate("user2", originalPass)
+        val userId = createUser("user2", originalPass)
         // unknown user
         assertThat(userService.changePassword(UserId("invalid"), ChangePasswordRequest(originalPass, newPass))).isFalse()
         // invalid old password
@@ -211,7 +176,7 @@ class UserServiceTest : DatabaseTest() {
 
     @Test
     fun testChangePasswordInvalidNewPassword() {
-        val userId = registerAndActivate("user2", "password123")
+        val userId = createUser("user2", "password123")
         assertThrows<InvalidModelException> {
             userService.changePassword(userId, ChangePasswordRequest("password123", "short"))
         }

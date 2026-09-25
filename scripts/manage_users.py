@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Create, list, activate, deactivate, reset and delete Lynks users.
+"""Create, list, activate, deactivate, reset, sign out and delete Lynks users.
 
 Usage:
     python3 -m venv venv
@@ -10,6 +10,8 @@ Usage:
     python manage_users.py activate <username>
     python manage_users.py deactivate <username>
     python manage_users.py set-password <username>
+    python manage_users.py unlink-sso <username>
+    python manage_users.py revoke-sessions <username>
     python manage_users.py delete <username> [--yes]
 
 Passwords are prompted for, or read from stdin with --password-stdin.
@@ -108,21 +110,25 @@ def find_user_id(conn: psycopg.Connection, username: str) -> str:
 
 def list_users(conn: psycopg.Connection, _args) -> None:
     rows = conn.execute("""
-        SELECT u.username, u.display_name, u.activated, u.totp IS NOT NULL, u.jolt_token IS NOT NULL, u.date_created,
-               (SELECT COUNT(*) FROM entries e WHERE e.user_id = u.id)
+        SELECT u.username, u.display_name, u.activated, u.totp IS NOT NULL, u.oidc_subject IS NOT NULL,
+               u.jolt_token IS NOT NULL, u.date_created,
+               (SELECT COUNT(*) FROM entries e WHERE e.user_id = u.id),
+               (SELECT COUNT(*) FROM user_sessions s WHERE s.user_id = u.id AND s.expires_at > NOW())
         FROM user_profiles u
         ORDER BY u.date_created
     """).fetchall()
     if not rows:
         print("No users")
         return
-    print(f"{'USERNAME':<25} {'DISPLAY NAME':<25} {'ACTIVE':<7} {'2FA':<4} {'JOLT':<5} {'ENTRIES':>7}  CREATED")
-    for username, display_name, activated, totp, jolt, created, entries in rows:
+    print(f"{'USERNAME':<25} {'DISPLAY NAME':<25} {'ACTIVE':<7} {'2FA':<4} {'SSO':<4} {'JOLT':<5} {'ENTRIES':>7} "
+          f"{'SESSIONS':>8}  CREATED")
+    for username, display_name, activated, totp, sso, jolt, created, entries, sessions in rows:
         active = "yes" if activated else "no"
         two_factor = "yes" if totp else "no"
+        sso_linked = "yes" if sso else "no"
         jolt_set = "yes" if jolt else "no"
-        print(f"{username:<25} {display_name or '':<25} {active:<7} {two_factor:<4} {jolt_set:<5} {entries:>7}  "
-              f"{created:%Y-%m-%d %H:%M}")
+        print(f"{username:<25} {display_name or '':<25} {active:<7} {two_factor:<4} {sso_linked:<4} {jolt_set:<5} "
+              f"{entries:>7} {sessions:>8}  {created:%Y-%m-%d %H:%M}")
 
 
 def create_user(conn: psycopg.Connection, args) -> None:
@@ -168,7 +174,27 @@ def set_password(conn: psycopg.Connection, args) -> None:
         "UPDATE user_profiles SET password_hash = %s, date_updated = %s WHERE id = %s",
         (password_hash, now(), user_id)
     )
-    print(f"Password updated for user: {args.username}")
+    # a reset usually means the old password is not to be trusted, so nothing signed in with it survives
+    revoked = conn.execute("DELETE FROM user_sessions WHERE user_id = %s", (user_id,)).rowcount
+    print(f"Password updated for user: {args.username}. Signed out {revoked} sessions")
+
+
+def unlink_sso(conn: psycopg.Connection, args) -> None:
+    user_id = find_user_id(conn, args.username)
+    updated = conn.execute(
+        "UPDATE user_profiles SET oidc_subject = NULL, date_updated = %s WHERE id = %s AND oidc_subject IS NOT NULL",
+        (now(), user_id)
+    ).rowcount
+    if updated:
+        print(f"Unlinked single sign-on from user: {args.username}. Existing sessions stay signed in")
+    else:
+        print(f"User has no single sign-on link: {args.username}")
+
+
+def revoke_sessions(conn: psycopg.Connection, args) -> None:
+    user_id = find_user_id(conn, args.username)
+    revoked = conn.execute("DELETE FROM user_sessions WHERE user_id = %s", (user_id,)).rowcount
+    print(f"Signed out {revoked} sessions for user: {args.username}")
 
 
 def delete_user(conn: psycopg.Connection, args) -> None:
@@ -205,10 +231,18 @@ def main() -> None:
     deactivate.add_argument("username")
     deactivate.set_defaults(func=deactivate_user)
 
-    password = commands.add_parser("set-password", help="reset a user's password")
+    password = commands.add_parser("set-password", help="reset a user's password and sign them out everywhere")
     password.add_argument("username")
     password.add_argument("--password-stdin", action="store_true", help="read the password from stdin")
     password.set_defaults(func=set_password)
+
+    unlink = commands.add_parser("unlink-sso", help="remove a user's single sign-on link so it can be linked again")
+    unlink.add_argument("username")
+    unlink.set_defaults(func=unlink_sso)
+
+    revoke = commands.add_parser("revoke-sessions", help="sign a user out everywhere")
+    revoke.add_argument("username")
+    revoke.set_defaults(func=revoke_sessions)
 
     delete = commands.add_parser("delete", help="delete a user and all of their data")
     delete.add_argument("username")

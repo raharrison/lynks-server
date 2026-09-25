@@ -26,14 +26,9 @@ object Environment {
 
     private object AuthSpec : ConfigSpec("auth") {
         val enabled by required<Boolean>(description = "protect all endpoints to be accessible only to authorized users")
-        val registrationsEnabled by optional(
-            default = false,
-            description = "if new users can register themselves, staying inactive until activated with scripts/manage_users.py"
-        )
-        val signingKey by optional<String?>(null, description = "key (32 chars) used to sign session cookies, should be kept secret")
-        val encryptionKey by optional<String?>(
-            null,
-            description = "key (32 ASCII chars) used to encrypt session cookies, should be kept secret and different from signingKey"
+        val passwordLoginEnabled by optional(
+            default = true,
+            description = "if users can sign in with their username and password, the fallback when single sign-on is unavailable"
         )
         val defaultUserName by optional(
             "user",
@@ -42,13 +37,68 @@ object Environment {
         val defaultUserPassword by optional<String?>(null, description = "password raw text or bcrypt hash for the default user")
     }
 
+    private object SessionSpec : ConfigSpec("auth.session") {
+        val idleDays by optional(30, description = "days of inactivity after which a session expires")
+        val maxDays by optional(90, description = "days after sign in when a session expires however active it is")
+    }
+
+    private object OidcSpec : ConfigSpec("auth.oidc") {
+        val enabled by optional(false, description = "offer single sign-on through an OpenID Connect provider")
+        val issuer by optional<String?>(null, description = "issuer url of the provider, e.g. https://auth.example.com")
+        val clientId by optional<String?>(null, description = "client id registered with the provider")
+        val clientSecret by optional<String?>(
+            null,
+            description = "client secret registered with the provider, should be kept secret"
+        )
+        val redirectUri by optional<String?>(
+            null,
+            description = "callback registered with the provider, e.g. https://lynks.example.com/api/auth/oidc/callback"
+        )
+        val label by optional("Sign in with SSO", description = "text of the single sign-on button")
+    }
+
     data class Auth(
         val enabled: Boolean = config[AuthSpec.enabled],
-        val registrationsEnabled: Boolean = config[AuthSpec.registrationsEnabled],
-        val signingKey: String? = config[AuthSpec.signingKey],
-        val encryptionKey: String? = config[AuthSpec.encryptionKey],
+        val passwordLoginEnabled: Boolean = config[AuthSpec.passwordLoginEnabled],
         val defaultUserName: String = config[AuthSpec.defaultUserName],
-        val defaultUserPassword: String? = config[AuthSpec.defaultUserPassword]
+        val defaultUserPassword: String? = config[AuthSpec.defaultUserPassword],
+        val session: AuthSession = AuthSession(),
+        val oidc: Oidc = Oidc()
+    ) {
+        fun validate() {
+            require(passwordLoginEnabled || oidc.enabled) {
+                "auth.passwordLoginEnabled and auth.oidc.enabled are both false, so nobody could sign in"
+            }
+            require(session.idleDays > 0 && session.maxDays >= session.idleDays) {
+                "auth.session.idleDays must be positive and no more than auth.session.maxDays"
+            }
+            if (oidc.enabled) {
+                require(enabled) { "auth.oidc.enabled needs auth.enabled" }
+                require(isHttpUrl(oidc.issuer)) { "auth.oidc.issuer must be an http(s) url when auth.oidc.enabled" }
+                require(!oidc.clientId.isNullOrBlank()) { "auth.oidc.clientId is required when auth.oidc.enabled" }
+                require(!oidc.clientSecret.isNullOrBlank()) { "auth.oidc.clientSecret is required when auth.oidc.enabled" }
+                require(isHttpUrl(oidc.redirectUri)) { "auth.oidc.redirectUri must be an http(s) url when auth.oidc.enabled" }
+            }
+        }
+    }
+
+    private fun isHttpUrl(value: String?): Boolean {
+        val uri = value?.let { runCatching { java.net.URI(it) }.getOrNull() } ?: return false
+        return uri.scheme in setOf("http", "https") && !uri.host.isNullOrEmpty()
+    }
+
+    data class AuthSession(
+        val idleDays: Int = config[SessionSpec.idleDays],
+        val maxDays: Int = config[SessionSpec.maxDays]
+    )
+
+    data class Oidc(
+        val enabled: Boolean = config[OidcSpec.enabled],
+        val issuer: String? = config[OidcSpec.issuer],
+        val clientId: String? = config[OidcSpec.clientId],
+        val clientSecret: String? = config[OidcSpec.clientSecret],
+        val redirectUri: String? = config[OidcSpec.redirectUri],
+        val label: String = config[OidcSpec.label]
     )
 
     private object DatabaseSpec: ConfigSpec("database") {
@@ -100,6 +150,8 @@ object Environment {
     private val config = Config {
         addSpec(ServerSpec)
         addSpec(AuthSpec)
+        addSpec(SessionSpec)
+        addSpec(OidcSpec)
         addSpec(DatabaseSpec)
         addSpec(ResourceSpec)
         addSpec(ExternalSpec)

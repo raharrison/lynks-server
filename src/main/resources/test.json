@@ -2,7 +2,6 @@
     "$schema": "https://raw.githubusercontent.com/raharrison/lynks-server/master/config/lynks.schema.json",
     "auth": {
         "enabled": false,
-        "registrationsEnabled": true,
         "defaultUserName": "default",
         "defaultUserPassword": "test-default-password"
     },

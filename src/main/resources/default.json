@@ -5,8 +5,7 @@
         "rootPath": "/api"
     },
     "auth": {
-        "enabled": false,
-        "registrationsEnabled": false
+        "enabled": false
     },
     "resource": {
         "resourceBasePath": "media",

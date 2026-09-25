@@ -12,6 +12,7 @@ import lynks.util.orderBy
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.isNull
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.selectAll
@@ -57,15 +58,6 @@ class UserService(private val twoFactorService: TwoFactorService) {
         Users.select(Users.id, Users.username).where { (Users.username eq username) and Users.activated }
             .map { UserPrincipal(UserId(it[Users.id]), it[Users.username]) }
             .singleOrNull()
-    }
-
-    // registered users stay inactive until activated with scripts/manage_users.py
-    fun register(request: AuthRequest): String {
-        Credentials.checkUsername(request.username)
-        Credentials.checkPassword(request.password)
-        createUser(request.username, HashUtils.bcryptHash(request.password), activated = false)
-        log.info("Successfully registered new user {}", request.username)
-        return request.username
     }
 
     private fun createUser(username: String, passwordHash: String, activated: Boolean): UserId = transaction {
@@ -182,6 +174,25 @@ class UserService(private val twoFactorService: TwoFactorService) {
         } else {
             AuthOutcome(twoFactorCheck)
         }
+    }
+
+    fun findBySubject(subject: String): SubjectOwner? = transaction {
+        Users.select(Users.id, Users.activated).where { Users.oidcSubject eq subject }
+            .map { SubjectOwner(UserId(it[Users.id]), it[Users.activated]) }
+            .singleOrNull()
+    }
+
+    // exact and case-sensitive, and never replaces an existing link
+    fun linkSubjectByUsername(username: String, subject: String): UserId? = transaction {
+        val userId = Users.select(Users.id)
+            .where { (Users.username eq username) and Users.activated and Users.oidcSubject.isNull() }
+            .map { UserId(it[Users.id]) }
+            .singleOrNull() ?: return@transaction null
+        val updated = Users.update({ (Users.id eq userId.value) and Users.oidcSubject.isNull() }) {
+            it[oidcSubject] = subject
+            it[dateUpdated] = OffsetDateTime.now(ZoneOffset.UTC)
+        }
+        if (updated > 0) userId else null
     }
 
     fun getUserActivityLog(userId: UserId, pageRequest: PageRequest = PageRequest()): Page<ActivityLogItem> = transaction {

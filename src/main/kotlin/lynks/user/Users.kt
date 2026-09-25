@@ -19,14 +19,18 @@ object Users : Table("user_profiles") {
     val activated = bool("activated").default(false)
     val totp = varchar("totp", 32).nullable()
     val joltToken = varchar("jolt_token", JOLT_TOKEN_MAX_LENGTH).nullable()
+    val oidcSubject = varchar("oidc_subject", OIDC_SUBJECT_MAX_LENGTH).nullable().uniqueIndex()
     override val primaryKey: PrimaryKey = PrimaryKey(id)
 }
 
 const val USERNAME_MAX_LENGTH = 25
 const val JOLT_TOKEN_MAX_LENGTH = 128
+const val OIDC_SUBJECT_MAX_LENGTH = 255
 
 // the authenticated caller, resolved from the session or the default user when auth is disabled
-data class UserPrincipal(val id: UserId, val username: String)
+data class UserPrincipal(val id: UserId, val username: String, val sessionId: String? = null)
+
+data class SubjectOwner(val id: UserId, val activated: Boolean)
 
 data class AuthRequest(val username: String, val password: String, val totp: String? = null)
 enum class AuthResult { SUCCESS, TOTP_REQUIRED, INVALID_CREDENTIALS }

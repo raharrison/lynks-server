@@ -7,8 +7,12 @@ object HashUtils {
 
     private const val HEX_CHARS = "0123456789ABCDEF"
 
-    fun sha1Hash(input: String): String {
-        val bytes = MessageDigest.getInstance("SHA-1").digest(input.toByteArray())
+    fun sha1Hash(input: String): String = hexDigest("SHA-1", input)
+
+    fun sha256Hash(input: String): String = hexDigest("SHA-256", input)
+
+    private fun hexDigest(algorithm: String, input: String): String {
+        val bytes = MessageDigest.getInstance(algorithm).digest(input.toByteArray())
         val result = StringBuilder(bytes.size * 2)
 
         bytes.forEach {

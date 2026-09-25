@@ -8,6 +8,7 @@ val flywayVersion = "13.7.0"
 val flexmarkVersion = "0.64.8"
 val bcryptVersion = "0.10.2"
 val totpVersion = "2.4.1"
+val nimbusOidcVersion = "11.38.2"
 val logbackVersion = "1.6.3"
 val konfVersion = "0.0.8"
 
@@ -87,7 +88,6 @@ tasks.test {
 application {
     mainClass.set("lynks.MainKt")
 }
-
 tasks.withType<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar> {
     mergeServiceFiles()
     duplicatesStrategy = DuplicatesStrategy.INCLUDE
@@ -108,7 +108,6 @@ dependencies {
     implementation("io.ktor:ktor-server-call-id:$ktorVersion")
     implementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
     implementation("io.ktor:ktor-server-auth:$ktorVersion")
-    implementation("io.ktor:ktor-server-sessions:$ktorVersion")
     implementation("io.ktor:ktor-serialization-jackson:$ktorVersion")
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
 
@@ -128,18 +127,20 @@ dependencies {
 
     implementation("at.favre.lib:bcrypt:$bcryptVersion")
     implementation("dev.turingcomplete:kotlin-onetimepassword:$totpVersion")
+    implementation("com.nimbusds:oauth2-oidc-sdk:$nimbusOidcVersion")
 
     implementation("ch.qos.logback:logback-classic:$logbackVersion")
     implementation("com.voltstorage:konf-core:$konfVersion")
 
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:$kotlinxCoroutinesTestVersion")
     testImplementation("io.rest-assured:rest-assured:$restAssuredVersion")
+    testImplementation("io.ktor:ktor-server-test-host:$ktorVersion")
     testImplementation("org.junit.jupiter:junit-jupiter-api:$junitVersion")
     testImplementation("org.assertj:assertj-core:$assertjVersion")
     testImplementation("io.mockk:mockk:$mockkVersion")
     testImplementation("org.wiremock:wiremock:$wiremockVersion")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:$junitVersion")
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    testImplementation("org.junit.platform:junit-platform-launcher:$junitVersion")
     testImplementation("org.testcontainers:postgresql:$testcontainersVersion")
     testImplementation("org.testcontainers:junit-jupiter:$testcontainersVersion")
 }
