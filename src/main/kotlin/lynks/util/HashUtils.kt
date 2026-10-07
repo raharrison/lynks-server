@@ -28,6 +28,8 @@ object HashUtils {
     }
 
     fun verifyBcryptHash(raw: CharArray, hash: CharArray): Boolean {
+        // bcrypt only reads 72 bytes and the library throws beyond that, so a longer password is just a wrong one
+        if (String(raw).toByteArray().size > 72) return false
         return BCrypt.verifyer().verify(raw, hash).verified
     }
 

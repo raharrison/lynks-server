@@ -22,7 +22,7 @@ class ReturnToTest {
             "/entries\\..\\x", "/entries\nSet-Cookie: x", "/entries\r\n", "/entries\u0000", "/api", "/api/user",
             "/api?x=1", "/api#x", "/login", "/login?returnTo=/x", "javascript:alert(1)", "/" + "a".repeat(3000),
             "/./api/user", "/%2e/api/user", "/entries/../api/user", "/entries/%2E%2E/x", "/%61pi/user", "/./login",
-            "/%6Cogin", "/entries/%zz"
+            "/%6Cogin", "/entries/%zz", "/tags/café", "/entries?q=a b", "/entries\u007f", "/entries\u0085"
         ).forEach {
             assertThat(ReturnTo.sanitize(it, "/api")).describedAs(it).isEqualTo("/")
         }

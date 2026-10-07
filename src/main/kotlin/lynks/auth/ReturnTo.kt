@@ -14,8 +14,9 @@ object ReturnTo {
         if (!raw.startsWith("/")) return "/"
         // browsers read a leading // or /\ as the start of another host
         if (raw.startsWith("//") || raw.startsWith("/\\")) return "/"
-        if (raw.any { it.isISOControl() || it == '\\' }) return "/"
-        // decoded because nginx decodes before matching /api, and dot segments because browsers resolve them
+        // it ends up in a Location header, and the ui only ever sends percent-encoded urls, so printable ascii only
+        if (raw.any { it !in '!'..'~' || it == '\\' }) return "/"
+        // decoded because proxies decode before matching /api, and dot segments because browsers resolve them
         val path = decode(raw.substringBefore('?').substringBefore('#')) ?: return "/"
         if (path.split('/').any { it == "." || it == ".." }) return "/"
         if (path == apiRootPath || path.startsWith("$apiRootPath/") || path == LOGIN_PAGE) return "/"

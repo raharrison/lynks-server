@@ -115,7 +115,7 @@ fun Application.installPlugins() {
         header("X-Content-Type-Options", "nosniff")
         header("Referrer-Policy", "strict-origin-when-cross-origin")
     }
-    // nginx appends the address it saw, so the last entry is the one a client cannot forge
+    // the proxy appends the address it saw, so the last entry is the one a client cannot forge
     install(XForwardedHeaders) {
         useLastProxy()
     }

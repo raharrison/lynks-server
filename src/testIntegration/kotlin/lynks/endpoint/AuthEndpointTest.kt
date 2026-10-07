@@ -140,6 +140,13 @@ class AuthEndpointTest : ServerTest() {
     }
 
     @Test
+    fun testOverlongPasswordIsJustWrong() = lynks {
+        // bcrypt reads 72 bytes at most, and the library throws beyond that
+        assertThat(login(defaultUser, "a".repeat(100)).status).isEqualTo(HttpStatusCode.Unauthorized)
+        assertThat(sessionCount()).isZero()
+    }
+
+    @Test
     fun testDeactivationEndsSessions() = lynks {
         login("user2", DUMMY_USER_PASSWORD)
         assertThat(get("/api/user").status).isEqualTo(HttpStatusCode.OK)
@@ -243,6 +250,16 @@ class AuthEndpointTest : ServerTest() {
         linkSubject(defaultUser, "sub-1")
         val authorize = startLogin("//evil.example/steal")
         val callback = callback(authorize, provider.idToken("sub-1", authorize.parameters["nonce"]))
+        assertThat(callback.headers[HttpHeaders.Location]).isEqualTo("/")
+    }
+
+    @Test
+    fun testSsoPlantedStateCookieCannotRedirectOffSite() = lynks {
+        // what a sibling subdomain could set outside prod, where the cookie has no __Host- prefix
+        linkSubject(defaultUser, "sub-1")
+        cookies["lynks_oidc"] = PendingLogin("planted-state", "planted-nonce", "v".repeat(43), "https://evil.example").encode()
+        provider.stubToken(provider.idToken("sub-1", "planted-nonce"))
+        val callback = get("/api/auth/oidc/callback?code=code-1&state=planted-state")
         assertThat(callback.headers[HttpHeaders.Location]).isEqualTo("/")
     }
 

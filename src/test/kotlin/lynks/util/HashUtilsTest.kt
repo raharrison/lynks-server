@@ -40,6 +40,20 @@ class HashUtilsTest {
     }
 
     @Test
+    fun testVerifyBcryptHashTooLong() {
+        val longest = "a".repeat(72)
+        assertThat(HashUtils.verifyBcryptHash(longest.toCharArray(), HashUtils.bcryptHash(longest).toCharArray())).isTrue()
+        assertThat(
+            HashUtils.verifyBcryptHash(
+                (longest + "a").toCharArray(),
+                HashUtils.bcryptHash(longest).toCharArray()
+            )
+        ).isFalse()
+        // 74 bytes in 37 characters
+        assertThat(HashUtils.verifyBcryptHash("é".repeat(37).toCharArray(), HashUtils.bcryptHash("x").toCharArray())).isFalse()
+    }
+
+    @Test
     fun testVerifyBcryptHash() {
         val raw = "abcdef12345"
         val hash = HashUtils.bcryptHash(raw).toCharArray()

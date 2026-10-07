@@ -81,7 +81,8 @@ fun Route.authUnprotected(
             val redirect = when (outcome) {
                 is SsoOutcome.SignedIn -> {
                     call.startSession(sessionService, cookies, outcome.userId, SessionMethod.OIDC)
-                    outcome.returnTo
+                    // checked again, as outside prod a sibling subdomain could have planted the state cookie
+                    ReturnTo.sanitize(outcome.returnTo, Environment.server.rootPath)
                 }
 
                 is SsoOutcome.Failed -> failureRedirect(outcome.failure)
