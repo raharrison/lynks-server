@@ -76,9 +76,9 @@ class OidcService(
     private val clientId by lazy { ClientID(config.clientId) }
     private val redirectUri by lazy { URI(config.redirectUri!!) }
 
-    suspend fun start(returnTo: String): SsoStart {
+    suspend fun start(returnTo: String, appChallenge: String? = null): SsoStart {
         val provider = provider()
-        val state = State()
+        val state = if (appChallenge != null) State(PendingLogin.APP_STATE_PREFIX + State().value) else State()
         val nonce = Nonce()
         val verifier = CodeVerifier()
         val request = AuthenticationRequest.Builder(
@@ -92,7 +92,7 @@ class OidcService(
             .nonce(nonce)
             .codeChallenge(verifier, CodeChallengeMethod.S256)
             .build()
-        val login = PendingLogin(state.value, nonce.value, verifier.value, returnTo)
+        val login = PendingLogin(state.value, nonce.value, verifier.value, returnTo, appChallenge)
         return SsoStart(login, request.toURI().toString())
     }
 

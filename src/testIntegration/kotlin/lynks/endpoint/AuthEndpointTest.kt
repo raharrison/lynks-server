@@ -71,10 +71,10 @@ class AuthEndpointTest : ServerTest() {
             val sessionService = SessionService(config.session)
             val cookies = AuthCookies(false, sessionService.maxAge)
             val oidcService = OidcService(config.oidc, userService)
-            installAuth(config, userService, sessionService, cookies)
+            installAuth(config, userService, sessionService, cookies, Environment.server.rootPath)
             routing {
                 route(Environment.server.rootPath) {
-                    authUnprotected(config, userService, sessionService, oidcService, cookies)
+                    authUnprotected(config, userService, sessionService, oidcService, SsoHandoffs(), cookies)
                     authenticate(AUTH_PROVIDER) {
                         userProtected(userService, sessionService)
                         authProtected(sessionService)
@@ -391,9 +391,174 @@ class AuthEndpointTest : ServerTest() {
         assertThat(callback.headers[HttpHeaders.Location]).isEqualTo("/login?sso=unlinked")
     }
 
+    @Test
+    fun testAppPasswordLogin() = lynks {
+        val response = post("/api/auth/app/login", AuthRequest(defaultUser, DUMMY_USER_PASSWORD)) { fromApp() }
+        assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+        assertThat(response.setCookie()).isEmpty()
+        val body = json(response)
+        assertThat(body["result"].textValue()).isEqualTo("success")
+        val token = body["token"].textValue()
+
+        assertThat(json(get("/api/user") { bearer(token) })["username"].textValue()).isEqualTo(defaultUser)
+        val sessions = json(get("/api/user/sessions") { bearer(token) })
+        assertThat(sessions.single()["current"].booleanValue()).isTrue()
+        assertThat(sessions.single()["method"].textValue()).isEqualTo("password")
+
+        assertThat(post("/api/logout") { fromApp(); bearer(token) }.status).isEqualTo(HttpStatusCode.OK)
+        assertThat(sessionCount()).isZero()
+        assertThat(get("/api/user") { bearer(token) }.status).isEqualTo(HttpStatusCode.Unauthorized)
+    }
+
+    @Test
+    fun testAppPasswordLoginFailure() = lynks {
+        val response = post("/api/auth/app/login", AuthRequest(defaultUser, "wrong-password")) { fromApp() }
+        assertThat(response.status).isEqualTo(HttpStatusCode.Unauthorized)
+        // without it the WebView hides the status and the body, and a failure reads as a network error
+        assertThat(response.headers[HttpHeaders.AccessControlAllowOrigin]).isEqualTo("https://localhost")
+        assertThat(json(response)["result"].textValue()).isEqualTo("invalid_credentials")
+        assertThat(sessionCount()).isZero()
+    }
+
+    @Test
+    fun testAppPasswordLoginDisabled() = lynks(authConfig(passwordLogin = false)) {
+        val response = post("/api/auth/app/login", AuthRequest(defaultUser, DUMMY_USER_PASSWORD)) { fromApp() }
+        assertThat(response.status).isEqualTo(HttpStatusCode.Forbidden)
+        assertThat(sessionCount()).isZero()
+    }
+
+    @Test
+    fun testExpiredAppSessionIsVisibleToTheApp() = lynks {
+        val expired = get("/api/user") { fromApp(); bearer("made-up") }
+        assertThat(expired.status).isEqualTo(HttpStatusCode.Unauthorized)
+        assertThat(expired.headers[HttpHeaders.AccessControlAllowOrigin]).isEqualTo("https://localhost")
+
+        val exchange = post("/api/auth/oidc/exchange", SsoExchangeRequest("unknown", "v".repeat(43))) { fromApp() }
+        assertThat(exchange.status).isEqualTo(HttpStatusCode.Unauthorized)
+        assertThat(exchange.headers[HttpHeaders.AccessControlAllowOrigin]).isEqualTo("https://localhost")
+    }
+
+    @Test
+    fun testBearerHeaderDoesNotLetACookieWriteCrossSite() = lynks {
+        login("user2", DUMMY_USER_PASSWORD)
+        val forged = post("/api/login", AuthRequest(defaultUser, DUMMY_USER_PASSWORD)) {
+            header("Sec-Fetch-Site", "same-site")
+            bearer("made-up")
+        }
+        assertThat(forged.status).isEqualTo(HttpStatusCode.Forbidden)
+        assertThat(json(get("/api/user"))["username"].textValue()).isEqualTo("user2")
+    }
+
+    @Test
+    fun testBearerTokenIsUsedAloneOverCookie() = lynks {
+        login(defaultUser, DUMMY_USER_PASSWORD)
+        assertThat(get("/api/user") { bearer("made-up") }.status).isEqualTo(HttpStatusCode.Unauthorized)
+        val logout = post("/api/logout") { bearer("made-up") }
+        assertThat(logout.status).isEqualTo(HttpStatusCode.OK)
+        assertThat(logout.setCookie()).isEmpty()
+        assertThat(get("/api/user").status).isEqualTo(HttpStatusCode.OK)
+    }
+
+    @Test
+    fun testCorsPreflightForTheApp() = lynks {
+        val preflight = client.options("/api/auth/app/login") {
+            header(HttpHeaders.Origin, "https://localhost")
+            header(HttpHeaders.AccessControlRequestMethod, "POST")
+            header(HttpHeaders.AccessControlRequestHeaders, "content-type")
+        }
+        assertThat(preflight.status).isEqualTo(HttpStatusCode.NoContent)
+        assertThat(preflight.headers[HttpHeaders.AccessControlAllowOrigin]).isEqualTo("https://localhost")
+        assertThat(preflight.headers[HttpHeaders.AccessControlAllowHeaders]).contains("Authorization")
+        assertThat(preflight.headers[HttpHeaders.AccessControlAllowCredentials]).isNull()
+
+        val other = client.options("/api/auth/app/login") {
+            header(HttpHeaders.Origin, "https://evil.example")
+            header(HttpHeaders.AccessControlRequestMethod, "POST")
+        }
+        assertThat(other.headers[HttpHeaders.AccessControlAllowOrigin]).isNull()
+        val config = get("/api/auth/config") { header(HttpHeaders.Origin, "https://localhost") }
+        assertThat(config.headers[HttpHeaders.AccessControlAllowOrigin]).isEqualTo("https://localhost")
+    }
+
+    @Test
+    fun testAppSsoSignIn() = lynks {
+        linkSubject(defaultUser, "sub-1")
+        val verifier = "v".repeat(43)
+        val authorize = startLogin(challenge = SsoHandoffs.s256(verifier))
+        assertThat(authorize.parameters["state"]).startsWith(PendingLogin.APP_STATE_PREFIX)
+
+        val callback = callback(authorize, provider.idToken("sub-1", authorize.parameters["nonce"]))
+        assertThat(callback.status).isEqualTo(HttpStatusCode.OK)
+        assertThat(cookies).doesNotContainKey("lynks_session")
+        val code = APP_CODE.find(callback.bodyAsText())!!.groupValues[1]
+
+        val app = Browser(client, provider)
+        val exchange = app.post("/api/auth/oidc/exchange", SsoExchangeRequest(code, verifier)) { fromApp() }
+        assertThat(exchange.status).isEqualTo(HttpStatusCode.OK)
+        val token = app.json(exchange)["token"].textValue()
+        assertThat(app.json(app.get("/api/user") { bearer(token) })["username"].textValue()).isEqualTo(defaultUser)
+        assertThat(app.json(app.get("/api/user/sessions") { bearer(token) })[0]["method"].textValue()).isEqualTo("oidc")
+
+        val replay = app.post("/api/auth/oidc/exchange", SsoExchangeRequest(code, verifier)) { fromApp() }
+        assertThat(replay.status).isEqualTo(HttpStatusCode.Unauthorized)
+    }
+
+    @Test
+    fun testAppSsoCodeNeedsTheVerifier() = lynks {
+        linkSubject(defaultUser, "sub-1")
+        val verifier = "v".repeat(43)
+        val authorize = startLogin(challenge = SsoHandoffs.s256(verifier))
+        val callback = callback(authorize, provider.idToken("sub-1", authorize.parameters["nonce"]))
+        val code = APP_CODE.find(callback.bodyAsText())!!.groupValues[1]
+
+        val stolen = post("/api/auth/oidc/exchange", SsoExchangeRequest(code, "w".repeat(43))) { fromApp() }
+        assertThat(stolen.status).isEqualTo(HttpStatusCode.Unauthorized)
+        // a wrong guess spends the code
+        val owner = post("/api/auth/oidc/exchange", SsoExchangeRequest(code, verifier)) { fromApp() }
+        assertThat(owner.status).isEqualTo(HttpStatusCode.Unauthorized)
+        assertThat(sessionCount()).isZero()
+    }
+
+    @Test
+    fun testAppSsoFailuresReturnToTheApp() = lynks {
+        provider.stubUserInfo("sub-unknown", "nobody")
+        val authorize = startLogin(challenge = SsoHandoffs.s256("v".repeat(43)))
+        val callback = callback(authorize, provider.idToken("sub-unknown", authorize.parameters["nonce"]))
+        assertThat(callback.bodyAsText()).contains("net.ryanh.lynks://sso?error=unlinked")
+
+        // without its cookie the state still says the app started it
+        val again = startLogin(challenge = SsoHandoffs.s256("v".repeat(43)))
+        cookies.remove("lynks_oidc")
+        val expired = get("/api/auth/oidc/callback?code=code-1&state=${again.parameters["state"]}")
+        assertThat(expired.bodyAsText()).contains("net.ryanh.lynks://sso?error=expired")
+        assertThat(sessionCount()).isZero()
+    }
+
+    @Test
+    fun testWebLoginReplacedByAnAppLoginFailsOnTheLoginPage() = lynks {
+        // an app login in the same browser overwrote this tab's pending login cookie
+        val web = startLogin()
+        startLogin(challenge = SsoHandoffs.s256("v".repeat(43)))
+        val callback = get("/api/auth/oidc/callback?code=code-1&state=${web.parameters["state"]}")
+        assertThat(callback.headers[HttpHeaders.Location]).isEqualTo("/login?sso=expired")
+    }
+
+    @Test
+    fun testAppSsoNeedsAValidChallenge() = lynks {
+        assertThat(get("/api/auth/oidc/login?challenge=short").status).isEqualTo(HttpStatusCode.BadRequest)
+        assertThat(cookies).doesNotContainKey("lynks_oidc")
+    }
+
     private fun linkSubject(username: String, subject: String) {
         assertThat(UserService(TwoFactorService()).linkSubjectByUsername(username, subject)).isNotNull()
     }
+
+    private fun HttpRequestBuilder.fromApp() {
+        header(HttpHeaders.Origin, "https://localhost")
+        header("Sec-Fetch-Site", "cross-site")
+    }
+
+    private fun HttpRequestBuilder.bearer(token: String) = header(HttpHeaders.Authorization, "Bearer $token")
 
     private class Browser(val client: HttpClient, private val provider: FakeProvider) {
 
@@ -408,8 +573,12 @@ class AuthEndpointTest : ServerTest() {
 
         suspend fun login(username: String, password: String) = post("/api/login", AuthRequest(username, password))
 
-        suspend fun startLogin(returnTo: String? = null): Url {
-            val response = get("/api/auth/oidc/login" + (returnTo?.let { "?returnTo=${it.encodeURLParameter()}" } ?: ""))
+        suspend fun startLogin(returnTo: String? = null, challenge: String? = null): Url {
+            val query = listOfNotNull(
+                returnTo?.let { "returnTo=${it.encodeURLParameter()}" },
+                challenge?.let { "challenge=$it" }
+            ).joinToString("&")
+            val response = get("/api/auth/oidc/login" + (if (query.isEmpty()) "" else "?$query"))
             assertThat(response.status).isEqualTo(HttpStatusCode.Found)
             return Url(response.headers[HttpHeaders.Location]!!)
         }
@@ -530,6 +699,7 @@ class AuthEndpointTest : ServerTest() {
     }
 
     companion object {
+        private val APP_CODE = Regex("net\\.ryanh\\.lynks://sso\\?code=([A-Za-z0-9_-]+)")
         private const val PROVIDER_PORT = 3894
         private const val CLIENT_ID = "lynks"
         private const val CLIENT_SECRET = "client-secret"

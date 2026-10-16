@@ -14,8 +14,14 @@ class PendingLoginTest {
     }
 
     @Test
+    fun testAppLoginRoundTrip() {
+        val login = PendingLogin("app-state", "nonce-1", "verifier-1", "/", "c".repeat(43))
+        assertThat(PendingLogin.decode(login.encode())).isEqualTo(login)
+    }
+
+    @Test
     fun testMalformedIsNull() {
-        listOf("", "a.b.c", "a.b.c.d.e", "a..c.Lw", "a.b.c.!!!").forEach {
+        listOf("", "a.b.c", "a.b.c.Lw.short", "a.b.c.Lw.e.f", "a..c.Lw", "a.b.c.!!!").forEach {
             assertThat(PendingLogin.decode(it)).describedAs(it).isNull()
         }
     }

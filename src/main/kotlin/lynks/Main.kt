@@ -70,6 +70,7 @@ fun Application.module() {
         register(SessionService(authConfig.session))
         register(AuthCookies(Environment.mode == ConfigMode.PROD, get<SessionService>().maxAge))
         register(OidcService(authConfig.oidc, get()))
+        register(SsoHandoffs())
         register(JoltClient(get()))
         register(NotifyService(get(), get()))
         register(FileStore())
@@ -97,7 +98,7 @@ fun Application.module() {
 
     val userService = serviceProvider.get<UserService>()
     userService.ensureDefaultUser()
-    installAuth(authConfig, userService, serviceProvider.get(), serviceProvider.get())
+    installAuth(authConfig, userService, serviceProvider.get(), serviceProvider.get(), Environment.server.rootPath)
 
     routing {
         val prefix = Environment.server.rootPath
@@ -185,7 +186,7 @@ private fun Route.protectedRoutes(serviceProvider: ServiceProvider, authConfig: 
 private fun Route.unprotectedRoutes(serviceProvider: ServiceProvider, authConfig: Environment.Auth) {
     with(serviceProvider) {
         health()
-        authUnprotected(authConfig, get(), get(), get(), get())
+        authUnprotected(authConfig, get(), get(), get(), get(), get())
     }
 }
 
