@@ -1,7 +1,7 @@
 val ktorVersion = "3.6.0"
 
 val postgresVersion = "42.7.13"
-val exposedVersion = "1.5.0"
+val exposedVersion = "1.6.0"
 val hikariVersion = "7.1.0"
 val flywayVersion = "13.7.0"
 
@@ -26,7 +26,7 @@ plugins {
     id("com.gradleup.shadow") version "9.3.1"
 }
 
-version = "2.2.0"
+version = "2.2.1"
 
 sourceSets {
     create("testIntegration") {
